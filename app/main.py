@@ -1,21 +1,12 @@
 from fastapi import FastAPI
+from .presentation.routers.product_router import router as product_router
 
-app = FastAPI(
-    title="PizzaFiori API",
-    description="API para gestión de stock y ventas de la pizzería Pizza Fiori",
-    version="0.1.0",
-)
+app = FastAPI(title="PizzaFiori API")
 
+# Agregar el router
+app.include_router(product_router)
 
+# Ruta raíz opcional
 @app.get("/")
 def root():
-    return {
-        "message": "PizzaFiori API funcionando 🚀"
-    }
-
-
-@app.get("/health")
-def health():
-    return {
-        "status": "ok"
-    }
+    return {"mensaje": "API PizzaFiori funcionando"}
