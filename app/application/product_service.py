@@ -22,6 +22,7 @@ class ProductService:
                 nombre=producto_create.nombre,
                 descripcion=producto_create.descripcion,
                 precio_venta=producto_create.precio_venta,
+                categoria_id=producto_create.categoria_id,
                 activo=True,
                 fecha_creacion=datetime.now()
             )
@@ -33,8 +34,20 @@ class ProductService:
             await self.db.rollback()
             return ServiceResult(error=str(e), status_code=400)
 
-    async def get_all(self) -> List[Producto]:
-        result = await self.db.execute(select(Producto).where(Producto.activo == True))
+    async def get_all(self, categoria_id: Optional[int] = None, active: Optional[bool] = None) -> List[Producto]:
+        query = select(Producto)
+        
+        conditions = []
+        if active is not None:
+            conditions.append(Producto.activo == active)
+        
+        if categoria_id is not None:
+            conditions.append(Producto.categoria_id == categoria_id)
+        
+        if conditions:
+            result = await self.db.execute(query.where(*conditions))
+        else:
+            result = await self.db.execute(query)
         return result.scalars().all()
 
     async def get_by_id(self, producto_id: int) -> ServiceResult:

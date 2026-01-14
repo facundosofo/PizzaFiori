@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
 
 from app.infrastructure.database import get_db
 from app.application.product_service import ProductService, ServiceResult
@@ -27,16 +27,19 @@ async def create_producto(
         raise HTTPException(status_code=result.status_code, detail=result.error)
     return result.value
 
-#TODO: Agregar filtro categoria y active
 @router.get(
     "/",
     response_model=List[ProductoResponse],
     summary="Obtener todos los productos",
     description="Devuelve la lista de productos activos.",
 )
-async def get_productos(db: AsyncSession = Depends(get_db)):
+async def get_productos(
+    categoria: Optional[int] = Query(None, description="ID de la categoría para filtrar"),
+    active: Optional[bool] = Query(None, description="Filtrar por estado activo/inactivo"),
+    db: AsyncSession = Depends(get_db)
+):
     service = ProductService(db)
-    return await service.get_all()
+    return await service.get_all(categoria_id=categoria, active=active)
 
 
 @router.get(
