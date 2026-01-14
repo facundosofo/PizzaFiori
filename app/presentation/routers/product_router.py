@@ -27,7 +27,7 @@ async def create_producto(
         raise HTTPException(status_code=result.status_code, detail=result.error)
     return result.value
 
-
+#TODO: Agregar filtro categoria y active
 @router.get(
     "/",
     response_model=List[ProductoResponse],

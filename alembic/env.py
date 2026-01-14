@@ -7,7 +7,8 @@ from alembic import context
 sys.path.append(".")
 
 from app.infrastructure.database import Base
-from app.domain.products import Producto
+import app.domain.products
+import app.domain.category
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
