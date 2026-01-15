@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Query
+from fastapi import APIRouter, Depends, UploadFile, Form, File, HTTPException, status, Path, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
 from app.infrastructure.database import get_db
 from app.application.product_service import ProductService, ServiceResult
+from app.infrastructure.file_service import FileService
 from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest, ProductoResponse
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
+file_service = FileService()
 
 
 @router.post(
@@ -18,11 +20,23 @@ router = APIRouter(prefix="/productos", tags=["Productos"])
     responses={400: {"description": "Datos inválidos del producto"}}
 )
 async def create_producto(
-    producto: ProductoCreateRequest = Body(..., description="Datos del producto a crear"),
+    nombre: str = Form(...),
+    precio_venta: float = Form(...),
+    descripcion: Optional[str] = Form(None),
+    categoria_id: int = Form(...),
+    imagen: Optional[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db)
 ):
-    service = ProductService(db)
-    result: ServiceResult = await service.create(producto)
+    service = ProductService(db, file_service)
+
+    producto_request = ProductoCreateRequest(
+        nombre=nombre,
+        precio_venta=precio_venta,
+        descripcion=descripcion,
+        categoria_id=categoria_id
+    )
+
+    result: ServiceResult = await service.create(producto_request, image=imagen)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
     return result.value
@@ -31,14 +45,14 @@ async def create_producto(
     "/",
     response_model=List[ProductoResponse],
     summary="Obtener todos los productos",
-    description="Devuelve la lista de productos activos.",
+    description="Devuelve la lista de productos.",
 )
 async def get_productos(
     categoria: Optional[int] = Query(None, description="ID de la categoría para filtrar"),
     active: Optional[bool] = Query(None, description="Filtrar por estado activo/inactivo"),
     db: AsyncSession = Depends(get_db)
 ):
-    service = ProductService(db)
+    service = ProductService(db, file_service)
     return await service.get_all(categoria_id=categoria, active=active)
 
 
@@ -53,7 +67,7 @@ async def get_producto(
     producto_id: int = Path(..., ge=1, description="ID único del producto"),
     db: AsyncSession = Depends(get_db)
 ):
-    service = ProductService(db)
+    service = ProductService(db, file_service)
     result: ServiceResult = await service.get_by_id(producto_id)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
@@ -64,20 +78,32 @@ async def get_producto(
     "/{producto_id}",
     response_model=ProductoResponse,
     summary="Actualizar un producto",
-    description="Actualiza los campos de un producto existente.",
     responses={404: {"description": "Producto no encontrado"}}
 )
 async def update_producto(
-    producto_id: int = Path(..., ge=1, description="ID del producto a actualizar"),
-    producto: ProductoUpdateRequest = Body(..., description="Campos a actualizar"),
+    producto_id: int = Path(..., ge=1),
+    nombre: Optional[str] = Form(None),
+    precio_venta: Optional[float] = Form(None),
+    descripcion: Optional[str] = Form(None),
+    categoria_id: Optional[int] = Form(None),
+    activo: Optional[bool] = Form(None),
+    imagen: Optional[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db)
 ):
-    service = ProductService(db)
-    result: ServiceResult = await service.update(producto_id, producto)
+    service = ProductService(db, file_service)
+
+    producto_request = ProductoUpdateRequest(
+        nombre=nombre,
+        precio_venta=precio_venta,
+        descripcion=descripcion,
+        categoria_id=categoria_id,
+        activo=activo
+    )
+
+    result: ServiceResult = await service.update(producto_id, producto_request, image=imagen)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
     return result.value
-
 
 @router.delete(
     "/{producto_id}",
@@ -92,7 +118,7 @@ async def delete_producto(
     producto_id: int = Path(..., ge=1, description="ID del producto a desactivar"),
     db: AsyncSession = Depends(get_db)
 ):
-    service = ProductService(db)
+    service = ProductService(db, file_service)
     result: ServiceResult = await service.soft_delete(producto_id)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
