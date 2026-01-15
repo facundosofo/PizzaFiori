@@ -24,14 +24,11 @@ export const HomePage = () => {
         className="modules"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{
-          delay: 1,
-          duration: 0.6,
-        }}
+        transition={{ delay: 1, duration: 0.6 }}
       >
-        <ModuleCard title="Productos" />
-        <ModuleCard title="Ventas" />
-        <ModuleCard title="Reportes" />
+        <ModuleCard title="Productos" to="/productos" />
+        <ModuleCard title="Ventas" to="/ventas" />
+        <ModuleCard title="Reportes" to="/reportes" />
       </motion.div>
     </div>
   );
