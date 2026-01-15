@@ -15,7 +15,7 @@ class ProductoUpdateRequest(BaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     precio_venta: Optional[float] = None
-    categoria_id: int
+    categoria_id: Optional[int] = None
     activo: Optional[bool] = None
 
 # ---------------------------
@@ -27,6 +27,7 @@ class ProductoResponse(BaseModel):
     descripcion: Optional[str] = None
     precio_venta: float
     categoria_id: int
+    imagen: Optional[str] = None
     activo: bool
     fecha_creacion: datetime
 

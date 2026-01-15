@@ -1,8 +1,14 @@
+import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from .presentation.routers.product_router import router as product_router
 from .presentation.routers.category_router import router as category_router
 
 app = FastAPI(title="PizzaFiori API")
+
+# Crear la carpeta si no existe (por seguridad al arrancar)
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Agregar el router
 app.include_router(product_router)

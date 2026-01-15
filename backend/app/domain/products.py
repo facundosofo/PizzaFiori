@@ -12,8 +12,10 @@ class Producto(Base):
     descripcion = Column(String(255), nullable=True)
     precio_venta = Column(Numeric(10,2), nullable=False)
     categoria_id = Column(Integer, ForeignKey("Categorias.id"), nullable=True)
+    imagen = Column(String(255), nullable=True)
     activo = Column(Boolean, nullable=False, default=True)
     fecha_creacion = Column(DateTime, default=datetime.now)
+    fecha_actualizacion = Column(DateTime, default=datetime.now)
 
     categoria = relationship("Categoria")
 
