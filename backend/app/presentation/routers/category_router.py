@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.infrastructure.database import get_db
-from app.application.category_service import CategoriaService, ServiceResult
+from app.application.category_service import CategoryService, ServiceResult
 from app.presentation.schemas.category_schemas import CategoriaCreateRequest, CategoriaUpdateRequest, CategoriaResponse
 
 router = APIRouter(prefix="/categorias", tags=["Categorías"])
@@ -21,7 +21,7 @@ async def create_categoria(
     categoria: CategoriaCreateRequest = Body(..., description="Datos de la categoría a crear"),
     db: AsyncSession = Depends(get_db)
 ):
-    service = CategoriaService(db)
+    service = CategoryService(db)
     result: ServiceResult = await service.create(categoria)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
@@ -35,7 +35,7 @@ async def create_categoria(
     description="Devuelve la lista de todas las categorías.",
 )
 async def get_categorias(db: AsyncSession = Depends(get_db)):
-    service = CategoriaService(db)
+    service = CategoryService(db)
     return await service.get_all()
 
 
@@ -50,7 +50,7 @@ async def get_categoria(
     categoria_id: int = Path(..., ge=1, description="ID único de la categoría"),
     db: AsyncSession = Depends(get_db)
 ):
-    service = CategoriaService(db)
+    service = CategoryService(db)
     result: ServiceResult = await service.get_by_id(categoria_id)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
@@ -69,7 +69,7 @@ async def update_categoria(
     categoria: CategoriaUpdateRequest = Body(..., description="Campos a actualizar"),
     db: AsyncSession = Depends(get_db)
 ):
-    service = CategoriaService(db)
+    service = CategoryService(db)
     result: ServiceResult = await service.update(categoria_id, categoria)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
@@ -89,7 +89,7 @@ async def delete_categoria(
     categoria_id: int = Path(..., ge=1, description="ID de la categoría a eliminar"),
     db: AsyncSession = Depends(get_db)
 ):
-    service = CategoriaService(db)
+    service = CategoryService(db)
     result: ServiceResult = await service.delete(categoria_id)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)

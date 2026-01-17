@@ -7,8 +7,11 @@ from alembic import context
 sys.path.append(".")
 
 from app.infrastructure.database import Base
-import app.domain.products
-import app.domain.category
+from app.domain.category import Category
+from app.domain.product import Product
+from app.domain.product_price import ProductPrice
+from app.domain.offer import Offer
+from app.domain.offer_item import OfferItem
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
