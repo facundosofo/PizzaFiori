@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .presentation.routers.product_router import router as product_router
 from .presentation.routers.category_router import router as category_router
+from app.domain import *
 
 app = FastAPI(title="PizzaFiori API")
 

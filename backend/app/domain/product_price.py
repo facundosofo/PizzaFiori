@@ -4,7 +4,7 @@ from app.infrastructure.database import Base
 from datetime import datetime
 
 class ProductPrice(Base):
-    __tablename__ = "ProductPrices"
+    __tablename__ = "ProductoPrecios"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     producto_id = Column(Integer, ForeignKey("Productos.id"), nullable=False)

@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from app.infrastructure.database import Base
 
 class OfferItem(Base):
-    __tablename__ = "OfferItems"
+    __tablename__ = "OfertaItems"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     oferta_id = Column(Integer, ForeignKey("Ofertas.id"), nullable=False)
