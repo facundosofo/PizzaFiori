@@ -1,5 +1,14 @@
-/* ===== ERROR ALERT ===== */
+/* ================================================================
+   ERROR-ALERT.CSS - Estilos para alertas de error
+   ================================================================
+   Contiene estilos para el componente de alerta de error que
+   se muestra en la esquina superior derecha cuando ocurre un error.
+   Incluye animaciones y diseño responsivo.
+   ================================================================ */
 
+/* ===== ERROR ALERT CONTAINER ===== */
+
+/* Contenedor principal de la alerta de error, fijo en la esquina superior derecha */
 .error-alert {
   position: fixed;
   top: 24px;
@@ -13,6 +22,7 @@
   backdrop-filter: blur(4px);
 }
 
+/* Contenido interno de la alerta (icono + texto + botón cerrar) */
 .error-alert-content {
   display: flex;
   align-items: flex-start;
@@ -20,17 +30,20 @@
   padding: 16px 20px;
 }
 
+/* Icono de error (emoji o SVG) */
 .error-alert-icon {
   font-size: 1.8rem;
   flex-shrink: 0;
   margin-top: 2px;
 }
 
+/* Contenedor del texto de la alerta */
 .error-alert-text {
   flex-grow: 1;
   margin: 0;
 }
 
+/* Título del error en mayúsculas */
 .error-alert-title {
   font-size: 1rem;
   font-weight: 700;
@@ -40,6 +53,7 @@
   letter-spacing: 1px;
 }
 
+/* Mensaje descriptivo del error */
 .error-alert-message {
   font-size: 0.95rem;
   color: #f5f5f5;
@@ -47,6 +61,7 @@
   line-height: 1.4;
 }
 
+/* Información de contacto opcional */
 .error-alert-contact {
   font-size: 0.85rem;
   color: #aaa;
@@ -55,6 +70,7 @@
   font-style: italic;
 }
 
+/* Botón de cerrar la alerta */
 .error-alert-close {
   background: none;
   border: none;
@@ -71,28 +87,34 @@
   transition: all 0.2s ease;
 }
 
+/* Hover del botón cerrar */
 .error-alert-close:hover {
   color: #ff5252;
   transform: scale(1.2);
 }
 
+/* Estado activo del botón cerrar */
 .error-alert-close:active {
   transform: scale(0.95);
 }
 
 /* ===== RESPONSIVE ===== */
 
+/* Ajustes para tablets y móviles */
 @media (max-width: 768px) {
+  /* Alerta ocupa todo el ancho en móviles */
   .error-alert {
     left: 16px;
     right: 16px;
     max-width: none;
   }
 
+  /* Espaciado reducido en móviles */
   .error-alert-content {
     gap: 12px;
   }
 
+  /* Texto más pequeño en móviles */
   .error-alert-message {
     font-size: 0.9rem;
   }

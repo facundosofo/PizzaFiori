@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import { updateProducto, createProducto } from "../services/productsService";
+import "../styles/shared.css";
 import "../styles/product-modal.css";
 import env from "../config/env";
 

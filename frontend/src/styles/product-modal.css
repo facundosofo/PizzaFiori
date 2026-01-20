@@ -1,9 +1,24 @@
+/* ================================================================
+   PRODUCT-MODAL.CSS - Estilos para el modal de producto
+   ================================================================
+   Contiene estilos para:
+   - Modal de visualización y edición de productos
+   - Control de cantidad
+   - Editor de precios
+   - Diálogo de confirmación de eliminación
+   - Botones de edición y eliminación
+   ================================================================ */
+
+/* ===== CONTROL DE CANTIDAD ===== */
+
+/* Contenedor principal para el control de cantidad con botones incrementar/decrementar */
 .quantity-control {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* Botón de incremento/decremento de cantidad con estilo circular y efectos hover */
 .qty-btn {
   width: 32px;
   height: 32px;
@@ -234,58 +249,7 @@
   }
 }
 
-/* ===== FORM ERROR ===== */
-
-.form-error {
-  background: rgba(255, 59, 59, 0.2);
-  border: 2px solid #ff3b3b;
-  border-radius: 8px;
-  color: #ff9999;
-  padding: 12px 14px;
-  margin-bottom: 20px;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-/* ===== FILE INPUT ===== */
-
-.file-input-wrapper {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
-.file-input {
-  display: none;
-}
-
-.file-label {
-  display: block;
-  padding: 12px 14px;
-  background: #0d0d0d;
-  border: 2px solid #ff3b3b;
-  border-radius: 8px;
-  color: #f5f5f5;
-  text-align: center;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 0.95rem;
-}
-
-.file-label:hover {
-  border-color: #ff5252;
-  background: #121212;
-  box-shadow: 0 0 20px rgba(255, 59, 59, 0.3);
-}
-
-.file-input-wrapper:has(.file-input:disabled) .file-label {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #0a0a0a;
-}
+/* ===== FILE CLEAR BUTTON ===== */
 
 .file-clear-btn {
   margin-top: 10px;
@@ -319,8 +283,6 @@
   cursor: not-allowed;
 }
 
-/* Clases de formulario compartidas en product-card.css */
-
 /* ===== RESPONSIVE ===== */
 
 @media (max-width: 480px) {
@@ -339,11 +301,8 @@
   .modal-precio {
     font-size: 1.6rem;
   }
-
-  .form-actions {
-    flex-direction: column;
-  }
 }
+
 /* ===== CONFIRM DIALOG ===== */
 
 .confirm-overlay {
