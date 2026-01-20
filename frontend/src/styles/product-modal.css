@@ -171,89 +171,7 @@
   line-height: 1.3;
 }
 
-/* Precio del producto en formato grande y color rojo destacado */
-.modal-precio {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #ff3b3b;
-  margin: 12px 0;
-}
 
-/* Nombre de la categoría del producto en color gris */
-.modal-categoria {
-  font-size: 1rem;
-  color: #aaa;
-  margin: 16px 0 28px 0;
-}
-
-/* Botón principal de edición con gradiente rojo y efecto de escala al hover */
-.modal-edit-btn {
-  width: 100%;
-  background: linear-gradient(135deg, #ff3b3b, #ff5252);
-  border: none;
-  color: white;
-  padding: 14px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-top: 12px;
-}
-
-/* Efecto hover del botón de edición con escala y sombra */
-.modal-edit-btn:hover {
-  background: linear-gradient(135deg, #ff5252, #ff6b6b);
-  transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(255, 59, 59, 0.4);
-}
-
-/* Efecto de presionado del botón de edición */
-.modal-edit-btn:active {
-  transform: scale(0.98);
-}
-
-/* Duplicado del efecto de presionado del botón de edición */
-.modal-edit-btn:active {
-  transform: scale(0.98);
-}
-
-/* Contenedor flex para los botones de acción del modal */
-.modal-actions {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-}
-
-/* Botón de eliminación con borde rojo y fondo semi-transparente */
-.modal-delete-btn {
-  flex: 1;
-  background: rgba(255, 59, 59, 0.2);
-  border: 2px solid #ff3b3b;
-  color: #ff3b3b;
-  padding: 14px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-}
-
-/* Efecto hover del botón de eliminación con escala y sombra */
-.modal-delete-btn:hover {
-  background: rgba(255, 59, 59, 0.3);
-  transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(255, 59, 59, 0.4);
-}
-
-/* Efecto de presionado del botón de eliminación */
-.modal-delete-btn:active {
-  transform: scale(0.98);
-}
 
 /* ===== EDIT FORM ===== */
 
@@ -324,10 +242,6 @@
 
   .modal-title {
     font-size: 1.4rem;
-  }
-
-  .modal-precio {
-    font-size: 1.6rem;
   }
 }
 

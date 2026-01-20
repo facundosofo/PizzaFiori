@@ -148,7 +148,7 @@
 
 /* Tarjeta individual de producto */
 .product-card {
-  flex: 0 0 200px;
+  flex: 0 0 240px;
   background: linear-gradient(145deg, #1e1e1e, #121212);
   border-radius: 18px;
   padding: 14px;
