@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 from fastapi import UploadFile
 from datetime import datetime
+import structlog
 from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
 from app.domain.unit_of_work import AbstractUnitOfWork
@@ -17,9 +18,15 @@ class ServiceResult:
 
 
 class ProductService:
-    def __init__(self, uow: AbstractUnitOfWork, file_service: FileService):
+    def __init__(
+        self, 
+        uow: AbstractUnitOfWork, 
+        file_service: FileService,
+        logger: structlog.BoundLogger | None = None
+    ):
         self.uow = uow
         self.file_service = file_service
+        self.logger = logger or structlog.get_logger(__name__)
 
 
     async def create(
@@ -31,8 +38,16 @@ class ProductService:
         ruta_imagen = None
 
         try:
+            self.logger.debug(
+                "Creando producto",
+                producto_nombre=producto_create.nombre,
+                categoria_id=producto_create.categoria_id,
+                tiene_imagen=image is not None
+            )
+            
             if image:
                 ruta_imagen = await self.file_service.save_file(image)
+                self.logger.debug("Imagen guardada", ruta=ruta_imagen)
 
             async with self.uow as uow:
                 producto = Product(
@@ -55,9 +70,22 @@ class ProductService:
                 await uow.commit()
                 await uow.product_repo.refresh(producto, attribute_names=["precios"])
 
+            self.logger.debug(
+                "Producto creado exitosamente",
+                producto_id=producto.id,
+                producto_nombre=producto.nombre
+            )
+            
             return ServiceResult(value=producto, status_code=201)
 
         except Exception as e:
+            self.logger.error(
+                "Error al crear producto",
+                error=str(e),
+                producto_nombre=producto_create.nombre,
+                exc_info=True
+            )
+            
             if ruta_imagen:
                 self.file_service.delete_file(ruta_imagen)
 

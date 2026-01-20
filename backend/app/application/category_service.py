@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
+import structlog
 
 from app.domain.models.category import Category
 from app.domain.unit_of_work import AbstractUnitOfWork
@@ -15,11 +16,21 @@ class ServiceResult:
     status_code: int = 200
 
 class CategoryService:
-    def __init__(self, uow: AbstractUnitOfWork):
+    def __init__(
+        self, 
+        uow: AbstractUnitOfWork,
+        logger: structlog.BoundLogger | None = None
+    ):
         self.uow = uow
+        self.logger = logger or structlog.get_logger(__name__)
 
     async def create(self, categoria_create: CategoriaCreateRequest) -> ServiceResult:
         try:
+            self.logger.debug(
+                "Creando categoría",
+                categoria_nombre=categoria_create.nombre
+            )
+            
             async with self.uow as uow:
                 categoria = Category(
                     nombre=categoria_create.nombre,
@@ -30,8 +41,20 @@ class CategoryService:
                 await uow.commit()
                 await uow.category_repo.refresh(categoria)
 
+                self.logger.debug(
+                    "Categoría creada exitosamente",
+                    categoria_id=categoria.id,
+                    categoria_nombre=categoria.nombre
+                )
+                
                 return ServiceResult(value=categoria, status_code=201)
         except Exception as e:
+            self.logger.error(
+                "Error al crear categoría",
+                error=str(e),
+                categoria_nombre=categoria_create.nombre,
+                exc_info=True
+            )
             return ServiceResult(error=str(e), status_code=400)
 
     async def get_all(self) -> List[Category]:
