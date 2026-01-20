@@ -22,7 +22,6 @@ router = APIRouter(prefix="/productos", tags=["Productos"])
 async def create_producto(
     nombre: str = Form(...),
     categoria_id: int = Form(...),
-    descripcion: Optional[str] = Form(None),
     precios: str = Form(..., description='Ej: [{"cantidad":1,"precio":1200}]'),
     imagen: Optional[UploadFile] = File(None),
     service: ProductService = Depends(Provide[Container.product_service]),
@@ -35,7 +34,6 @@ async def create_producto(
 
     producto_request = ProductoCreateRequest(
         nombre=nombre,
-        descripcion=descripcion,
         categoria_id=categoria_id,
         precios=precios_list
     )
@@ -107,8 +105,6 @@ async def update_producto(
     producto_id: int = Path(..., ge=1),
     nombre: Optional[str] = Form(None),
     categoria_id: Optional[int] = Form(None),
-    descripcion: Optional[str] = Form(None),
-    activo: Optional[bool] = Form(None),
     precios: Optional[str] = Form(
         None,
         description='Ej: [{"cantidad":1,"precio":1200}]'
@@ -126,9 +122,7 @@ async def update_producto(
 
     producto_request = ProductoUpdateRequest(
         nombre=nombre,
-        descripcion=descripcion,
         categoria_id=categoria_id,
-        activo=activo,
         precios=precios_list
     )
 
@@ -147,26 +141,23 @@ async def update_producto(
     return result.value
 
 
-@router.delete(
-    "/{producto_id}",
-    summary="Desactivar (soft delete) un producto",
-    description="Marca un producto como inactivo sin eliminarlo físicamente.",
-    responses={
-        404: {"description": "Producto no encontrado"},
-        200: {"description": "Producto desactivado correctamente"}
-    }
+@router.patch(
+    "/{producto_id}/desactivar",
+    response_model=ProductoResponse,
+    summary="Desactivar un producto",
+    responses={404: {"description": "Producto no encontrado"}},
 )
 @inject
-async def delete_producto(
-    producto_id: int = Path(..., ge=1, description="ID del producto a desactivar"),
+async def deactivate_producto(
+    producto_id: int = Path(..., ge=1, description="ID único del producto"),
     service: ProductService = Depends(Provide[Container.product_service]),
 ):
-
-    result: ServiceResult = await service.soft_delete(producto_id)
+    result = await service.update(producto_id, active=False)
+    
     if result.error:
         raise HTTPException(
             status_code=result.status_code,
-            detail=result.error
+            detail=result.error,
         )
-
-    return {"detalle": "Producto desactivado correctamente"}
+    
+    return result.value

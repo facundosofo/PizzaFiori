@@ -119,8 +119,9 @@ class ProductService:
     async def update(
         self,
         producto_id: int,
-        producto_update: ProductoUpdateRequest,
-        image: Optional[UploadFile] = None
+        producto_update: Optional[ProductoUpdateRequest] = None,
+        image: Optional[UploadFile] = None,
+        active: Optional[bool] = None
     ) -> ServiceResult:
 
         ruta_imagen_nueva = None
@@ -137,23 +138,27 @@ class ProductService:
                 if image:
                     ruta_imagen_nueva = await self.file_service.save_file(image)
                     producto.imagen = ruta_imagen_nueva
+                
+                if producto_update is not None:
+                    for var, value in vars(producto_update).items():
+                        if value is not None and var != "precios":
+                            setattr(producto, var, value)
 
-                for var, value in vars(producto_update).items():
-                    if value is not None and var != "precios":
-                        setattr(producto, var, value)
-
-                if producto_update.precios is not None:
-                    await uow.product_repo.replace_prices(
-                        producto.id,
-                        [
-                            ProductPrice(
-                                producto_id=producto.id,
-                                cantidad=precio.cantidad,
-                                precio=precio.precio,
-                            )
-                            for precio in producto_update.precios
-                        ],
-                    )
+                    if producto_update.precios is not None:
+                        await uow.product_repo.replace_prices(
+                                producto.id,
+                                [
+                                ProductPrice(
+                                    producto_id=producto.id,
+                                    cantidad=precio.cantidad,
+                                    precio=precio.precio,
+                                )
+                                for precio in producto_update.precios
+                            ],
+                        )
+                        
+                if active is not None:
+                    producto.activo = active
 
                 producto.fecha_actualizacion = datetime.now()
                 await uow.commit()
@@ -170,16 +175,3 @@ class ProductService:
 
             return ServiceResult(error=str(e), status_code=400)
 
-
-    async def soft_delete(self, producto_id: int) -> ServiceResult:
-        async with self.uow as uow:
-            producto = await uow.product_repo.get_by_id(producto_id)
-
-            if not producto or producto.activo is False:
-                return ServiceResult(error="Producto no encontrado", status_code=404)
-
-            producto.activo = False
-            producto.fecha_actualizacion = datetime.now()
-
-            await uow.commit()
-            return ServiceResult(value=producto)
