@@ -28,21 +28,21 @@ export const updateProducto = async (
   id: number,
   data: {
     nombre?: string;
-    precio_venta?: number;
     categoria_id?: number;
     imagen?: File | null;
     descripcion?: string;
     activo?: boolean;
+    precios?: Array<{ cantidad: number; precio: number }>;
   }
 ): Promise<Product> => {
   try {
     const formData = new FormData();
 
     if (data.nombre) formData.append("nombre", data.nombre);
-    if (data.precio_venta !== undefined) formData.append("precio_venta", data.precio_venta.toString());
     if (data.categoria_id !== undefined) formData.append("categoria_id", data.categoria_id.toString());
     if (data.descripcion) formData.append("descripcion", data.descripcion);
     if (data.activo !== undefined) formData.append("activo", data.activo.toString());
+    if (data.precios) formData.append("precios", JSON.stringify(data.precios));
     if (data.imagen) formData.append("imagen", data.imagen);
 
     const res = await fetch(`${env.API_BASE_URL}/productos/${id}`, {

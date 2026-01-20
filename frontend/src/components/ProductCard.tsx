@@ -30,6 +30,28 @@ const ProductCard = ({
 
   const imageUrl = producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png";
 
+  const formatPrecio = (value: number) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
+  const formatCantidad = (cantidad: number): string => {
+    switch (cantidad) {
+      case 1:
+        return "Unidad";
+      case 6:
+        return "1/2 Docena";
+      case 12:
+        return "Docena";
+      default:
+        return `${cantidad} unid.`;
+    }
+  };
+
   const handleOpenModal = () => {
     setIsModalOpen(true);
   };
@@ -97,11 +119,18 @@ const ProductCard = ({
         <div className="product-card-body">
           <h3 className="product-card-title">{producto.nombre.toUpperCase()}</h3>
 
-          <p className="product-card-price">
-            ${producto.precios && producto.precios.length > 0 
-              ? Number(producto.precios[0].precio).toFixed(2) 
-              : "0.00"}
-          </p>
+          <div className="product-card-prices">
+            {producto.precios && producto.precios.length > 0 ? (
+              producto.precios.map((precio_item) => (
+                <div key={precio_item.id} className="price-item">
+                  <span className="price-cantidad">{formatCantidad(precio_item.cantidad)}</span>
+                  <span className="price-amount">{formatPrecio(precio_item.precio)}</span>
+                </div>
+              ))
+            ) : (
+              <div className="price-item no-price">Sin precios</div>
+            )}
+          </div>
 
           <button
             className="product-card-btn"
