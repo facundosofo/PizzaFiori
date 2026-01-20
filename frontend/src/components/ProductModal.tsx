@@ -1,17 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import type { Producto } from "../types/producto";
-import type { Categoria } from "../types/categoria";
-import { updateProducto } from "../services/productsService";
+import type { Product } from "../types/product";
+import type { Category } from "../types/category";
+import { updateProducto, createProducto } from "../services/productsService";
+import "../styles/shared.css";
 import "../styles/product-modal.css";
 import env from "../config/env";
 
 interface ProductModalProps {
-  producto: Producto | null;
+  producto: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (producto: Producto) => void;
-  categorias?: Categoria[];
+  onSave?: (producto: Product) => void;
+  categorias?: Category[];
 }
 
 const ProductModal = ({
@@ -23,22 +24,24 @@ const ProductModal = ({
 }: ProductModalProps) => {
 
   const [nombre, setNombre] = useState("");
-  const [precio, setPrecio] = useState(0);
-  const [precioInput, setPrecioInput] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [imagen, setImagen] = useState<File | null>(null);
   const [previewImagen, setPreviewImagen] = useState("/placeholder.png");
+  const [precios, setPrecios] = useState<Array<{ cantidad: number; precio: number }>>([]);
+  const [preciosInput, setPreciosInput] = useState<string[]>([]);
   
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const formatPrecio = (value: number) =>
-  value.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-  });
+  const formatPrecio = (value: number) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
 
   const normalizePrecio = (value: string) => {
     return Number(
@@ -49,31 +52,21 @@ const ProductModal = ({
     );
   };
 
-const parsePrecio = (value: string) => {
-  return Number(
-    value
-      .replace(/\$/g, "")
-      .replace(/\./g, "")
-      .replace(",", ".")
-      .trim()
-  );
-};
-
 
   useEffect(() => {
     if (producto && isOpen) {
-      setNombre(producto.nombre);
-      setPrecio(producto.precio_venta);
-      setPrecioInput(formatPrecio(producto.precio_venta));
-      setCategoriaId(producto.categoria_id.toString());
+      setNombre(producto.nombre || "");
+      setCategoriaId(producto.categoria_id > 0 ? producto.categoria_id.toString() : "");
+      setPrecios(producto.precios?.map(p => ({ cantidad: p.cantidad, precio: p.precio })) || []);
+      setPreciosInput(producto.precios?.map(p => formatPrecio(p.precio)) || []);
       setPreviewImagen(
         producto.imagen
           ? `${env.API_BASE_URL}/${producto.imagen}`
           : "/placeholder.png"
       );
-    setImagen(null);
-    setError("");
-  }
+      setImagen(null);
+      setError("");
+    }
   }, [producto, isOpen]);
 
 
@@ -82,13 +75,11 @@ const parsePrecio = (value: string) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
-      // Validar tipo de archivo
       if (!selected.type.startsWith("image/")) {
         setError("Por favor, selecciona una imagen válida.");
         return;
       }
       
-      // Validar tamaño (máx 5MB)
       if (selected.size > 5 * 1024 * 1024) {
         setError("La imagen no puede exceder 5MB.");
         return;
@@ -108,25 +99,34 @@ const parsePrecio = (value: string) => {
     if (!nombre.trim()) return setError("El nombre es requerido");
     if (nombre.trim().length > 100) return setError("El nombre no puede superar los 100 caracteres");
     if (!categoriaId) return setError("Selecciona una categoría");
-    if (precio <= 0) return setError("El precio debe ser mayor a 0");
+    if (precios.length === 0) return setError("Debes agregar al menos un precio");
+    if (precios.some(p => p.cantidad <= 0 || p.precio <= 0)) {
+      return setError("Cantidad y precio deben ser mayores a 0");
+    }
 
     setLoading(true);
     try {
-      const updatedData = {
+      const productData = {
         nombre: nombre.trim(),
-        precio_venta: precio,
         categoria_id: parseInt(categoriaId),
+        precios: precios,
         imagen: imagen,
       };
 
-      const updatedProducto = await updateProducto(producto.id, updatedData);
+      let savedProducto: Product;
+      
+      if (producto.id === 0) {
+        savedProducto = await createProducto(productData);
+      } else {
+        savedProducto = await updateProducto(producto.id, productData);
+      }
       
       if (onSave) {
-        onSave(updatedProducto);
+        onSave(savedProducto);
       }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar los cambios");
+      setError(err instanceof Error ? err.message : "Error al guardar el producto");
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ const parsePrecio = (value: string) => {
             <button className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
 
             <div className="modal-header-edit">
-              <h2 className="modal-title">Editar Producto</h2>
+              <h2 className="modal-title">{producto.id === 0 ? "Nuevo Producto" : "Editar Producto"}</h2>
             </div>
 
             <div className="modal-image">
@@ -181,35 +181,122 @@ const parsePrecio = (value: string) => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="edit-precio">Precio de Venta:</label>
-                  <input
-                    id="edit-precio"
-                    type="text"
-                    inputMode="decimal"
-                    value={precioInput}
-                    onFocus={() => {
-                      setPrecioInput(precio.toString().replace(".", ","));
+                  <label>Precios:</label>
+                  <div className="prices-editor">
+                    {precios.length > 0 ? (
+                      precios.map((precio_item, index) => (
+                        <div key={index} className="price-edit-row">
+
+                          <div className="price-edit-field">
+                            <label className="price-edit-label">Cantidad</label>
+                            <div className="quantity-control">
+                              <button
+                                type="button"
+                                className="qty-btn"
+                                aria-label="Disminuir cantidad"
+                                onClick={() => {
+                                  const newPrecios = [...precios];
+                                  const current = newPrecios[index].cantidad;
+                                  newPrecios[index].cantidad = Math.max(1, current - 1);
+                                  setPrecios(newPrecios);
+                                }}
+                                disabled={loading}
+                              >
+                                −
+                              </button>
+                              <span className="qty-value">{precio_item.cantidad}</span>
+                              <button
+                                type="button"
+                                className="qty-btn"
+                                aria-label="Aumentar cantidad"
+                                onClick={() => {
+                                  const newPrecios = [...precios];
+                                  const current = newPrecios[index].cantidad;
+                                  newPrecios[index].cantidad = current + 1;
+                                  setPrecios(newPrecios);
+                                }}
+                                disabled={loading}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="price-edit-field">
+                            <label className="price-edit-label">Precio</label>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={preciosInput[index] || ""}
+                              onFocus={() => {
+                                const newInputs = [...preciosInput];
+                                newInputs[index] = precio_item.precio.toString().replace(".", ",");
+                                setPreciosInput(newInputs);
+                              }}
+                              onChange={(e) => {
+                                let value = e.target.value.replace(".", ",");
+                                if (!/^\d*(,\d{0,2})?$/.test(value)) return;
+                                
+                                const newInputs = [...preciosInput];
+                                newInputs[index] = value;
+                                setPreciosInput(newInputs);
+                                
+                                const numeric = normalizePrecio(value);
+                                if (!isNaN(numeric)) {
+                                  const newPrecios = [...precios];
+                                  newPrecios[index].precio = numeric;
+                                  setPrecios(newPrecios);
+                                }
+                              }}
+                              onBlur={() => {
+                                if (precio_item.precio > 0) {
+                                  const newInputs = [...preciosInput];
+                                  newInputs[index] = formatPrecio(precio_item.precio);
+                                  setPreciosInput(newInputs);
+                                } else {
+                                  const newInputs = [...preciosInput];
+                                  newInputs[index] = "";
+                                  setPreciosInput(newInputs);
+                                }
+                              }}
+                              className="form-input"
+                              disabled={loading}
+                              placeholder="$ 0,00"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            className="price-remove-btn"
+                            onClick={() => {
+                              setPrecios(precios.filter((_, i) => i !== index));
+                              setPreciosInput(preciosInput.filter((_, i) => i !== index));
+                            }}
+                            disabled={loading}
+                            title="Eliminar precio"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="no-prices-editor">
+                        No hay precios configurados
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="price-add-btn"
+                    onClick={() => {
+                      setPrecios([...precios, { cantidad: 1, precio: 0 }]);
+                      setPreciosInput([...preciosInput, ""]);
                     }}
-                    onChange={(e) => {
-                      let value = e.target.value.replace(".", ",");
-                      if (!/^\d*(,\d{0,2})?$/.test(value)) return;
-                      setPrecioInput(value);
-                      const numeric = normalizePrecio(value);
-                      if (!isNaN(numeric)) {
-                        setPrecio(numeric);
-                      }
-                    }}
-                    onBlur={() => {
-                      if (precio > 0) {
-                        setPrecioInput(formatPrecio(precio));
-                      } else {
-                        setPrecioInput("");
-                      }
-                    }}
-                    className="form-input"
                     disabled={loading}
-                    placeholder="$ 0,00"
-                  />
+                  >
+                    + Agregar Precio
+                  </button>
                 </div>
 
                 <div className="form-group">
@@ -259,7 +346,7 @@ const parsePrecio = (value: string) => {
                       }}
                       disabled={loading}
                     >
-                      Cancelar cambio de imagen
+                      {producto.id === 0 ? "Quitar imagen" : "Cancelar cambio de imagen"}
                     </button>
                   )}
                 </div>
@@ -270,7 +357,7 @@ const parsePrecio = (value: string) => {
                     onClick={handleSave} 
                     disabled={loading}
                   >
-                    {loading ? "Guardando..." : "Actualizar Producto"}
+                    {loading ? "Guardando..." : producto.id === 0 ? "Crear Producto" : "Actualizar Producto"}
                   </button>
                   <button 
                     className="form-cancel-btn" 

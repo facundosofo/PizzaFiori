@@ -1,7 +1,7 @@
 import env from "../config/env";
-import type { Categoria } from "../types/categoria";
+import type { Category } from "../types/category";
 
-export const getCategorias = async (): Promise<Categoria[]> => {
+export const getCategorias = async (): Promise<Category[]> => {
   try {
     const res = await fetch(`${env.API_BASE_URL}/categorias`);
     if (!res.ok) {

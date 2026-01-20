@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
-import { getProductos } from "../services/productsService";
+import { getProductos, createProducto } from "../services/productsService";
 import { getCategorias } from "../services/categoriasService";
 import ProductCard from "../components/ProductCard";
+import ProductModal from "../components/ProductModal";
 import SkeletonLoader from "../components/SkeletonLoader";
 import ErrorAlert from "../components/ErrorAlert";
-import type { Producto } from "../types/producto";
-import type { Categoria } from "../types/categoria";
+import type { Product } from "../types/product";
+import type { Category } from "../types/category";
 import "../styles/product-card.css";
 
 const ProductosPage = () => {
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [productos, setProductos] = useState<Product[]>([]);
+  const [categorias, setCategorias] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<number>>(new Set());
+  const [isCreating, setIsCreating] = useState(false);
+  const [newProduct, setNewProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,16 +48,57 @@ const ProductosPage = () => {
     fetchData();
   }, []);
 
-  const handleProductUpdate = (updatedProducto: Producto) => {
-    setProductos((prevProductos) =>
-      prevProductos.map((p) => (p.id === updatedProducto.id ? updatedProducto : p))
-    );
+  const handleProductUpdate = (updatedProducto: Product) => {
+    console.log('Actualizando producto:', updatedProducto);
+    setProductos((prevProductos) => {
+      const updated = prevProductos.map((p) => (p.id === updatedProducto.id ? updatedProducto : p));
+      console.log('Productos después de actualizar:', updated);
+      return updated;
+    });
   };
 
   const handleProductDelete = (productoId: number) => {
-    setProductos((prevProductos) =>
-      prevProductos.filter((p) => p.id !== productoId)
-    );
+    console.log('Eliminando producto ID:', productoId);
+    setProductos((prevProductos) => {
+      const filtered = prevProductos.filter((p) => p.id !== productoId);
+      console.log('Productos después de eliminar:', filtered);
+      return filtered;
+    });
+  };
+
+  const handleCreateClick = () => {
+    setNewProduct({
+      id: 0,
+      nombre: "",
+      categoria_id: 0,
+      imagen: undefined,
+      activo: true,
+      fecha_creacion: new Date().toISOString(),
+      fecha_actualizacion: new Date().toISOString(),
+      precios: [],
+    });
+    setIsCreating(true);
+  };
+
+  const handleCreateProduct = async (producto: Product) => {
+    console.log('Producto creado recibido:', producto);
+    
+    setProductos((prev) => {
+      const updated = [...prev, producto];
+      console.log('Productos después de agregar:', updated);
+      return updated;
+    });
+    
+    setCollapsedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (producto.categoria_id) {
+        newSet.delete(producto.categoria_id);
+      }
+      return newSet;
+    });
+    
+    setIsCreating(false);
+    setNewProduct(null);
   };
 
   const toggleCategoryCollapse = (categoryId: number) => {
@@ -71,9 +115,43 @@ const ProductosPage = () => {
 
   return (
     <div className="productos-container">
-      <h1 className="productos-title">Productos</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+        <h1 className="productos-title">Productos</h1>
+        <button
+          className="btn-create-product"
+          onClick={handleCreateClick}
+          style={{
+            padding: "0.75rem 1.5rem",
+            backgroundColor: "#4CAF50",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "1rem",
+            fontWeight: "600",
+            cursor: "pointer",
+            transition: "background-color 0.3s ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#45a049")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4CAF50")}
+        >
+          + Nuevo Producto
+        </button>
+      </div>
 
       <ErrorAlert message={error} onClose={() => setError(null)} />
+
+      {newProduct && (
+        <ProductModal
+          producto={newProduct}
+          isOpen={isCreating}
+          onClose={() => {
+            setIsCreating(false);
+            setNewProduct(null);
+          }}
+          onSave={handleCreateProduct}
+          categorias={categorias}
+        />
+      )}
 
       {loading ? (
         <div className="skeleton-grid">

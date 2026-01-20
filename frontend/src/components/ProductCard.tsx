@@ -1,20 +1,20 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import type { Producto } from "../types/producto";
-import type { Categoria } from "../types/categoria";
+import type { Product } from "../types/product";
+import type { Category } from "../types/category";
 import ProductModal from "./ProductModal";
 import ErrorAlert from "./ErrorAlert";
-import { deleteProducto } from "../services/productsService";
+import { deactivateProducto } from "../services/productsService";
 import "../styles/product-card.css";
 import env from "../config/env";
 
 
 
 interface ProductCardProps {
-  producto: Producto;
-  onProductUpdate?: (producto: Producto) => void;
+  producto: Product;
+  onProductUpdate?: (producto: Product) => void;
   onProductDelete?: (productoId: number) => void;
-  categorias?: Categoria[];
+  categorias?: Category[];
 }
 
 const ProductCard = ({
@@ -30,6 +30,28 @@ const ProductCard = ({
 
   const imageUrl = producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png";
 
+  const formatPrecio = (value: number) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
+  const formatCantidad = (cantidad: number): string => {
+    switch (cantidad) {
+      case 1:
+        return "Unidad";
+      case 6:
+        return "1/2 Docena";
+      case 12:
+        return "Docena";
+      default:
+        return `${cantidad} unid.`;
+    }
+  };
+
   const handleOpenModal = () => {
     setIsModalOpen(true);
   };
@@ -38,26 +60,26 @@ const ProductCard = ({
     setIsModalOpen(false);
   };
 
-  const handleSaveProduct = (updatedProducto: Producto) => {
+  const handleSaveProduct = (updatedProducto: Product) => {
     if (onProductUpdate) {
       onProductUpdate(updatedProducto);
     }
     setIsModalOpen(false);
   };
 
-  const handleDeleteProduct = async () => {
+  const handleDeactivateProduct = async () => {
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      await deleteProducto(producto.id);
+      await deactivateProducto(producto.id);
       if (onProductDelete) {
         onProductDelete(producto.id);
       }
       setShowDeleteConfirm(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido al eliminar producto";
-      setDeleteError(`No se pudo eliminar: ${errorMessage}`);
-      console.error("Error eliminando producto:", error);
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al desactivar producto";
+      setDeleteError(`No se pudo desactivar: ${errorMessage}`);
+      console.error("Error desactivando producto:", error);
     } finally {
       setIsDeleting(false);
     }
@@ -70,17 +92,17 @@ const ProductCard = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        whileHover={{ scale: 1.08, y: -8 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.05, y: -5 }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleOpenModal}
       >
         <button
-          className="product-card-delete"
+          className="product-card-deactivate"
           onClick={(e) => {
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          title="Eliminar producto"
+          title="Desactivar producto"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="3 6 5 6 21 6"></polyline>
@@ -97,7 +119,18 @@ const ProductCard = ({
         <div className="product-card-body">
           <h3 className="product-card-title">{producto.nombre.toUpperCase()}</h3>
 
-          <p className="product-card-price">${producto.precio_venta.toFixed(2)}</p>
+          <div className="product-card-prices">
+            {producto.precios && producto.precios.length > 0 ? (
+              producto.precios.map((precio_item) => (
+                <div key={precio_item.id} className="price-item">
+                  <span className="price-cantidad">{formatCantidad(precio_item.cantidad)}</span>
+                  <span className="price-amount">{formatPrecio(precio_item.precio)}</span>
+                </div>
+              ))
+            ) : (
+              <div className="price-item no-price">Sin precios</div>
+            )}
+          </div>
 
           <button
             className="product-card-btn"
@@ -135,12 +168,11 @@ const ProductCard = ({
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="confirm-title">⚠️ Eliminar Producto</h3>
+                <h3 className="confirm-title">⚠️ Desactivar Producto</h3>
               <p className="confirm-message">
-                ¿Está seguro que desea eliminar{" "}
+                ¿Está seguro que desea desactivar{" "}
                 <strong>{producto.nombre}</strong>?
               </p>
-              <p className="confirm-warning">Esta acción no se puede deshacer.</p>
 
               <div className="confirm-actions">
                 <button
@@ -151,11 +183,11 @@ const ProductCard = ({
                   Cancelar
                 </button>
                 <button
-                  className="confirm-delete-btn"
-                  onClick={handleDeleteProduct}
+                  className="confirm-deactivate-btn"
+                  onClick={handleDeactivateProduct}
                   disabled={isDeleting}
                 >
-                  {isDeleting ? "Eliminando..." : "Eliminar"}
+                  {isDeleting ? "Desactivando..." : "Desactivar"}
                 </button>
               </div>
             </motion.div>

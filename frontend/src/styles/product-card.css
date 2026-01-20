@@ -1,5 +1,16 @@
+/* ================================================================
+   PRODUCT-CARD.CSS - Estilos para la página de productos y tarjetas
+   ================================================================
+   Contiene estilos para:
+   - Contenedor principal de productos
+   - Categorías y sus tarjetas de productos
+   - Scroll horizontal de productos
+   - Cards individuales de productos
+   ================================================================ */
+
 /* ===== CONTENEDOR GENERAL ===== */
 
+/* Contenedor principal de la página de productos con gradiente */
 .productos-container {
   padding: 40px 32px;
   min-height: 100vh;
@@ -7,6 +18,7 @@
   color: white;
 }
 
+/* Título principal de la página */
 .productos-title {
   font-size: 2.6rem;
   font-weight: 800;
@@ -18,6 +30,7 @@
   text-shadow: 0 0 12px rgba(109, 255, 122, 0.6);
 }
 
+/* Mensaje cuando no hay productos */
 .empty-state {
   text-align: center;
   font-size: 1.2rem;
@@ -28,10 +41,12 @@
 
 /* ===== CATEGORÍAS ===== */
 
+/* Sección de cada categoría con sus productos */
 .categoria-section {
   margin-bottom: 56px;
 }
 
+/* Header de la categoría con título y botón de colapsar */
 .categoria-header {
   display: flex;
   align-items: center;
@@ -39,6 +54,7 @@
   margin-bottom: 24px;
 }
 
+/* Título de la categoría con borde rojo lateral */
 .categoria-title {
   font-size: 1.9rem;
   font-weight: 700;
@@ -48,6 +64,7 @@
   margin: 0;
 }
 
+/* Botón para colapsar/expandir categoría */
 .categoria-toggle {
   background: linear-gradient(135deg, #ff3b3b, #ff5252);
   border: 2px solid #ff1744;
@@ -66,6 +83,7 @@
   flex-shrink: 0;
 }
 
+/* Hover del botón toggle */
 .categoria-toggle:hover {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
   transform: scale(1.1);
@@ -73,20 +91,24 @@
   border-color: #ff6b6b;
 }
 
+/* Estado activo del botón toggle */
 .categoria-toggle:active {
   transform: scale(0.95);
 }
 
+/* Estado normal (expandido) del toggle */
 .categoria-toggle {
   transform: rotate(0deg);
 }
 
+/* Estado colapsado con rotación */
 .categoria-toggle.collapsed {
   transform: rotate(-90deg);
 }
 
 /* ===== SCROLL HORIZONTAL ===== */
 
+/* Contenedor con scroll horizontal para las tarjetas de producto */
 .scroll-horizontal {
   display: flex;
   gap: 24px;
@@ -99,46 +121,53 @@
   scrollbar-color: #ff3b3b rgba(255, 59, 59, 0.2);
 }
 
+/* Altura de la scrollbar en Chrome */
 .scroll-horizontal::-webkit-scrollbar {
   height: 10px;
 }
 
+/* Track de la scrollbar */
 .scroll-horizontal::-webkit-scrollbar-track {
   background: rgba(255, 59, 59, 0.1);
   border-radius: 10px;
 }
 
+/* Thumb (barra deslizante) de la scrollbar */
 .scroll-horizontal::-webkit-scrollbar-thumb {
   background: #ff3b3b;
   border-radius: 10px;
   border: 2px solid rgba(255, 59, 59, 0.3);
 }
 
+/* Hover del thumb de la scrollbar */
 .scroll-horizontal::-webkit-scrollbar-thumb:hover {
   background: #ff5252;
 }
 
 /* ===== PRODUCT CARD ===== */
 
+/* Tarjeta individual de producto */
 .product-card {
   flex: 0 0 240px;
   background: linear-gradient(145deg, #1e1e1e, #121212);
   border-radius: 18px;
-  padding: 16px;
+  padding: 14px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
   cursor: pointer;
   transition: box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   position: relative;
 }
 
+/* Hover de la tarjeta con sombra roja */
 .product-card:hover {
   box-shadow: 0 18px 40px rgba(255, 59, 59, 0.35);
 }
 
-.product-card-delete {
+/* Botón de eliminar en la esquina superior izquierda */
+.product-card-deactivate {
   position: absolute;
   top: 12px;
   left: 12px;
@@ -158,25 +187,29 @@
   line-height: 1;
 }
 
-.product-card-delete svg {
+/* Icono SVG dentro del botón eliminar */
+.product-card-deactivate svg {
   stroke: white;
   width: 18px;
   height: 18px;
 }
 
-.product-card-delete:hover {
+/* Hover del botón eliminar con rotación */
+.product-card-deactivate:hover {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
   transform: scale(1.15) rotate(10deg);
   box-shadow: 0 6px 18px rgba(255, 59, 59, 0.5);
   border-color: #ff6b6b;
 }
 
-.product-card-delete:active {
+/* Estado activo del botón desactivar */
+.product-card-deactivate:active {
   transform: scale(0.95);
 }
 
 /* ===== PRODUCT CARD IMAGE ===== */
 
+/* Contenedor de la imagen del producto */
 .product-card-image {
   width: 100%;
   height: 170px;
@@ -186,6 +219,7 @@
   flex-shrink: 0;
 }
 
+/* Imagen del producto con zoom al hover */
 .product-card-image img {
   width: 100%;
   height: 100%;
@@ -193,12 +227,14 @@
   transition: transform 0.3s ease;
 }
 
+/* Zoom de la imagen al hacer hover en la card */
 .product-card:hover .product-card-image img {
   transform: scale(1.08);
 }
 
 /* ===== PRODUCT CARD BODY ===== */
 
+/* Cuerpo de la tarjeta con información del producto */
 .product-card-body {
   display: flex;
   flex-direction: column;
@@ -207,14 +243,15 @@
   justify-content: space-between;
 }
 
+/* Nombre del producto en rojo con efecto brillante */
 .product-card-title {
   font-size: 1.1rem;
   font-weight: 700;
   text-align: center;
-  color: #f5f5f5;
+  color: #ff3b3b;
   text-transform: uppercase;
   letter-spacing: 1px;
-  text-shadow: 0 0 20px rgba(109, 255, 122, 0.4), 0 0 40px rgba(109, 255, 122, 0.2);
+  text-shadow: 0 0 14px rgba(255, 82, 82, 0.5);
   margin: 0;
   line-height: 1.3;
   min-height: 44px;
@@ -223,14 +260,55 @@
   justify-content: center;
 }
 
-.product-card-price {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #ff3b3b;
-  text-align: center;
-  margin: 0;
+/* Contenedor de los precios del producto */
+.product-card-prices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 50px;
+  justify-content: center;
 }
 
+/* Item individual de precio (cantidad + monto) */
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #171717, #111111);
+  border: 1px solid rgba(255, 59, 59, 0.18);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+/* Texto de la cantidad del precio (ej: "1/2 Molde") */
+.price-cantidad {
+  color: #e8e8e8;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.78;
+}
+
+/* Monto del precio en dinero */
+.price-amount {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+}
+
+/* Estilo cuando no hay precio disponible */
+.price-item.no-price {
+  justify-content: center;
+  color: #888;
+  font-style: italic;
+  background: none;
+  border: 1px dashed #666;
+}
+
+/* Botón de ver detalles del producto */
 .product-card-btn {
   background: linear-gradient(135deg, #6dff7a, #4ade80);
   border: none;
@@ -245,140 +323,61 @@
   letter-spacing: 1px;
 }
 
+/* Hover del botón con efecto verde brillante */
 .product-card-btn:hover {
   background: linear-gradient(135deg, #4ade80, #22c55e);
   transform: scale(1.05);
   box-shadow: 0 6px 20px rgba(109, 255, 122, 0.4);
 }
 
+/* Estado activo del botón */
 .product-card-btn:active {
   transform: scale(0.98);
 }
 
 /* ===== RESPONSIVE ===== */
 
+/* Ajustes para tablets y móviles */
 @media (max-width: 768px) {
+  /* Padding reducido en dispositivos móviles */
   .productos-container {
     padding: 24px 16px;
   }
 
+  /* Título más pequeño en móviles */
   .productos-title {
     font-size: 2rem;
     margin-bottom: 28px;
   }
 
+  /* Título de categoría más pequeño */
   .categoria-title {
     font-size: 1.5rem;
     margin-bottom: 18px;
   }
 
+  /* Menor espacio entre cards en scroll */
   .scroll-horizontal {
     gap: 16px;
   }
 
+  /* Tamaño de card optimizado para móvil */
   .product-card {
     flex: 0 0 200px;
   }
 
+  /* Altura reducida de imagen en móviles */
   .product-card-image {
     height: 140px;
   }
 
+  /* Título de producto más pequeño */
   .product-card-title {
     font-size: 0.95rem;
   }
 
+  /* Precio más pequeño en móviles */
   .product-card-price {
     font-size: 1.2rem;
   }
-}
-
-/* ===== SHARED FORM STYLES ===== */
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #f5f5f5;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 14px;
-  background: #0d0d0d;
-  border: 2px solid #ff3b3b;
-  border-radius: 8px;
-  color: #f5f5f5;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #ff5252;
-  background: #121212;
-  box-shadow: 0 0 20px rgba(255, 59, 59, 0.3);
-}
-
-.form-input::placeholder {
-  color: #666;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.form-save-btn,
-.form-cancel-btn {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.form-save-btn {
-  background: linear-gradient(135deg, #6dff7a, #4ade80);
-  color: #1a1a1a;
-}
-
-.form-save-btn:hover {
-  background: linear-gradient(135deg, #4ade80, #22c55e);
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(74, 222, 128, 0.3);
-}
-
-.form-save-btn:active {
-  transform: scale(0.98);
-}
-
-.form-cancel-btn {
-  background: rgba(255, 59, 59, 0.2);
-  color: #ff3b3b;
-  border: 2px solid #ff3b3b;
-}
-
-.form-cancel-btn:hover {
-  background: rgba(255, 59, 59, 0.3);
-  box-shadow: 0 6px 20px rgba(255, 59, 59, 0.2);
-}
-
-.form-cancel-btn:active {
-  transform: scale(0.98);
 }

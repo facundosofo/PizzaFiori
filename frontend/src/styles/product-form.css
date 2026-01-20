@@ -1,5 +1,14 @@
-/* ===== PRODUCT FORM ===== */
+/* ================================================================
+   PRODUCT-FORM.CSS - Estilos para el formulario de producto
+   ================================================================
+   Contiene estilos específicos para el componente de formulario
+   de creación de productos. Los estilos compartidos de formulario
+   están en shared.css
+   ================================================================ */
 
+/* ===== PRODUCT FORM CONTAINER ===== */
+
+/* Contenedor principal del formulario de producto con gradiente oscuro */
 .product-form {
   background: linear-gradient(145deg, #1e1e1e, #121212);
   border-radius: 16px;
@@ -10,6 +19,7 @@
   border: 1px solid rgba(255, 59, 59, 0.2);
 }
 
+/* Título del formulario con texto brillante */
 .product-form h2 {
   font-size: 1.8rem;
   font-weight: 800;
@@ -19,96 +29,4 @@
   margin: 0 0 24px 0;
   text-align: center;
   text-shadow: 0 0 20px rgba(109, 255, 122, 0.4);
-}
-
-/* ===== FORM ERROR ===== */
-
-.form-error {
-  background: rgba(255, 59, 59, 0.2);
-  border: 2px solid #ff3b3b;
-  border-radius: 8px;
-  color: #ff9999;
-  padding: 12px 14px;
-  margin-bottom: 20px;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-/* Clases de formulario compartidas en product-card.css */
-
-/* ===== FILE INPUT ===== */
-
-.file-input-wrapper {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
-.file-input {
-  display: none;
-}
-
-.file-label {
-  display: block;
-  padding: 12px 14px;
-  background: #0d0d0d;
-  border: 2px solid #ff3b3b;
-  border-radius: 8px;
-  color: #f5f5f5;
-  text-align: center;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 0.95rem;
-}
-
-.file-label:hover {
-  border-color: #ff5252;
-  background: #121212;
-  box-shadow: 0 0 20px rgba(255, 59, 59, 0.3);
-}
-
-.file-input-wrapper:has(.file-input:disabled) .file-label {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #0a0a0a;
-}
-
-/* ===== IMAGE PREVIEW ===== */
-
-.image-preview {
-  width: 100%;
-  margin: 16px 0;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-}
-
-.image-preview img {
-  width: 100%;
-  height: 250px;
-  object-fit: cover;
-  display: block;
-}
-
-/* ===== RESPONSIVE ===== */
-
-@media (max-width: 480px) {
-  .product-form {
-    padding: 20px;
-  }
-
-  .product-form h2 {
-    font-size: 1.4rem;
-  }
-
-  .image-preview img {
-    height: 200px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
 }
