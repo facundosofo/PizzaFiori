@@ -92,8 +92,8 @@ const ProductCard = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        whileHover={{ scale: 1.08, y: -8 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.05, y: -5 }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleOpenModal}
       >
         <button
