@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy import Column, ForeignKey, Integer, Numeric, DateTime
 from sqlalchemy.orm import relationship
-from app.infrastructure.database import Base
-from datetime import datetime
+
+from app.domain.models.base import Base
 
 class ProductPrice(Base):
     __tablename__ = "ProductoPrecios"

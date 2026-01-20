@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Depends, UploadFile, Form, File, HTTPException, status, Path, Query, Body
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, UploadFile, Form, File, HTTPException, status, Path, Query
+from dependency_injector.wiring import inject, Provide
 from typing import List, Optional
 import json
 
-from app.infrastructure.database import get_db
 from app.application.product_service import ProductService, ServiceResult
-from app.infrastructure.file_service import FileService
-from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest, ProductoResponse, ProductoPrecioRequest
+from app.containers import Container
+from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest, ProductoResponse
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
-file_service = FileService()
 
 
 @router.post(
@@ -20,15 +18,15 @@ file_service = FileService()
     description="Crea un producto nuevo con precios escalonados.",
     responses={400: {"description": "Datos inválidos del producto"}}
 )
+@inject
 async def create_producto(
     nombre: str = Form(...),
     categoria_id: int = Form(...),
     descripcion: Optional[str] = Form(None),
     precios: str = Form(..., description='Ej: [{"cantidad":1,"precio":1200}]'),
     imagen: Optional[UploadFile] = File(None),
-    db: AsyncSession = Depends(get_db)
+    service: ProductService = Depends(Provide[Container.product_service]),
 ):
-    service = ProductService(db, file_service)
 
     try:
         precios_list = json.loads(precios)
@@ -61,12 +59,12 @@ async def create_producto(
     summary="Obtener todos los productos",
     description="Devuelve la lista de productos.",
 )
+@inject
 async def get_productos(
     categoria: Optional[int] = Query(None, description="ID de la categoría para filtrar"),
     active: Optional[bool] = Query(None, description="Filtrar por estado activo/inactivo"),
-    db: AsyncSession = Depends(get_db)
+    service: ProductService = Depends(Provide[Container.product_service]),
 ):
-    service = ProductService(db, file_service)
     return await service.get_all(
         categoria_id=categoria,
         active=active
@@ -81,11 +79,11 @@ async def get_productos(
     description="Devuelve un producto específico por su ID.",
     responses={404: {"description": "Producto no encontrado"}}
 )
+@inject
 async def get_producto(
     producto_id: int = Path(..., ge=1, description="ID único del producto"),
-    db: AsyncSession = Depends(get_db)
+    service: ProductService = Depends(Provide[Container.product_service]),
 ):
-    service = ProductService(db, file_service)
 
     result: ServiceResult = await service.get_by_id(producto_id)
     if result.error:
@@ -104,6 +102,7 @@ async def get_producto(
     summary="Actualizar un producto",
     responses={404: {"description": "Producto no encontrado"}}
 )
+@inject
 async def update_producto(
     producto_id: int = Path(..., ge=1),
     nombre: Optional[str] = Form(None),
@@ -116,10 +115,8 @@ async def update_producto(
     ),
 
     imagen: Optional[UploadFile] = File(None),
-    db: AsyncSession = Depends(get_db)
+    service: ProductService = Depends(Provide[Container.product_service]),
 ):
-    service = ProductService(db, file_service)
-
     precios_list = None
     if precios is not None:
         try:
@@ -159,11 +156,11 @@ async def update_producto(
         200: {"description": "Producto desactivado correctamente"}
     }
 )
+@inject
 async def delete_producto(
     producto_id: int = Path(..., ge=1, description="ID del producto a desactivar"),
-    db: AsyncSession = Depends(get_db)
+    service: ProductService = Depends(Provide[Container.product_service]),
 ):
-    service = ProductService(db, file_service)
 
     result: ServiceResult = await service.soft_delete(producto_id)
     if result.error:

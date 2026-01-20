@@ -5,6 +5,10 @@ from fastapi.staticfiles import StaticFiles
 from .presentation.routers.product_router import router as product_router
 from .presentation.routers.category_router import router as category_router
 from app.domain import *
+from app.containers import Container
+
+container = Container()
+container.wire()
 
 app = FastAPI(title="PizzaFiori API")
 

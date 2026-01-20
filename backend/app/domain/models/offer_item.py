@@ -1,6 +1,7 @@
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship
-from app.infrastructure.database import Base
+
+from app.domain.models.base import Base
 
 class OfferItem(Base):
     __tablename__ = "OfertaItems"

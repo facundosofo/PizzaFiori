@@ -1,5 +1,5 @@
 from decimal import Decimal
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from datetime import datetime
 from typing import List, Optional
 
@@ -19,7 +19,7 @@ class ProductoPrecioResponse(BaseModel):
     precio: Decimal
 
     class Config:
-        from_attributes = True
+        model_config = ConfigDict(from_attributes=True)
 
 # ======================================================
 # Request Models
@@ -84,4 +84,4 @@ class ProductoResponse(BaseModel):
     fecha_creacion: datetime
 
     class Config:
-        from_attributes = True
+        model_config = ConfigDict(from_attributes=True)

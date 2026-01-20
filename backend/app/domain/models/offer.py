@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy import Column, Integer, String, Numeric, Boolean, DateTime
 from sqlalchemy.orm import relationship
-from app.infrastructure.database import Base
-from datetime import datetime
+
+from app.domain.models.base import Base
 
 class Offer(Base):
     __tablename__ = "Ofertas"
