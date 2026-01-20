@@ -1,6 +1,44 @@
 import env from "../config/env";
 import type { Product } from "../types/product";
 
+export const createProducto = async (
+  data: {
+    nombre: string;
+    categoria_id: number;
+    imagen?: File | null;
+    precios?: Array<{ cantidad: number; precio: number }>;
+  }
+): Promise<Product> => {
+  try {
+    const formData = new FormData();
+
+    formData.append("nombre", data.nombre);
+    formData.append("categoria_id", data.categoria_id.toString());
+    if (data.precios) formData.append("precios", JSON.stringify(data.precios));
+    if (data.imagen) formData.append("imagen", data.imagen);
+
+    const res = await fetch(`${env.API_BASE_URL}/productos`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errorMsg = res.status === 400
+        ? "Datos inválidos. Verifica que todos los campos sean correctos."
+        : res.status === 500
+        ? "Error al crear el producto. El administrador ha sido notificado."
+        : res.status === 503
+        ? "El servidor no está disponible. Intenta más tarde."
+        : "No se pudo crear el producto";
+      throw new Error(errorMsg);
+    }
+    return (await res.json()) as Product;
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+    console.error("Error creating producto:", err);
+    throw new Error(errorMessage);
+  }
+};
 
 export const getProductos = async (): Promise<Product[]> => {
   try {

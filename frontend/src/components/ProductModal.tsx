@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
-import { updateProducto } from "../services/productsService";
+import { updateProducto, createProducto } from "../services/productsService";
 import "../styles/product-modal.css";
 import env from "../config/env";
 
@@ -54,8 +54,8 @@ const ProductModal = ({
 
   useEffect(() => {
     if (producto && isOpen) {
-      setNombre(producto.nombre);
-      setCategoriaId(producto.categoria_id?.toString() || "");
+      setNombre(producto.nombre || "");
+      setCategoriaId(producto.categoria_id > 0 ? producto.categoria_id.toString() : "");
       setPrecios(producto.precios?.map(p => ({ cantidad: p.cantidad, precio: p.precio })) || []);
       setPreciosInput(producto.precios?.map(p => formatPrecio(p.precio)) || []);
       setPreviewImagen(
@@ -105,21 +105,27 @@ const ProductModal = ({
 
     setLoading(true);
     try {
-      const updatedData = {
+      const productData = {
         nombre: nombre.trim(),
         categoria_id: parseInt(categoriaId),
         precios: precios,
         imagen: imagen,
       };
 
-      const updatedProducto = await updateProducto(producto.id, updatedData);
+      let savedProducto: Product;
+      
+      if (producto.id === 0) {
+        savedProducto = await createProducto(productData);
+      } else {
+        savedProducto = await updateProducto(producto.id, productData);
+      }
       
       if (onSave) {
-        onSave(updatedProducto);
+        onSave(savedProducto);
       }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar los cambios");
+      setError(err instanceof Error ? err.message : "Error al guardar el producto");
     } finally {
       setLoading(false);
     }
@@ -145,7 +151,7 @@ const ProductModal = ({
             <button className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
 
             <div className="modal-header-edit">
-              <h2 className="modal-title">Editar Producto</h2>
+              <h2 className="modal-title">{producto.id === 0 ? "Nuevo Producto" : "Editar Producto"}</h2>
             </div>
 
             <div className="modal-image">
@@ -339,7 +345,7 @@ const ProductModal = ({
                       }}
                       disabled={loading}
                     >
-                      Cancelar cambio de imagen
+                      {producto.id === 0 ? "Quitar imagen" : "Cancelar cambio de imagen"}
                     </button>
                   )}
                 </div>
@@ -350,7 +356,7 @@ const ProductModal = ({
                     onClick={handleSave} 
                     disabled={loading}
                   >
-                    {loading ? "Guardando..." : "Actualizar Producto"}
+                    {loading ? "Guardando..." : producto.id === 0 ? "Crear Producto" : "Actualizar Producto"}
                   </button>
                   <button 
                     className="form-cancel-btn" 

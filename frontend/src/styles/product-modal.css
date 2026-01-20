@@ -287,6 +287,38 @@
   background: #0a0a0a;
 }
 
+.file-clear-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 59, 59, 0.15);
+  border: 1px solid rgba(255, 59, 59, 0.4);
+  border-radius: 8px;
+  color: #ff9999;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.file-clear-btn:hover:not(:disabled) {
+  background: rgba(255, 59, 59, 0.25);
+  border-color: rgba(255, 59, 59, 0.6);
+  color: #ffb3b3;
+  box-shadow: 0 0 15px rgba(255, 59, 59, 0.2);
+}
+
+.file-clear-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.file-clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Clases de formulario compartidas en product-card.css */
 
 /* ===== RESPONSIVE ===== */
