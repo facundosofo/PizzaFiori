@@ -316,7 +316,7 @@
 
 /* Estilos base compartidos para los botones de cancelar y eliminar */
 .confirm-cancel-btn,
-.confirm-delete-btn {
+.confirm-deactivate-btn {
   flex: 1;
   padding: 12px 16px;
   border: none;
@@ -348,27 +348,27 @@
   transform: scale(0.98);
 }
 
-/* Botón de confirmación de eliminación con gradiente rojo intenso */
-.confirm-delete-btn {
+/* Botón de confirmación de desactivación con gradiente rojo intenso */
+.confirm-deactivate-btn {
   background: linear-gradient(135deg, #ff3b3b, #ff5252);
   color: white;
 }
 
-/* Efecto hover del botón de confirmación de eliminación */
-.confirm-delete-btn:hover:not(:disabled) {
+/* Efecto hover del botón de confirmación de desactivación */
+.confirm-deactivate-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
   transform: scale(1.05);
   box-shadow: 0 8px 20px rgba(255, 59, 59, 0.4);
 }
 
-/* Efecto de presionado del botón de confirmación de eliminación */
-.confirm-delete-btn:active:not(:disabled) {
+/* Efecto de presionado del botón de confirmación de desactivación */
+.confirm-deactivate-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
 /* Estado deshabilitado para ambos botones del diálogo de confirmación */
 .confirm-cancel-btn:disabled,
-.confirm-delete-btn:disabled {
+.confirm-deactivate-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

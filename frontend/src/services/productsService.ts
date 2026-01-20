@@ -108,10 +108,10 @@ export const updateProducto = async (
   }
 };
 
-export const deleteProducto = async (id: number): Promise<void> => {
+export const deactivateProducto = async (id: number): Promise<void> => {
   try {
-    const res = await fetch(`${env.API_BASE_URL}/productos/${id}`, {
-      method: "DELETE",
+    const res = await fetch(`${env.API_BASE_URL}/productos/${id}/desactivar`, {
+      method: "PATCH",
       headers: {
         accept: "application/json",
       },
@@ -121,15 +121,15 @@ export const deleteProducto = async (id: number): Promise<void> => {
       const errorMsg = res.status === 404
         ? "Producto no encontrado"
         : res.status === 500
-        ? "Error al eliminar el producto. El administrador ha sido notificado."
+        ? "Error al desactivar el producto. El administrador ha sido notificado."
         : res.status === 503
         ? "El servidor no está disponible. Intenta más tarde."
-        : "No se pudo eliminar el producto";
+        : "No se pudo desactivar el producto";
       throw new Error(errorMsg);
     }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error deleting producto:", err);
+    console.error("Error deactivating producto:", err);
     throw new Error(errorMessage);
   }
 };

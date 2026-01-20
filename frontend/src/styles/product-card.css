@@ -167,7 +167,7 @@
 }
 
 /* Botón de eliminar en la esquina superior izquierda */
-.product-card-delete {
+.product-card-deactivate {
   position: absolute;
   top: 12px;
   left: 12px;
@@ -188,22 +188,22 @@
 }
 
 /* Icono SVG dentro del botón eliminar */
-.product-card-delete svg {
+.product-card-deactivate svg {
   stroke: white;
   width: 18px;
   height: 18px;
 }
 
 /* Hover del botón eliminar con rotación */
-.product-card-delete:hover {
+.product-card-deactivate:hover {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
   transform: scale(1.15) rotate(10deg);
   box-shadow: 0 6px 18px rgba(255, 59, 59, 0.5);
   border-color: #ff6b6b;
 }
 
-/* Estado activo del botón eliminar */
-.product-card-delete:active {
+/* Estado activo del botón desactivar */
+.product-card-deactivate:active {
   transform: scale(0.95);
 }
 
