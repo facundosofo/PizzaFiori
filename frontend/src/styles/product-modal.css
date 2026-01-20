@@ -33,20 +33,24 @@
   transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Efecto hover del botón de cantidad con fondo más claro y sombra interna */
 .qty-btn:hover {
   background: linear-gradient(180deg, rgba(50,50,50,0.95), rgba(35,35,35,0.95));
   box-shadow: 0 0 0 3px rgba(255,255,255,0.06) inset;
 }
 
+/* Efecto de presionado del botón de cantidad */
 .qty-btn:active {
   transform: translateY(1px);
 }
 
+/* Estado deshabilitado del botón de cantidad con opacidad reducida */
 .qty-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+/* Valor numérico centrado que muestra la cantidad actual */
 .qty-value {
   min-width: 40px;
   text-align: center;
@@ -55,6 +59,7 @@
 }
 /* ===== MODAL OVERLAY ===== */
 
+/* Capa de fondo oscuro semi-transparente que cubre toda la pantalla y contiene el modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -71,6 +76,7 @@
 
 /* ===== MODAL CONTENT ===== */
 
+/* Contenedor principal del modal con gradiente oscuro y bordes redondeados */
 .modal-content {
   background: linear-gradient(145deg, #1e1e1e, #121212);
   border-radius: 20px;
@@ -84,6 +90,7 @@
   position: relative;
 }
 
+/* Botón circular de cierre del modal en la esquina superior derecha con efecto de rotación */
 .modal-close {
   position: absolute;
   top: 16px;
@@ -103,6 +110,7 @@
   justify-content: center;
 }
 
+/* Efecto hover del botón cerrar con escala y rotación */
 .modal-close:hover {
   background: #ff3b3b;
   transform: scale(1.1) rotate(90deg);
@@ -110,6 +118,7 @@
 
 /* ===== MODAL IMAGE ===== */
 
+/* Contenedor para la imagen del producto con altura fija y fondo oscuro */
 .modal-image {
   width: 100%;
   height: 200px;
@@ -124,6 +133,7 @@
   position: relative;
 }
 
+/* Imagen del producto ajustada para contener sin deformar */
 .modal-image img {
   width: auto;
   height: 100%;
@@ -136,6 +146,7 @@
 
 /* ===== MODAL HEADER EDIT ===== */
 
+/* Encabezado del modal en modo edición con padding superior */
 .modal-header-edit {
   padding: 16px 20px 0 20px;
   text-align: center;
@@ -143,10 +154,12 @@
 
 /* ===== MODAL BODY ===== */
 
+/* Cuerpo principal del modal con padding para el contenido */
 .modal-body {
   padding: 16px 20px 20px 20px;
 }
 
+/* Título del producto en mayúsculas con efecto de sombra luminosa verde */
 .modal-title {
   font-size: 1.8rem;
   font-weight: 800;
@@ -158,6 +171,7 @@
   line-height: 1.3;
 }
 
+/* Precio del producto en formato grande y color rojo destacado */
 .modal-precio {
   font-size: 2rem;
   font-weight: 800;
@@ -165,12 +179,14 @@
   margin: 12px 0;
 }
 
+/* Nombre de la categoría del producto en color gris */
 .modal-categoria {
   font-size: 1rem;
   color: #aaa;
   margin: 16px 0 28px 0;
 }
 
+/* Botón principal de edición con gradiente rojo y efecto de escala al hover */
 .modal-edit-btn {
   width: 100%;
   background: linear-gradient(135deg, #ff3b3b, #ff5252);
@@ -187,26 +203,31 @@
   margin-top: 12px;
 }
 
+/* Efecto hover del botón de edición con escala y sombra */
 .modal-edit-btn:hover {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
   transform: scale(1.05);
   box-shadow: 0 8px 24px rgba(255, 59, 59, 0.4);
 }
 
+/* Efecto de presionado del botón de edición */
 .modal-edit-btn:active {
   transform: scale(0.98);
 }
 
+/* Duplicado del efecto de presionado del botón de edición */
 .modal-edit-btn:active {
   transform: scale(0.98);
 }
 
+/* Contenedor flex para los botones de acción del modal */
 .modal-actions {
   display: flex;
   gap: 12px;
   width: 100%;
 }
 
+/* Botón de eliminación con borde rojo y fondo semi-transparente */
 .modal-delete-btn {
   flex: 1;
   background: rgba(255, 59, 59, 0.2);
@@ -222,18 +243,21 @@
   letter-spacing: 1.5px;
 }
 
+/* Efecto hover del botón de eliminación con escala y sombra */
 .modal-delete-btn:hover {
   background: rgba(255, 59, 59, 0.3);
   transform: scale(1.05);
   box-shadow: 0 8px 24px rgba(255, 59, 59, 0.4);
 }
 
+/* Efecto de presionado del botón de eliminación */
 .modal-delete-btn:active {
   transform: scale(0.98);
 }
 
 /* ===== EDIT FORM ===== */
 
+/* Formulario de edición con animación de entrada fadeIn */
 .edit-form {
   animation: fadeIn 0.3s ease;
 }
@@ -251,6 +275,7 @@
 
 /* ===== FILE CLEAR BUTTON ===== */
 
+/* Botón para limpiar/eliminar el archivo seleccionado con estilo rojo tenue */
 .file-clear-btn {
   margin-top: 10px;
   width: 100%;
@@ -267,6 +292,7 @@
   letter-spacing: 0.5px;
 }
 
+/* Efecto hover del botón de limpiar archivo cuando no está deshabilitado */
 .file-clear-btn:hover:not(:disabled) {
   background: rgba(255, 59, 59, 0.25);
   border-color: rgba(255, 59, 59, 0.6);
@@ -274,10 +300,12 @@
   box-shadow: 0 0 15px rgba(255, 59, 59, 0.2);
 }
 
+/* Efecto de presionado del botón de limpiar archivo */
 .file-clear-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
+/* Estado deshabilitado del botón de limpiar archivo */
 .file-clear-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -305,6 +333,7 @@
 
 /* ===== CONFIRM DIALOG ===== */
 
+/* Capa de fondo oscuro para el diálogo de confirmación con desenfoque */
 .confirm-overlay {
   position: fixed;
   top: 0;
@@ -319,6 +348,7 @@
   backdrop-filter: blur(6px);
 }
 
+/* Ventana de diálogo de confirmación centrada con gradiente oscuro y borde rojo */
 .confirm-dialog {
   background: linear-gradient(145deg, #1e1e1e, #121212);
   border-radius: 16px;
@@ -331,6 +361,7 @@
   text-align: center;
 }
 
+/* Título del diálogo de confirmación en mayúsculas y color rojo */
 .confirm-title {
   font-size: 1.5rem;
   font-weight: 800;
@@ -340,6 +371,7 @@
   margin: 0 0 16px 0;
 }
 
+/* Mensaje principal del diálogo de confirmación */
 .confirm-message {
   font-size: 1.1rem;
   color: #f5f5f5;
@@ -347,11 +379,13 @@
   line-height: 1.5;
 }
 
+/* Texto destacado dentro del mensaje de confirmación en color verde */
 .confirm-message strong {
   color: #6dff7a;
   font-weight: 700;
 }
 
+/* Mensaje de advertencia en el diálogo de confirmación con color rojo claro */
 .confirm-warning {
   font-size: 0.9rem;
   color: #ff9999;
@@ -359,12 +393,14 @@
   font-weight: 600;
 }
 
+/* Contenedor flex para los botones de acción del diálogo de confirmación */
 .confirm-actions {
   display: flex;
   gap: 12px;
   width: 100%;
 }
 
+/* Estilos base compartidos para los botones de cancelar y eliminar */
 .confirm-cancel-btn,
 .confirm-delete-btn {
   flex: 1;
@@ -379,37 +415,44 @@
   letter-spacing: 1px;
 }
 
+/* Botón de cancelar con fondo gris y borde rojo tenue */
 .confirm-cancel-btn {
   background: rgba(255, 59, 59, 0.15);
   color: #aaa;
   border: 2px solid rgba(255, 59, 59, 0.2);
 }
 
+/* Efecto hover del botón cancelar cuando no está deshabilitado */
 .confirm-cancel-btn:hover:not(:disabled) {
   background: rgba(255, 59, 59, 0.1);
   color: #f5f5f5;
   border-color: rgba(255, 59, 59, 0.3);
 }
 
+/* Efecto de presionado del botón cancelar */
 .confirm-cancel-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
+/* Botón de confirmación de eliminación con gradiente rojo intenso */
 .confirm-delete-btn {
   background: linear-gradient(135deg, #ff3b3b, #ff5252);
   color: white;
 }
 
+/* Efecto hover del botón de confirmación de eliminación */
 .confirm-delete-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
   transform: scale(1.05);
   box-shadow: 0 8px 20px rgba(255, 59, 59, 0.4);
 }
 
+/* Efecto de presionado del botón de confirmación de eliminación */
 .confirm-delete-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
+/* Estado deshabilitado para ambos botones del diálogo de confirmación */
 .confirm-cancel-btn:disabled,
 .confirm-delete-btn:disabled {
   opacity: 0.6;
@@ -435,21 +478,27 @@
 }
 
 /* ===== CHAR COUNTER ===== */
+
+/* Contador de caracteres alineado a la derecha con color gris */
 .char-counter {
   font-size: 12px;
   text-align: right;
   color: #aaa;
 }
 
+/* Estado de advertencia del contador de caracteres en color naranja */
 .char-counter.warning {
   color: #ff9800;
 }
 
+/* Estado de error del contador de caracteres en color rojo */
 .char-counter.error {
   color: #ff5252;
 }
 
 /* ===== PRICES EDITOR ===== */
+
+/* Contenedor principal del editor de precios con scroll personalizado */
 .prices-editor {
   display: flex;
   flex-direction: column;
@@ -465,25 +514,30 @@
   scrollbar-color: #ff3b3b rgba(0, 0, 0, 0.3);
 }
 
+/* Ancho de la barra de scroll del editor de precios para navegadores webkit */
 .prices-editor::-webkit-scrollbar {
   width: 8px;
 }
 
+/* Pista/track de la barra de scroll con fondo oscuro */
 .prices-editor::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
 }
 
+/* Pulgar/thumb de la barra de scroll con gradiente rojo */
 .prices-editor::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #ff3b3b, #ff5252);
   border-radius: 4px;
   border: 2px solid rgba(0, 0, 0, 0.3);
 }
 
+/* Efecto hover del pulgar de la barra de scroll */
 .prices-editor::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
 }
 
+/* Fila individual del editor de precios con diseño en grid de 3 columnas */
 .price-edit-row {
   display: grid;
   grid-template-columns: 1fr 1fr 40px;
@@ -497,12 +551,14 @@
   position: relative;
 }
 
+/* Efecto hover de la fila de precio con borde y sombra más intensos */
 .price-edit-row:hover {
   border-color: rgba(255, 59, 59, 0.4);
   background: linear-gradient(145deg, rgba(30, 30, 30, 0.9), rgba(18, 18, 18, 0.7));
   box-shadow: 0 4px 12px rgba(255, 59, 59, 0.15);
 }
 
+/* Campo individual de edición de precio con disposición vertical centrada */
 .price-edit-field {
   display: flex;
   flex-direction: column;
@@ -511,6 +567,8 @@
   align-items: center;
   padding: 0;
 }
+
+/* Input de formulario dentro de las filas de precio con estilo oscuro y borde rojo */
 .price-edit-row .form-input {
   padding: 6px 10px;
   font-size: 0.95rem;
@@ -527,7 +585,7 @@
   line-height: 23px;
 }
 
-/* Match quantity control height with price input */
+/* Control de cantidad dentro del campo de precio con altura ajustada al input */
 .price-edit-field .quantity-control {
   min-height: auto;
   display: flex;
@@ -535,6 +593,7 @@
   gap: 8px;
 }
 
+/* Botón de cantidad dentro del campo de precio con tamaño específico */
 .price-edit-field .qty-btn {
   width: 32px;
   height: 32px;
@@ -542,11 +601,13 @@
   padding: 0;
 }
 
+/* Valor de cantidad dentro del campo de precio */
 .price-edit-field .qty-value {
   line-height: 32px;
   font-size: 1rem;
 }
 
+/* Estado de foco del input de precio con borde y sombra destacados */
 .price-edit-row .form-input:focus {
   outline: none;
   border-color: rgba(255, 59, 59, 0.7);
@@ -554,10 +615,12 @@
   box-shadow: 0 0 16px rgba(255, 59, 59, 0.3);
 }
 
+/* Efecto hover del input de precio cuando no está deshabilitado */
 .price-edit-row .form-input:hover:not(:disabled) {
   border-color: rgba(255, 59, 59, 0.5);
 }
 
+/* Etiqueta descriptiva para los campos de precio en mayúsculas */
 .price-edit-label {
   font-size: 0.7rem;
   color: #aaa;
@@ -568,6 +631,7 @@
   line-height: 1;
 }
 
+/* Botón de eliminar precio con diseño cuadrado y gradiente rojo */
 .price-remove-btn {
   background: linear-gradient(135deg, #ff3b3b, #ff5252);
   border: 2px solid #ff1744;
@@ -587,6 +651,7 @@
   box-shadow: 0 2px 8px rgba(255, 59, 59, 0.2);
 }
 
+/* Efecto hover del botón eliminar precio con rotación y escala */
 .price-remove-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
   transform: scale(1.1) rotate(90deg);
@@ -594,10 +659,12 @@
   border-color: #ff6b6b;
 }
 
+/* Efecto de presionado del botón eliminar precio */
 .price-remove-btn:active:not(:disabled) {
   transform: scale(0.95) rotate(90deg);
 }
 
+/* Estado deshabilitado del botón eliminar precio en color gris */
 .price-remove-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -605,6 +672,7 @@
   border-color: #555;
 }
 
+/* Mensaje mostrado cuando no hay precios configurados */
 .no-prices-editor {
   padding: 24px;
   text-align: center;
@@ -616,6 +684,7 @@
   border: 1.5px dashed rgba(255, 59, 59, 0.3);
 }
 
+/* Botón para agregar nuevo precio con estilo verde y borde punteado */
 .price-add-btn {
   width: 100%;
   padding: 13px;
@@ -633,6 +702,7 @@
   box-shadow: 0 2px 8px rgba(74, 222, 128, 0.1);
 }
 
+/* Efecto hover del botón agregar precio con borde sólido y elevación */
 .price-add-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(109, 255, 122, 0.25), rgba(74, 222, 128, 0.25));
   border-style: solid;
@@ -641,10 +711,12 @@
   transform: translateY(-2px);
 }
 
+/* Efecto de presionado del botón agregar precio */
 .price-add-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
+/* Estado deshabilitado del botón agregar precio con estilo gris apagado */
 .price-add-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
