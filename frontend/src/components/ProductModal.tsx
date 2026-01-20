@@ -1,17 +1,17 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import type { Producto } from "../types/producto";
-import type { Categoria } from "../types/categoria";
+import type { Product } from "../types/product";
+import type { Category } from "../types/category";
 import { updateProducto } from "../services/productsService";
 import "../styles/product-modal.css";
 import env from "../config/env";
 
 interface ProductModalProps {
-  producto: Producto | null;
+  producto: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (producto: Producto) => void;
-  categorias?: Categoria[];
+  onSave?: (producto: Product) => void;
+  categorias?: Category[];
 }
 
 const ProductModal = ({
@@ -49,23 +49,15 @@ const ProductModal = ({
     );
   };
 
-const parsePrecio = (value: string) => {
-  return Number(
-    value
-      .replace(/\$/g, "")
-      .replace(/\./g, "")
-      .replace(",", ".")
-      .trim()
-  );
-};
-
-
   useEffect(() => {
     if (producto && isOpen) {
       setNombre(producto.nombre);
-      setPrecio(producto.precio_venta);
-      setPrecioInput(formatPrecio(producto.precio_venta));
-      setCategoriaId(producto.categoria_id.toString());
+      const firstPrice = producto.precios && producto.precios.length > 0 
+        ? producto.precios[0].precio 
+        : 0;
+      setPrecio(Number(firstPrice));
+      setPrecioInput(formatPrecio(Number(firstPrice)));
+      setCategoriaId(producto.categoria_id?.toString() || "");
       setPreviewImagen(
         producto.imagen
           ? `${env.API_BASE_URL}/${producto.imagen}`
@@ -82,13 +74,11 @@ const parsePrecio = (value: string) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
-      // Validar tipo de archivo
       if (!selected.type.startsWith("image/")) {
         setError("Por favor, selecciona una imagen válida.");
         return;
       }
       
-      // Validar tamaño (máx 5MB)
       if (selected.size > 5 * 1024 * 1024) {
         setError("La imagen no puede exceder 5MB.");
         return;

@@ -4,13 +4,13 @@ import { getCategorias } from "../services/categoriasService";
 import ProductCard from "../components/ProductCard";
 import SkeletonLoader from "../components/SkeletonLoader";
 import ErrorAlert from "../components/ErrorAlert";
-import type { Producto } from "../types/producto";
-import type { Categoria } from "../types/categoria";
+import type { Product } from "../types/product";
+import type { Category } from "../types/category";
 import "../styles/product-card.css";
 
 const ProductosPage = () => {
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [productos, setProductos] = useState<Product[]>([]);
+  const [categorias, setCategorias] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<number>>(new Set());
@@ -45,7 +45,7 @@ const ProductosPage = () => {
     fetchData();
   }, []);
 
-  const handleProductUpdate = (updatedProducto: Producto) => {
+  const handleProductUpdate = (updatedProducto: Product) => {
     setProductos((prevProductos) =>
       prevProductos.map((p) => (p.id === updatedProducto.id ? updatedProducto : p))
     );

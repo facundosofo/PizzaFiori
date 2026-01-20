@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import type { Producto } from "../types/producto";
-import type { Categoria } from "../types/categoria";
+import type { Product } from "../types/product";
+import type { Category } from "../types/category";
 import ProductModal from "./ProductModal";
 import ErrorAlert from "./ErrorAlert";
 import { deleteProducto } from "../services/productsService";
@@ -11,10 +11,10 @@ import env from "../config/env";
 
 
 interface ProductCardProps {
-  producto: Producto;
-  onProductUpdate?: (producto: Producto) => void;
+  producto: Product;
+  onProductUpdate?: (producto: Product) => void;
   onProductDelete?: (productoId: number) => void;
-  categorias?: Categoria[];
+  categorias?: Category[];
 }
 
 const ProductCard = ({
@@ -38,7 +38,7 @@ const ProductCard = ({
     setIsModalOpen(false);
   };
 
-  const handleSaveProduct = (updatedProducto: Producto) => {
+  const handleSaveProduct = (updatedProducto: Product) => {
     if (onProductUpdate) {
       onProductUpdate(updatedProducto);
     }
@@ -97,7 +97,11 @@ const ProductCard = ({
         <div className="product-card-body">
           <h3 className="product-card-title">{producto.nombre.toUpperCase()}</h3>
 
-          <p className="product-card-price">${producto.precio_venta.toFixed(2)}</p>
+          <p className="product-card-price">
+            ${producto.precios && producto.precios.length > 0 
+              ? Number(producto.precios[0].precio).toFixed(2) 
+              : "0.00"}
+          </p>
 
           <button
             className="product-card-btn"

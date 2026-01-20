@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import type { Producto } from "../types/producto";
+import type { Product } from "../types/product";
 import "../styles/product-form.css";
 import env from "../config/env";
 
 interface ProductFormProps {
-  producto?: Producto | null;
+  producto?: Product | null;
   categorias: { id: number; nombre: string }[];
-  onSave: (producto: Producto) => Promise<void>;
+  onSave: (producto: Product) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -17,8 +17,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
   onCancel,
 }) => {
   const [nombre, setNombre] = useState(producto?.nombre || "");
-  const [categoria, setCategoria] = useState(producto?.categoria_id.toString() || "");
-  const [precioVenta, setPrecioVenta] = useState(producto?.precio_venta.toString() || "");
+  const [categoria, setCategoria] = useState(producto?.categoria_id?.toString() || "");
+  const [precioVenta, setPrecioVenta] = useState(() => {
+    if (producto?.precios && producto.precios.length > 0) {
+      return producto.precios[0].precio.toString();
+    }
+    return "";
+  });
   const [preview, setPreview] = useState<string>(
     producto?.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : ""
   );
@@ -28,8 +33,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
   useEffect(() => {
     if (producto) {
       setNombre(producto.nombre);
-      setCategoria(producto.categoria_id.toString());
-      setPrecioVenta(producto.precio_venta.toString());
+      setCategoria(producto.categoria_id?.toString() || "");
+      if (producto.precios && producto.precios.length > 0) {
+        setPrecioVenta(producto.precios[0].precio.toString());
+      }
       if (producto.imagen) {
         setPreview(`${env.API_BASE_URL}/${producto.imagen}`);
       }
@@ -66,12 +73,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
         return;
       }
 
-      const nuevoProducto: Producto = {
+      const nuevoProducto: Product = {
         id: producto?.id || 0,
         nombre: nombre.trim(),
         categoria_id: parseInt(categoria),
-        precio_venta: parseFloat(precioVenta),
         imagen: producto?.imagen,
+        activo: producto?.activo ?? true,
+        fecha_creacion: producto?.fecha_creacion || new Date().toISOString(),
+        fecha_actualizacion: new Date().toISOString(),
       };
 
       await onSave(nuevoProducto);

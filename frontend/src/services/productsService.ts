@@ -1,8 +1,8 @@
 import env from "../config/env";
-import type { Producto } from "../types/producto";
+import type { Product } from "../types/product";
 
 
-export const getProductos = async (): Promise<Producto[]> => {
+export const getProductos = async (): Promise<Product[]> => {
   try {
     const res = await fetch(`${env.API_BASE_URL}/productos?active=true`);
     if (!res.ok) {
@@ -16,7 +16,7 @@ export const getProductos = async (): Promise<Producto[]> => {
       throw new Error(errorMsg);
     }
     const data = await res.json();
-    return data as Producto[];
+    return data as Product[];
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     console.error("Error fetching productos:", err);
@@ -34,7 +34,7 @@ export const updateProducto = async (
     descripcion?: string;
     activo?: boolean;
   }
-): Promise<Producto> => {
+): Promise<Product> => {
   try {
     const formData = new FormData();
 
@@ -62,7 +62,7 @@ export const updateProducto = async (
         : "No se pudo actualizar el producto";
       throw new Error(errorMsg);
     }
-    return (await res.json()) as Producto;
+    return (await res.json()) as Product;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     console.error("Error updating producto:", err);
