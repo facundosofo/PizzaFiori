@@ -34,7 +34,11 @@ class SqlAlchemyProductRepository(
         categoria_id: Optional[int] = None,
         active: Optional[bool] = None,
     ) -> List[Product]:
-        query = select(Product).options(selectinload(Product.precios))
+        query = (
+            select(Product)
+            .options(selectinload(Product.precios))
+            .order_by(Product.id.desc())
+        )
 
         conditions = []
         if active is not None:

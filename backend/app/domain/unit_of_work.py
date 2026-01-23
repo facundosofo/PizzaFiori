@@ -5,12 +5,14 @@ from abc import ABC, abstractmethod
 from app.domain.repositories.category_repository import AbstractCategoryRepository
 from app.domain.repositories.product_repository import AbstractProductRepository
 from app.domain.repositories.offer_repository import AbstractOfferRepository
+from app.domain.repositories.sale_repository import AbstractSaleRepository
 
 
 class AbstractUnitOfWork(ABC):
     product_repo: AbstractProductRepository
     category_repo: AbstractCategoryRepository
     offer_repo: AbstractOfferRepository
+    sale_repo: AbstractSaleRepository
 
     async def __aenter__(self):
         return self
