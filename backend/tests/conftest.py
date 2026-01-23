@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from httpx import AsyncClient
 from fastapi import FastAPI
 
-from app.main import app as application
+from app.main import app as application, container
 from app.containers import Container
 from tests.helpers import (
     build_category_model,
@@ -137,30 +137,109 @@ def mock_logger():
     return logger
 
 
+# ==================== Mock Application Service Fixtures ====================
+
+@pytest.fixture
+def mock_category_service():
+    """Mock CategoryService for router tests."""
+    service = MagicMock()
+    
+    # ServiceResult mock with default values
+    result = MagicMock()
+    result.error = None
+    result.status_code = 200
+    result.value = None
+    
+    service.create = AsyncMock(return_value=result)
+    service.get_all = AsyncMock(return_value=[])
+    service.get_by_id = AsyncMock(return_value=result)
+    service.update = AsyncMock(return_value=result)
+    service.delete = AsyncMock(return_value=result)
+    
+    return service
+
+
+@pytest.fixture
+def mock_product_service():
+    """Mock ProductService for router tests."""
+    service = MagicMock()
+    
+    # ServiceResult mock with default values
+    result = MagicMock()
+    result.error = None
+    result.status_code = 200
+    result.value = None
+    
+    service.create = AsyncMock(return_value=result)
+    service.get_all = AsyncMock(return_value=[])
+    service.get_by_id = AsyncMock(return_value=result)
+    service.update = AsyncMock(return_value=result)
+    
+    return service
+
+
+@pytest.fixture
+def mock_offer_service():
+    """Mock OfferService for router tests."""
+    service = MagicMock()
+    
+    # ServiceResult mock with default values
+    result = MagicMock()
+    result.error = None
+    result.status_code = 200
+    result.value = None
+    
+    service.create = AsyncMock(return_value=result)
+    service.get_all = AsyncMock(return_value=[])
+    service.get_by_id = AsyncMock(return_value=result)
+    service.update = AsyncMock(return_value=result)
+    
+    return service
+
+
+@pytest.fixture
+def mock_sale_service():
+    """Mock SaleService for router tests."""
+    service = MagicMock()
+    
+    # ServiceResult mock with default values
+    result = MagicMock()
+    result.error = None
+    result.status_code = 200
+    result.value = None
+    
+    service.create = AsyncMock(return_value=result)
+    service.get_all = AsyncMock(return_value=[])
+    service.get_by_id = AsyncMock(return_value=result)
+    
+    return service
+
+
 # ==================== FastAPI Test Client Fixtures ====================
 
-@pytest.fixture
-def test_container():
-    """Create a test container with mocked dependencies."""
-    container = Container()
-    return container
-
+# ==================== HTTP Client Fixture ====================
 
 @pytest.fixture
-async def async_client(test_container):
+async def async_client(mock_category_service, mock_product_service, mock_offer_service, mock_sale_service):
     """
     Async HTTP client for testing API endpoints.
-    Uses dependency overrides to inject mocked services.
+    Uses container overrides to inject mocked services.
     """
-    # Create a fresh app instance for testing
-    app = application
+    # Override services in the dependency-injector container
+    container.category_service.override(mock_category_service)
+    container.product_service.override(mock_product_service)
+    container.offer_service.override(mock_offer_service)
+    container.sale_service.override(mock_sale_service)
     
-    # Override container for testing
-    # Note: Services will be mocked individually in test files
-    # by overriding app.dependency_overrides
-    
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        yield client
+    try:
+        async with AsyncClient(app=application, base_url="http://test") as client:
+            yield client
+    finally:
+        # Reset overrides after test
+        container.category_service.reset_override()
+        container.product_service.reset_override()
+        container.offer_service.reset_override()
+        container.sale_service.reset_override()
 
 
 # ==================== Reusable Model Fixtures ====================
@@ -219,18 +298,6 @@ def sample_sale():
         numero_orden="ORD-001",
         total=6000.0
     )
-
-
-# ==================== Pytest Configuration ====================
-
-@pytest.fixture(autouse=True)
-def reset_dependency_overrides():
-    """
-    Automatically reset FastAPI dependency overrides after each test.
-    This ensures test isolation.
-    """
-    yield
-    application.dependency_overrides = {}
 
 
 # ==================== Helper Fixtures for Common Test Scenarios ====================
