@@ -32,6 +32,7 @@ Toda la documentación del proyecto se encuentra en la carpeta [`docs/`](docs/RE
 - **[🗄️ Base de Datos](docs/DIAGRAMA_BASE_DATOS.md)** - Modelo de datos y relaciones
 - **[⚙️ Instalación](docs/INSTALACION.md)** - Guía paso a paso de instalación
 - **[🔌 API](docs/API.md)** - Documentación completa de endpoints
+- **[🧪 Testing](docs/TESTING.md)** - Suite de tests y guía de testing
 - **[➕ Crear Endpoints](docs/GUIA_CREAR_ENDPOINT.md)** - Guía para agregar endpoints al backend
 - **[🎨 Crear Páginas Frontend](docs/GUIA_CREAR_PAGINA_FRONTEND.md)** - Guía para crear páginas en React
 
@@ -40,6 +41,27 @@ Toda la documentación del proyecto se encuentra en la carpeta [`docs/`](docs/RE
 - **Backend:** FastAPI (Python), SQLAlchemy, SQL Server
 - **Frontend:** React 19, TypeScript, Vite
 - **Arquitectura:** Clean Architecture
+- **Testing:** pytest, 86% coverage, 202 tests
+
+## 🧪 Testing
+
+```bash
+cd backend
+
+# Ejecutar todos los tests
+pytest tests/
+
+# Con coverage
+pytest tests/ --cov=app --cov-report=term-missing
+
+# Solo routers/services/schemas
+pytest tests/routers/ -v
+pytest tests/application/ -v
+pytest tests/presentation/schemas/ -v
+```
+
+**Estado:** ✅ 202 tests pasando | 86% coverage  
+**Documentación completa:** [docs/TESTING.md](docs/TESTING.md)
 
 ## 📁 Estructura del Proyecto
 
