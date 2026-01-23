@@ -14,12 +14,11 @@ class ProductoPrecioRequest(BaseModel):
     precio: Decimal = Field(...,gt=0,le=1_000_000,max_digits=10, decimal_places=2,description="Precio para la cantidad indicada")
 
 class ProductoPrecioResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     cantidad: int
     precio: Decimal
-
-    class Config:
-        model_config = ConfigDict(from_attributes=True)
 
 # ======================================================
 # Request Models
@@ -32,17 +31,21 @@ class ProductoCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validar_precios(self):
-        if not self.precios or len(self.precios) == 0:
-            raise ValueError("Debe existir al menos un precio") 
+        if not self.precios:
+            raise ValueError("Debe existir al menos un precio")
 
         cantidades = [p.cantidad for p in self.precios]
 
         if len(set(cantidades)) != len(cantidades):
+            raise ValueError("No se permiten cantidades duplicadas")
+
+        if 1 not in cantidades:
             raise ValueError(
-                "No se permiten cantidades duplicadas en precios"
+                "Debe existir un precio unitario"
             )
 
         return self
+
     
 
 
@@ -50,24 +53,25 @@ class ProductoUpdateRequest(BaseModel):
     nombre: Optional[str] = Field(None,min_length=1,max_length=255)
     categoria_id: Optional[int] = Field(None, gt=0)
     precios: Optional[List[ProductoPrecioRequest]] = None
-    activo: Optional[bool] = None
         
     @model_validator(mode="after")
     def validar_precios_update(self):
         if self.precios is not None:
-            if len(self.precios) == 0:
-                raise ValueError(
-                    "La lista de precios no puede estar vacía"
-                )
+            if not self.precios:
+                raise ValueError("La lista de precios no puede estar vacía")
 
             cantidades = [p.cantidad for p in self.precios]
 
             if len(set(cantidades)) != len(cantidades):
+                raise ValueError("No se permiten cantidades duplicadas")
+
+            if 1 not in cantidades:
                 raise ValueError(
-                    "No se permiten cantidades duplicadas en precios"
+                    "Debe existir un precio unitario"
                 )
 
         return self
+
 
 
 # ======================================================
@@ -75,6 +79,8 @@ class ProductoUpdateRequest(BaseModel):
 # ======================================================
 
 class ProductoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     nombre: str
     categoria_id: int
@@ -82,6 +88,3 @@ class ProductoResponse(BaseModel):
     imagen: Optional[str] = None
     activo: bool
     fecha_creacion: datetime
-
-    class Config:
-        model_config = ConfigDict(from_attributes=True)

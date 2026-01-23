@@ -33,6 +33,8 @@ const ProductModal = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
+  const [priceIndexToDelete, setPriceIndexToDelete] = useState<number | null>(null);
 
   const formatPrecio = (value: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -56,9 +58,17 @@ const ProductModal = ({
   useEffect(() => {
     if (producto && isOpen) {
       setNombre(producto.nombre || "");
-      setCategoriaId(producto.categoria_id > 0 ? producto.categoria_id.toString() : "");
-      setPrecios(producto.precios?.map(p => ({ cantidad: p.cantidad, precio: p.precio })) || []);
-      setPreciosInput(producto.precios?.map(p => formatPrecio(p.precio)) || []);
+      setCategoriaId(producto.categoria_id && producto.categoria_id > 0 ? producto.categoria_id.toString() : "");
+      
+      // Si es un producto nuevo (id = 0), inicializar con  un precio unitario
+      if (producto.id === 0) {
+        setPrecios([{ cantidad: 1, precio: 0 }]);
+        setPreciosInput([""]);
+      } else {
+        setPrecios(producto.precios?.map(p => ({ cantidad: p.cantidad, precio: p.precio })) || []);
+        setPreciosInput(producto.precios?.map(p => formatPrecio(p.precio)) || []);
+      }
+      
       setPreviewImagen(
         producto.imagen
           ? `${env.API_BASE_URL}/${producto.imagen}`
@@ -102,6 +112,19 @@ const ProductModal = ({
     if (precios.length === 0) return setError("Debes agregar al menos un precio");
     if (precios.some(p => p.cantidad <= 0 || p.precio <= 0)) {
       return setError("Cantidad y precio deben ser mayores a 0");
+    }
+
+    // Validar que existe precio unitario
+    const tienePrecioUnitario = precios.some(p => p.cantidad === 1);
+    if (!tienePrecioUnitario) {
+      return setError("Debe existir un precio unitario para el producto");
+    }
+
+    // Validar que no haya cantidades duplicadas
+    const cantidades = precios.map(p => p.cantidad);
+    const cantidadesUnicas = new Set(cantidades);
+    if (cantidades.length !== cantidadesUnicas.size) {
+      return setError("No se permiten cantidades duplicadas en los precios del producto");
     }
 
     setLoading(true);
@@ -181,14 +204,49 @@ const ProductModal = ({
                 </div>
 
                 <div className="form-group">
-                  <label>Precios:</label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <label>Precios:</label>
+                    <div className="info-tooltip">
+                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                      <div className="tooltip-content">
+                        Debe existir un precio unitario.<br />    
+                        No se permiten cantidades duplicadas.
+                      </div>
+                    </div>
+                  </div>
                   <div className="prices-editor">
                     {precios.length > 0 ? (
                       precios.map((precio_item, index) => (
                         <div key={index} className="price-edit-row">
 
                           <div className="price-edit-field">
-                            <label className="price-edit-label">Cantidad</label>
+                            <label className="price-edit-label">
+                              Cantidad
+                              {precio_item.cantidad === 1 && (
+                                <span className="unit-price-badge" title="Precio unitario obligatorio">
+                                  ★ Unitario
+                                </span>
+                              )}
+                              {precio_item.cantidad === 6 && (
+                                <span className="unit-price-badge" title="Precio por media docena">
+                                  ★ 1/2 Docena
+                                </span>
+                              )}
+                              {precio_item.cantidad === 12 && (
+                                <span className="unit-price-badge" title="Precio por docena">
+                                  ★ Docena
+                                </span>
+                              )}
+                              {precio_item.cantidad > 12 && precio_item.cantidad % 12 === 0 && (
+                                <span className="unit-price-badge" title={`Precio por ${precio_item.cantidad / 12} docenas`}>
+                                  ★ {precio_item.cantidad / 12} Docenas
+                                </span>
+                              )}
+                            </label>
                             <div className="quantity-control">
                               <button
                                 type="button"
@@ -204,7 +262,20 @@ const ProductModal = ({
                               >
                                 −
                               </button>
-                              <span className="qty-value">{precio_item.cantidad}</span>
+                              <input
+                                type="number"
+                                min="1"
+                                className="qty-input"
+                                value={precio_item.cantidad}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => {
+                                  const valor = parseInt(e.target.value) || 1;
+                                  const newPrecios = [...precios];
+                                  newPrecios[index].cantidad = Math.max(1, valor);
+                                  setPrecios(newPrecios);
+                                }}
+                                disabled={loading}
+                              />
                               <button
                                 type="button"
                                 className="qty-btn"
@@ -228,10 +299,11 @@ const ProductModal = ({
                               type="text"
                               inputMode="decimal"
                               value={preciosInput[index] || ""}
-                              onFocus={() => {
+                              onFocus={(e) => {
                                 const newInputs = [...preciosInput];
                                 newInputs[index] = precio_item.precio.toString().replace(".", ",");
                                 setPreciosInput(newInputs);
+                                setTimeout(() => e.target.select(), 0);
                               }}
                               onChange={(e) => {
                                 let value = e.target.value.replace(".", ",");
@@ -269,11 +341,19 @@ const ProductModal = ({
                             type="button"
                             className="price-remove-btn"
                             onClick={() => {
-                              setPrecios(precios.filter((_, i) => i !== index));
-                              setPreciosInput(preciosInput.filter((_, i) => i !== index));
+                              // Advertir si se intenta eliminar el precio unitario
+                              if (precio_item.cantidad === 1 && precios.length > 1) {
+                                setPriceIndexToDelete(index);
+                                setShowDeleteWarning(true);
+                              } else {
+                                setPrecios(precios.filter((_, i) => i !== index));
+                                setPreciosInput(preciosInput.filter((_, i) => i !== index));
+                              }
                             }}
-                            disabled={loading}
-                            title="Eliminar precio"
+                            disabled={loading || (precio_item.cantidad === 1 && precios.length === 1)}
+                            title={precio_item.cantidad === 1 && precios.length === 1 
+                              ? "No se puede eliminar el único precio unitario" 
+                              : "Eliminar precio"}
                           >
                             ✕
                           </button>
@@ -290,7 +370,16 @@ const ProductModal = ({
                     type="button"
                     className="price-add-btn"
                     onClick={() => {
-                      setPrecios([...precios, { cantidad: 1, precio: 0 }]);
+                      // Encontrar la siguiente cantidad disponible
+                      const cantidadesExistentes = precios.map(p => p.cantidad).sort((a, b) => a - b);
+                      let nuevaCantidad = 1;
+                      
+                      // Si ya existe cantidad 1, buscar la siguiente disponible
+                      if (cantidadesExistentes.includes(1)) {
+                        nuevaCantidad = cantidadesExistentes[cantidadesExistentes.length - 1] + 1;
+                      }
+                      
+                      setPrecios([...precios, { cantidad: nuevaCantidad, precio: 0 }]);
                       setPreciosInput([...preciosInput, ""]);
                     }}
                     disabled={loading}
@@ -370,6 +459,63 @@ const ProductModal = ({
               </div>
             </div>
           </motion.div>
+
+          {/* Diálogo de confirmación para eliminar precio unitario */}
+          <AnimatePresence>
+            {showDeleteWarning && (
+              <motion.div
+                className="modal-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  setShowDeleteWarning(false);
+                  setPriceIndexToDelete(null);
+                }}
+              >
+                <motion.div
+                  className="confirm-dialog"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="confirm-title">⚠️ Eliminar Precio unitario</h3>
+                  <p className="confirm-message">
+                    Estás eliminando el precio  <strong>Unitario</strong>.
+                  </p>
+                  <p className="confirm-warning">
+                    El producto debe tener un precio unitario obligatoriamente. 
+                    Asegúrate de agregar otro precio unitario.
+                  </p>
+                  <div className="confirm-actions">
+                    <button
+                      className="confirm-cancel-btn"
+                      onClick={() => {
+                        setShowDeleteWarning(false);
+                        setPriceIndexToDelete(null);
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      className="confirm-deactivate-btn"
+                      onClick={() => {
+                        if (priceIndexToDelete !== null) {
+                          setPrecios(precios.filter((_, i) => i !== priceIndexToDelete));
+                          setPreciosInput(preciosInput.filter((_, i) => i !== priceIndexToDelete));
+                        }
+                        setShowDeleteWarning(false);
+                        setPriceIndexToDelete(null);
+                      }}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>

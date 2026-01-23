@@ -51,7 +51,7 @@ class OfferService:
                     nombre=offer_create.nombre,
                     descripcion=offer_create.descripcion,
                     precio=offer_create.precio,
-                    activo=offer_create.activo,
+                    activo=True,
                     fecha_creacion=datetime.now(),
                     fecha_actualizacion=datetime.now(),
                     productos=[

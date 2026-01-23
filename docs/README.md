@@ -24,6 +24,9 @@ Bienvenido a la documentación completa del proyecto **PizzaFiori**, una aplicac
 - **[Guía para Crear Páginas Frontend](GUIA_CREAR_PAGINA_FRONTEND.md)**  
   Guía detallada paso a paso para crear nuevas páginas y componentes en el frontend React.
 
+- **[Testing](TESTING.md)**  
+  Suite completa de tests unitarios, guía de testing, comandos útiles y mejores prácticas.
+
 ## 🎯 Descripción del Proyecto
 
 PizzaFiori es una aplicación web desarrollada para gestionar productos, categorías, precios y ofertas de una pizzería. Está diseñada para ser simple de usar, incluso para usuarios sin conocimientos técnicos.
@@ -49,6 +52,7 @@ PizzaFiori es una aplicación web desarrollada para gestionar productos, categor
 - **Dependency Injection:** dependency-injector
 - **Logging:** structlog
 - **Validación:** Pydantic
+- **Testing:** pytest, pytest-asyncio, pytest-cov (86% coverage)
 
 ### Frontend
 
@@ -79,9 +83,16 @@ PizzaFiori/
 │   │   ├── presentation/    # Capa de presentación (routers, schemas)
 │   │   ├── containers.py    # Configuración de Dependency Injection
 │   │   └── main.py          # Punto de entrada
+│   ├── tests/               # Suite de tests (202 tests, 86% coverage)
+│   │   ├── application/     # Tests de servicios (64 tests)
+│   │   ├── presentation/    # Tests de schemas (80 tests)
+│   │   ├── routers/         # Tests de endpoints (58 tests)
+│   │   ├── conftest.py      # Fixtures globales
+│   │   └── helpers.py       # Utilidades para tests
 │   ├── alembic/             # Migraciones de base de datos
 │   ├── logs/                # Archivos de log
 │   ├── uploads/             # Archivos subidos (imágenes)
+│   ├── pytest.ini           # Configuración de pytest
 │   └── requirements.txt     # Dependencias Python
 │
 ├── frontend/                 # Frontend React
@@ -99,6 +110,7 @@ PizzaFiori/
     ├── DIAGRAMA_BASE_DATOS.md  # Modelo de datos
     ├── INSTALACION.md       # Guía de instalación
     ├── API.md               # Documentación de API
+    ├── TESTING.md           # Suite de tests y guía de testing
     ├── GUIA_CREAR_ENDPOINT.md  # Guía para crear endpoints
     └── GUIA_CREAR_PAGINA_FRONTEND.md  # Guía para crear páginas frontend
 ```

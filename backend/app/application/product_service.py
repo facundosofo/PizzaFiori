@@ -156,13 +156,16 @@ class ProductService:
                                 for precio in producto_update.precios
                             ],
                         )
+                        await uow.session.flush()
                         
                 if active is not None:
                     producto.activo = active
 
                 producto.fecha_actualizacion = datetime.now()
                 await uow.commit()
-                await uow.product_repo.refresh(producto, attribute_names=["precios"])
+                
+                if producto_update and producto_update.precios is not None:
+                    await uow.product_repo.refresh(producto, attribute_names=["precios"])
 
                 if image and ruta_imagen_vieja:
                     self.file_service.delete_file(ruta_imagen_vieja)
