@@ -1,0 +1,322 @@
+"""
+Helper functions and data builders for tests.
+Provides reusable functions to create test data objects.
+"""
+
+from datetime import datetime
+from decimal import Decimal
+from typing import Dict, List, Any, Optional
+from unittest.mock import MagicMock
+
+
+# ==================== Category Builders ====================
+
+def build_category_data(
+    id: int = 1,
+    nombre: str = "Empanadas",
+    descripcion: Optional[str] = "Empanadas artesanales"
+) -> Dict[str, Any]:
+    """Build category data dictionary for testing."""
+    return {
+        "id": id,
+        "nombre": nombre,
+        "descripcion": descripcion
+    }
+
+
+def build_category_model(
+    id: int = 1,
+    nombre: str = "Empanadas",
+    descripcion: Optional[str] = "Empanadas artesanales"
+) -> MagicMock:
+    """Build mock Category model instance."""
+    category = MagicMock()
+    category.id = id
+    category.nombre = nombre
+    category.descripcion = descripcion
+    return category
+
+
+# ==================== Product Builders ====================
+
+def build_product_price_data(
+    id: int = 1,
+    producto_id: int = 1,
+    cantidad: int = 1,
+    precio: float = 1200.0
+) -> Dict[str, Any]:
+    """Build product price data dictionary."""
+    return {
+        "id": id,
+        "producto_id": producto_id,
+        "cantidad": cantidad,
+        "precio": precio
+    }
+
+
+def build_product_data(
+    id: int = 1,
+    nombre: str = "Empanada de Carne",
+    categoria_id: int = 1,
+    imagen: Optional[str] = None,
+    activo: bool = True,
+    precios: Optional[List[Dict]] = None
+) -> Dict[str, Any]:
+    """Build product data dictionary for testing."""
+    if precios is None:
+        precios = [
+            {"cantidad": 1, "precio": 1200.0},
+            {"cantidad": 6, "precio": 6000.0},
+            {"cantidad": 12, "precio": 10800.0}
+        ]
+    
+    return {
+        "id": id,
+        "nombre": nombre,
+        "categoria_id": categoria_id,
+        "imagen": imagen,
+        "activo": activo,
+        "fecha_creacion": datetime.now(),
+        "fecha_actualizacion": datetime.now(),
+        "precios": precios
+    }
+
+
+def build_product_model(
+    id: int = 1,
+    nombre: str = "Empanada de Carne",
+    categoria_id: int = 1,
+    imagen: Optional[str] = None,
+    activo: bool = True,
+    precios: Optional[List] = None
+) -> MagicMock:
+    """Build mock Product model instance."""
+    product = MagicMock()
+    product.id = id
+    product.nombre = nombre
+    product.categoria_id = categoria_id
+    product.imagen = imagen
+    product.activo = activo
+    product.fecha_creacion = datetime.now()
+    product.fecha_actualizacion = datetime.now()
+    
+    if precios is None:
+        precios = [
+            build_product_price_model(1, id, 1, 1200.0),
+            build_product_price_model(2, id, 6, 6000.0),
+            build_product_price_model(3, id, 12, 10800.0)
+        ]
+    
+    product.precios = precios
+    product.categoria = None
+    return product
+
+
+def build_product_price_model(
+    id: int = 1,
+    producto_id: int = 1,
+    cantidad: int = 1,
+    precio: float = 1200.0
+) -> MagicMock:
+    """Build mock ProductPrice model instance."""
+    price = MagicMock()
+    price.id = id
+    price.producto_id = producto_id
+    price.cantidad = cantidad
+    price.precio = Decimal(str(precio))
+    price.fecha_creacion = datetime.now()
+    price.fecha_actualizacion = datetime.now()
+    return price
+
+
+# ==================== Offer Builders ====================
+
+def build_offer_item_data(
+    producto_id: int = 1,
+    cantidad: int = 6
+) -> Dict[str, Any]:
+    """Build offer item data dictionary."""
+    return {
+        "producto_id": producto_id,
+        "cantidad": cantidad
+    }
+
+
+def build_offer_data(
+    id: int = 1,
+    nombre: str = "Promo Docena",
+    descripcion: Optional[str] = "12 empanadas surtidas",
+    precio: float = 10000.0,
+    activo: bool = True,
+    productos: Optional[List[Dict]] = None
+) -> Dict[str, Any]:
+    """Build offer data dictionary for testing."""
+    if productos is None:
+        productos = [
+            {"producto_id": 1, "cantidad": 6},
+            {"producto_id": 2, "cantidad": 6}
+        ]
+    
+    return {
+        "id": id,
+        "nombre": nombre,
+        "descripcion": descripcion,
+        "precio": precio,
+        "activo": activo,
+        "fecha_creacion": datetime.now(),
+        "fecha_actualizacion": datetime.now(),
+        "productos": productos
+    }
+
+
+def build_offer_model(
+    id: int = 1,
+    nombre: str = "Promo Docena",
+    descripcion: Optional[str] = "12 empanadas surtidas",
+    precio: float = 10000.0,
+    activo: bool = True,
+    productos: Optional[List] = None
+) -> MagicMock:
+    """Build mock Offer model instance."""
+    offer = MagicMock()
+    offer.id = id
+    offer.nombre = nombre
+    offer.descripcion = descripcion
+    offer.precio = Decimal(str(precio))
+    offer.activo = activo
+    offer.fecha_creacion = datetime.now()
+    offer.fecha_actualizacion = datetime.now()
+    
+    if productos is None:
+        productos = [
+            build_offer_item_model(1, id, 1, 6),
+            build_offer_item_model(2, id, 2, 6)
+        ]
+    
+    offer.productos = productos
+    return offer
+
+
+def build_offer_item_model(
+    id: int = 1,
+    oferta_id: int = 1,
+    producto_id: int = 1,
+    cantidad: int = 6
+) -> MagicMock:
+    """Build mock OfferItem model instance."""
+    item = MagicMock()
+    item.id = id
+    item.oferta_id = oferta_id
+    item.producto_id = producto_id
+    item.cantidad = cantidad
+    return item
+
+
+# ==================== Sale Builders ====================
+
+def build_sale_item_data(
+    producto_id: Optional[int] = 1,
+    oferta_id: Optional[int] = None,
+    cantidad: int = 6,
+    precio_unitario: float = 1000.0,
+    subtotal: float = 6000.0
+) -> Dict[str, Any]:
+    """Build sale item data dictionary."""
+    return {
+        "producto_id": producto_id,
+        "oferta_id": oferta_id,
+        "cantidad": cantidad,
+        "precio_unitario": precio_unitario,
+        "subtotal": subtotal
+    }
+
+
+def build_sale_data(
+    id: int = 1,
+    numero_orden: Optional[str] = "ORD-001",
+    total: float = 6000.0,
+    items: Optional[List[Dict]] = None
+) -> Dict[str, Any]:
+    """Build sale data dictionary for testing."""
+    if items is None:
+        items = [
+            {
+                "producto_id": 1,
+                "oferta_id": None,
+                "cantidad": 6,
+                "precio_unitario": 1000.0,
+                "subtotal": 6000.0
+            }
+        ]
+    
+    return {
+        "id": id,
+        "numero_orden": numero_orden,
+        "total": total,
+        "fecha_creacion": datetime.now(),
+        "fecha_actualizacion": datetime.now(),
+        "items": items
+    }
+
+
+def build_sale_model(
+    id: int = 1,
+    numero_orden: Optional[str] = "ORD-001",
+    total: float = 6000.0,
+    items: Optional[List] = None
+) -> MagicMock:
+    """Build mock Sale model instance."""
+    sale = MagicMock()
+    sale.id = id
+    sale.numero_orden = numero_orden
+    sale.total = Decimal(str(total))
+    sale.fecha_creacion = datetime.now()
+    sale.fecha_actualizacion = datetime.now()
+    
+    if items is None:
+        items = [
+            build_sale_item_model(1, id, 1, None, 6, 1000.0, 6000.0)
+        ]
+    
+    sale.items = items
+    return sale
+
+
+def build_sale_item_model(
+    id: int = 1,
+    venta_id: int = 1,
+    producto_id: Optional[int] = 1,
+    oferta_id: Optional[int] = None,
+    cantidad: int = 6,
+    precio_unitario: float = 1000.0,
+    subtotal: float = 6000.0
+) -> MagicMock:
+    """Build mock SaleItem model instance."""
+    item = MagicMock()
+    item.id = id
+    item.venta_id = venta_id
+    item.producto_id = producto_id
+    item.oferta_id = oferta_id
+    item.cantidad = cantidad
+    item.precio_unitario = Decimal(str(precio_unitario))
+    item.subtotal = Decimal(str(subtotal))
+    return item
+
+
+# ==================== Assertion Helpers ====================
+
+def assert_service_result(result, expected_status: int, expected_data: Any = None):
+    """Assert that a ServiceResult has the expected status and data."""
+    assert result.status_code == expected_status, \
+        f"Expected status {expected_status}, got {result.status_code}"
+    
+    if expected_data is not None:
+        assert result.data == expected_data, \
+            f"Expected data {expected_data}, got {result.data}"
+
+
+def assert_mock_called_once(mock, method_name: str):
+    """Assert that a mock method was called exactly once."""
+    method = getattr(mock, method_name)
+    assert method.call_count == 1, \
+        f"Expected {method_name} to be called once, but was called {method.call_count} times"

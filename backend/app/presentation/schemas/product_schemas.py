@@ -14,12 +14,11 @@ class ProductoPrecioRequest(BaseModel):
     precio: Decimal = Field(...,gt=0,le=1_000_000,max_digits=10, decimal_places=2,description="Precio para la cantidad indicada")
 
 class ProductoPrecioResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     cantidad: int
     precio: Decimal
-
-    class Config:
-        model_config = ConfigDict(from_attributes=True)
 
 # ======================================================
 # Request Models
@@ -80,6 +79,8 @@ class ProductoUpdateRequest(BaseModel):
 # ======================================================
 
 class ProductoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     nombre: str
     categoria_id: int
@@ -87,6 +88,3 @@ class ProductoResponse(BaseModel):
     imagen: Optional[str] = None
     activo: bool
     fecha_creacion: datetime
-
-    class Config:
-        model_config = ConfigDict(from_attributes=True)

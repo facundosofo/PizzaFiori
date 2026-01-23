@@ -1,8 +1,13 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8"
+    )
+    
     app_name: str
     env: str
     debug: bool
@@ -14,10 +19,6 @@ class Settings(BaseSettings):
     # Logging settings
     log_dir: str = "logs"
     log_file: str = "app.log"
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
 
 settings = Settings()
