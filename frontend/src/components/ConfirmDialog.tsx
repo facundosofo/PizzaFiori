@@ -3,24 +3,30 @@ import "../styles/confirm-dialog.css";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
-  title: string;
-  message: string;
+  title: React.ReactNode;
+  message: React.ReactNode;
+  warning?: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
   onCancel: () => void;
   confirmDanger?: boolean;
+  confirmDisabled?: boolean;
+  cancelDisabled?: boolean;
 }
 
 const ConfirmDialog = ({
   isOpen,
   title,
   message,
+  warning,
   confirmText = "Confirmar",
   cancelText = "Cancelar",
   onConfirm,
   onCancel,
   confirmDanger = false,
+  confirmDisabled = false,
+  cancelDisabled = false,
 }: ConfirmDialogProps) => {
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -47,21 +53,22 @@ const ConfirmDialog = ({
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="confirm-header">
-              <h3>{title}</h3>
-            </div>
-
-            <div className="confirm-body">
-              <p>{message}</p>
-            </div>
+            <h3 className="confirm-title">{title}</h3>
+            <p className="confirm-message">{message}</p>
+            {warning ? <p className="confirm-warning">{warning}</p> : null}
 
             <div className="confirm-actions">
-              <button className="confirm-btn cancel" onClick={onCancel}>
+              <button
+                className="confirm-cancel-btn"
+                onClick={onCancel}
+                disabled={cancelDisabled}
+              >
                 {cancelText}
               </button>
               <button
-                className={`confirm-btn ${confirmDanger ? "danger" : "primary"}`}
+                className={confirmDanger ? "confirm-deactivate-btn" : "confirm-confirm-btn"}
                 onClick={onConfirm}
+                disabled={confirmDisabled}
               >
                 {confirmText}
               </button>

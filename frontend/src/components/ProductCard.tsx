@@ -1,9 +1,10 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import ProductModal from "./ProductModal";
 import ErrorAlert from "./ErrorAlert";
+import ConfirmDialog from "./ConfirmDialog";
 import { TrashIcon } from "./Icons";
 import { deactivateProducto } from "../services/productsService";
 import "../styles/product-card.css";
@@ -148,48 +149,22 @@ const ProductCard = ({
         categorias={categorias}
       />
 
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => !isDeleting && setShowDeleteConfirm(false)}
-          >
-            <motion.div
-              className="confirm-dialog"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-                <h3 className="confirm-title">⚠️ Desactivar Producto</h3>
-              <p className="confirm-message">
-                ¿Está seguro que desea desactivar{" "}
-                <strong>{producto.nombre}</strong>?
-              </p>
-
-              <div className="confirm-actions">
-                <button
-                  className="confirm-cancel-btn"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  disabled={isDeleting}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="confirm-deactivate-btn"
-                  onClick={handleDeactivateProduct}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Desactivando..." : "Desactivar"}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="⚠️ Desactivar Producto"
+        message={
+          <>
+            ¿Está seguro que desea desactivar <strong>{producto.nombre}</strong>?
+          </>
+        }
+        confirmText={isDeleting ? "Desactivando..." : "Desactivar"}
+        cancelText="Cancelar"
+        onConfirm={handleDeactivateProduct}
+        onCancel={() => setShowDeleteConfirm(false)}
+        confirmDanger
+        confirmDisabled={isDeleting}
+        cancelDisabled={isDeleting}
+      />
 
       <ErrorAlert message={deleteError} onClose={() => setDeleteError(null)} />
     </>

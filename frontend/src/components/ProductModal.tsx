@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import { InfoIcon } from "./Icons";
+import ConfirmDialog from "./ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
 import "../styles/shared.css";
 import "../styles/product-modal.css";
@@ -458,61 +459,36 @@ const ProductModal = ({
           </motion.div>
 
           {/* Diálogo de confirmación para eliminar precio unitario */}
-          <AnimatePresence>
-            {showDeleteWarning && (
-              <motion.div
-                className="product-modal-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => {
-                  setShowDeleteWarning(false);
-                  setPriceIndexToDelete(null);
-                }}
-              >
-                <motion.div
-                  className="confirm-dialog"
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <h3 className="confirm-title">⚠️ Eliminar Precio unitario</h3>
-                  <p className="confirm-message">
-                    Estás eliminando el precio  <strong>Unitario</strong>.
-                  </p>
-                  <p className="confirm-warning">
-                    El producto debe tener un precio unitario obligatoriamente. 
-                    Asegúrate de agregar otro precio unitario.
-                  </p>
-                  <div className="confirm-actions">
-                    <button
-                      className="confirm-cancel-btn"
-                      onClick={() => {
-                        setShowDeleteWarning(false);
-                        setPriceIndexToDelete(null);
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      className="confirm-deactivate-btn"
-                      onClick={() => {
-                        if (priceIndexToDelete !== null) {
-                          setPrecios(precios.filter((_, i) => i !== priceIndexToDelete));
-                          setPreciosInput(preciosInput.filter((_, i) => i !== priceIndexToDelete));
-                        }
-                        setShowDeleteWarning(false);
-                        setPriceIndexToDelete(null);
-                      }}
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <ConfirmDialog
+            isOpen={showDeleteWarning}
+            title="⚠️ Eliminar Precio unitario"
+            message={
+              <>
+                Estás eliminando el precio <strong>Unitario</strong>.
+              </>
+            }
+            warning={
+              <>
+                El producto debe tener un precio unitario obligatoriamente.
+                Asegúrate de agregar otro precio unitario.
+              </>
+            }
+            confirmText="Eliminar"
+            cancelText="Cancelar"
+            onCancel={() => {
+              setShowDeleteWarning(false);
+              setPriceIndexToDelete(null);
+            }}
+            onConfirm={() => {
+              if (priceIndexToDelete !== null) {
+                setPrecios(precios.filter((_, i) => i !== priceIndexToDelete));
+                setPreciosInput(preciosInput.filter((_, i) => i !== priceIndexToDelete));
+              }
+              setShowDeleteWarning(false);
+              setPriceIndexToDelete(null);
+            }}
+            confirmDanger
+          />
         </motion.div>
       )}
     </AnimatePresence>
