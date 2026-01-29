@@ -17,7 +17,6 @@ import "../styles/sales.css";
 
 const SalesPage = () => {
   const [sales, setSales] = useState<Sale[]>([]);
-  const [allSales, setAllSales] = useState<Sale[]>([]); // All sales for filtering
   // Cache products and offers for use in detail/edit modals (Phase 2+)
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [allOffers, setAllOffers] = useState<Offer[]>([]);
@@ -27,7 +26,8 @@ const SalesPage = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
-  const [hasMore, setHasMore] = useState(true);
+  const [totalSales, setTotalSales] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Modal state
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
@@ -61,20 +61,19 @@ const SalesPage = () => {
     fetchCatalog();
   }, []);
 
-  // Fetch sales when page changes
+  // Fetch sales when page or filters change
   useEffect(() => {
     const fetchSales = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Fetch all sales (max 1000) for client-side filtering
-        const data = await getSales(0, 1000);
+        const skip = (currentPage - 1) * limit;
+        const data = await getSales(skip, limit);
         
-        setAllSales(data || []);
-        
-        // Apply filters and pagination
-        applyFiltersAndPagination(data || [], dateFrom, dateTo, currentPage);
+        setSales(data.items || []);
+        setTotalSales(data.total || 0);
+        setTotalPages(Math.ceil((data.total || 0) / limit));
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido";
         setError(`Error al cargar ventas: ${errorMessage}`);
@@ -85,55 +84,7 @@ const SalesPage = () => {
     };
 
     fetchSales();
-  }, []); // Only fetch once on mount
-
-  // Apply filters and pagination when filters or page changes
-  useEffect(() => {
-    applyFiltersAndPagination(allSales, dateFrom, dateTo, currentPage);
-  }, [currentPage, dateFrom, dateTo, allSales]);
-
-  const applyFiltersAndPagination = (
-    salesData: Sale[],
-    from: Date | null,
-    to: Date | null,
-    page: number
-  ) => {
-    let filtered = [...salesData];
-
-    // Apply date filters
-    if (from || to) {
-      filtered = filtered.filter((sale) => {
-        const saleDate = new Date(sale.fecha_creacion);
-        
-        if (from && to) {
-          // Set time to start/end of day for proper comparison
-          const fromStart = new Date(from);
-          fromStart.setHours(0, 0, 0, 0);
-          const toEnd = new Date(to);
-          toEnd.setHours(23, 59, 59, 999);
-          
-          return saleDate >= fromStart && saleDate <= toEnd;
-        } else if (from) {
-          const fromStart = new Date(from);
-          fromStart.setHours(0, 0, 0, 0);
-          return saleDate >= fromStart;
-        } else if (to) {
-          const toEnd = new Date(to);
-          toEnd.setHours(23, 59, 59, 999);
-          return saleDate <= toEnd;
-        }
-        
-        return true;
-      });
-    }
-
-    // Apply pagination
-    const skip = (page - 1) * limit;
-    const paginatedSales = filtered.slice(skip, skip + limit);
-    
-    setSales(paginatedSales);
-    setHasMore(skip + paginatedSales.length < filtered.length);
-  };
+  }, [currentPage, limit]);
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
@@ -142,15 +93,56 @@ const SalesPage = () => {
   };
 
   const handleNextPage = () => {
-    if (hasMore) {
+    if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
     }
+  };
+
+  const handleGoToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const getPageNumbers = (): (number | string)[] => {
+    const pages: (number | string)[] = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow + 2) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+      
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+      
+      // Show pages around current page
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+      
+      // Always show last page
+      pages.push(totalPages);
+    }
+    
+    return pages;
   };
 
   const handleFilter = (from: Date | null, to: Date | null) => {
     setDateFrom(from);
     setDateTo(to);
     setCurrentPage(1); // Reset to first page when filtering
+    // TODO: Implement server-side filtering
   };
 
   const handleClearFilters = () => {
@@ -179,14 +171,12 @@ const SalesPage = () => {
     setSelectedSaleId(null);
   };
 
-  const handleSaveEdit = (updatedSale: Sale) => {
-    // Update sale in both allSales and current page
-    setAllSales((prev) =>
-      prev.map((sale) => (sale.id === updatedSale.id ? updatedSale : sale))
-    );
-    setSales((prev) =>
-      prev.map((sale) => (sale.id === updatedSale.id ? updatedSale : sale))
-    );
+  const handleSaveEdit = async (updatedSale: Sale) => {
+    // Refresh current page
+    const skip = (currentPage - 1) * limit;
+    const data = await getSales(skip, limit);
+    setSales(data.items || []);
+    
     setSuccessMessage("Venta actualizada exitosamente");
     setTimeout(() => setSuccessMessage(null), 3000);
   };
@@ -202,9 +192,12 @@ const SalesPage = () => {
     try {
       await deleteSale(saleToDelete);
       
-      // Remove sale from both lists
-      setAllSales((prev) => prev.filter((sale) => sale.id !== saleToDelete));
-      setSales((prev) => prev.filter((sale) => sale.id !== saleToDelete));
+      // Refresh current page
+      const skip = (currentPage - 1) * limit;
+      const data = await getSales(skip, limit);
+      setSales(data.items || []);
+      setTotalSales(data.total || 0);
+      setTotalPages(Math.ceil((data.total || 0) / limit));
       
       setSuccessMessage("Venta eliminada exitosamente");
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -313,21 +306,35 @@ const SalesPage = () => {
 
           <div className="sales-pagination">
             <button
-              className="sales-pagination-btn"
+              className="sales-pagination-btn nav"
               onClick={handlePrevPage}
               disabled={currentPage === 1}
             >
               ← Anterior
             </button>
             
-            <span className="sales-pagination-info">
-              Página {currentPage}
-            </span>
+            <div className="sales-pagination-numbers">
+              {getPageNumbers().map((page, index) => (
+                typeof page === 'number' ? (
+                  <button
+                    key={index}
+                    className={`sales-pagination-number ${currentPage === page ? 'active' : ''}`}
+                    onClick={() => handleGoToPage(page)}
+                  >
+                    {page}
+                  </button>
+                ) : (
+                  <span key={index} className="sales-pagination-ellipsis">
+                    {page}
+                  </span>
+                )
+              ))}
+            </div>
             
             <button
-              className="sales-pagination-btn"
+              className="sales-pagination-btn nav"
               onClick={handleNextPage}
-              disabled={!hasMore}
+              disabled={currentPage >= totalPages}
             >
               Siguiente →
             </button>
@@ -355,10 +362,7 @@ const SalesPage = () => {
         title="Confirmar Eliminación"
         message={
           saleToDelete
-            ? `¿Estás seguro de que deseas eliminar la venta ${
-                allSales.find((s) => s.id === saleToDelete)?.numero_orden ||
-                `#${saleToDelete}`
-              }?`
+            ? `¿Estás seguro de que deseas eliminar esta venta?`
             : ""
         }
         confirmText="Eliminar"

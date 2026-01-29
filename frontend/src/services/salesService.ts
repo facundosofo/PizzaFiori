@@ -2,10 +2,17 @@ import env from "../config/env";
 import type { Sale, SaleCreateRequest } from "../types/sale";
 import type { SaleItemWithDetails } from "../types/sale_item";
 
+interface SalesResponse {
+  items: Sale[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 /**
  * Fetch all sales with pagination
  */
-export const getSales = async (skip: number = 0, limit: number = 10): Promise<Sale[]> => {
+export const getSales = async (skip: number = 0, limit: number = 10): Promise<SalesResponse> => {
   try {
     const res = await fetch(`${env.API_BASE_URL}/ventas?skip=${skip}&limit=${limit}`);
     if (!res.ok) {
@@ -19,7 +26,7 @@ export const getSales = async (skip: number = 0, limit: number = 10): Promise<Sa
       throw new Error(errorMsg);
     }
     const data = await res.json();
-    return data as Sale[];
+    return data as SalesResponse;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     console.error("Error fetching sales:", err);

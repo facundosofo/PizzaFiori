@@ -215,6 +215,19 @@ class SaleService:
             )
             return []
 
+    async def count_all(self) -> int:
+        """Cuenta el total de ventas en la base de datos."""
+        try:
+            async with self.uow as uow:
+                return await uow.sale_repo.count()
+        except Exception as e:
+            self.logger.error(
+                "Error al contar ventas",
+                error=str(e),
+                exc_info=True,
+            )
+            return 0
+
     async def update(self, sale_id: int, sale_update) -> ServiceResult:
         """Actualiza una venta existente."""
         try:

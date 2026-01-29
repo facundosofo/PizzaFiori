@@ -38,9 +38,8 @@ async def create_sale(
 
 @router.get(
     "/",
-    response_model=List[SaleResponse],
     summary="Obtener todas las ventas",
-    description="Devuelve la lista de ventas con paginación.",
+    description="Devuelve la lista de ventas con paginación y total count.",
 )
 @inject
 async def get_sales(
@@ -48,7 +47,14 @@ async def get_sales(
     limit: int = Query(100, ge=1, le=1000, description="Límite de registros"),
     service: SaleService = Depends(Provide[Container.sale_service]),
 ):
-    return await service.get_all(skip=skip, limit=limit)
+    sales = await service.get_all(skip=skip, limit=limit)
+    total = await service.count_all()
+    return {
+        "items": sales,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 
 @router.get(
