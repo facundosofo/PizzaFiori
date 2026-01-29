@@ -9,6 +9,7 @@ from app.presentation.schemas.sale_schemas import (
     SaleUpdateRequest,
     SaleResponse,
     SaleFilterParams,
+    SaleListResponse,
 )
 
 router = APIRouter(prefix="/ventas", tags=["Ventas"])
@@ -39,6 +40,7 @@ async def create_sale(
 
 @router.get(
     "/",
+    response_model=SaleListResponse,
     summary="Obtener todas las ventas",
     description="Devuelve la lista de ventas con paginación, filtros de fecha y total count.",
 )

@@ -95,3 +95,13 @@ class SaleResponse(BaseModel):
     items: List[SaleItemResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SaleListResponse(BaseModel):
+    """Respuesta para la lista de ventas con paginación y filtros."""
+    items: List[SaleResponse]
+    total: int = Field(..., description="Total de ventas que coinciden con los filtros")
+    skip: int = Field(..., ge=0, description="Número de registros omitidos")
+    limit: int = Field(..., ge=1, description="Límite de registros por página")
+
+    model_config = ConfigDict(from_attributes=True)
