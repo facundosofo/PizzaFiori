@@ -1,0 +1,592 @@
+/* ================================================================
+   SALE-MODAL.CSS - Estilos para modales de ventas
+   ================================================================
+   Contiene estilos para:
+   - Modal de detalle de venta (solo lectura)
+   - Modal de edición de venta (Fase 4)
+   - Tabla de items
+   - Estados de loading y error
+   ================================================================ */
+
+/* ===== MODAL OVERLAY ===== */
+
+/* Capa de fondo oscuro semi-transparente que cubre toda la pantalla */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+/* ===== MODAL CONTENT ===== */
+
+/* Contenedor principal del modal con gradiente oscuro y bordes redondeados */
+.modal-content {
+  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+  border: 2px solid #ff3b3b;
+  border-radius: 18px;
+  padding: 0;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 50px rgba(255, 59, 59, 0.3),
+              0 0 100px rgba(0, 0, 0, 0.8);
+  position: relative;
+}
+
+/* Modal específico para detalle de ventas */
+.sale-detail-modal {
+  max-width: 900px;
+}
+
+/* ===== MODAL HEADER ===== */
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 30px;
+  border-bottom: 2px solid rgba(255, 59, 59, 0.3);
+  background: linear-gradient(180deg, rgba(255, 59, 59, 0.1) 0%, transparent 100%);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f5f5f5;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 20px rgba(255, 59, 59, 0.5);
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #ff3b3b;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 59, 59, 0.2);
+  transform: rotate(90deg);
+}
+
+/* ===== MODAL BODY ===== */
+
+.modal-body {
+  padding: 30px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Custom scrollbar for modal body */
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #ff3b3b;
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #ff5252;
+}
+
+/* ===== LOADING STATE ===== */
+
+.sale-detail-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 20px;
+}
+
+.loading-spinner {
+  font-size: 3rem;
+  color: #ff3b3b;
+}
+
+.sale-detail-loading p {
+  color: #e8e8e8;
+  font-size: 1.1rem;
+}
+
+/* ===== ERROR STATE ===== */
+
+.sale-detail-error {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.sale-detail-error p {
+  color: #ff5252;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* ===== SALE INFO ===== */
+
+.sale-info {
+  background: rgba(255, 59, 59, 0.05);
+  border: 1px solid rgba(255, 59, 59, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.sale-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sale-info-row:last-child {
+  border-bottom: none;
+}
+
+.sale-info-label {
+  font-weight: 600;
+  color: #e8e8e8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+}
+
+.sale-info-value {
+  font-weight: 700;
+  color: #ff3b3b;
+  font-size: 1.1rem;
+}
+
+/* ===== SALE ITEMS SECTION ===== */
+
+.sale-items-section {
+  margin-bottom: 30px;
+}
+
+.sale-items-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #f5f5f5;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+/* ===== SALE ITEMS TABLE ===== */
+
+.sale-items-table {
+  border: 1px solid rgba(255, 59, 59, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sale-items-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr 1.2fr;
+  gap: 10px;
+  padding: 15px 20px;
+  background: rgba(255, 59, 59, 0.1);
+  border-bottom: 2px solid rgba(255, 59, 59, 0.3);
+  font-weight: 700;
+  color: #ff3b3b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.85rem;
+}
+
+.sale-items-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr 1.2fr;
+  gap: 10px;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+}
+
+.sale-items-row:hover {
+  background: rgba(255, 59, 59, 0.05);
+}
+
+.sale-items-row:last-child {
+  border-bottom: none;
+}
+
+/* Column styles */
+.sale-item-col-name {
+  color: #f5f5f5;
+  font-weight: 500;
+}
+
+.sale-item-type {
+  color: #ff3b3b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.sale-item-col-qty {
+  text-align: center;
+  color: #e8e8e8;
+  font-weight: 600;
+}
+
+.sale-item-col-price {
+  text-align: right;
+  color: #e8e8e8;
+}
+
+.sale-item-col-subtotal {
+  text-align: right;
+  color: #ff3b3b;
+  font-weight: 700;
+}
+
+/* ===== SALE TOTAL SECTION ===== */
+
+.sale-total-section {
+  background: linear-gradient(180deg, rgba(255, 59, 59, 0.1) 0%, rgba(255, 59, 59, 0.05) 100%);
+  border: 2px solid #ff3b3b;
+  border-radius: 12px;
+  padding: 20px 30px;
+  margin-top: 20px;
+}
+
+.sale-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sale-total-label {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f5f5f5;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.sale-total-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ff3b3b;
+  text-shadow: 0 0 20px rgba(255, 59, 59, 0.5);
+}
+
+/* ===== MODAL FOOTER ===== */
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  padding: 20px 30px;
+  border-top: 2px solid rgba(255, 59, 59, 0.3);
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+.btn-close {
+  padding: 12px 30px;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #f5f5f5;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-close:hover {
+  background: linear-gradient(180deg, #353535 0%, #252525 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-close:active {
+  transform: translateY(0);
+}
+
+.btn-cancel {
+  padding: 12px 30px;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #f5f5f5;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: linear-gradient(180deg, #353535 0%, #252525 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-save {
+  padding: 12px 30px;
+  background: linear-gradient(180deg, #ff3b3b 0%, #cc2f2f 100%);
+  border: 2px solid #ff5252;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ff5252 0%, #ff3b3b 100%);
+  box-shadow: 0 0 25px rgba(255, 59, 59, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== EDIT MODAL SPECIFIC ===== */
+
+.sale-edit-modal {
+  max-width: 1000px;
+}
+
+.sale-item-col-actions {
+  text-align: center;
+}
+
+.quantity-input {
+  width: 70px;
+  padding: 6px;
+  background: #0d0d0d;
+  border: 2px solid rgba(255, 59, 59, 0.3);
+  border-radius: 6px;
+  color: #f5f5f5;
+  font-size: 0.95rem;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: #ff3b3b;
+  box-shadow: 0 0 10px rgba(255, 59, 59, 0.3);
+}
+
+.price-input {
+  width: 100px;
+  padding: 6px;
+  background: #0d0d0d;
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  border-radius: 6px;
+  color: #22c55e;
+  font-size: 0.95rem;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.price-input:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+
+.item-remove-btn {
+  background: transparent;
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ef4444;
+  padding: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.item-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  transform: scale(1.1);
+}
+
+/* ===== ADD ITEM SECTION ===== */
+
+.add-item-section {
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(255, 59, 59, 0.03);
+  border: 1px solid rgba(255, 59, 59, 0.2);
+  border-radius: 12px;
+}
+
+.add-item-section h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f5f5f5;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.add-item-form {
+  margin-top: 15px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 0.8fr 2fr 0.8fr 1fr;
+  gap: 15px;
+  align-items: end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e8e8e8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-select,
+.form-input {
+  padding: 10px 12px;
+  background: #0d0d0d;
+  border: 2px solid rgba(255, 59, 59, 0.3);
+  border-radius: 8px;
+  color: #f5f5f5;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.form-select:focus,
+.form-input:focus {
+  outline: none;
+  border-color: #ff3b3b;
+  box-shadow: 0 0 15px rgba(255, 59, 59, 0.2);
+}
+
+.btn-add-item {
+  padding: 10px 20px;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  border: 2px solid #6dff7a;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.btn-add-item:hover {
+  background: linear-gradient(180deg, #6dff7a 0%, #4ade80 100%);
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-add-item:active {
+  transform: translateY(0);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 20px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.4rem;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .sale-items-header,
+  .sale-items-row {
+    grid-template-columns: 1.5fr 0.8fr 1fr 1fr;
+    gap: 8px;
+    padding: 12px 15px;
+    font-size: 0.85rem;
+  }
+
+  .sale-items-header {
+    font-size: 0.75rem;
+  }
+
+  .sale-total-label {
+    font-size: 1.2rem;
+  }
+
+  .sale-total-value {
+    font-size: 1.5rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .add-item-section {
+    padding: 15px;
+  }
+}

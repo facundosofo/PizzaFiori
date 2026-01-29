@@ -1,0 +1,347 @@
+/* ================================================================
+   SALES.CSS - Estilos para el módulo de ventas
+   ================================================================ */
+
+.sales-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
+  min-height: 100vh;
+}
+
+.sales-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #ff3b3b;
+}
+
+.sales-header h1 {
+  font-size: 2.5rem;
+  color: #f5f5f5;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+/* ===== LOADING STATE ===== */
+
+.sales-loading {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+/* ===== EMPTY STATE ===== */
+
+.sales-empty {
+  text-align: center;
+  padding: 80px 20px;
+  background: rgba(255, 59, 59, 0.1);
+  border: 2px solid #ff3b3b;
+  border-radius: 12px;
+  margin-top: 30px;
+}
+
+/* ===== SUCCESS ALERT ===== */
+
+.sales-success-alert {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, rgba(109, 255, 122, 0.1), rgba(109, 255, 122, 0.05));
+  border: 1px solid rgba(109, 255, 122, 0.3);
+  border-radius: 8px;
+  color: #6dff7a;
+}
+
+.sales-success-alert p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.sales-success-alert .close-btn {
+  background: none;
+  border: none;
+  color: #6dff7a;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.sales-success-alert .close-btn:hover {
+  opacity: 0.7;
+}
+
+
+.sales-empty p {
+  font-size: 1.3rem;
+  color: #e8e8e8;
+  margin: 0;
+}
+
+/* ===== TABLE STYLES ===== */
+
+.sales-table {
+  background: rgba(13, 13, 13, 0.8);
+  border: 2px solid #ff3b3b;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(255, 59, 59, 0.2);
+}
+
+.sales-table-header {
+  display: grid;
+  grid-template-columns: 13% 18% 12% 22% 1fr;
+  gap: 10px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #ff3b3b 0%, #cc2f2f 100%);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #fff;
+  border-bottom: 2px solid #ff5252;
+}
+
+.sales-table-row {
+  display: grid;
+  grid-template-columns: 13% 18% 12% 22% 1fr;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 59, 59, 0.2);
+  transition: all 0.3s ease;
+  background: rgba(26, 26, 26, 0.5);
+}
+
+.sales-table-row:hover {
+  background: rgba(255, 59, 59, 0.1);
+  transform: translateX(5px);
+}
+
+.sales-table-row:last-child {
+  border-bottom: none;
+}
+
+/* Column alignments */
+.sales-col-date,
+.sales-col-order,
+.sales-col-items {
+  color: #e8e8e8;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.sales-col-total {
+  color: #6dff7a;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+}
+
+.sales-col-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.sales-actions-placeholder {
+  color: #888;
+  font-size: 1.2rem;
+}
+
+/* ===== ACTION BUTTONS ===== */
+
+.sales-action-btn {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+}
+
+/* View button (eye icon) */
+.sales-action-btn.view {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sales-action-btn.view:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Edit button (pencil icon) */
+.sales-action-btn.edit {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.sales-action-btn.edit:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: #22c55e;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  transform: scale(1.1);
+}
+
+/* Delete button (trash icon) */
+.sales-action-btn.delete {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.sales-action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  transform: scale(1.1);
+}
+
+/* ===== PAGINATION ===== */
+
+.sales-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 30px;
+  padding: 20px;
+}
+
+.sales-pagination-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ff3b3b 0%, #cc2f2f 100%);
+  color: #fff;
+  border: 2px solid #ff5252;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sales-pagination-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff5252 0%, #ff3b3b 100%);
+  box-shadow: 0 0 20px rgba(255, 59, 59, 0.5);
+  transform: translateY(-2px);
+}
+
+.sales-pagination-btn:disabled {
+  background: #333;
+  border-color: #555;
+  color: #888;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sales-pagination-info {
+  font-size: 1.1rem;
+  color: #f5f5f5;
+  font-weight: 600;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+@media (max-width: 1024px) {
+  .sales-table-header,
+  .sales-table-row {
+    grid-template-columns: 12% 17% 10% 20% 1fr;
+    font-size: 0.9rem;
+  }
+  
+  .sales-header h1 {
+    font-size: 2rem;
+  }
+
+  .sales-action-btn {
+    padding: 6px 10px;
+    min-width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sales-container {
+    padding: 20px 10px;
+  }
+  
+  .sales-table-header,
+  .sales-table-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px 15px;
+  }
+  
+  .sales-col-date::before {
+    content: "Fecha: ";
+    font-weight: 700;
+    margin-right: 5px;
+  }
+  
+  .sales-col-order::before {
+    content: "Orden: ";
+    font-weight: 700;
+    margin-right: 5px;
+  }
+  
+  .sales-col-items::before {
+    content: "Items: ";
+    font-weight: 700;
+    margin-right: 5px;
+  }
+  
+  .sales-col-total::before {
+    content: "Total: ";
+    font-weight: 700;
+    margin-right: 5px;
+  }
+  
+  .sales-col-actions {
+    justify-content: flex-start;
+  }
+  
+  .sales-table-header {
+    display: none;
+  }
+  
+  .sales-pagination {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .sales-pagination-btn {
+    width: 100%;
+  }
+}
