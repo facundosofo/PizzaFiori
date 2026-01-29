@@ -69,7 +69,7 @@ const SalesPage = () => {
         setError(null);
         
         const skip = (currentPage - 1) * limit;
-        const data = await getSales(skip, limit);
+        const data = await getSales(skip, limit, dateFrom, dateTo);
         
         setSales(data.items || []);
         setTotalSales(data.total || 0);
@@ -84,7 +84,7 @@ const SalesPage = () => {
     };
 
     fetchSales();
-  }, [currentPage, limit]);
+  }, [currentPage, limit, dateFrom, dateTo]); // Re-fetch cuando cambian los filtros de fecha
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
@@ -142,7 +142,6 @@ const SalesPage = () => {
     setDateFrom(from);
     setDateTo(to);
     setCurrentPage(1); // Reset to first page when filtering
-    // TODO: Implement server-side filtering
   };
 
   const handleClearFilters = () => {

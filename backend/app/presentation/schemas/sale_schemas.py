@@ -1,7 +1,26 @@
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
+
+
+# ======================================================
+# Query Parameters
+# ======================================================
+
+class SaleFilterParams(BaseModel):
+    """Parámetros de filtrado para la lista de ventas."""
+    skip: int = Field(0, ge=0, description="Número de registros a omitir")
+    limit: int = Field(100, ge=1, le=1000, description="Límite de registros")
+    fecha_desde: Optional[date] = Field(None, description="Fecha inicial del rango (YYYY-MM-DD)")
+    fecha_hasta: Optional[date] = Field(None, description="Fecha final del rango (YYYY-MM-DD)")
+
+    @model_validator(mode="after")
+    def validar_rango_fechas(self):
+        if self.fecha_desde and self.fecha_hasta:
+            if self.fecha_desde > self.fecha_hasta:
+                raise ValueError("fecha_desde debe ser menor o igual a fecha_hasta")
+        return self
 
 
 # ======================================================

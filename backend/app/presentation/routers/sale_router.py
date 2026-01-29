@@ -8,6 +8,7 @@ from app.presentation.schemas.sale_schemas import (
     SaleCreateRequest,
     SaleUpdateRequest,
     SaleResponse,
+    SaleFilterParams,
 )
 
 router = APIRouter(prefix="/ventas", tags=["Ventas"])
@@ -39,21 +40,28 @@ async def create_sale(
 @router.get(
     "/",
     summary="Obtener todas las ventas",
-    description="Devuelve la lista de ventas con paginación y total count.",
+    description="Devuelve la lista de ventas con paginación, filtros de fecha y total count.",
 )
 @inject
 async def get_sales(
-    skip: int = Query(0, ge=0, description="Número de registros a omitir"),
-    limit: int = Query(100, ge=1, le=1000, description="Límite de registros"),
+    filters: SaleFilterParams = Depends(),
     service: SaleService = Depends(Provide[Container.sale_service]),
 ):
-    sales = await service.get_all(skip=skip, limit=limit)
-    total = await service.count_all()
+    sales = await service.get_all(
+        skip=filters.skip,
+        limit=filters.limit,
+        fecha_desde=filters.fecha_desde,
+        fecha_hasta=filters.fecha_hasta
+    )
+    total = await service.count_all(
+        fecha_desde=filters.fecha_desde,
+        fecha_hasta=filters.fecha_hasta
+    )
     return {
         "items": sales,
         "total": total,
-        "skip": skip,
-        "limit": limit
+        "skip": filters.skip,
+        "limit": filters.limit
     }
 
 

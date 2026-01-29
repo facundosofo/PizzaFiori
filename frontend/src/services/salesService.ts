@@ -10,11 +10,32 @@ interface SalesResponse {
 }
 
 /**
- * Fetch all sales with pagination
+ * Fetch all sales with pagination and optional date filters
  */
-export const getSales = async (skip: number = 0, limit: number = 10): Promise<SalesResponse> => {
+export const getSales = async (
+  skip: number = 0,
+  limit: number = 10,
+  dateFrom?: Date | null,
+  dateTo?: Date | null
+): Promise<SalesResponse> => {
   try {
-    const res = await fetch(`${env.API_BASE_URL}/ventas?skip=${skip}&limit=${limit}`);
+    // Build query params
+    const params = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+
+    // Add date filters if provided
+    if (dateFrom) {
+      const fechaDesde = dateFrom.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      params.append('fecha_desde', fechaDesde);
+    }
+    if (dateTo) {
+      const fechaHasta = dateTo.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      params.append('fecha_hasta', fechaHasta);
+    }
+
+    const res = await fetch(`${env.API_BASE_URL}/ventas?${params.toString()}`);
     if (!res.ok) {
       const errorMsg = res.status === 404
         ? "No se encontraron ventas"

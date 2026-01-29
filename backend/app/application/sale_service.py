@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date, time
 from decimal import Decimal
 import structlog
 
@@ -203,10 +203,21 @@ class SaleService:
         self,
         skip: int = 0,
         limit: int = 100,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
     ) -> List[Sale]:
         try:
+            # Convertir date a datetime
+            fecha_desde_dt = datetime.combine(fecha_desde, time.min) if fecha_desde else None
+            fecha_hasta_dt = datetime.combine(fecha_hasta, time.max) if fecha_hasta else None
+            
             async with self.uow as uow:
-                return await uow.sale_repo.list(skip=skip, limit=limit)
+                return await uow.sale_repo.list(
+                    skip=skip,
+                    limit=limit,
+                    fecha_desde=fecha_desde_dt,
+                    fecha_hasta=fecha_hasta_dt
+                )
         except Exception as e:
             self.logger.error(
                 "Error al listar ventas",
@@ -215,11 +226,22 @@ class SaleService:
             )
             return []
 
-    async def count_all(self) -> int:
-        """Cuenta el total de ventas en la base de datos."""
+    async def count_all(
+        self,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+    ) -> int:
+        """Cuenta el total de ventas en la base de datos con filtros opcionales."""
         try:
+            # Convertir date a datetime
+            fecha_desde_dt = datetime.combine(fecha_desde, time.min) if fecha_desde else None
+            fecha_hasta_dt = datetime.combine(fecha_hasta, time.max) if fecha_hasta else None
+            
             async with self.uow as uow:
-                return await uow.sale_repo.count()
+                return await uow.sale_repo.count(
+                    fecha_desde=fecha_desde_dt,
+                    fecha_hasta=fecha_hasta_dt
+                )
         except Exception as e:
             self.logger.error(
                 "Error al contar ventas",

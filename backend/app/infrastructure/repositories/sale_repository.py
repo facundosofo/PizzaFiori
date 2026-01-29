@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from typing import List, Optional
+from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -38,6 +39,8 @@ class SqlAlchemySaleRepository(
         self,
         skip: int = 0,
         limit: int = 100,
+        fecha_desde: Optional[datetime] = None,
+        fecha_hasta: Optional[datetime] = None,
     ) -> List[Sale]:
         query = (
             select(Sale)
@@ -47,9 +50,36 @@ class SqlAlchemySaleRepository(
                 selectinload(Sale.items)
                 .selectinload(SaleItem.oferta)
             )
+        )
+        
+        # Aplicar filtros de fecha
+        if fecha_desde is not None:
+            query = query.where(Sale.fecha_creacion >= fecha_desde)
+        if fecha_hasta is not None:
+            query = query.where(Sale.fecha_creacion <= fecha_hasta)
+        
+        query = (
+            query
             .order_by(Sale.fecha_creacion.desc())
             .offset(skip)
             .limit(limit)
         )
         result = await self.session.execute(query)
         return result.scalars().all()
+
+    async def count(
+        self,
+        fecha_desde: Optional[datetime] = None,
+        fecha_hasta: Optional[datetime] = None,
+    ) -> int:
+        """Cuenta el total de ventas con filtros opcionales de fecha."""
+        query = select(func.count()).select_from(Sale)
+        
+        # Aplicar filtros de fecha
+        if fecha_desde is not None:
+            query = query.where(Sale.fecha_creacion >= fecha_desde)
+        if fecha_hasta is not None:
+            query = query.where(Sale.fecha_creacion <= fecha_hasta)
+        
+        result = await self.session.execute(query)
+        return result.scalar() or 0
