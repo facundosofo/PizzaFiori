@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
+import { InfoIcon } from "./Icons";
 import { updateProducto, createProducto } from "../services/productsService";
 import "../styles/shared.css";
 import "../styles/product-modal.css";
@@ -207,11 +208,7 @@ const ProductModal = ({
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <label>Precios:</label>
                     <div className="info-tooltip">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                      </svg>
+                      <InfoIcon className="info-icon" />
                       <div className="tooltip-content">
                         Debe existir un precio unitario.<br />    
                         No se permiten cantidades duplicadas.
