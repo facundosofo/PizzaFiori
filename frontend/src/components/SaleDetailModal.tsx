@@ -166,8 +166,8 @@ const SaleDetailModal = ({
               ) : null}
             </div>
 
-            <div className="modal-footer">
-              <button className="btn-close" onClick={onClose}>
+            <div className="sales-modal-footer">
+              <button className="sales-btn-close" onClick={onClose}>
                 Cerrar
               </button>
             </div>

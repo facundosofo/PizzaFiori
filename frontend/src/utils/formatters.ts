@@ -45,6 +45,34 @@ export const formatDateAPI = (date: Date): string => {
 };
 
 /**
+ * Format a Date to YYYY-MM-DD (useful for query params)
+ */
+export const formatDateYMD = (date: Date): string => {
+  try {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (err) {
+    console.error("Error formatting date (YMD):", err);
+    return date.toISOString().split('T')[0];
+  }
+};
+
+/**
+ * Parse a currency-like input string (e.g. "$ 1.234,56") to number
+ */
+export const parseCurrencyInput = (value: string): number => {
+  return Number(
+    value
+      .replace(/\$/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .trim()
+  );
+};
+
+/**
  * Parse DD/MM/YYYY string to Date object
  */
 export const parseDate = (ddmmyyyy: string): Date | null => {

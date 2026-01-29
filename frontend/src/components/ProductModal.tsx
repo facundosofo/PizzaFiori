@@ -2,10 +2,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
-import { InfoIcon } from "./Icons";
-import ConfirmDialog from "./ConfirmDialog";
+import { InfoIcon } from "./shared/Icons";
+import ConfirmDialog from "./shared/ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
-import "../styles/shared.css";
+import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
+import "../styles/shared/forms.css";
 import "../styles/product-modal.css";
 import env from "../config/env";
 
@@ -31,46 +32,26 @@ const ProductModal = ({
   const [previewImagen, setPreviewImagen] = useState("/placeholder.png");
   const [precios, setPrecios] = useState<Array<{ cantidad: number; precio: number }>>([]);
   const [preciosInput, setPreciosInput] = useState<string[]>([]);
-  
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const [priceIndexToDelete, setPriceIndexToDelete] = useState<number | null>(null);
 
-  const formatPrecio = (value: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
-  };
-
-  const normalizePrecio = (value: string) => {
-    return Number(
-      value
-        .replace(/\$/g, "")
-        .replace(/\./g, "")
-        .replace(",", ".")
-    );
-  };
-
-
   useEffect(() => {
     if (producto && isOpen) {
       setNombre(producto.nombre || "");
       setCategoriaId(producto.categoria_id && producto.categoria_id > 0 ? producto.categoria_id.toString() : "");
-      
+
       // Si es un producto nuevo (id = 0), inicializar con  un precio unitario
       if (producto.id === 0) {
         setPrecios([{ cantidad: 1, precio: 0 }]);
         setPreciosInput([""]);
       } else {
         setPrecios(producto.precios?.map(p => ({ cantidad: p.cantidad, precio: p.precio })) || []);
-        setPreciosInput(producto.precios?.map(p => formatPrecio(p.precio)) || []);
+        setPreciosInput(producto.precios?.map(p => formatCurrency(p.precio)) || []);
       }
-      
+
       setPreviewImagen(
         producto.imagen
           ? `${env.API_BASE_URL}/${producto.imagen}`
@@ -81,7 +62,6 @@ const ProductModal = ({
     }
   }, [producto, isOpen]);
 
-
   if (!producto) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,7 +71,7 @@ const ProductModal = ({
         setError("Por favor, selecciona una imagen válida.");
         return;
       }
-      
+
       if (selected.size > 5 * 1024 * 1024) {
         setError("La imagen no puede exceder 5MB.");
         return;
@@ -107,7 +87,7 @@ const ProductModal = ({
 
   const handleSave = async () => {
     setError("");
-    
+
     if (!nombre.trim()) return setError("El nombre es requerido");
     if (nombre.trim().length > 100) return setError("El nombre no puede superar los 100 caracteres");
     if (!categoriaId) return setError("Selecciona una categoría");
@@ -139,13 +119,13 @@ const ProductModal = ({
       };
 
       let savedProducto: Product;
-      
+
       if (producto.id === 0) {
         savedProducto = await createProducto(productData);
       } else {
         savedProducto = await updateProducto(producto.id, productData);
       }
-      
+
       if (onSave) {
         onSave(savedProducto);
       }
@@ -174,17 +154,17 @@ const ProductModal = ({
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
+            <button className="product-modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
 
-            <div className="modal-header-edit">
-              <h2 className="modal-title">{producto.id === 0 ? "Nuevo Producto" : "Editar Producto"}</h2>
+            <div className="product-modal-header-edit">
+              <h2 className="product-modal-title">{producto.id === 0 ? "Nuevo Producto" : "Editar Producto"}</h2>
             </div>
 
-            <div className="modal-image">
+            <div className="product-modal-image">
               <img src={previewImagen} alt="Vista previa del producto" />
             </div>
 
-            <div className="modal-body">
+            <div className="product-modal-body">
               {error && <div className="form-error">{error}</div>}
 
               <div className="edit-form">
@@ -200,7 +180,7 @@ const ProductModal = ({
                     placeholder="Ej. Hamburguesa Doble"
                     maxLength={100}
                   />
-                  <div className={`char-counter ${ nombre.length > 80 ? "warning" : ""} ${ nombre.length === 100 ? "error" : "" }`}>
+                  <div className={`char-counter ${nombre.length > 80 ? "warning" : ""} ${nombre.length === 100 ? "error" : ""}`}>
                     {nombre.length}/100
                   </div>
                 </div>
@@ -211,7 +191,7 @@ const ProductModal = ({
                     <div className="info-tooltip">
                       <InfoIcon className="info-icon" />
                       <div className="tooltip-content">
-                        Debe existir un precio unitario.<br />    
+                        Debe existir un precio unitario.<br />
                         No se permiten cantidades duplicadas.
                       </div>
                     </div>
@@ -306,12 +286,12 @@ const ProductModal = ({
                               onChange={(e) => {
                                 let value = e.target.value.replace(".", ",");
                                 if (!/^\d*(,\d{0,2})?$/.test(value)) return;
-                                
+
                                 const newInputs = [...preciosInput];
                                 newInputs[index] = value;
                                 setPreciosInput(newInputs);
-                                
-                                const numeric = normalizePrecio(value);
+
+                                const numeric = parseCurrencyInput(value);
                                 if (!isNaN(numeric)) {
                                   const newPrecios = [...precios];
                                   newPrecios[index].precio = numeric;
@@ -321,7 +301,7 @@ const ProductModal = ({
                               onBlur={() => {
                                 if (precio_item.precio > 0) {
                                   const newInputs = [...preciosInput];
-                                  newInputs[index] = formatPrecio(precio_item.precio);
+                                  newInputs[index] = formatCurrency(precio_item.precio);
                                   setPreciosInput(newInputs);
                                 } else {
                                   const newInputs = [...preciosInput];

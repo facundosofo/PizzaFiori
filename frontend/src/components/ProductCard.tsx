@@ -3,10 +3,11 @@ import { useState } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import ProductModal from "./ProductModal";
-import ErrorAlert from "./ErrorAlert";
-import ConfirmDialog from "./ConfirmDialog";
-import { TrashIcon } from "./Icons";
+import ErrorAlert from "./shared/ErrorAlert";
+import ConfirmDialog from "./shared/ConfirmDialog";
+import { TrashIcon } from "./shared/Icons";
 import { deactivateProducto } from "../services/productsService";
+import { formatCurrency } from "../utils/formatters";
 import "../styles/product-card.css";
 import env from "../config/env";
 
@@ -31,15 +32,6 @@ const ProductCard = ({
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const imageUrl = producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png";
-
-  const formatPrecio = (value: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
-  };
 
   const formatCantidad = (cantidad: number): string => {
     switch (cantidad) {
@@ -121,7 +113,7 @@ const ProductCard = ({
               producto.precios.map((precio_item) => (
                 <div key={precio_item.id} className="price-item">
                   <span className="price-cantidad">{formatCantidad(precio_item.cantidad)}</span>
-                  <span className="price-amount">{formatPrecio(precio_item.precio)}</span>
+                  <span className="price-amount">{formatCurrency(precio_item.precio)}</span>
                 </div>
               ))
             ) : (

@@ -305,7 +305,7 @@
 
 /* ===== MODAL FOOTER ===== */
 
-.modal-footer {
+.sales-modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 15px;
@@ -314,7 +314,7 @@
   background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
 }
 
-.btn-close {
+.sales-btn-close {
   padding: 12px 30px;
   background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -328,18 +328,18 @@
   letter-spacing: 1px;
 }
 
-.btn-close:hover {
+.sales-btn-close:hover {
   background: linear-gradient(180deg, #353535 0%, #252525 100%);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
 }
 
-.btn-close:active {
+.sales-btn-close:active {
   transform: translateY(0);
 }
 
-.btn-cancel {
+.sales-btn-cancel {
   padding: 12px 30px;
   background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -353,19 +353,19 @@
   letter-spacing: 1px;
 }
 
-.btn-cancel:hover:not(:disabled) {
+.sales-btn-cancel:hover:not(:disabled) {
   background: linear-gradient(180deg, #353535 0%, #252525 100%);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
 }
 
-.btn-cancel:disabled {
+.sales-btn-cancel:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.btn-save {
+.sales-btn-save {
   padding: 12px 30px;
   background: linear-gradient(180deg, #ff3b3b 0%, #cc2f2f 100%);
   border: 2px solid #ff5252;
@@ -379,13 +379,13 @@
   letter-spacing: 1px;
 }
 
-.btn-save:hover:not(:disabled) {
+.sales-btn-save:hover:not(:disabled) {
   background: linear-gradient(180deg, #ff5252 0%, #ff3b3b 100%);
   box-shadow: 0 0 25px rgba(255, 59, 59, 0.5);
   transform: translateY(-2px);
 }
 
-.btn-save:disabled {
+.sales-btn-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -546,20 +546,20 @@
 /* ===== RESPONSIVE DESIGN ===== */
 
 @media (max-width: 768px) {
-  .modal-content {
+  .sale-modal-content {
     width: 95%;
     max-height: 95vh;
   }
 
-  .modal-header {
+  .sale-modal-header {
     padding: 20px;
   }
 
-  .modal-header h2 {
+  .sale-modal-header h2 {
     font-size: 1.4rem;
   }
 
-  .modal-body {
+  .sale-modal-body {
     padding: 20px;
   }
 

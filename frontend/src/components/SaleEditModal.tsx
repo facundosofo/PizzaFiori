@@ -6,7 +6,7 @@ import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
 import { getSaleById, updateSale } from "../services/salesService";
 import { formatCurrency, formatDateDisplay } from "../utils/formatters";
-import { XIcon } from "./Icons";
+import { XIcon } from "./shared/Icons";
 import "../styles/sale-modal.css";
 
 type SaleWithDetails = Omit<Sale, 'items'> & {
@@ -48,7 +48,7 @@ const SaleEditModal = ({
         try {
           setLoading(true);
           setError("");
-          const data = await getSaleById(saleId, allProducts, allOffers);
+          const data = await getSaleById(saleId);
           setSale(data);
           setEditedItems(data.items);
         } catch (err) {
@@ -409,11 +409,11 @@ const SaleEditModal = ({
               ) : null}
             </div>
 
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={onClose} disabled={saving}>
+            <div className="sales-modal-footer">
+              <button className="sales-btn-cancel" onClick={onClose} disabled={saving}>
                 Cancelar
               </button>
-              <button className="btn-save" onClick={handleSave} disabled={saving || loading}>
+              <button className="sales-btn-save" onClick={handleSave} disabled={saving || loading}>
                 {saving ? "Guardando..." : "Guardar Cambios"}
               </button>
             </div>

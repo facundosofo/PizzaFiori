@@ -1,6 +1,7 @@
 import env from "../config/env";
 import type { Sale, SaleCreateRequest } from "../types/sale";
 import type { SaleItemWithDetails } from "../types/sale_item";
+import { formatDateYMD } from "../utils/formatters";
 
 interface SalesResponse {
   items: Sale[];
@@ -27,11 +28,11 @@ export const getSales = async (
 
     // Add date filters if provided
     if (dateFrom) {
-      const fechaDesde = dateFrom.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      const fechaDesde = formatDateYMD(dateFrom); // Format: YYYY-MM-DD
       params.append('fecha_desde', fechaDesde);
     }
     if (dateTo) {
-      const fechaHasta = dateTo.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      const fechaHasta = formatDateYMD(dateTo); // Format: YYYY-MM-DD
       params.append('fecha_hasta', fechaHasta);
     }
 

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
-import { SearchIcon, XIcon } from "./Icons";
+import { SearchIcon, XIcon } from "./shared/Icons";
 import { validateDateRange } from "../utils/formatters";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/sales-filters.css";
-import "../styles/datepicker-custom.css";
+import "../styles/shared/datepicker-custom.css";
 
 // Registrar locale español
 registerLocale('es', es);

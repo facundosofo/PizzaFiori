@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import "../styles/error-alert.css";
+import "../../styles/shared/error-alert.css";
 
 interface ErrorAlertProps {
   message: string | null;
