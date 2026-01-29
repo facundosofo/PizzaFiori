@@ -1,78 +1,152 @@
 import { useState } from "react";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { es } from "date-fns/locale/es";
 import { SearchIcon, XIcon } from "./Icons";
 import { validateDateRange } from "../utils/formatters";
+import "react-datepicker/dist/react-datepicker.css";
 import "../styles/sales-filters.css";
+import "../styles/datepicker-custom.css";
 
+// Registrar locale español
+registerLocale('es', es);
 interface SalesFiltersProps {
   onFilter: (dateFrom: Date | null, dateTo: Date | null) => void;
   onClear: () => void;
 }
 
 const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [dateFrom, dateTo] = dateRange;
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to format date to YYYY-MM-DD
+  const formatDateInput = (date: Date): string => {
+    return date.toISOString().split("T")[0];
+  };
+
+  // Quick filter helpers
+  const applyQuickFilter = (type: "today" | "yesterday" | "week" | "month") => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
+
+    const monthAgo = new Date(today);
+    monthAgo.setMonth(today.getMonth() - 1);
+
+    let from: Date;
+    let to: Date;
+
+    switch (type) {
+      case "today":
+        from = to = today;
+        break;
+      case "yesterday":
+        from = to = yesterday;
+        break;
+      case "week":
+        from = weekAgo;
+        to = today;
+        break;
+      case "month":
+        from = monthAgo;
+        to = today;
+        break;
+    }
+
+    setDateRange([from, to]);
+    setError(null);
+
+    // Auto-apply filter
+    onFilter(from, to);
+  };
 
   const handleSearch = () => {
     setError(null);
 
-    // Convert input values to Date objects
-    const fromDate = dateFrom ? new Date(dateFrom) : null;
-    const toDate = dateTo ? new Date(dateTo) : null;
-
     // Validate date range
-    const validationError = validateDateRange(fromDate, toDate);
+    const validationError = validateDateRange(dateFrom, dateTo);
     if (validationError) {
       setError(validationError);
       return;
     }
 
     // Apply filter
-    onFilter(fromDate, toDate);
+    onFilter(dateFrom, dateTo);
   };
 
   const handleClear = () => {
-    setDateFrom("");
-    setDateTo("");
+    setDateRange([null, null]);
     setError(null);
     onClear();
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
   // Get max date (today) for validation
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date();
 
   return (
     <div className="sales-filters">
-      <div className="sales-filters-row">
-        <div className="filter-group">
-          <label htmlFor="date-from">Desde</label>
-          <input
-            id="date-from"
-            type="date"
-            className="filter-date-input"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            onKeyPress={handleKeyPress}
-            max={today}
-          />
+      {/* Quick filters */}
+      <div className="quick-filters">
+        <span className="quick-filters-label">Filtros rápidos:</span>
+        <div className="quick-filters-buttons">
+          <button
+            className="quick-filter-btn"
+            onClick={() => applyQuickFilter("today")}
+            title="Filtrar ventas de hoy"
+          >
+            Hoy
+          </button>
+          <button
+            className="quick-filter-btn"
+            onClick={() => applyQuickFilter("yesterday")}
+            title="Filtrar ventas de ayer"
+          >
+            Ayer
+          </button>
+          <button
+            className="quick-filter-btn"
+            onClick={() => applyQuickFilter("week")}
+            title="Filtrar últimos 7 días"
+          >
+            Última semana
+          </button>
+          <button
+            className="quick-filter-btn"
+            onClick={() => applyQuickFilter("month")}
+            title="Filtrar últimos 30 días"
+          >
+            Último mes
+          </button>
         </div>
+      </div>
 
-        <div className="filter-group">
-          <label htmlFor="date-to">Hasta</label>
-          <input
-            id="date-to"
-            type="date"
+      <div className="sales-filters-row">
+        <div className="filter-group filter-group-range">
+          <label htmlFor="date-range">Seleccionar rango de fechas</label>
+          <DatePicker
+            id="date-range"
+            selectsRange={true}
+            startDate={dateFrom}
+            endDate={dateTo}
+            onChange={(update) => {
+              setDateRange(update as [Date | null, Date | null]);
+            }}
+            dateFormat="dd/MM/yyyy"
+            maxDate={today}
+            placeholderText="Seleccionar desde - hasta"
             className="filter-date-input"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            onKeyPress={handleKeyPress}
-            max={today}
+            calendarClassName="custom-calendar"
+            showMonthDropdown
+            showYearDropdown
+            dropdownMode="select"
+            popperPlacement="bottom-start"
+            autoComplete="off"
+            monthsShown={1}
+            locale="es"
+            formatWeekDay={(day) => day.charAt(0).toUpperCase()}
           />
         </div>
 

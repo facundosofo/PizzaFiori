@@ -1,0 +1,66 @@
+/* ================================================================
+   DATEPICKER-CUSTOM.CSS - Estilos personalizados para React DatePicker
+   Este archivo debe cargarse DESPUÉS de react-datepicker.css
+   ================================================================ */
+
+/* Dropdowns de mes y año */
+.react-datepicker__month-dropdown-container--select .react-datepicker__month-select,
+.react-datepicker__year-dropdown-container--select .react-datepicker__year-select,
+.react-datepicker__month-select,
+.react-datepicker__year-select {
+  background: linear-gradient(180deg, #1f1f1f 0%, #0d0d0d 100%) !important;
+  border: 2px solid rgba(74, 222, 128, 0.4) !important;
+  border-radius: 8px !important;
+  color: #e8e8e8 !important;
+  padding: 8px 12px !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  min-width: 100px !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Capitalizar el select del mes */
+.react-datepicker__month-select {
+  text-transform: capitalize !important;
+}
+
+/* Capitalizar meses en el dropdown */
+.react-datepicker__month-select option {
+  text-transform: capitalize !important;
+}
+
+.react-datepicker__month-select:hover,
+.react-datepicker__year-select:hover {
+  border-color: #4ade80 !important;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.3) !important;
+}
+
+.react-datepicker__month-select:focus,
+.react-datepicker__year-select:focus {
+  outline: none !important;
+  border-color: #22c55e !important;
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.4) !important;
+}
+
+/* Opciones dentro de los selects */
+.react-datepicker__month-select option,
+.react-datepicker__year-select option {
+  background: #1a1a1a !important;
+  color: #e8e8e8 !important;
+  padding: 10px !important;
+  font-weight: 500 !important;
+}
+
+.react-datepicker__month-select option:hover,
+.react-datepicker__year-select option:hover {
+  background: rgba(74, 222, 128, 0.2) !important;
+  color: #4ade80 !important;
+}
+
+.react-datepicker__month-select option:checked,
+.react-datepicker__year-select option:checked {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
