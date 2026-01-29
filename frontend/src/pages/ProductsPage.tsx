@@ -120,19 +120,6 @@ const ProductosPage = () => {
         <button
           className="btn-create-product"
           onClick={handleCreateClick}
-          style={{
-            padding: "0.75rem 1.5rem",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "1rem",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "background-color 0.3s ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#45a049")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4CAF50")}
         >
           + Nuevo Producto
         </button>

@@ -38,6 +38,28 @@
   margin-top: 60px;
 }
 
+/* Botón para crear nuevo producto */
+.btn-create-product {
+  padding: 0.75rem 1.5rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn-create-product:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.btn-create-product:active {
+  transform: translateY(0);
+}
+
 
 /* ===== CATEGORÍAS ===== */
 
