@@ -203,7 +203,7 @@ const SaleEditModal = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="modal-overlay"
+          className="sale-modal-overlay"
           onClick={handleOverlayClick}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -211,17 +211,17 @@ const SaleEditModal = ({
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className="modal-content sale-edit-modal"
+            className="sale-modal-content sale-edit-modal"
             onClick={(e) => e.stopPropagation()}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="modal-header">
+            <div className="sale-modal-header">
               <h2>Editar Venta</h2>
               <button
-                className="modal-close-btn"
+                className="sale-modal-close-btn"
                 onClick={onClose}
                 aria-label="Cerrar modal"
               >
@@ -229,7 +229,7 @@ const SaleEditModal = ({
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className="sale-modal-body">
               {loading ? (
                 <div className="sale-detail-loading">
                   <motion.div
