@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import type { Sale } from "../types/sale";
 import type { SaleItemWithDetails } from "../types/sale_item";
 import { getSaleById } from "../services/salesService";
+import { getOfertaById } from "../services/ofertasService";
+import type { Offer } from "../types/offer";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sale-modal.css";
 
@@ -22,6 +24,7 @@ const SaleDetailModal = ({
   onClose,
 }: SaleDetailModalProps) => {
   const [sale, setSale] = useState<SaleWithDetails | null>(null);
+  const [offersById, setOffersById] = useState<Record<number, Offer>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,6 +36,34 @@ const SaleDetailModal = ({
           setError("");
           const data = await getSaleById(saleId);
           setSale(data);
+
+          const offerIds = Array.from(
+            new Set(
+              data.items
+                .map((i) => i.oferta_id)
+                .filter((id): id is number => typeof id === "number" && id > 0)
+            )
+          );
+
+          if (offerIds.length > 0) {
+            const offers = await Promise.all(
+              offerIds.map(async (id) => {
+                try {
+                  return await getOfertaById(id);
+                } catch {
+                  return null;
+                }
+              })
+            );
+
+            const next: Record<number, Offer> = {};
+            for (const o of offers) {
+              if (o?.id) next[o.id] = o;
+            }
+            setOffersById(next);
+          } else {
+            setOffersById({});
+          }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : "Error desconocido";
           setError(errorMessage);
@@ -135,12 +166,16 @@ const SaleDetailModal = ({
                         <div key={item.id} className="sale-items-row">
                           <div className="sale-item-col-name">
                             {item.producto_nombre || item.oferta_nombre || "Producto/Oferta no encontrado"}
-                            {item.producto_id && (
-                              <span className="sale-item-type"> (Producto)</span>
-                            )}
-                            {item.oferta_id && (
-                              <span className="sale-item-type"> (Oferta)</span>
-                            )}
+
+                            {item.oferta_id && offersById[item.oferta_id]?.productos?.length ? (
+                              <div style={{ marginTop: 6, paddingLeft: 14 }}>
+                                {offersById[item.oferta_id]!.productos!.map((p) => (
+                                  <div key={p.id} style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.9rem", fontWeight: 600 }}>
+                                    - {p.cantidad * item.cantidad} {p.producto_nombre || (p as any).producto?.nombre || `Producto #${p.producto_id}`}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
                           <div className="sale-item-col-qty">{item.cantidad}</div>
                           <div className="sale-item-col-price">

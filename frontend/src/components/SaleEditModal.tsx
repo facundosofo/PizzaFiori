@@ -5,6 +5,7 @@ import type { SaleItemWithDetails } from "../types/sale_item";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
 import { getSaleById, updateSale } from "../services/salesService";
+import { getOfertaById } from "../services/ofertasService";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/shared/quantity-controls.css";
 import "../styles/sale-modal.css";
@@ -33,9 +34,20 @@ const SaleEditModal = ({
 }: SaleEditModalProps) => {
   const [sale, setSale] = useState<SaleWithDetails | null>(null);
   const [editedItems, setEditedItems] = useState<SaleItemWithDetails[]>([]);
+  const [offersById, setOffersById] = useState<Record<number, Offer>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const toNumber = (value: unknown): number => {
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    if (typeof value === "string") {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (typeof value === "bigint") return Number(value);
+    return 0;
+  };
 
   // Add item state
   const [itemType, setItemType] = useState<"producto" | "oferta">("producto");
@@ -51,7 +63,56 @@ const SaleEditModal = ({
           setError("");
           const data = await getSaleById(saleId);
           setSale(data);
-          setEditedItems(data.items);
+          const normalizedItems =
+            (data.items || []).map((item) => {
+              const precio_unitario = toNumber((item as any).precio_unitario);
+              const cantidad = toNumber((item as any).cantidad) || 0;
+              const subtotal = toNumber((item as any).subtotal);
+              return {
+                ...item,
+                precio_unitario,
+                cantidad,
+                subtotal: subtotal || precio_unitario * cantidad,
+              };
+            });
+          setEditedItems(normalizedItems);
+
+          const offerIds = Array.from(
+            new Set(
+              normalizedItems
+                .map((i) => i.oferta_id)
+                .filter((id): id is number => typeof id === "number" && id > 0)
+            )
+          );
+
+          if (offerIds.length > 0) {
+            const next: Record<number, Offer> = {};
+
+            for (const id of offerIds) {
+              const cached = allOffers.find((o) => o.id === id);
+              if (cached) next[id] = cached;
+            }
+
+            const missingIds = offerIds.filter((id) => !next[id]);
+            if (missingIds.length > 0) {
+              const fetched = await Promise.all(
+                missingIds.map(async (id) => {
+                  try {
+                    return await getOfertaById(id);
+                  } catch {
+                    return null;
+                  }
+                })
+              );
+              for (const o of fetched) {
+                if (o?.id) next[o.id] = o;
+              }
+            }
+
+            setOffersById(next);
+          } else {
+            setOffersById({});
+          }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : "Error desconocido";
           setError(errorMessage);
@@ -71,8 +132,9 @@ const SaleEditModal = ({
     setEditedItems((prev) =>
       prev.map((item) => {
         if (item.id === itemId) {
-          const subtotal = item.precio_unitario * newQuantity;
-          return { ...item, cantidad: newQuantity, subtotal };
+          const precio = toNumber((item as any).precio_unitario);
+          const subtotal = precio * newQuantity;
+          return { ...item, cantidad: newQuantity, precio_unitario: precio, subtotal };
         }
         return item;
       })
@@ -85,8 +147,9 @@ const SaleEditModal = ({
     setEditedItems((prev) =>
       prev.map((item) => {
         if (item.id === itemId) {
-          const subtotal = newPrice * item.cantidad;
-          return { ...item, precio_unitario: newPrice, subtotal };
+          const cantidad = toNumber((item as any).cantidad);
+          const subtotal = newPrice * cantidad;
+          return { ...item, cantidad, precio_unitario: newPrice, subtotal };
         }
         return item;
       })
@@ -153,7 +216,7 @@ const SaleEditModal = ({
   };
 
   const calculateTotal = (): number => {
-    return editedItems.reduce((sum, item) => sum + item.subtotal, 0);
+    return editedItems.reduce((sum, item) => sum + toNumber((item as any).subtotal), 0);
   };
 
   const handleSave = async () => {
@@ -278,12 +341,16 @@ const SaleEditModal = ({
                         <div key={item.id} className="sale-items-row">
                           <div className="sale-item-col-name">
                             {item.producto_nombre || item.oferta_nombre || "Item"}
-                            {item.producto_id && (
-                              <span className="sale-item-type"> (Producto)</span>
-                            )}
-                            {item.oferta_id && (
-                              <span className="sale-item-type"> (Oferta)</span>
-                            )}
+
+                            {item.oferta_id && offersById[item.oferta_id]?.productos?.length ? (
+                              <div style={{ marginTop: 6, paddingLeft: 14 }}>
+                                {offersById[item.oferta_id]!.productos!.map((p) => (
+                                  <div key={p.id} style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.9rem", fontWeight: 600 }}>
+                                    - {toNumber((p as any).cantidad) * toNumber((item as any).cantidad)} {p.producto_nombre || (p as any).producto?.nombre || `Producto #${p.producto_id}`}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
                           <div className="sale-item-col-qty">
                             <div className="quantity-control">

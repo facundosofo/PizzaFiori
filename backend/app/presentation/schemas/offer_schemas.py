@@ -17,6 +17,7 @@ class OfferItemResponse(BaseModel):
     id: int
     producto_id: int
     cantidad: int
+    producto_nombre: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 
