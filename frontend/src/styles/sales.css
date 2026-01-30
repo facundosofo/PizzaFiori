@@ -17,7 +17,7 @@
   align-items: center;
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 3px solid rgba(255, 59, 59, 0.45);
+  border-bottom: 3px solid rgba(109, 255, 122, 0.6);
 }
 
 .sales-header h1 {
@@ -104,7 +104,7 @@
   overflow: hidden;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6),
               0 0 0 1px rgba(255, 255, 255, 0.06),
-              0 0 28px rgba(255, 59, 59, 0.35);
+              0 0 12px rgba(255, 59, 59, 0.35);
 }
 
 .sales-table-header {
@@ -118,7 +118,7 @@
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: #22c55e;
-  border-bottom: 2px solid rgba(255, 59, 59, 0.35);
+  border-bottom: 2px solid rgba(109, 255, 122, 0.6);
 }
 
 .sales-table-row {
