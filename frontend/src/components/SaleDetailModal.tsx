@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import type { Sale } from "../types/sale";
 import type { SaleItemWithDetails } from "../types/sale_item";
 import { getSaleById } from "../services/salesService";
-import { formatCurrency, formatDateDisplay } from "../utils/formatters";
+import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sale-modal.css";
 
 type SaleWithDetails = Omit<Sale, 'items'> & {
@@ -110,7 +110,7 @@ const SaleDetailModal = ({
                     <div className="sale-info-row">
                       <span className="sale-info-label">Fecha:</span>
                       <span className="sale-info-value">
-                        {formatDateDisplay(sale.fecha_creacion)}
+                        {formatDateTimeDisplay(sale.fecha_creacion)}
                       </span>
                     </div>
                     <div className="sale-info-row">
@@ -126,8 +126,8 @@ const SaleDetailModal = ({
                     <div className="sale-items-table">
                       <div className="sale-items-header">
                         <div className="sale-item-col-name">Nombre</div>
-                        <div className="sale-item-col-qty">Cant.</div>
-                        <div className="sale-item-col-price">P. Unit.</div>
+                        <div className="sale-item-col-qty">Cantidad</div>
+                        <div className="sale-item-col-price">Precio unitario</div>
                         <div className="sale-item-col-subtotal">Subtotal</div>
                       </div>
 

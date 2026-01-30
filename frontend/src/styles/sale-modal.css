@@ -39,7 +39,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8),
-              0 0 0 1px rgba(74, 222, 128, 0.2);
+              0 0 0 1px rgba(255, 255, 255, 0.08);
   position: relative;
 }
 
@@ -55,7 +55,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px 30px;
-  border-bottom: 2px solid rgba(74, 222, 128, 0.3);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
 }
 
@@ -66,7 +66,7 @@
   color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  text-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.12);
 }
 
 .sale-modal-close-btn {
@@ -110,12 +110,12 @@
 }
 
 .sale-modal-body::-webkit-scrollbar-thumb {
-  background: #22c55e;
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 4px;
 }
 
 .sale-modal-body::-webkit-scrollbar-thumb:hover {
-  background: #4ade80;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 /* ===== LOADING STATE ===== */
@@ -184,7 +184,7 @@
 
 .sale-info-value {
   font-weight: 700;
-  color: #22c55e;
+  color: #f5f5f5;
   font-size: 1.1rem;
 }
 
@@ -216,10 +216,10 @@
   grid-template-columns: 2fr 1fr 1.2fr 1.2fr;
   gap: 10px;
   padding: 15px 20px;
-  background: rgba(34, 197, 94, 0.1);
-  border-bottom: 2px solid rgba(74, 222, 128, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   font-weight: 700;
-  color: #22c55e;
+  color: rgba(255, 255, 255, 0.85);
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 0.85rem;
@@ -234,8 +234,13 @@
   transition: background 0.2s ease;
 }
 
+.sale-edit-modal .sale-items-header,
+.sale-edit-modal .sale-items-row {
+  grid-template-columns: 2fr 1fr 1.4fr 1.2fr 90px;
+}
+
 .sale-items-row:hover {
-  background: rgba(74, 222, 128, 0.05);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .sale-items-row:last-child {
@@ -249,24 +254,30 @@
 }
 
 .sale-item-type {
-  color: #22c55e;
+  color: rgba(255, 255, 255, 0.65);
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .sale-item-col-qty {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #e8e8e8;
   font-weight: 600;
 }
 
 .sale-item-col-price {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #e8e8e8;
 }
 
 .sale-item-col-subtotal {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #22c55e;
   font-weight: 700;
   text-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
@@ -276,7 +287,7 @@
 
 .sale-total-section {
   background: linear-gradient(180deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
-  border: 2px solid #22c55e;
+  border: 2px solid rgba(34, 197, 94, 0.6);
   border-radius: 12px;
   padding: 20px 30px;
   margin-top: 20px;
@@ -310,7 +321,7 @@
   justify-content: flex-end;
   gap: 15px;
   padding: 20px 30px;
-  border-top: 2px solid rgba(74, 222, 128, 0.2);
+  border-top: 2px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
 }
 
@@ -367,8 +378,8 @@
 
 .sales-btn-save {
   padding: 12px 30px;
-  background: linear-gradient(180deg, #ff3b3b 0%, #cc2f2f 100%);
-  border: 2px solid #ff5252;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  border: 2px solid #6dff7a;
   border-radius: 8px;
   color: #fff;
   font-weight: 600;
@@ -380,8 +391,8 @@
 }
 
 .sales-btn-save:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ff5252 0%, #ff3b3b 100%);
-  box-shadow: 0 0 25px rgba(255, 59, 59, 0.5);
+  background: linear-gradient(180deg, #6dff7a 0%, #4ade80 100%);
+  box-shadow: 0 0 25px rgba(74, 222, 128, 0.4);
   transform: translateY(-2px);
 }
 
@@ -397,14 +408,20 @@
 }
 
 .sale-item-col-actions {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-input.price-input {
+  width: 110px;
 }
 
 .quantity-input {
   width: 70px;
   padding: 6px;
   background: #0d0d0d;
-  border: 2px solid rgba(74, 222, 128, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   color: #f5f5f5;
   font-size: 0.95rem;
@@ -414,17 +431,17 @@
 
 .quantity-input:focus {
   outline: none;
-  border-color: #22c55e;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
 }
 
 .price-input {
   width: 100px;
   padding: 6px;
   background: #0d0d0d;
-  border: 2px solid rgba(34, 197, 94, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
-  color: #22c55e;
+  color: #f5f5f5;
   font-size: 0.95rem;
   text-align: center;
   font-weight: 600;
@@ -433,27 +450,8 @@
 
 .price-input:focus {
   outline: none;
-  border-color: #22c55e;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
-}
-
-.item-remove-btn {
-  background: transparent;
-  border: 2px solid rgba(239, 68, 68, 0.3);
-  border-radius: 6px;
-  color: #ef4444;
-  padding: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.item-remove-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: #ef4444;
-  transform: scale(1.1);
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
 }
 
 /* ===== ADD ITEM SECTION ===== */
@@ -514,8 +512,8 @@
 .form-select:focus,
 .form-input:focus {
   outline: none;
-  border-color: #22c55e;
-  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.18);
 }
 
 .btn-add-item {
@@ -528,8 +526,6 @@
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
   white-space: nowrap;
 }
 
@@ -569,6 +565,11 @@
     gap: 8px;
     padding: 12px 15px;
     font-size: 0.85rem;
+  }
+
+  .sale-edit-modal .sale-items-header,
+  .sale-edit-modal .sale-items-row {
+    grid-template-columns: 1.5fr 0.9fr 1.2fr 1fr 70px;
   }
 
   .sale-items-header {

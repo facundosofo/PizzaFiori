@@ -5,9 +5,10 @@ import type { SaleItemWithDetails } from "../types/sale_item";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
 import { getSaleById, updateSale } from "../services/salesService";
-import { formatCurrency, formatDateDisplay } from "../utils/formatters";
-import { XIcon } from "./shared/Icons";
+import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
+import "../styles/shared/quantity-controls.css";
 import "../styles/sale-modal.css";
+import { XIcon } from "./shared/Icons";
 
 type SaleWithDetails = Omit<Sale, 'items'> & {
   items: SaleItemWithDetails[];
@@ -257,7 +258,7 @@ const SaleEditModal = ({
                     <div className="sale-info-row">
                       <span className="sale-info-label">Fecha:</span>
                       <span className="sale-info-value">
-                        {formatDateDisplay(sale.fecha_creacion)}
+                        {formatDateTimeDisplay(sale.fecha_creacion)}
                       </span>
                     </div>
                   </div>
@@ -267,8 +268,8 @@ const SaleEditModal = ({
                     <div className="sale-items-table">
                       <div className="sale-items-header">
                         <div className="sale-item-col-name">Nombre</div>
-                        <div className="sale-item-col-qty">Cant.</div>
-                        <div className="sale-item-col-price">P. Unit.</div>
+                        <div className="sale-item-col-qty">Cantidad</div>
+                        <div className="sale-item-col-price">Precio unitario</div>
                         <div className="sale-item-col-subtotal">Subtotal</div>
                         <div className="sale-item-col-actions">Acción</div>
                       </div>
@@ -285,27 +286,51 @@ const SaleEditModal = ({
                             )}
                           </div>
                           <div className="sale-item-col-qty">
-                            <input
-                              type="number"
-                              className="quantity-input"
-                              min="1"
-                              max="1000"
-                              value={item.cantidad}
-                              onChange={(e) =>
-                                handleQuantityChange(item.id, parseInt(e.target.value) || 1)
-                              }
-                            />
+                            <div className="quantity-control">
+                              <button
+                                type="button"
+                                className="qty-btn"
+                                aria-label="Disminuir cantidad"
+                                onClick={() => handleQuantityChange(item.id, item.cantidad - 1)}
+                                disabled={saving || loading}
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                max="1000"
+                                className="qty-input"
+                                value={item.cantidad}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) =>
+                                  handleQuantityChange(item.id, parseInt(e.target.value) || 1)
+                                }
+                                disabled={saving || loading}
+                              />
+                              <button
+                                type="button"
+                                className="qty-btn"
+                                aria-label="Aumentar cantidad"
+                                onClick={() => handleQuantityChange(item.id, item.cantidad + 1)}
+                                disabled={saving || loading}
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                           <div className="sale-item-col-price">
                             <input
                               type="number"
-                              className="price-input"
                               min="0"
                               step="0.01"
+                              className="qty-input price-input"
                               value={item.precio_unitario}
+                              onFocus={(e) => e.target.select()}
                               onChange={(e) =>
                                 handlePriceChange(item.id, parseFloat(e.target.value) || 0)
                               }
+                              disabled={saving || loading}
                             />
                           </div>
                           <div className="sale-item-col-subtotal">
@@ -313,7 +338,7 @@ const SaleEditModal = ({
                           </div>
                           <div className="sale-item-col-actions">
                             <button
-                              className="item-remove-btn"
+                              className="price-remove-btn"
                               onClick={() => handleRemoveItem(item.id)}
                               title="Eliminar item"
                             >

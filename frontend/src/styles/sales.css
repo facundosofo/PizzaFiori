@@ -17,7 +17,7 @@
   align-items: center;
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 3px solid rgba(74, 222, 128, 0.4);
+  border-bottom: 3px solid rgba(255, 59, 59, 0.45);
 }
 
 .sales-header h1 {
@@ -102,8 +102,9 @@
   border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
-              0 0 0 1px rgba(74, 222, 128, 0.1);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6),
+              0 0 0 1px rgba(255, 255, 255, 0.06),
+              0 0 28px rgba(255, 59, 59, 0.35);
 }
 
 .sales-table-header {
@@ -117,7 +118,7 @@
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: #22c55e;
-  border-bottom: 2px solid rgba(74, 222, 128, 0.3);
+  border-bottom: 2px solid rgba(255, 59, 59, 0.35);
 }
 
 .sales-table-row {
@@ -154,7 +155,7 @@
 
 .sales-col-total {
   color: #22c55e;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -163,6 +164,7 @@
 }
 
 .sales-col-actions {
+  color: #e8e8e8;
   display: flex;
   align-items: center;
   justify-content: center;

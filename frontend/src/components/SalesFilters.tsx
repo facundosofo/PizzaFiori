@@ -136,7 +136,7 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
             }}
             dateFormat="dd/MM/yyyy"
             maxDate={today}
-            placeholderText="Seleccionar desde - hasta"
+            placeholderText="Seleccionar Desde - Hasta"
             className="filter-date-input"
             calendarClassName="custom-calendar"
             showMonthDropdown

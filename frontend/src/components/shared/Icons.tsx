@@ -76,22 +76,24 @@ export const SearchIcon = ({ size = 20, color = "currentColor", className = "" }
   </svg>
 );
 
-export const XIcon = ({ size = 20, color = "currentColor", className = "" }: IconProps) => (
+export const XIcon = ({size = 20, color = "currentColor", className = "" }: IconProps) => (
   <svg
     width={size}
     height={size}
     viewBox="0 0 24 24"
     fill="none"
     stroke={color}
-    strokeWidth="2"
+    strokeWidth="3.5"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className={className}
+    vectorEffect="non-scaling-stroke"
+    className={`drop-shadow-[0_0_6px_rgba(255,77,79,0.8)] ${className}`}
   >
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+
 
 export const InfoIcon = ({ size = 20, color = "currentColor", className = "" }: IconProps) => (
   <svg

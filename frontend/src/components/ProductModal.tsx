@@ -2,11 +2,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
-import { InfoIcon } from "./shared/Icons";
+import { InfoIcon, XIcon } from "./shared/Icons";
 import ConfirmDialog from "./shared/ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
 import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
 import "../styles/shared/forms.css";
+import "../styles/shared/quantity-controls.css";
 import "../styles/product-modal.css";
 import env from "../config/env";
 
@@ -317,7 +318,7 @@ const ProductModal = ({
 
                           <button
                             type="button"
-                            className="price-remove-btn"
+                            className="price-remove-btn price-remove-btn--gradient"
                             onClick={() => {
                               // Advertir si se intenta eliminar el precio unitario
                               if (precio_item.cantidad === 1 && precios.length > 1) {
@@ -333,7 +334,7 @@ const ProductModal = ({
                               ? "No se puede eliminar el único precio unitario" 
                               : "Eliminar precio"}
                           >
-                            ✕
+                            <XIcon size={16} />
                           </button>
                         </div>
                       ))

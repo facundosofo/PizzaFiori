@@ -27,6 +27,24 @@ export const formatDateDisplay = (isoString: string): string => {
 };
 
 /**
+ * Format a date string (ISO format) to DD/MM/YYYY HH:mm
+ */
+export const formatDateTimeDisplay = (isoString: string): string => {
+  try {
+    const date = new Date(isoString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  } catch (err) {
+    console.error("Error formatting date time:", err);
+    return isoString;
+  }
+};
+
+/**
  * Format a date string to ISO format for API (YYYY-MM-DD HH:mm:ss)
  */
 export const formatDateAPI = (date: Date): string => {
