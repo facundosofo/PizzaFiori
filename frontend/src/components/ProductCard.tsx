@@ -5,7 +5,7 @@ import type { Category } from "../types/category";
 import ProductModal from "./ProductModal";
 import ErrorAlert from "./shared/ErrorAlert";
 import ConfirmDialog from "./shared/ConfirmDialog";
-import { TrashIcon } from "./shared/Icons";
+import { TrashIcon, WarningIcon } from "./shared/Icons";
 import { deactivateProducto } from "../services/productsService";
 import { formatCurrency } from "../utils/formatters";
 import "../styles/product-card.css";
@@ -143,10 +143,10 @@ const ProductCard = ({
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}
-        title="⚠️ Desactivar Producto"
+        title={<><WarningIcon size={18} /> Desactivar Producto</>}
         message={
           <>
-            ¿Está seguro que desea desactivar <strong>{producto.nombre}</strong>?
+            ¿Está seguro que desea desactivar <strong style={{ color: "#ffffff" }}>{producto.nombre}</strong>?
           </>
         }
         confirmText={isDeleting ? "Desactivando..." : "Desactivar"}

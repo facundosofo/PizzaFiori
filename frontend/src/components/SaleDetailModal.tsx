@@ -7,6 +7,7 @@ import { getOfertaById } from "../services/ofertasService";
 import type { Offer } from "../types/offer";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sale-modal.css";
+import { ErrorIcon, SpinnerIcon, XIcon } from "./shared/Icons";
 
 type SaleWithDetails = Omit<Sale, 'items'> & {
   items: SaleItemWithDetails[];
@@ -109,7 +110,7 @@ const SaleDetailModal = ({
                 onClick={onClose}
                 aria-label="Cerrar modal"
               >
-                ✕
+                <XIcon size={18} />
               </button>
             </div>
 
@@ -121,13 +122,15 @@ const SaleDetailModal = ({
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   >
-                    ⟳
+                    <SpinnerIcon size={36} />
                   </motion.div>
                   <p>Cargando detalles...</p>
                 </div>
               ) : error ? (
                 <div className="sale-detail-error">
-                  <p>❌ {error}</p>
+                  <p>
+                    <ErrorIcon size={18} /> {error}
+                  </p>
                 </div>
               ) : sale ? (
                 <>

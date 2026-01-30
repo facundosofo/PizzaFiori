@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
-import { SearchIcon, XIcon } from "./shared/Icons";
+import { SearchIcon, WarningIcon, XIcon } from "./shared/Icons";
 import { validateDateRange } from "../utils/formatters";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/sales-filters.css";
@@ -18,11 +18,6 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [dateFrom, dateTo] = dateRange;
   const [error, setError] = useState<string | null>(null);
-
-  // Helper function to format date to YYYY-MM-DD
-  const formatDateInput = (date: Date): string => {
-    return date.toISOString().split("T")[0];
-  };
 
   // Quick filter helpers
   const applyQuickFilter = (type: "today" | "yesterday" | "week" | "month") => {
@@ -173,7 +168,7 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
 
       {error && (
         <div className="filter-error">
-          ⚠️ {error}
+          <WarningIcon size={18} /> {error}
         </div>
       )}
     </div>

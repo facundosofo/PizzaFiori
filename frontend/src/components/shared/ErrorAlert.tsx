@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import "../../styles/shared/error-alert.css";
+import { ErrorIcon, XIcon } from "./Icons";
 
 interface ErrorAlertProps {
   message: string | null;
@@ -29,7 +30,7 @@ const ErrorAlert = ({
           transition={{ duration: 0.3 }}
         >
           <div className="error-alert-content">
-            <span className="error-alert-icon">❌</span>
+            <span className="error-alert-icon"><ErrorIcon size={18} /></span>
             <div className="error-alert-text">
               <p className="error-alert-title">Error</p>
               <p className="error-alert-message">{message}</p>
@@ -42,7 +43,7 @@ const ErrorAlert = ({
               onClick={onClose}
               aria-label="Cerrar alerta"
             >
-              ✕
+              <XIcon size={18} />
             </button>
           </div>
         </motion.div>

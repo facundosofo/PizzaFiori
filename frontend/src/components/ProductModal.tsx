@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
-import { InfoIcon, XIcon } from "./shared/Icons";
+import { InfoIcon, WarningIcon, XIcon } from "./shared/Icons";
 import ConfirmDialog from "./shared/ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
 import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
@@ -155,7 +155,7 @@ const ProductModal = ({
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="product-modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
+            <button className="product-modal-close" onClick={onClose} aria-label="Cerrar"><XIcon size={18} /></button>
 
             <div className="product-modal-header-edit">
               <h2 className="product-modal-title">{producto.id === 0 ? "Nuevo Producto" : "Editar Producto"}</h2>
@@ -442,7 +442,7 @@ const ProductModal = ({
           {/* Diálogo de confirmación para eliminar precio unitario */}
           <ConfirmDialog
             isOpen={showDeleteWarning}
-            title="⚠️ Eliminar Precio unitario"
+            title={<><WarningIcon size={18} /> Eliminar Precio unitario</>}
             message={
               <>
                 Estás eliminando el precio <strong>Unitario</strong>.

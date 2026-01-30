@@ -8,7 +8,7 @@ import SaleDetailModal from "../components/SaleDetailModal";
 import SaleEditModal from "../components/SaleEditModal";
 import ConfirmDialog from "../components/shared/ConfirmDialog";
 import SalesFilters from "../components/SalesFilters";
-import { EyeIcon, EditIcon, TrashIcon } from "../components/shared/Icons";
+import { EyeIcon, EditIcon, TrashIcon, WarningIcon, XIcon } from "../components/shared/Icons";
 import type { Sale } from "../types/sale";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
@@ -26,7 +26,6 @@ const SalesPage = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
-  const [totalSales, setTotalSales] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
   // Modal state
@@ -72,7 +71,6 @@ const SalesPage = () => {
         const data = await getSales(skip, limit, dateFrom, dateTo);
         
         setSales(data.items || []);
-        setTotalSales(data.total || 0);
         setTotalPages(Math.ceil((data.total || 0) / limit));
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido";
@@ -170,7 +168,7 @@ const SalesPage = () => {
     setSelectedSaleId(null);
   };
 
-  const handleSaveEdit = async (updatedSale: Sale) => {
+  const handleSaveEdit = async (_updatedSale: Sale) => {
     // Refresh current page
     const skip = (currentPage - 1) * limit;
     const data = await getSales(skip, limit);
@@ -195,7 +193,6 @@ const SalesPage = () => {
       const skip = (currentPage - 1) * limit;
       const data = await getSales(skip, limit);
       setSales(data.items || []);
-      setTotalSales(data.total || 0);
       setTotalPages(Math.ceil((data.total || 0) / limit));
       
       setSuccessMessage("Venta eliminada exitosamente");
@@ -232,7 +229,7 @@ const SalesPage = () => {
         <div className="sales-success-alert">
           <p>{successMessage}</p>
           <button onClick={() => setSuccessMessage(null)} className="close-btn">
-            ×
+            <XIcon size={18} />
           </button>
         </div>
       )}
@@ -358,7 +355,7 @@ const SalesPage = () => {
 
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
-        title="Confirmar Eliminación"
+        title={<><WarningIcon size={18} /> Confirmar Eliminación</>}
         message={
           saleToDelete
             ? `¿Estás seguro de que deseas eliminar esta venta?`
