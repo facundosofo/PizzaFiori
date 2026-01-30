@@ -454,7 +454,7 @@ async def test_get_all_sales(mock_uow, mock_logger):
     
     # Assert
     assert len(result) == 2
-    mock_uow.sale_repo.list.assert_called_once_with(skip=0, limit=100)
+    mock_uow.sale_repo.list.assert_called_once_with(skip=0, limit=100, fecha_desde=None, fecha_hasta=None)
 
 
 @pytest.mark.asyncio
@@ -468,7 +468,7 @@ async def test_get_all_sales_with_pagination(mock_uow, mock_logger):
     result = await service.get_all(skip=10, limit=5)
     
     # Assert
-    mock_uow.sale_repo.list.assert_called_once_with(skip=10, limit=5)
+    mock_uow.sale_repo.list.assert_called_once_with(skip=10, limit=5, fecha_desde=None, fecha_hasta=None)
 
 
 @pytest.mark.asyncio

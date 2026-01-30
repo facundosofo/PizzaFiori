@@ -1,5 +1,6 @@
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from app.domain.models.base import Base
 
@@ -20,6 +21,11 @@ class OfferItem(Base):
         "Product",
         back_populates="ofertas"
     )
+
+    @hybrid_property
+    def producto_nombre(self) -> str | None:
+        """Retorna el nombre del producto si existe."""
+        return self.producto.nombre if self.producto else None
 
     def __repr__(self):
         return (

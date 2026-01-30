@@ -6,6 +6,7 @@ export interface OfferItem {
   oferta_id: number;
   producto_id: number;
   cantidad: number;
+  producto_nombre?: string | null;
   oferta?: Offer;
   producto?: Product;
 }

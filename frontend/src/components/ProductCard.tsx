@@ -1,10 +1,13 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import ProductModal from "./ProductModal";
-import ErrorAlert from "./ErrorAlert";
+import ErrorAlert from "./shared/ErrorAlert";
+import ConfirmDialog from "./shared/ConfirmDialog";
+import { TrashIcon, WarningIcon } from "./shared/Icons";
 import { deactivateProducto } from "../services/productsService";
+import { formatCurrency } from "../utils/formatters";
 import "../styles/product-card.css";
 import env from "../config/env";
 
@@ -29,15 +32,6 @@ const ProductCard = ({
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const imageUrl = producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png";
-
-  const formatPrecio = (value: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
-  };
 
   const formatCantidad = (cantidad: number): string => {
     switch (cantidad) {
@@ -104,12 +98,7 @@ const ProductCard = ({
           }}
           title="Desactivar producto"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
-          </svg>
+          <TrashIcon />
         </button>
 
         <div className="product-card-image">
@@ -124,7 +113,7 @@ const ProductCard = ({
               producto.precios.map((precio_item) => (
                 <div key={precio_item.id} className="price-item">
                   <span className="price-cantidad">{formatCantidad(precio_item.cantidad)}</span>
-                  <span className="price-amount">{formatPrecio(precio_item.precio)}</span>
+                  <span className="price-amount">{formatCurrency(precio_item.precio)}</span>
                 </div>
               ))
             ) : (
@@ -152,48 +141,22 @@ const ProductCard = ({
         categorias={categorias}
       />
 
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => !isDeleting && setShowDeleteConfirm(false)}
-          >
-            <motion.div
-              className="confirm-dialog"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-                <h3 className="confirm-title">⚠️ Desactivar Producto</h3>
-              <p className="confirm-message">
-                ¿Está seguro que desea desactivar{" "}
-                <strong>{producto.nombre}</strong>?
-              </p>
-
-              <div className="confirm-actions">
-                <button
-                  className="confirm-cancel-btn"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  disabled={isDeleting}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="confirm-deactivate-btn"
-                  onClick={handleDeactivateProduct}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Desactivando..." : "Desactivar"}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title={<><WarningIcon size={18} /> Desactivar Producto</>}
+        message={
+          <>
+            ¿Está seguro que desea desactivar <strong style={{ color: "#ffffff" }}>{producto.nombre}</strong>?
+          </>
+        }
+        confirmText={isDeleting ? "Desactivando..." : "Desactivar"}
+        cancelText="Cancelar"
+        onConfirm={handleDeactivateProduct}
+        onCancel={() => setShowDeleteConfirm(false)}
+        confirmDanger
+        confirmDisabled={isDeleting}
+        cancelDisabled={isDeleting}
+      />
 
       <ErrorAlert message={deleteError} onClose={() => setDeleteError(null)} />
     </>

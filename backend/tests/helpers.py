@@ -201,7 +201,8 @@ def build_offer_item_model(
     id: int = 1,
     oferta_id: int = 1,
     producto_id: int = 1,
-    cantidad: int = 6
+    cantidad: int = 6,
+    producto_nombre: str = "Empanada de Carne"
 ) -> MagicMock:
     """Build mock OfferItem model instance."""
     item = MagicMock()
@@ -209,6 +210,7 @@ def build_offer_item_model(
     item.oferta_id = oferta_id
     item.producto_id = producto_id
     item.cantidad = cantidad
+    item.producto_nombre = producto_nombre
     return item
 
 
@@ -300,6 +302,8 @@ def build_sale_item_model(
     item.cantidad = cantidad
     item.precio_unitario = Decimal(str(precio_unitario))
     item.subtotal = Decimal(str(subtotal))
+    item.producto_nombre = None
+    item.oferta_nombre = None
     return item
 
 

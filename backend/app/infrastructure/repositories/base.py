@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Generic, List, Optional, TypeVar, Union
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database import Base
@@ -51,3 +51,9 @@ class BaseRepository(Generic[T]):
         attribute_names: Optional[list] = None,
     ) -> None:
         await self.session.refresh(entity, attribute_names=attribute_names)
+
+    async def count(self) -> int:
+        """Count total number of records. Uses index-optimized COUNT(*)."""
+        query = select(func.count()).select_from(self.model)
+        result = await self.session.execute(query)
+        return result.scalar() or 0

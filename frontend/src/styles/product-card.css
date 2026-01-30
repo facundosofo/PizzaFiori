@@ -31,11 +31,33 @@
 }
 
 /* Mensaje cuando no hay productos */
-.empty-state {
+.product-empty-state {
   text-align: center;
   font-size: 1.2rem;
   color: #aaa;
   margin-top: 60px;
+}
+
+/* Botón para crear nuevo producto */
+.btn-create-product {
+  padding: 0.75rem 1.5rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn-create-product:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.btn-create-product:active {
+  transform: translateY(0);
 }
 
 
@@ -109,7 +131,7 @@
 /* ===== SCROLL HORIZONTAL ===== */
 
 /* Contenedor con scroll horizontal para las tarjetas de producto */
-.scroll-horizontal {
+.product-scroll-horizontal {
   display: flex;
   gap: 24px;
   overflow-x: auto;
@@ -122,25 +144,25 @@
 }
 
 /* Altura de la scrollbar en Chrome */
-.scroll-horizontal::-webkit-scrollbar {
+.product-scroll-horizontal::-webkit-scrollbar {
   height: 10px;
 }
 
 /* Track de la scrollbar */
-.scroll-horizontal::-webkit-scrollbar-track {
+.product-scroll-horizontal::-webkit-scrollbar-track {
   background: rgba(255, 59, 59, 0.1);
   border-radius: 10px;
 }
 
 /* Thumb (barra deslizante) de la scrollbar */
-.scroll-horizontal::-webkit-scrollbar-thumb {
+.product-scroll-horizontal::-webkit-scrollbar-thumb {
   background: #ff3b3b;
   border-radius: 10px;
   border: 2px solid rgba(255, 59, 59, 0.3);
 }
 
 /* Hover del thumb de la scrollbar */
-.scroll-horizontal::-webkit-scrollbar-thumb:hover {
+.product-scroll-horizontal::-webkit-scrollbar-thumb:hover {
   background: #ff5252;
 }
 
@@ -357,7 +379,7 @@
   }
 
   /* Menor espacio entre cards en scroll */
-  .scroll-horizontal {
+  .product-scroll-horizontal {
     gap: 16px;
   }
 

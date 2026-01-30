@@ -107,11 +107,21 @@ def configure_logging() -> structlog.BoundLogger:
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
     ]
+    
+    # Procesadores para logs de terceros (sin wrap_for_formatter)
+    foreign_pre_chain = [
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.add_logger_name,
+        add_app_context,
+        structlog.processors.TimeStamper(fmt="iso", utc=False, key="timestamp"),
+        structlog.stdlib.PositionalArgumentsFormatter(),
+    ]
 
     # Formateadores
     formatter = structlog.stdlib.ProcessorFormatter(
         processor=plain_renderer if settings.debug else structlog.processors.JSONRenderer(),
-        foreign_pre_chain=processors,
+        foreign_pre_chain=foreign_pre_chain,
     )
     
     console_handler.setFormatter(formatter)

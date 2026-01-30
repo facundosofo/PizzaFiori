@@ -3,8 +3,8 @@ import { getProductos, createProducto } from "../services/productsService";
 import { getCategorias } from "../services/categoriasService";
 import ProductCard from "../components/ProductCard";
 import ProductModal from "../components/ProductModal";
-import SkeletonLoader from "../components/SkeletonLoader";
-import ErrorAlert from "../components/ErrorAlert";
+import SkeletonLoader from "../components/shared/SkeletonLoader";
+import ErrorAlert from "../components/shared/ErrorAlert";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import "../styles/product-card.css";
@@ -120,19 +120,6 @@ const ProductosPage = () => {
         <button
           className="btn-create-product"
           onClick={handleCreateClick}
-          style={{
-            padding: "0.75rem 1.5rem",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "1rem",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "background-color 0.3s ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#45a049")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4CAF50")}
         >
           + Nuevo Producto
         </button>
@@ -160,7 +147,7 @@ const ProductosPage = () => {
           ))}
         </div>
       ) : categorias.length === 0 ? (
-        <p className="empty-state">No hay categorías disponibles</p>
+        <p className="product-empty-state">No hay categorías disponibles</p>
       ) : (
         categorias.map((cat) => {
           const productosDeCategoria = productos.filter(
@@ -185,7 +172,7 @@ const ProductosPage = () => {
               </div>
 
               {!isCollapsed && (
-                <div className="scroll-horizontal">
+                <div className="product-scroll-horizontal">
                   {productosDeCategoria.map((p) => (
                     <ProductCard
                       key={p.id}

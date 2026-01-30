@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import List, Optional
+from datetime import datetime
 
 from app.domain.models.sale import Sale
 
@@ -20,7 +21,17 @@ class AbstractSaleRepository(ABC):
         self,
         skip: int = 0,
         limit: int = 100,
+        fecha_desde: Optional[datetime] = None,
+        fecha_hasta: Optional[datetime] = None,
     ) -> List[Sale]:
+        ...
+
+    @abstractmethod
+    async def count(
+        self,
+        fecha_desde: Optional[datetime] = None,
+        fecha_hasta: Optional[datetime] = None,
+    ) -> int:
         ...
 
     @abstractmethod

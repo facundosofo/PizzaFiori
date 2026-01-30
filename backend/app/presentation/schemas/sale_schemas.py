@@ -1,8 +1,19 @@
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
 
+
+# ======================================================
+# Query Parameters
+# ======================================================
+
+class SaleFilterParams(BaseModel):
+    """Parámetros de filtrado para la lista de ventas."""
+    skip: int = Field(0, ge=0, description="Número de registros a omitir")
+    limit: int = Field(100, ge=1, le=1000, description="Límite de registros")
+    fecha_desde: Optional[date] = Field(None, description="Fecha inicial del rango (YYYY-MM-DD)")
+    fecha_hasta: Optional[date] = Field(None, description="Fecha final del rango (YYYY-MM-DD)")
 
 # ======================================================
 # Sale Items
@@ -12,6 +23,7 @@ class SaleItemRequest(BaseModel):
     producto_id: Optional[int] = Field(None, gt=0)
     oferta_id: Optional[int] = Field(None, gt=0)
     cantidad: int = Field(..., gt=0, le=1000, description="Cantidad a vender")
+    precio_unitario: Optional[Decimal] = Field(None, gt=0, description="Precio unitario (opcional para updates)")
 
     @model_validator(mode="after")
     def validar_producto_or_oferta(self):
@@ -29,8 +41,22 @@ class SaleItemResponse(BaseModel):
     cantidad: int
     precio_unitario: Decimal
     subtotal: Decimal
+    producto_nombre: Optional[str] = None
+    oferta_nombre: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SaleUpdateRequest(BaseModel):
+    """Request para actualizar una venta existente."""
+    numero_orden: Optional[str] = Field(None, max_length=50)
+    items: List[SaleItemRequest] = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def validar_items(self):
+        if not self.items or len(self.items) == 0:
+            raise ValueError("La venta debe tener al menos un item")
+        return self
 
 
 # ======================================================
@@ -59,5 +85,15 @@ class SaleResponse(BaseModel):
     fecha_creacion: datetime
     fecha_actualizacion: datetime
     items: List[SaleItemResponse]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SaleListResponse(BaseModel):
+    """Respuesta para la lista de ventas con paginación y filtros."""
+    items: List[SaleResponse]
+    total: int = Field(..., description="Total de ventas que coinciden con los filtros")
+    skip: int = Field(..., ge=0, description="Número de registros omitidos")
+    limit: int = Field(..., ge=1, description="Límite de registros por página")
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date, time
 from decimal import Decimal
 import structlog
 
@@ -203,10 +203,21 @@ class SaleService:
         self,
         skip: int = 0,
         limit: int = 100,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
     ) -> List[Sale]:
         try:
+            # Convertir date a datetime
+            fecha_desde_dt = datetime.combine(fecha_desde, time.min) if fecha_desde else None
+            fecha_hasta_dt = datetime.combine(fecha_hasta, time.max) if fecha_hasta else None
+            
             async with self.uow as uow:
-                return await uow.sale_repo.list(skip=skip, limit=limit)
+                return await uow.sale_repo.list(
+                    skip=skip,
+                    limit=limit,
+                    fecha_desde=fecha_desde_dt,
+                    fecha_hasta=fecha_hasta_dt
+                )
         except Exception as e:
             self.logger.error(
                 "Error al listar ventas",
@@ -214,3 +225,146 @@ class SaleService:
                 exc_info=True,
             )
             return []
+
+    async def count_all(
+        self,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+    ) -> int:
+        """Cuenta el total de ventas en la base de datos con filtros opcionales."""
+        try:
+            # Convertir date a datetime
+            fecha_desde_dt = datetime.combine(fecha_desde, time.min) if fecha_desde else None
+            fecha_hasta_dt = datetime.combine(fecha_hasta, time.max) if fecha_hasta else None
+            
+            async with self.uow as uow:
+                return await uow.sale_repo.count(
+                    fecha_desde=fecha_desde_dt,
+                    fecha_hasta=fecha_hasta_dt
+                )
+        except Exception as e:
+            self.logger.error(
+                "Error al contar ventas",
+                error=str(e),
+                exc_info=True,
+            )
+            return 0
+
+    async def update(self, sale_id: int, sale_update) -> ServiceResult:
+        """Actualiza una venta existente."""
+        try:
+            self.logger.debug(
+                "Actualizando venta",
+                sale_id=sale_id,
+                numero_orden=sale_update.numero_orden,
+                items_count=len(sale_update.items),
+            )
+
+            async with self.uow as uow:
+                # Verificar que la venta existe
+                existing_sale = await uow.sale_repo.get_by_id(sale_id)
+                if not existing_sale:
+                    return ServiceResult(
+                        error=f"Venta {sale_id} no encontrada",
+                        status_code=404,
+                    )
+
+                # Calcular nuevos items y total
+                sale_items = []
+                total = Decimal("0.00")
+
+                for item in sale_update.items:
+                    # Usar precio_unitario recibido, validar que exista
+                    if item.precio_unitario is None:
+                        return ServiceResult(
+                            error="Se debe proporcionar precio_unitario para cada item en la actualización",
+                            status_code=400,
+                        )
+                    
+                    precio_unitario = item.precio_unitario
+                    
+                    # Validar que el producto o oferta existe
+                    if item.producto_id:
+                        producto = await uow.product_repo.get_by_id(item.producto_id)
+                        if not producto:
+                            return ServiceResult(
+                                error=f"Producto {item.producto_id} no encontrado",
+                                status_code=404,
+                            )
+                    elif item.oferta_id:
+                        oferta = await uow.offer_repo.get_by_id(item.oferta_id)
+                        if not oferta:
+                            return ServiceResult(
+                                error=f"Oferta {item.oferta_id} no encontrada",
+                                status_code=404,
+                            )
+                    
+                    subtotal = Decimal(str(precio_unitario)) * Decimal(str(item.cantidad))
+                    total += subtotal
+                    
+                    sale_item = SaleItem(
+                        producto_id=item.producto_id,
+                        oferta_id=item.oferta_id,
+                        cantidad=item.cantidad,
+                        precio_unitario=precio_unitario,
+                        subtotal=subtotal,
+                    )
+                    sale_items.append(sale_item)
+
+                # Actualizar venta
+                existing_sale.numero_orden = sale_update.numero_orden
+                existing_sale.total = total
+                existing_sale.fecha_actualizacion = datetime.now()
+                existing_sale.items = sale_items
+
+                await uow.sale_repo.update(existing_sale)
+                await uow.commit()
+                await uow.sale_repo.refresh(existing_sale, attribute_names=["items"])
+
+            self.logger.info(
+                "Venta actualizada exitosamente",
+                sale_id=sale_id,
+                total=float(existing_sale.total),
+                items_count=len(existing_sale.items),
+            )
+
+            return ServiceResult(value=existing_sale)
+
+        except Exception as e:
+            self.logger.error(
+                "Error al actualizar venta",
+                sale_id=sale_id,
+                error=str(e),
+                exc_info=True,
+            )
+            return ServiceResult(error=str(e), status_code=400)
+
+    async def delete(self, sale_id: int) -> ServiceResult:
+        """Elimina una venta."""
+        try:
+            self.logger.debug("Eliminando venta", sale_id=sale_id)
+
+            async with self.uow as uow:
+                sale = await uow.sale_repo.get_by_id(sale_id)
+                
+                if not sale:
+                    return ServiceResult(
+                        error=f"Venta {sale_id} no encontrada",
+                        status_code=404,
+                    )
+
+                await uow.sale_repo.delete(sale)
+                await uow.commit()
+
+            self.logger.info("Venta eliminada exitosamente", sale_id=sale_id)
+
+            return ServiceResult(status_code=204)
+
+        except Exception as e:
+            self.logger.error(
+                "Error al eliminar venta",
+                sale_id=sale_id,
+                error=str(e),
+                exc_info=True,
+            )
+            return ServiceResult(error=str(e), status_code=400)

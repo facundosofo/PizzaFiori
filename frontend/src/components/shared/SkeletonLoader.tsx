@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import "../styles/skeleton.css";
+import "../../styles/shared/skeleton.css";
 
 const SkeletonLoader = () => {
   return (
