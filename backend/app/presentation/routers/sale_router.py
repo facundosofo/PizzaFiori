@@ -49,6 +49,12 @@ async def get_sales(
     filters: SaleFilterParams = Depends(),
     service: SaleService = Depends(Provide[Container.sale_service]),
 ):
+    if filters.fecha_desde and filters.fecha_hasta and filters.fecha_desde > filters.fecha_hasta:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="fecha_desde debe ser menor o igual a fecha_hasta",
+        )
+
     sales = await service.get_all(
         skip=filters.skip,
         limit=filters.limit,

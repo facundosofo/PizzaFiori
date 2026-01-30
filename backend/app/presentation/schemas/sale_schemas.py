@@ -15,14 +15,6 @@ class SaleFilterParams(BaseModel):
     fecha_desde: Optional[date] = Field(None, description="Fecha inicial del rango (YYYY-MM-DD)")
     fecha_hasta: Optional[date] = Field(None, description="Fecha final del rango (YYYY-MM-DD)")
 
-    @model_validator(mode="after")
-    def validar_rango_fechas(self):
-        if self.fecha_desde and self.fecha_hasta:
-            if self.fecha_desde > self.fecha_hasta:
-                raise ValueError("fecha_desde debe ser menor o igual a fecha_hasta")
-        return self
-
-
 # ======================================================
 # Sale Items
 # ======================================================

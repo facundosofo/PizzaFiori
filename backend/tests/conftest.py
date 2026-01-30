@@ -5,7 +5,7 @@ Provides common fixtures for all tests including mocks and test clients.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
 
 from app.main import app as application, container
@@ -210,7 +210,10 @@ def mock_sale_service():
     
     service.create = AsyncMock(return_value=result)
     service.get_all = AsyncMock(return_value=[])
+    service.count_all = AsyncMock(return_value=0)
     service.get_by_id = AsyncMock(return_value=result)
+    service.update = AsyncMock(return_value=result)
+    service.delete = AsyncMock(return_value=result)
     
     return service
 
@@ -232,7 +235,8 @@ async def async_client(mock_category_service, mock_product_service, mock_offer_s
     container.sale_service.override(mock_sale_service)
     
     try:
-        async with AsyncClient(app=application, base_url="http://test") as client:
+        transport = ASGITransport(app=application, raise_app_exceptions=False)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             yield client
     finally:
         # Reset overrides after test
