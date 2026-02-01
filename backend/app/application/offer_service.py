@@ -39,13 +39,53 @@ class OfferService:
             )
             #TODO: Analizar performance si es mejor dejar que falle la BD por FK
             async with self.uow as uow:
+                # Validar que productos/categorías/opciones existan
                 for item in offer_create.productos:
-                    producto = await uow.product_repo.get_by_id(item.producto_id)
-                    if not producto:
-                        return ServiceResult(
-                            error=f"Producto {item.producto_id} no encontrado",
-                            status_code=404,
-                        )
+                    if item.producto_id is not None:
+                        producto = await uow.product_repo.get_by_id(item.producto_id)
+                        if not producto:
+                            return ServiceResult(
+                                error=f"Producto {item.producto_id} no encontrado",
+                                status_code=404,
+                            )
+                    elif item.categoria_id is not None:
+                        categoria = await uow.category_repo.get_by_id(item.categoria_id)
+                        if not categoria:
+                            return ServiceResult(
+                                error=f"Categoría {item.categoria_id} no encontrada",
+                                status_code=404,
+                            )
+                    elif item.producto_opciones is not None:
+                        # Validar que todos los productos en opciones existan
+                        for producto_id in item.producto_opciones:
+                            producto = await uow.product_repo.get_by_id(producto_id)
+                            if not producto:
+                                return ServiceResult(
+                                    error=f"Producto {producto_id} en opciones no encontrado",
+                                    status_code=404,
+                                )
+
+                # Crear items de oferta
+                offer_items = []
+                for item in offer_create.productos:
+                    # Determinar qué productos asociar
+                    productos_asociados = []
+                    
+                    if item.producto_id is not None:
+                        producto = await uow.product_repo.get_by_id(item.producto_id)
+                        productos_asociados.append(producto)
+                    elif item.producto_opciones is not None:
+                        # Obtener objetos Product para las opciones
+                        for producto_id in item.producto_opciones:
+                            producto = await uow.product_repo.get_by_id(producto_id)
+                            productos_asociados.append(producto)
+                    
+                    # Crear el item (con productos o solo categoría)
+                    offer_items.append(OfferItem(
+                        categoria_id=item.categoria_id,
+                        cantidad=item.cantidad,
+                        productos=productos_asociados,
+                    ))
 
                 offer = Offer(
                     nombre=offer_create.nombre,
@@ -54,18 +94,12 @@ class OfferService:
                     activo=True,
                     fecha_creacion=datetime.now(),
                     fecha_actualizacion=datetime.now(),
-                    productos=[
-                        OfferItem(
-                            producto_id=item.producto_id,
-                            cantidad=item.cantidad,
-                        )
-                        for item in offer_create.productos
-                    ],
+                    productos=offer_items,
                 )
 
                 await uow.offer_repo.add(offer)
                 await uow.commit()
-                await uow.offer_repo.refresh(offer, attribute_names=["productos"])
+                offer = await uow.offer_repo.get_by_id(offer.id)
 
             self.logger.info(
                 "Oferta creada exitosamente",
@@ -132,32 +166,65 @@ class OfferService:
                         status_code=404,
                     )
 
-                if offer_update.nombre is not None:
-                    offer.nombre = offer_update.nombre
-                if offer_update.descripcion is not None:
-                    offer.descripcion = offer_update.descripcion
-                if offer_update.precio is not None:
-                    offer.precio = offer_update.precio
+                if offer_update is not None:
+                    if offer_update.nombre is not None:
+                        offer.nombre = offer_update.nombre
+                    if offer_update.descripcion is not None:
+                        offer.descripcion = offer_update.descripcion
+                    if offer_update.precio is not None:
+                        offer.precio = offer_update.precio
                 if active is not None:
                     offer.activo = active
                     
                 #TODO: Analizar performance si es mejor dejar que falle la BD por FK
-                if offer_update.productos is not None:
+                if offer_update is not None and offer_update.productos is not None:
+                    # Validar que productos/categorías/opciones existan
                     for item in offer_update.productos:
-                        producto = await uow.product_repo.get_by_id(item.producto_id)
-                        if not producto:
-                            return ServiceResult(
-                                error=f"Producto {item.producto_id} no encontrado",
-                                status_code=404,
-                            )
+                        if item.producto_id is not None:
+                            producto = await uow.product_repo.get_by_id(item.producto_id)
+                            if not producto:
+                                return ServiceResult(
+                                    error=f"Producto {item.producto_id} no encontrado",
+                                    status_code=404,
+                                )
+                        elif item.categoria_id is not None:
+                            categoria = await uow.category_repo.get_by_id(item.categoria_id)
+                            if not categoria:
+                                return ServiceResult(
+                                    error=f"Categoría {item.categoria_id} no encontrada",
+                                    status_code=404,
+                                )
+                        elif item.producto_opciones is not None:
+                            # Validar que todos los productos en opciones existan
+                            for producto_id in item.producto_opciones:
+                                producto = await uow.product_repo.get_by_id(producto_id)
+                                if not producto:
+                                    return ServiceResult(
+                                        error=f"Producto {producto_id} en opciones no encontrado",
+                                        status_code=404,
+                                    )
 
-                    new_items = [
-                        OfferItem(
-                            producto_id=item.producto_id,
+                    # Crear nuevos items
+                    new_items = []
+                    for item in offer_update.productos:
+                        # Determinar qué productos asociar
+                        productos_asociados = []
+                        
+                        if item.producto_id is not None:
+                            producto = await uow.product_repo.get_by_id(item.producto_id)
+                            productos_asociados.append(producto)
+                        elif item.producto_opciones is not None:
+                            # Obtener objetos Product para las opciones
+                            for producto_id in item.producto_opciones:
+                                producto = await uow.product_repo.get_by_id(producto_id)
+                                productos_asociados.append(producto)
+                        
+                        # Crear el item (con productos o solo categoría)
+                        new_items.append(OfferItem(
+                            categoria_id=item.categoria_id,
                             cantidad=item.cantidad,
-                        )
-                        for item in offer_update.productos
-                    ]
+                            productos=productos_asociados,
+                        ))
                     
                     from app.infrastructure.repositories.offer_repository import SqlAlchemyOfferRepository
                     if isinstance(uow.offer_repo, SqlAlchemyOfferRepository):
@@ -167,7 +234,7 @@ class OfferService:
 
                 await uow.offer_repo.update(offer)
                 await uow.commit()
-                await uow.offer_repo.refresh(offer, attribute_names=["productos"])
+                offer = await uow.offer_repo.get_by_id(offer_id)
 
             self.logger.info("Oferta actualizada", offer_id=offer_id)
 

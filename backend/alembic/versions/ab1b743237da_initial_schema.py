@@ -1,8 +1,8 @@
 """Initial schema
 
-Revision ID: f0ee2529b595
+Revision ID: ab1b743237da
 Revises: 
-Create Date: 2026-01-22 22:55:24.796735
+Create Date: 2026-02-01 15:30:05.475215
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f0ee2529b595'
+revision: str = 'ab1b743237da'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -48,6 +48,16 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_Ventas_id'), 'Ventas', ['id'], unique=False)
+    op.create_table('OfertaItems',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('oferta_id', sa.Integer(), nullable=False),
+    sa.Column('categoria_id', sa.Integer(), nullable=True),
+    sa.Column('cantidad', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['categoria_id'], ['Categorias.id'], ),
+    sa.ForeignKeyConstraint(['oferta_id'], ['Ofertas.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_OfertaItems_id'), 'OfertaItems', ['id'], unique=False)
     op.create_table('Productos',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('nombre', sa.String(length=255), nullable=False),
@@ -60,16 +70,13 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_Productos_id'), 'Productos', ['id'], unique=False)
-    op.create_table('OfertaItems',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('oferta_id', sa.Integer(), nullable=False),
+    op.create_table('OfertaItemProductos',
+    sa.Column('oferta_item_id', sa.Integer(), nullable=False),
     sa.Column('producto_id', sa.Integer(), nullable=False),
-    sa.Column('cantidad', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['oferta_id'], ['Ofertas.id'], ),
-    sa.ForeignKeyConstraint(['producto_id'], ['Productos.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.ForeignKeyConstraint(['oferta_item_id'], ['OfertaItems.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['producto_id'], ['Productos.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('oferta_item_id', 'producto_id')
     )
-    op.create_index(op.f('ix_OfertaItems_id'), 'OfertaItems', ['id'], unique=False)
     op.create_table('ProductoPrecios',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('producto_id', sa.Integer(), nullable=False),
@@ -106,10 +113,11 @@ def downgrade() -> None:
     op.drop_table('VentaItems')
     op.drop_index(op.f('ix_ProductoPrecios_id'), table_name='ProductoPrecios')
     op.drop_table('ProductoPrecios')
-    op.drop_index(op.f('ix_OfertaItems_id'), table_name='OfertaItems')
-    op.drop_table('OfertaItems')
+    op.drop_table('OfertaItemProductos')
     op.drop_index(op.f('ix_Productos_id'), table_name='Productos')
     op.drop_table('Productos')
+    op.drop_index(op.f('ix_OfertaItems_id'), table_name='OfertaItems')
+    op.drop_table('OfertaItems')
     op.drop_index(op.f('ix_Ventas_id'), table_name='Ventas')
     op.drop_table('Ventas')
     op.drop_index(op.f('ix_Ofertas_id'), table_name='Ofertas')

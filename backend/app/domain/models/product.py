@@ -27,10 +27,5 @@ class Product(Base):
         cascade="all, delete-orphan"
     )
 
-    ofertas = relationship(
-        "OfferItem",
-        back_populates="producto"
-    )
-
     def __repr__(self):
         return f"<Product(id={self.id}, nombre={self.nombre})>"

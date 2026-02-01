@@ -24,7 +24,8 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
             select(Offer)
             .where(Offer.id == offer_id)
             .options(
-                selectinload(Offer.productos).selectinload(OfferItem.producto)
+                selectinload(Offer.productos).selectinload(OfferItem.productos),
+                selectinload(Offer.productos).selectinload(OfferItem.categoria),
             )
         )
         result = await self.session.execute(query)
@@ -35,7 +36,8 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
         active: Optional[bool] = None,
     ) -> List[Offer]:
         query = select(Offer).options(
-            selectinload(Offer.productos).selectinload(OfferItem.producto)
+            selectinload(Offer.productos).selectinload(OfferItem.productos),
+            selectinload(Offer.productos).selectinload(OfferItem.categoria),
         )
 
         if active is not None:
