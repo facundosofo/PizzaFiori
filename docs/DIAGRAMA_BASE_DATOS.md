@@ -9,9 +9,11 @@ La base de datos de PizzaFiori está diseñada para gestionar productos, categor
 ```mermaid
 erDiagram
     Categorias ||--o{ Productos : "tiene"
+    Categorias ||--o{ OfertaItems : "permite seleccionar"
     Productos ||--o{ ProductoPrecios : "tiene"
-    Productos ||--o{ OfertaItems : "incluye"
+    Productos ||--o{ OfertaItemProductos : "incluye"
     Ofertas ||--o{ OfertaItems : "contiene"
+    OfertaItems ||--o{ OfertaItemProductos : "puede tener"
     
     Categorias {
         int id PK
@@ -51,8 +53,13 @@ erDiagram
     OfertaItems {
         int id PK
         int oferta_id FK
-        int producto_id FK
+        int categoria_id FK "nullable"
         int cantidad
+    }
+    
+    OfertaItemProductos {
+        int oferta_item_id PK,FK
+        int producto_id PK,FK
     }
 ```
 
@@ -189,7 +196,9 @@ id | nombre              | descripcion                    | precio  | activo | f
 
 **Tabla:** `OfertaItems`
 
-**Descripción:** Tabla de relación que conecta ofertas con productos, indicando qué productos y en qué cantidad forman parte de cada oferta
+**Descripción:** Representa un item dentro de una oferta. Puede ser:
+- **Uno o varios productos específicos** (a través de la tabla `OfertaItemProductos`)
+- **Una categoría** para que el cliente elija cualquier producto de esa categoría
 
 **Campos:**
 
@@ -197,24 +206,57 @@ id | nombre              | descripcion                    | precio  | activo | f
 |-------|------|---------------|-------------|
 | `id` | INTEGER | PRIMARY KEY, AUTO_INCREMENT | Identificador único del item |
 | `oferta_id` | INTEGER | FOREIGN KEY, NOT NULL | ID de la oferta |
-| `producto_id` | INTEGER | FOREIGN KEY, NOT NULL | ID del producto incluido en la oferta |
-| `cantidad` | INTEGER | NOT NULL, DEFAULT 1 | Cantidad del producto en la oferta |
+| `categoria_id` | INTEGER | FOREIGN KEY, NULLABLE | ID de la categoría (si el cliente puede elegir de una categoría) |
+| `cantidad` | INTEGER | NOT NULL, DEFAULT 1 | Cantidad del producto/categoría en la oferta |
 
 **Relaciones:**
 - **Muchos a Uno** con `Ofertas`: Un item pertenece a una oferta
-- **Muchos a Uno** con `Productos`: Un item referencia un producto
+- **Muchos a Uno** con `Categorias`: Un item puede referenciar una categoría (opcional)
+- **Uno a Muchos** con `OfertaItemProductos`: Un item puede tener múltiples productos asociados
 
 **Índices:**
 - `ix_OfertaItems_id`: Índice en el campo `id`
 
 **Ejemplo de datos:**
 ```
-id | oferta_id | producto_id | cantidad
----|-----------|-------------|----------
-1  | 1         | 1           | 2        (2 Pizzas Muzzarella)
-2  | 1         | 2           | 2        (2 Bebidas)
-3  | 2         | 1           | 1        (1 Pizza Muzzarella)
-4  | 2         | 2           | 1        (1 Bebida)
+id | oferta_id | categoria_id | cantidad | Descripción
+---|-----------|--------------|----------|-------------
+1  | 1         | NULL         | 1        | 1 producto específico (ver OfertaItemProductos)
+2  | 1         | 2            | 2        | 2 bebidas a elección del cliente
+3  | 2         | NULL         | 1        | Opciones: Pizza Napolitana O Calabresa O Jamón (ver OfertaItemProductos)
+```
+
+### 6. OfertaItemProductos
+
+**Tabla:** `OfertaItemProductos`
+
+**Descripción:** Tabla intermedia (junction table) que conecta items de oferta con productos. Permite que un item tenga:
+- **1 producto específico** (1 registro)
+- **N productos como opciones** (N registros) - el cliente elige uno
+
+**Campos:**
+
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|---------------|-------------|
+| `oferta_item_id` | INTEGER | PRIMARY KEY, FOREIGN KEY | ID del item de oferta |
+| `producto_id` | INTEGER | PRIMARY KEY, FOREIGN KEY | ID del producto |
+
+**Relaciones:**
+- **Muchos a Uno** con `OfertaItems`: Un registro pertenece a un item
+- **Muchos a Uno** con `Productos`: Un registro referencia un producto
+
+**Constraints:**
+- **Primary Key Compuesta:** (`oferta_item_id`, `producto_id`)
+- **Foreign Keys con CASCADE:** Si se elimina un item u oferta, se eliminan estos registros
+
+**Ejemplo de datos:**
+```
+oferta_item_id | producto_id | Descripción
+---------------|-------------|-------------
+1              | 1           | Item 1 tiene solo Pizza Muzzarella
+3              | 5           | Item 3 puede ser Pizza Napolitana
+3              | 6           | Item 3 puede ser Pizza Calabresa
+3              | 7           | Item 3 puede ser Pizza Jamón y Morrón
 ```
 
 ## Relaciones Detalladas
@@ -240,12 +282,26 @@ id | oferta_id | producto_id | cantidad
 - **Foreign Key:** `OfertaItems.oferta_id` → `Ofertas.id`
 - **Comportamiento:** Si se elimina una oferta, se eliminan sus items (CASCADE)
 
-### Relación Productos → OfertaItems
+### Relación Categorias → OfertaItems
 
 - **Tipo:** Uno a Muchos (1:N)
-- **Cardinalidad:** Un producto puede estar en cero o muchas ofertas
-- **Foreign Key:** `OfertaItems.producto_id` → `Productos.id`
-- **Comportamiento:** Si se elimina un producto, se eliminan los items de oferta que lo referencian
+- **Cardinalidad:** Una categoría puede estar en cero o muchos items de oferta
+- **Foreign Key:** `OfertaItems.categoria_id` → `Categorias.id`
+- **Comportamiento:** Si se elimina una categoría, los items mantienen `categoria_id = NULL`
+
+### Relación OfertaItems → OfertaItemProductos
+
+- **Tipo:** Uno a Muchos (1:N)
+- **Cardinalidad:** Un item puede tener uno o muchos productos asociados
+- **Foreign Key:** `OfertaItemProductos.oferta_item_id` → `OfertaItems.id`
+- **Comportamiento:** Si se elimina un item, se eliminan sus productos asociados (CASCADE)
+
+### Relación Productos → OfertaItemProductos
+
+- **Tipo:** Uno a Muchos (1:N)
+- **Cardinalidad:** Un producto puede estar en cero o muchos items de oferta
+- **Foreign Key:** `OfertaItemProductos.producto_id` → `Productos.id`
+- **Comportamiento:** Si se elimina un producto, se eliminan las asociaciones (CASCADE)
 
 ## Constraints y Validaciones
 
@@ -278,7 +334,10 @@ id | oferta_id | producto_id | cantidad
 
 4. **OfertaItems:**
    - La cantidad debe ser mayor a 0
-   - El producto debe existir y estar activo
+   - Debe tener productos asociados (via `OfertaItemProductos`) O una categoría, pero no ambos
+   - Si tiene productos, deben existir y estar activos
+   - Si tiene `producto_opciones` (múltiples productos), debe tener al menos 2 productos
+   - Si tiene categoría, la categoría debe existir
 
 ## Índices y Optimizaciones
 

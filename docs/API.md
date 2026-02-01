@@ -506,7 +506,7 @@ POST /ofertas
       "cantidad": 2
     },
     {
-      "producto_id": 2,
+      "categoria_id": 2,
       "cantidad": 2
     }
   ]
@@ -520,12 +520,34 @@ POST /ofertas
 | `nombre` | string | Sí | Nombre de la oferta (1-255 caracteres) |
 | `descripcion` | string | No | Descripción de la oferta (máx. 1000 caracteres) |
 | `precio` | decimal | Sí | Precio total de la oferta (> 0, máx. 1,000,000) |
-| `productos` | array | Sí | Lista de productos incluidos (mín. 1 producto) |
+| `productos` | array | Sí | Lista de items incluidos (mín. 1 item) |
+
+**Estructura de cada item en `productos`:**
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `producto_id` | integer | Condicional | ID del producto específico |
+| `categoria_id` | integer | Condicional | ID de la categoría (cliente elige producto) |
+| `producto_opciones` | array[integer] | Condicional | Lista de IDs de productos alternativos (mín. 2) |
+| `cantidad` | integer | Sí | Cantidad del item (1-100, default: 1) |
 
 **Validaciones:**
-- Debe tener al menos un producto
-- No se permiten productos duplicados
-- Todos los productos deben existir
+- Debe tener al menos un item
+- Cada item debe tener **exactamente uno** de: `producto_id`, `categoria_id`, o `producto_opciones`
+- Si usa `producto_opciones`, debe tener al menos 2 productos
+- Todos los productos y categorías deben existir
+
+**Ejemplos de items válidos:**
+```json
+// Item con producto específico
+{"producto_id": 1, "cantidad": 2}
+
+// Item con categoría (cliente elige)
+{"categoria_id": 2, "cantidad": 1}
+
+// Item con opciones múltiples (cliente elige 1 de N)
+{"producto_opciones": [5, 6, 7], "cantidad": 1}
+```
 
 **Respuesta Exitosa (201):**
 ```json
@@ -540,13 +562,23 @@ POST /ofertas
   "productos": [
     {
       "id": 1,
-      "producto_id": 1,
-      "cantidad": 2
+      "categoria_id": null,
+      "cantidad": 2,
+      "categoria_nombre": null,
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Pizza Muzzarella",
+          "imagen": "productos/muzzarella.jpg"
+        }
+      ]
     },
     {
       "id": 2,
-      "producto_id": 2,
-      "cantidad": 2
+      "categoria_id": 2,
+      "cantidad": 2,
+      "categoria_nombre": "Bebidas",
+      "productos": []
     }
   ]
 }
@@ -556,8 +588,10 @@ POST /ofertas
 - `400`: Datos inválidos
 - `404`: Uno o más productos no encontrados
 
-**Ejemplo:**
+**Ejemplos:**
+
 ```bash
+# Oferta con productos específicos
 curl -X POST "http://localhost:8000/ofertas" \
   -H "Content-Type: application/json" \
   -d '{
@@ -566,7 +600,19 @@ curl -X POST "http://localhost:8000/ofertas" \
     "precio": 3500.00,
     "productos": [
       {"producto_id": 1, "cantidad": 2},
-      {"producto_id": 2, "cantidad": 2}
+      {"categoria_id": 2, "cantidad": 2}
+    ]
+  }'
+
+# Oferta con opciones múltiples
+curl -X POST "http://localhost:8000/ofertas" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Pizza Especial",
+    "descripcion": "Elegí tu pizza favorita",
+    "precio": 2500.00,
+    "productos": [
+      {"producto_opciones": [5, 6, 7], "cantidad": 1}
     ]
   }'
 ```
@@ -815,6 +861,57 @@ http://localhost:8000/uploads/productos/muzzarella.jpg
 4. **Soft Delete:** Los productos y ofertas no se eliminan físicamente, se marcan como `activo: false`
 
 5. **Validaciones:** La API valida todos los datos antes de procesarlos. Revisa los mensajes de error para más detalles.
+
+## Casos de Uso de Ofertas
+
+### Caso 1: Producto Específico
+Oferta con productos fijos (ej: "2 Pizzas Muzzarella + 1 Coca Cola")
+
+```json
+{
+  "productos": [
+    {"producto_id": 1, "cantidad": 2},
+    {"producto_id": 3, "cantidad": 1}
+  ]
+}
+```
+
+### Caso 2: Elección por Categoría
+Oferta donde el cliente elige de una categoría (ej: "Cualquier pizza + cualquier bebida")
+
+```json
+{
+  "productos": [
+    {"categoria_id": 1, "cantidad": 1},
+    {"categoria_id": 2, "cantidad": 1}
+  ]
+}
+```
+
+### Caso 3: Opciones Múltiples
+Oferta con productos alternativos (ej: "Pizza Napolitana O Calabresa O Jamón")
+
+```json
+{
+  "productos": [
+    {"producto_opciones": [5, 6, 7], "cantidad": 1},
+    {"producto_id": 3, "cantidad": 1}
+  ]
+}
+```
+
+### Caso 4: Combinación
+Oferta mixta (ej: "1 Pizza a elección + 6 empanadas específicas + bebida a elección")
+
+```json
+{
+  "productos": [
+    {"producto_opciones": [5, 6, 7, 8], "cantidad": 1},
+    {"producto_id": 10, "cantidad": 6},
+    {"categoria_id": 2, "cantidad": 1}
+  ]
+}
+```
 
 ## Ejemplos de Uso Completo
 
