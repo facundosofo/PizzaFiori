@@ -2,12 +2,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
-import { InfoIcon, WarningIcon, XIcon } from "./shared/Icons";
+import { InfoIcon, WarningIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
 import ConfirmDialog from "./shared/ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
 import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
 import "../styles/shared/forms.css";
 import "../styles/shared/quantity-controls.css";
+import "../styles/shared/add-button.css";
 import "../styles/product-modal.css";
 import env from "../config/env";
 
@@ -239,7 +240,7 @@ const ProductModal = ({
                                 }}
                                 disabled={loading}
                               >
-                                −
+                                <MinusIcon size={14} />
                               </button>
                               <input
                                 type="number"
@@ -267,7 +268,7 @@ const ProductModal = ({
                                 }}
                                 disabled={loading}
                               >
-                                +
+                                <PlusIcon size={14} />
                               </button>
                             </div>
                           </div>
@@ -363,7 +364,7 @@ const ProductModal = ({
                     }}
                     disabled={loading}
                   >
-                    + Agregar Precio
+                    <PlusIcon size={16} /> Agregar Precio
                   </button>
                 </div>
 

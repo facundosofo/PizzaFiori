@@ -5,6 +5,7 @@ import ProductCard from "../components/ProductCard";
 import ProductModal from "../components/ProductModal";
 import SkeletonLoader from "../components/shared/SkeletonLoader";
 import ErrorAlert from "../components/shared/ErrorAlert";
+import { PlusIcon } from "../components/shared/Icons";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import "../styles/product-card.css";
@@ -115,13 +116,13 @@ const ProductosPage = () => {
 
   return (
     <div className="productos-container">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-        <h1 className="productos-title">Productos</h1>
+      <div className="page-header">
+        <h1 className="page-title">Productos</h1>
         <button
           className="btn-create-product"
           onClick={handleCreateClick}
         >
-          + Nuevo Producto
+          <PlusIcon size={16} /> Nuevo Producto
         </button>
       </div>
 

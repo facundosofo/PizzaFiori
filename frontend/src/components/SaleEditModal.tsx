@@ -8,8 +8,9 @@ import { getSaleById, updateSale } from "../services/salesService";
 import { getOfertaById } from "../services/ofertasService";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/shared/quantity-controls.css";
+import "../styles/shared/add-button.css";
 import "../styles/sale-modal.css";
-import { ErrorIcon, SpinnerIcon, XIcon } from "./shared/Icons";
+import { ErrorIcon, SpinnerIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
 
 type SaleWithDetails = Omit<Sale, 'items'> & {
   items: SaleItemWithDetails[];
@@ -363,7 +364,7 @@ const SaleEditModal = ({
                                 onClick={() => handleQuantityChange(item.id, item.cantidad - 1)}
                                 disabled={saving || loading}
                               >
-                                −
+                                <MinusIcon size={14} />
                               </button>
                               <input
                                 type="number"
@@ -384,7 +385,7 @@ const SaleEditModal = ({
                                 onClick={() => handleQuantityChange(item.id, item.cantidad + 1)}
                                 disabled={saving || loading}
                               >
-                                +
+                                <PlusIcon size={14} />
                               </button>
                             </div>
                           </div>
@@ -484,7 +485,7 @@ const SaleEditModal = ({
                         <div className="form-group">
                           <label>&nbsp;</label>
                           <button className="btn-add-item" onClick={handleAddItem}>
-                            + Agregar
+                            <PlusIcon size={16} /> Agregar
                           </button>
                         </div>
                       </div>

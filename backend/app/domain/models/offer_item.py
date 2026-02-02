@@ -35,8 +35,14 @@ class OfferItem(Base):
 
     categoria = relationship(
         "Category",
-        back_populates="oferta_items"
+        back_populates="oferta_items",
+        lazy="selectin"
     )
+
+    @hybrid_property
+    def categoria_nombre(self):
+        """Retorna el nombre de la categoría si existe."""
+        return self.categoria.nombre if self.categoria else None
 
     def __repr__(self):
         return (

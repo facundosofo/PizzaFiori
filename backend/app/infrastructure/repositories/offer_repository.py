@@ -43,7 +43,7 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
         if active is not None:
             query = query.where(Offer.activo == active)
 
-        query = query.order_by(Offer.fecha_creacion.desc())
+        query = query.order_by(Offer.fecha_creacion.asc())
 
         result = await self.session.execute(query)
         return result.scalars().all()
