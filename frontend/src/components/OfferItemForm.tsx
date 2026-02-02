@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import RadioGroup, { type RadioOption } from "./shared/RadioGroup";
 import MultiSelect, { type MultiSelectItem } from "./shared/MultiSelect";
+import SearchableSelect, { type SelectOption } from "./shared/SearchableSelect";
 import { InfoIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
@@ -109,19 +110,17 @@ const OfferItemForm = ({
         {tipo === "producto" && (
           <div className="form-group">
             <label htmlFor="producto-select">Producto</label>
-            <select
+            <SearchableSelect
               id="producto-select"
               value={productoId}
-              onChange={(e) => setProductoId(parseInt(e.target.value))}
-              className="form-input"
-            >
-              <option value={0}>Seleccionar producto...</option>
-              {productosActivos.map((producto) => (
-                <option key={producto.id} value={producto.id}>
-                  {producto.nombre}
-                </option>
-              ))}
-            </select>
+              onChange={setProductoId}
+              options={[
+                { value: 0, label: "Seleccionar producto..." },
+                ...productosActivos.map((p) => ({ value: p.id, label: p.nombre }))
+              ]}
+              placeholder="Seleccionar producto..."
+              searchPlaceholder="Buscar producto..."
+            />
           </div>
         )}
 
@@ -137,19 +136,17 @@ const OfferItemForm = ({
                 </div>
               </div>
             </div>
-            <select
+            <SearchableSelect
               id="categoria-select"
               value={categoriaId}
-              onChange={(e) => setCategoriaId(parseInt(e.target.value))}
-              className="form-input"
-            >
-              <option value={0}>Seleccionar categoría...</option>
-              {categoriasDisponibles.map((categoria) => (
-                <option key={categoria.id} value={categoria.id}>
-                  {categoria.nombre}
-                </option>
-              ))}
-            </select>
+              onChange={setCategoriaId}
+              options={[
+                { value: 0, label: "Seleccionar categoría..." },
+                ...categoriasDisponibles.map((c) => ({ value: c.id, label: c.nombre }))
+              ]}
+              placeholder="Seleccionar categoría..."
+              searchPlaceholder="Buscar categoría..."
+            />
           </div>
         )}
 

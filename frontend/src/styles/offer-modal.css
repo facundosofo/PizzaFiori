@@ -341,10 +341,11 @@
 }
 
 .offer-items-table .item-detail {
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 400px;
+  text-align: left;
+  word-wrap: break-word;
+  white-space: normal;
+  line-height: 1.4;
 }
 
 .offer-items-table .item-cantidad {

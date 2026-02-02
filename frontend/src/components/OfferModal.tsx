@@ -197,6 +197,7 @@ const OfferModal = ({
                   placeholder="Ej: Promo Pizza Grande"
                   maxLength={255}
                   disabled={loading}
+                  autoComplete="off"
                 />
                 <span className="form-hint">
                   {nombre.length}/255 caracteres
@@ -215,6 +216,7 @@ const OfferModal = ({
                   maxLength={1000}
                   rows={3}
                   disabled={loading}
+                  autoComplete="off"
                 />
                 <span className="form-hint">
                   {descripcion.length}/1000 caracteres
@@ -254,6 +256,7 @@ const OfferModal = ({
                   className="form-input"
                   placeholder="$ 0,00"
                   disabled={loading}
+                  autoComplete="off"
                 />
               </div>
 

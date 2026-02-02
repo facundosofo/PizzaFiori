@@ -54,45 +54,58 @@
 .offer-item-form select {
   width: 100%;
   padding: 0.875rem 1.125rem;
-  background: #0d0d0d;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: #f5f5f5;
+  background: linear-gradient(145deg, #0a0a0a, #1a1a1a);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: #ffffff;
   font-size: 1rem;
   font-family: inherit;
+  font-weight: 500;
   transition: all 0.3s ease;
   box-sizing: border-box;
   cursor: pointer;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .offer-item-form .form-input:focus,
 .offer-item-form select:focus {
   outline: none;
-  border-color: #f5f5f5;
-  background: #121212;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
+  border-color: #ffffff;
+  background: linear-gradient(145deg, #121212, #1e1e1e);
+  box-shadow: 
+    0 0 30px rgba(255, 255, 255, 0.4),
+    0 0 15px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+
+.offer-item-form .form-input:hover,
+.offer-item-form select:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
-}
-
-.offer-item-form .form-input:hover,
-.offer-item-form select:hover {
-  border-color: rgba(255, 255, 255, 0.4)(-1px);
-}
-
-.offer-item-form .form-input:hover,
-.offer-item-form select:hover {
-  border-color: #4ade80;
 }
 
 .offer-item-form .form-input option,
 .offer-item-form select option {
-  background: #0d0d0d;
+  background: #1a1a1a;
   color: #f5f5f5;
   padding: 0.75rem;
+  font-weight: 500;
 }
 
-.offer-item-form .form-input option:checked {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+.offer-item-form .form-input option:checked,
+.offer-item-form select option:checked {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1));
+  color: #ffffff;
+  font-weight: 600;
+}
   color: #f5f5f5;
 }
 
@@ -246,7 +259,7 @@
   transform: translateY(0);
 }
 
-.btn-cancel {
+.offer-item-form-actions .btn-cancel {
   flex: 1;
   padding: 1rem 1.75rem;
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.15));
@@ -266,7 +279,7 @@
   gap: 0.5rem;
 }
 
-.btn-cancel:hover {
+.offer-item-form-actions .btn-cancel:hover {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.35), rgba(239, 68, 68, 0.2));
   border-color: #dc2626;
   color: #ffffff;
@@ -274,7 +287,7 @@
   transform: translateY(-2px);
 }
 
-.btn-cancel:active {
+.offer-item-form-actions .btn-cancel:active {
   transform: translateY(0);
 }
 
