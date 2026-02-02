@@ -178,8 +178,8 @@ const OfferItemForm = ({
         )}
 
         {/* Cantidad */}
-        <div className="form-group">
-          <label>Cantidad</label>
+        <div className="form-group quantity-row">
+          <label className="quantity-label-left">Seleccione la cantidad de Items: </label>
           <div className="quantity-control">
             <button
               type="button"
