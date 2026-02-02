@@ -37,6 +37,7 @@ class OfferService:
                 precio=float(offer_create.precio),
                 productos_count=len(offer_create.productos),
             )
+            
             #TODO: Analizar performance si es mejor dejar que falle la BD por FK
             async with self.uow as uow:
                 # Validar que productos/categorías/opciones existan

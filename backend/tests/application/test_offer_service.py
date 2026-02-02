@@ -468,3 +468,117 @@ async def test_update_offer_not_found(mock_uow, mock_logger):
     assert result.status_code == 404
     assert "Oferta 999 no encontrada" in result.error
     mock_uow.offer_repo.update.assert_not_called()
+
+
+# ==================== Duplicate Validation Tests ====================
+
+@pytest.mark.asyncio
+async def test_create_offer_duplicate_producto_items(mock_uow, mock_logger):
+    """Test creating offer with duplicate producto items fails at schema validation."""
+    service = OfferService(uow=mock_uow, logger=mock_logger)
+    
+    # Assert that creating request with duplicates raises ValidationError
+    with pytest.raises(Exception) as exc_info:
+        request = OfferCreateRequest(
+            nombre="Promo Duplicada",
+            descripcion="Con items duplicados",
+            precio=Decimal("10000.00"),
+            productos=[
+                OfferItemRequest(producto_id=1, cantidad=6),
+                OfferItemRequest(producto_id=1, cantidad=12),  # Duplicado (mismo producto, diferente cantidad)
+            ]
+        )
+    
+    # Verify it's a validation error with correct message
+    assert "Item duplicado" in str(exc_info.value)
+    assert "producto 1" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_create_offer_duplicate_categoria_items(mock_uow, mock_logger):
+    """Test creating offer with duplicate categoria items fails at schema validation."""
+    service = OfferService(uow=mock_uow, logger=mock_logger)
+    
+    with pytest.raises(Exception) as exc_info:
+        request = OfferCreateRequest(
+            nombre="Promo Duplicada Categoria",
+            precio=Decimal("10000.00"),
+            productos=[
+                OfferItemRequest(categoria_id=1, cantidad=6),
+                OfferItemRequest(categoria_id=1, cantidad=12),  # Duplicado (misma categoría, diferente cantidad)
+            ]
+        )
+    
+    assert "Item duplicado" in str(exc_info.value)
+    assert "categoría 1" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_create_offer_duplicate_opciones_items(mock_uow, mock_logger):
+    """Test creating offer with duplicate producto_opciones items fails at schema validation."""
+    service = OfferService(uow=mock_uow, logger=mock_logger)
+    
+    with pytest.raises(Exception) as exc_info:
+        request = OfferCreateRequest(
+            nombre="Promo Opciones Duplicadas",
+            precio=Decimal("10000.00"),
+            productos=[
+                OfferItemRequest(producto_opciones=[1, 2, 3], cantidad=1),
+                OfferItemRequest(producto_opciones=[3, 1, 2], cantidad=2),  # Duplicado (mismas opciones, diferente cantidad y orden)
+            ]
+        )
+    
+    assert "Item duplicado" in str(exc_info.value)
+    assert "opciones múltiples" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_update_offer_duplicate_items(mock_uow, mock_logger, sample_offer):
+    """Test updating offer with duplicate items fails at schema validation."""
+    service = OfferService(uow=mock_uow, logger=mock_logger)
+    
+    mock_uow.offer_repo.get_by_id.return_value = sample_offer
+    
+    # Assert that creating request with duplicates raises ValidationError
+    with pytest.raises(Exception) as exc_info:
+        request = OfferUpdateRequest(
+            productos=[
+                OfferItemRequest(producto_id=2, cantidad=6),
+                OfferItemRequest(producto_id=2, cantidad=10),  # Duplicado (mismo producto, diferente cantidad)
+            ]
+        )
+    
+    assert "Item duplicado" in str(exc_info.value)
+    assert "producto 2" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_schema_allows_same_item_different_cantidad():
+    """Test that schema rejects same producto/categoria even with different cantidad."""
+    # Should raise ValidationError
+    with pytest.raises(Exception) as exc_info:
+        request = OfferCreateRequest(
+            nombre="Test",
+            precio=Decimal("10000.00"),
+            productos=[
+                OfferItemRequest(producto_id=1, cantidad=5),
+                OfferItemRequest(producto_id=1, cantidad=10),  # Diferente cantidad pero duplicado
+            ]
+        )
+    assert "Item duplicado" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_schema_detects_duplicate_with_same_cantidad():
+    """Test that schema detects duplicate when producto_id AND cantidad match."""
+    with pytest.raises(Exception) as exc_info:
+        request = OfferCreateRequest(
+            nombre="Test",
+            precio=Decimal("10000.00"),
+            productos=[
+                OfferItemRequest(categoria_id=1, cantidad=10),
+                OfferItemRequest(categoria_id=1, cantidad=10),  # Mismo categoria_id Y cantidad
+            ]
+        )
+    assert "Item duplicado" in str(exc_info.value)
+

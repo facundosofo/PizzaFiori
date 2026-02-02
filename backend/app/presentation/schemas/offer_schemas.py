@@ -75,19 +75,28 @@ class OfferCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validar_productos(self):
-        """Valida que no haya items duplicados (producto/categoría)."""
+        """Valida que no haya items duplicados (producto/categoría/opciones)."""
         if not self.productos or len(self.productos) == 0:
             raise ValueError("La oferta debe tener al menos un producto")
 
-        keys = []
-        for p in self.productos:
-            if p.producto_id is not None:
-                keys.append(("producto", p.producto_id))
-            if p.categoria_id is not None:
-                keys.append(("categoria", p.categoria_id))
-
-        if len(set(keys)) != len(keys):
-            raise ValueError("No se permiten items duplicados en la oferta")
+        seen_items = []
+        for item in self.productos:
+            # Crear representación del item para comparar (sin cantidad)
+            item_key = (
+                item.producto_id,
+                item.categoria_id,
+                tuple(sorted(item.producto_opciones)) if item.producto_opciones else None,
+            )
+            
+            if item_key in seen_items:
+                if item.producto_id:
+                    raise ValueError(f"Item duplicado: producto {item.producto_id}")
+                elif item.categoria_id:
+                    raise ValueError(f"Item duplicado: categoría {item.categoria_id}")
+                elif item.producto_opciones:
+                    raise ValueError(f"Item duplicado: opciones múltiples")
+            
+            seen_items.append(item_key)
         
         return self
 
@@ -100,20 +109,29 @@ class OfferUpdateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validar_productos(self):
-        """Valida que no haya items duplicados si se proporcionan."""
+        """Valida que no haya items duplicados si se proporcionan (producto/categoría/opciones)."""
         if self.productos is not None:
             if len(self.productos) == 0:
                 raise ValueError("Si se proporcionan productos, debe haber al menos uno")
 
-            keys = []
-            for p in self.productos:
-                if p.producto_id is not None:
-                    keys.append(("producto", p.producto_id))
-                if p.categoria_id is not None:
-                    keys.append(("categoria", p.categoria_id))
-
-            if len(set(keys)) != len(keys):
-                raise ValueError("No se permiten items duplicados en la oferta")
+            seen_items = []
+            for item in self.productos:
+                # Crear representación del item para comparar (sin cantidad)
+                item_key = (
+                    item.producto_id,
+                    item.categoria_id,
+                    tuple(sorted(item.producto_opciones)) if item.producto_opciones else None,
+                )
+                
+                if item_key in seen_items:
+                    if item.producto_id:
+                        raise ValueError(f"Item duplicado: producto {item.producto_id}")
+                    elif item.categoria_id:
+                        raise ValueError(f"Item duplicado: categoría {item.categoria_id}")
+                    elif item.producto_opciones:
+                        raise ValueError(f"Item duplicado: opciones múltiples")
+                
+                seen_items.append(item_key)
         
         return self
 

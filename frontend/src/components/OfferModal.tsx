@@ -79,8 +79,36 @@ const OfferModal = ({
   }, [oferta, isOpen]);
 
   const handleAddItem = (item: OfferItemRequest) => {
+    // Validar si ya existe un item con el mismo producto/categoria/opciones (sin importar cantidad)
+    const isDuplicate = items.some((existingItem) => {
+      // Comparar producto_id
+      if (item.producto_id && existingItem.producto_id) {
+        return item.producto_id === existingItem.producto_id;
+      }
+      
+      // Comparar categoria_id
+      if (item.categoria_id && existingItem.categoria_id) {
+        return item.categoria_id === existingItem.categoria_id;
+      }
+      
+      // Comparar producto_opciones
+      if (item.producto_opciones && existingItem.producto_opciones) {
+        const sameLength = item.producto_opciones.length === existingItem.producto_opciones.length;
+        const sameIds = sameLength && item.producto_opciones.every(id => existingItem.producto_opciones?.includes(id));
+        return sameIds;
+      }
+      
+      return false;
+    });
+
+    if (isDuplicate) {
+      setError("Este item ya existe en la oferta. No se pueden agregar items duplicados.");
+      return;
+    }
+
     setItems([...items, item]);
     setShowItemForm(false);
+    setError(""); // Limpiar error si había
   };
 
   const handleRemoveItem = (index: number) => {

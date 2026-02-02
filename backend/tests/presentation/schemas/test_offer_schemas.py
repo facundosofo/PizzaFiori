@@ -163,14 +163,14 @@ def test_create_offer_single_product():
 
 
 def test_create_offer_duplicate_products():
-    """Test that duplicate products are rejected."""
+    """Test that duplicate products are rejected regardless of cantidad."""
     data = {
         "nombre": "Promo Duplicada",
         "precio": Decimal("8000.00"),
         "productos": [
             {"producto_id": 1, "cantidad": 6},
             {"producto_id": 2, "cantidad": 3},
-            {"producto_id": 1, "cantidad": 3}  # Duplicado
+            {"producto_id": 1, "cantidad": 3}  # Duplicado (mismo ID, diferente cantidad)
         ]
     }
     
@@ -187,13 +187,13 @@ def test_create_offer_duplicate_products():
 
 
 def test_create_offer_duplicate_categoria_items():
-    """Test that duplicate category items are rejected.""" 
+    """Test that duplicate category items are rejected regardless of cantidad.""" 
     data = {
         "nombre": "Promo Categoria Duplicada",
         "precio": Decimal("8000.00"),
         "productos": [
             {"categoria_id": 1, "cantidad": 6},
-            {"categoria_id": 1, "cantidad": 12},
+            {"categoria_id": 1, "cantidad": 12},  # Duplicado (mismo ID, diferente cantidad)
         ],
     }
 
@@ -348,12 +348,12 @@ def test_update_offer_empty_productos():
 
 
 def test_update_offer_duplicate_products():
-    """Test that duplicate products are rejected in update."""
+    """Test that duplicate products are rejected in update regardless of cantidad."""
     data = {
         "productos": [
             {"producto_id": 1, "cantidad": 6},
             {"producto_id": 2, "cantidad": 3},
-            {"producto_id": 1, "cantidad": 2}  # Duplicado
+            {"producto_id": 1, "cantidad": 2}  # Duplicado (mismo ID, diferente cantidad)
         ]
     }
     
@@ -374,3 +374,4 @@ def test_update_offer_none_values():
     assert offer.descripcion is None
     assert offer.precio is None
     assert offer.productos is None
+
