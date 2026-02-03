@@ -27,6 +27,7 @@ export const HomePage = () => {
         transition={{ delay: 1, duration: 0.6 }}
       >
         <ModuleCard title="Productos" to="/productos" />
+        <ModuleCard title="Ofertas" to="/ofertas" />
         <ModuleCard title="Ventas" to="/ventas" />
         <ModuleCard title="Reportes" to="/reportes" />
       </motion.div>

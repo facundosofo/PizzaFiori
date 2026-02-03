@@ -240,26 +240,61 @@ async def test_update_producto_precios_invalidos_retorna_400(async_client: Async
 # --- Tests de desactivación ---
 
 @pytest.mark.asyncio
-async def test_deactivate_producto_exitoso(async_client: AsyncClient, mock_product_service):
-    """Desactivar producto existente retorna 200"""
+async def test_deactivate_producto_exitoso(async_client: AsyncClient, mock_product_service, mock_offer_service):
+    """Desactivar producto existente retorna 200 con ofertas desactivadas"""
     from tests.helpers import build_product_model
+    from unittest.mock import AsyncMock
+    
     producto = build_product_model(id=1, nombre="Pizza Muzza", activo=False)
     mock_product_service.update.return_value.error = None
     mock_product_service.update.return_value.value = producto
+    mock_offer_service.deactivate_by_product = AsyncMock(return_value=[5, 10])
+    
+    response = await async_client.patch("/productos/1/desactivar")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ofertas_desactivadas"] == [5, 10]
+    assert data["activo"] == False
+    
+    # Verificar que se llamaron los métodos correctos
+    mock_product_service.update.assert_called_once_with(1, active=False)
+    mock_offer_service.deactivate_by_product.assert_called_once_with(1)
+    data = response.json()
+    assert data["activo"] is False
+    assert data["ofertas_desactivadas"] == [5, 10]
+
+
+@pytest.mark.asyncio
+async def test_deactivate_producto_sin_ofertas(async_client: AsyncClient, mock_product_service, mock_offer_service):
+    """Desactivar producto sin ofertas retorna 200 con ofertas_desactivadas None"""
+    from tests.helpers import build_product_model
+    from unittest.mock import AsyncMock
+    
+    producto = build_product_model(id=1, nombre="Pizza Muzza", activo=False)
+    mock_product_service.update.return_value.error = None
+    mock_product_service.update.return_value.value = producto
+    mock_offer_service.deactivate_by_product = AsyncMock(return_value=[])
     
     response = await async_client.patch("/productos/1/desactivar")
     
     assert response.status_code == 200
     data = response.json()
     assert data["activo"] is False
+    assert data["ofertas_desactivadas"] is None
 
 
 @pytest.mark.asyncio
-async def test_deactivate_producto_no_existente_retorna_404(async_client: AsyncClient, mock_product_service):
+async def test_deactivate_producto_no_existente_retorna_404(async_client: AsyncClient, mock_product_service, mock_offer_service):
     """Desactivar producto inexistente retorna 404"""
+    from unittest.mock import AsyncMock
+    
     mock_product_service.update.return_value.error = "Producto no encontrado"
     mock_product_service.update.return_value.status_code = 404
+    mock_offer_service.deactivate_by_product = AsyncMock(return_value=[])
     
     response = await async_client.patch("/productos/999/desactivar")
     
     assert response.status_code == 404
+    # Verificar que NO se llamó al servicio de ofertas cuando falla el producto
+    mock_offer_service.deactivate_by_product.assert_not_called()

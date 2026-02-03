@@ -189,8 +189,8 @@ def build_offer_model(
     
     if productos is None:
         productos = [
-            build_offer_item_model(1, id, 1, 6),
-            build_offer_item_model(2, id, 2, 6)
+            build_offer_item_model(id=1, oferta_id=id, productos=[build_product_model(id=1)], cantidad=6),
+            build_offer_item_model(id=2, oferta_id=id, productos=[build_product_model(id=2)], cantidad=6)
         ]
     
     offer.productos = productos
@@ -200,17 +200,19 @@ def build_offer_model(
 def build_offer_item_model(
     id: int = 1,
     oferta_id: int = 1,
-    producto_id: int = 1,
+    categoria_id: Optional[int] = None,
     cantidad: int = 6,
-    producto_nombre: str = "Empanada de Carne"
+    categoria_nombre: Optional[str] = None,
+    productos: Optional[List] = None
 ) -> MagicMock:
     """Build mock OfferItem model instance."""
     item = MagicMock()
     item.id = id
     item.oferta_id = oferta_id
-    item.producto_id = producto_id
+    item.categoria_id = categoria_id
     item.cantidad = cantidad
-    item.producto_nombre = producto_nombre
+    item.categoria_nombre = categoria_nombre
+    item.productos = productos or []
     return item
 
 

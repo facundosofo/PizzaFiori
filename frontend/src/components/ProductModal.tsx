@@ -1,13 +1,14 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
-import { InfoIcon, WarningIcon, XIcon } from "./shared/Icons";
+import { InfoIcon, WarningIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
 import ConfirmDialog from "./shared/ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
 import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
 import "../styles/shared/forms.css";
 import "../styles/shared/quantity-controls.css";
+import "../styles/shared/add-button.css";
 import "../styles/product-modal.css";
 import env from "../config/env";
 
@@ -38,6 +39,14 @@ const ProductModal = ({
   const [error, setError] = useState("");
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const [priceIndexToDelete, setPriceIndexToDelete] = useState<number | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll al error cuando aparece
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   useEffect(() => {
     if (producto && isOpen) {
@@ -166,7 +175,7 @@ const ProductModal = ({
             </div>
 
             <div className="product-modal-body">
-              {error && <div className="form-error">{error}</div>}
+              {error && <div className="form-error" ref={errorRef}>{error}</div>}
 
               <div className="edit-form">
                 <div className="form-group">
@@ -239,7 +248,7 @@ const ProductModal = ({
                                 }}
                                 disabled={loading}
                               >
-                                −
+                                <MinusIcon size={14} />
                               </button>
                               <input
                                 type="number"
@@ -267,7 +276,7 @@ const ProductModal = ({
                                 }}
                                 disabled={loading}
                               >
-                                +
+                                <PlusIcon size={14} />
                               </button>
                             </div>
                           </div>
@@ -363,7 +372,7 @@ const ProductModal = ({
                     }}
                     disabled={loading}
                   >
-                    + Agregar Precio
+                    <PlusIcon size={16} /> Agregar Precio
                   </button>
                 </div>
 

@@ -4,6 +4,7 @@ from typing import List, Optional
 import json
 
 from app.application.product_service import ProductService, ServiceResult
+from app.application.offer_service import OfferService
 from app.containers import Container
 from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest, ProductoResponse
 
@@ -145,14 +146,22 @@ async def update_producto(
     "/{producto_id}/desactivar",
     response_model=ProductoResponse,
     summary="Desactivar un producto",
-    responses={404: {"description": "Producto no encontrado"}},
+    description="Desactiva un producto y automáticamente desactiva todas las ofertas activas que lo contienen",
+    responses={
+        404: {"description": "Producto no encontrado"},
+        200: {
+            "description": "Producto desactivado exitosamente. El campo 'ofertas_desactivadas' contiene los IDs de las ofertas que fueron desactivadas."
+        }
+    },
 )
 @inject
 async def deactivate_producto(
     producto_id: int = Path(..., ge=1, description="ID único del producto"),
-    service: ProductService = Depends(Provide[Container.product_service]),
+    product_service: ProductService = Depends(Provide[Container.product_service]),
+    offer_service: OfferService = Depends(Provide[Container.offer_service]),
 ):
-    result = await service.update(producto_id, active=False)
+    # 1. Desactivar el producto
+    result = await product_service.update(producto_id, active=False)
     
     if result.error:
         raise HTTPException(
@@ -160,4 +169,18 @@ async def deactivate_producto(
             detail=result.error,
         )
     
-    return result.value
+    # 2. Desactivar ofertas relacionadas y obtener sus IDs
+    offer_ids = await offer_service.deactivate_by_product(producto_id)
+    
+    # 3. Construir response con IDs de ofertas desactivadas
+    producto = result.value
+    return ProductoResponse.model_construct(
+        id=producto.id,
+        nombre=producto.nombre,
+        categoria_id=producto.categoria_id,
+        precios=producto.precios,
+        imagen=producto.imagen,
+        activo=producto.activo,
+        fecha_creacion=producto.fecha_creacion,
+        ofertas_desactivadas=offer_ids if offer_ids else None
+    )

@@ -30,6 +30,42 @@ def test_offer_item_valid():
     assert item.cantidad == 6
 
 
+def test_offer_item_valid_categoria_id():
+    """Test creating a valid offer item by categoria_id."""
+    data = {
+        "categoria_id": 1,
+        "cantidad": 24,
+    }
+
+    item = OfferItemRequest(**data)
+
+    assert item.categoria_id == 1
+    assert item.producto_id is None
+    assert item.cantidad == 24
+
+
+def test_offer_item_invalid_missing_producto_and_categoria():
+    """Test that item without producto_id and categoria_id is rejected."""
+    data = {
+        "cantidad": 1,
+    }
+
+    with pytest.raises(ValidationError):
+        OfferItemRequest(**data)
+
+
+def test_offer_item_invalid_both_producto_and_categoria():
+    """Test that item with both producto_id and categoria_id is rejected."""
+    data = {
+        "producto_id": 1,
+        "categoria_id": 2,
+        "cantidad": 1,
+    }
+
+    with pytest.raises(ValidationError):
+        OfferItemRequest(**data)
+
+
 def test_offer_item_default_cantidad():
     """Test offer item with default cantidad."""
     data = {
@@ -127,14 +163,14 @@ def test_create_offer_single_product():
 
 
 def test_create_offer_duplicate_products():
-    """Test that duplicate products are rejected."""
+    """Test that duplicate products are rejected regardless of cantidad."""
     data = {
         "nombre": "Promo Duplicada",
         "precio": Decimal("8000.00"),
         "productos": [
             {"producto_id": 1, "cantidad": 6},
             {"producto_id": 2, "cantidad": 3},
-            {"producto_id": 1, "cantidad": 3}  # Duplicado
+            {"producto_id": 1, "cantidad": 3}  # Duplicado (mismo ID, diferente cantidad)
         ]
     }
     
@@ -143,8 +179,29 @@ def test_create_offer_duplicate_products():
     
     errors = exc_info.value.errors()
     assert len(errors) > 0
-    assert any("duplicad" in str(error.get("ctx", {}).get("error", "")).lower() 
-               for error in errors)
+    assert any(
+        "duplicad" in str(error.get("ctx", {}).get("error", "")).lower()
+        or "duplicad" in str(error.get("msg", "")).lower()
+        for error in errors
+    )
+
+
+def test_create_offer_duplicate_categoria_items():
+    """Test that duplicate category items are rejected regardless of cantidad.""" 
+    data = {
+        "nombre": "Promo Categoria Duplicada",
+        "precio": Decimal("8000.00"),
+        "productos": [
+            {"categoria_id": 1, "cantidad": 6},
+            {"categoria_id": 1, "cantidad": 12},  # Duplicado (mismo ID, diferente cantidad)
+        ],
+    }
+
+    with pytest.raises(ValidationError) as exc_info:
+        OfferCreateRequest(**data)
+
+    errors = exc_info.value.errors()
+    assert len(errors) > 0
 
 
 def test_create_offer_empty_productos():
@@ -291,12 +348,12 @@ def test_update_offer_empty_productos():
 
 
 def test_update_offer_duplicate_products():
-    """Test that duplicate products are rejected in update."""
+    """Test that duplicate products are rejected in update regardless of cantidad."""
     data = {
         "productos": [
             {"producto_id": 1, "cantidad": 6},
             {"producto_id": 2, "cantidad": 3},
-            {"producto_id": 1, "cantidad": 2}  # Duplicado
+            {"producto_id": 1, "cantidad": 2}  # Duplicado (mismo ID, diferente cantidad)
         ]
     }
     
@@ -317,3 +374,4 @@ def test_update_offer_none_values():
     assert offer.descripcion is None
     assert offer.precio is None
     assert offer.productos is None
+

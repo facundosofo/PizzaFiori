@@ -1,5 +1,5 @@
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 from datetime import datetime
 from typing import List, Optional
 
@@ -9,15 +9,56 @@ from typing import List, Optional
 # ======================================================
 
 class OfferItemRequest(BaseModel):
-    producto_id: int = Field(..., gt=0, description="ID del producto")
+    producto_id: Optional[int] = Field(None, gt=0, description="ID del producto")
+    categoria_id: Optional[int] = Field(None, gt=0, description="ID de la categoría")
+    producto_opciones: Optional[List[int]] = Field(None, min_length=2, description="Lista de IDs de productos alternativos (mínimo 2)")
     cantidad: int = Field(default=1, gt=0, le=100, description="Cantidad del producto en la oferta")
+
+    @model_validator(mode="after")
+    def validar_tipo_item(self):
+        """Valida que se proporcione exactamente uno de: producto_id, categoria_id, o producto_opciones."""
+        campos_definidos = sum([
+            self.producto_id is not None,
+            self.categoria_id is not None,
+            self.producto_opciones is not None
+        ])
+        
+        if campos_definidos == 0:
+            raise ValueError("Se debe proporcionar producto_id, categoria_id o producto_opciones")
+        if campos_definidos > 1:
+            raise ValueError("Solo se permite proporcionar uno de: producto_id, categoria_id o producto_opciones")
+        
+        # Validar que producto_opciones no tenga duplicados
+        if self.producto_opciones is not None:
+            if len(self.producto_opciones) != len(set(self.producto_opciones)):
+                raise ValueError("La lista producto_opciones no puede contener IDs duplicados")
+        
+        return self
+
+
+class ProductoOpcionSchema(BaseModel):
+    """Schema para productos en opciones múltiples."""
+    id: int
+    nombre: str
+    imagen: Optional[str] = None
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OfferItemResponse(BaseModel):
     id: int
-    producto_id: int
+    categoria_id: Optional[int] = None
     cantidad: int
-    producto_nombre: Optional[str] = None
+    categoria_nombre: Optional[str] = None
+    productos: Optional[List[ProductoOpcionSchema]] = None
+    
+    @field_validator('productos', mode='before')
+    @classmethod
+    def validate_productos(cls, v):
+        """Convertir lista vacía a None para limpieza."""
+        if v is not None and len(v) == 0:
+            return None
+        return v
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,14 +75,28 @@ class OfferCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validar_productos(self):
-        """Valida que no haya productos duplicados."""
+        """Valida que no haya items duplicados (producto/categoría/opciones)."""
         if not self.productos or len(self.productos) == 0:
             raise ValueError("La oferta debe tener al menos un producto")
-        
-        producto_ids = [p.producto_id for p in self.productos]
-        
-        if len(set(producto_ids)) != len(producto_ids):
-            raise ValueError("No se permiten productos duplicados en la oferta")
+
+        seen_items = []
+        for item in self.productos:
+            # Crear representación del item para comparar (sin cantidad)
+            item_key = (
+                item.producto_id,
+                item.categoria_id,
+                tuple(sorted(item.producto_opciones)) if item.producto_opciones else None,
+            )
+            
+            if item_key in seen_items:
+                if item.producto_id:
+                    raise ValueError(f"Item duplicado: producto {item.producto_id}")
+                elif item.categoria_id:
+                    raise ValueError(f"Item duplicado: categoría {item.categoria_id}")
+                elif item.producto_opciones:
+                    raise ValueError(f"Item duplicado: opciones múltiples")
+            
+            seen_items.append(item_key)
         
         return self
 
@@ -54,15 +109,29 @@ class OfferUpdateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validar_productos(self):
-        """Valida que no haya productos duplicados si se proporcionan."""
+        """Valida que no haya items duplicados si se proporcionan (producto/categoría/opciones)."""
         if self.productos is not None:
             if len(self.productos) == 0:
                 raise ValueError("Si se proporcionan productos, debe haber al menos uno")
-            
-            producto_ids = [p.producto_id for p in self.productos]
-            
-            if len(set(producto_ids)) != len(producto_ids):
-                raise ValueError("No se permiten productos duplicados en la oferta")
+
+            seen_items = []
+            for item in self.productos:
+                # Crear representación del item para comparar (sin cantidad)
+                item_key = (
+                    item.producto_id,
+                    item.categoria_id,
+                    tuple(sorted(item.producto_opciones)) if item.producto_opciones else None,
+                )
+                
+                if item_key in seen_items:
+                    if item.producto_id:
+                        raise ValueError(f"Item duplicado: producto {item.producto_id}")
+                    elif item.categoria_id:
+                        raise ValueError(f"Item duplicado: categoría {item.categoria_id}")
+                    elif item.producto_opciones:
+                        raise ValueError(f"Item duplicado: opciones múltiples")
+                
+                seen_items.append(item_key)
         
         return self
 

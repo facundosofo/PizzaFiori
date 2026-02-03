@@ -23,6 +23,22 @@
   box-shadow: 0 0 0 3px rgba(255,255,255,0.06) inset;
 }
 
+/* Botón menos - Rojo */
+.qty-btn-minus:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.1));
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+/* Botón más - Verde */
+.qty-btn-plus:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.1));
+  border-color: #22c55e;
+  color: #22c55e;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+}
+
 .qty-btn:active {
   transform: translateY(1px);
 }

@@ -1,12 +1,25 @@
 import type { Offer } from './offer';
 import type { Product } from './product';
 
+export interface ProductoOpcion {
+  id: number;
+  nombre: string;
+  imagen?: string | null;
+}
+
 export interface OfferItem {
   id: number;
   oferta_id: number;
-  producto_id: number;
+  categoria_id?: number | null;
   cantidad: number;
-  producto_nombre?: string | null;
+  categoria_nombre?: string | null;
+  productos?: ProductoOpcion[];
   oferta?: Offer;
-  producto?: Product;
+}
+
+export interface OfferItemRequest {
+  producto_id?: number;
+  categoria_id?: number;
+  producto_opciones?: number[];
+  cantidad: number;
 }

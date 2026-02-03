@@ -7,6 +7,12 @@ from app.domain.models.base import Base
 
 class SaleItem(Base):
     __tablename__ = "VentaItems"
+    __table_args__ = (
+        CheckConstraint(
+            "(producto_id IS NOT NULL AND oferta_id IS NULL) OR (producto_id IS NULL AND oferta_id IS NOT NULL)",
+            name="check_producto_or_oferta"
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     venta_id = Column(Integer, ForeignKey("Ventas.id"), nullable=False)

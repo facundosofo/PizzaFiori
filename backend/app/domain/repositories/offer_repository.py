@@ -34,3 +34,16 @@ class AbstractOfferRepository(ABC):
         attribute_names: Optional[list] = None,
     ) -> None:
         ...
+
+    @abstractmethod
+    async def deactivate_by_product(self, producto_id: int) -> List[int]:
+        """
+        Desactiva todas las ofertas activas que contienen el producto especificado.
+        
+        Args:
+            producto_id: ID del producto
+            
+        Returns:
+            List[int]: IDs de las ofertas desactivadas
+        """
+        ...

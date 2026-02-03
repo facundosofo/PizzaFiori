@@ -396,47 +396,6 @@
   border: 1.5px dashed rgba(255, 59, 59, 0.3);
 }
 
-/* Botón para agregar nuevo precio con estilo verde y borde punteado */
-.price-add-btn {
-  width: 100%;
-  padding: 13px;
-  margin-top: 10px;
-  background: linear-gradient(135deg, rgba(109, 255, 122, 0.15), rgba(74, 222, 128, 0.15));
-  border: 2px dashed #4ade80;
-  color: #6dff7a;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.1);
-}
-
-/* Efecto hover del botón agregar precio con borde sólido y elevación */
-.price-add-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(109, 255, 122, 0.25), rgba(74, 222, 128, 0.25));
-  border-style: solid;
-  border-color: #6dff7a;
-  box-shadow: 0 6px 16px rgba(74, 222, 128, 0.3);
-  transform: translateY(-2px);
-}
-
-/* Efecto de presionado del botón agregar precio */
-.price-add-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-/* Estado deshabilitado del botón agregar precio con estilo gris apagado */
-.price-add-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: rgba(100, 100, 100, 0.1);
-  border-color: #555;
-  color: #666;
-}
-
 /* Texto de ayuda informativo debajo del botón agregar precio */
 .price-help-text {
   margin-top: 12px;

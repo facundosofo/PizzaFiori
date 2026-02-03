@@ -217,8 +217,8 @@ const SalesPage = () => {
 
   return (
     <div className="sales-container">
-      <div className="sales-header">
-        <h1>Ventas</h1>
+      <div className="page-header">
+        <h1 className="page-title">Ventas</h1>
       </div>
 
       <SalesFilters onFilter={handleFilter} onClear={handleClearFilters} />

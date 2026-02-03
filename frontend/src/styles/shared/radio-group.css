@@ -1,0 +1,121 @@
+/* RadioGroup Component - Siguiendo guía UX */
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.radio-group-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f5f5f5;
+  margin-bottom: 0.25rem;
+}
+
+.radio-group-options {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 12px !important;
+  padding: 0.75rem 1rem;
+  background: #0d0d0d;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.radio-option:hover:not(.radio-option-disabled) {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.radio-option-selected {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.radio-option-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.radio-input {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  background: #0d0d0d;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.radio-input:checked {
+  border-color: #22c55e;
+  background: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+}
+
+.radio-input:checked::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0d0d0d;
+}
+
+.radio-input:focus-visible {
+  outline: 2px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.radio-input:disabled {
+  cursor: not-allowed;
+}
+
+.radio-label {
+  color: #e8e8e8;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 0;
+  line-height: 1.2;
+  padding-left: 8px;
+}
+
+.radio-option-selected .radio-label {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.radio-option-disabled .radio-label {
+  cursor: not-allowed;
+}
+
+/* Variante vertical */
+.radio-group-vertical .radio-group-options {
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .radio-group-options {
+    flex-direction: column;
+  }
+}

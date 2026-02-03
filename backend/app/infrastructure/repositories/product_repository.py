@@ -37,7 +37,7 @@ class SqlAlchemyProductRepository(
         query = (
             select(Product)
             .options(selectinload(Product.precios))
-            .order_by(Product.id.desc())
+            .order_by(Product.id.asc())
         )
 
         conditions = []

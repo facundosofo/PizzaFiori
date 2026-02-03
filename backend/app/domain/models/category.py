@@ -15,5 +15,10 @@ class Category(Base):
         back_populates="categoria"
     )
 
+    oferta_items = relationship(
+        "OfferItem",
+        back_populates="categoria"
+    )
+
     def __repr__(self):
         return f"<Category(id={self.id}, nombre={self.nombre})>"
