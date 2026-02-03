@@ -48,6 +48,14 @@ const OffersPage = () => {
     };
 
     fetchData();
+
+    // Recargar ofertas cuando la ventana recupera el foco
+    const handleFocus = () => {
+      fetchData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const handleCreateClick = () => {
