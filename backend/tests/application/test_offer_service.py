@@ -582,3 +582,55 @@ async def test_schema_detects_duplicate_with_same_cantidad():
         )
     assert "Item duplicado" in str(exc_info.value)
 
+
+# ==================== Deactivate by Product Tests ====================
+
+@pytest.mark.asyncio
+async def test_deactivate_by_product_success(mock_uow, mock_logger):
+    """Test successfully deactivating offers when product is deactivated."""
+    service = OfferService(uow=mock_uow, logger=mock_logger)
+    
+    # Mock repository returns IDs of deactivated offers
+    mock_uow.offer_repo.deactivate_by_product.return_value = [1, 3, 5]
+    
+    # Act
+    result = await service.deactivate_by_product(producto_id=10)
+    
+    # Assert
+    assert result == [1, 3, 5]
+    mock_uow.offer_repo.deactivate_by_product.assert_called_once_with(10)
+    mock_uow.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_deactivate_by_product_no_offers(mock_uow, mock_logger):
+    """Test deactivating product that has no offers."""
+    service = OfferService(uow=mock_uow, logger=mock_logger)
+    
+    # Mock repository returns empty list
+    mock_uow.offer_repo.deactivate_by_product.return_value = []
+    
+    # Act
+    result = await service.deactivate_by_product(producto_id=10)
+    
+    # Assert
+    assert result == []
+    mock_uow.offer_repo.deactivate_by_product.assert_called_once_with(10)
+    mock_uow.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_deactivate_by_product_error(mock_uow, mock_logger):
+    """Test error handling when deactivating offers by product."""
+    service = OfferService(uow=mock_uow, logger=mock_logger)
+    
+    # Mock repository raises exception
+    mock_uow.offer_repo.deactivate_by_product.side_effect = Exception("Database error")
+    
+    # Act
+    result = await service.deactivate_by_product(producto_id=10)
+    
+    # Assert - Should return empty list on error
+    assert result == []
+    mock_uow.commit.assert_not_called()
+

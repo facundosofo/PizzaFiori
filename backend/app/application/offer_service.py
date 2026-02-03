@@ -282,3 +282,36 @@ class OfferService:
                 exc_info=True,
             )
             return ServiceResult(error=str(e), status_code=400)
+
+    async def deactivate_by_product(self, producto_id: int) -> List[int]:
+        """
+        Desactiva todas las ofertas activas que contienen el producto especificado.
+        
+        Args:
+            producto_id: ID del producto
+            
+        Returns:
+            List[int]: IDs de las ofertas desactivadas
+        """
+        try:
+            async with self.uow as uow:
+                offer_ids = await uow.offer_repo.deactivate_by_product(producto_id)
+                await uow.commit()
+                
+            self.logger.info(
+                "Ofertas desactivadas por producto inactivo",
+                producto_id=producto_id,
+                ofertas_desactivadas=len(offer_ids),
+                offer_ids=offer_ids
+            )
+            
+            return offer_ids
+            
+        except Exception as e:
+            self.logger.error(
+                "Error al desactivar ofertas por producto",
+                producto_id=producto_id,
+                error=str(e),
+                exc_info=True,
+            )
+            return []

@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
+import type { Offer } from "../types/offer";
 import ProductModal from "./ProductModal";
 import ErrorAlert from "./shared/ErrorAlert";
 import ConfirmDialog from "./shared/ConfirmDialog";
 import { TrashIcon, WarningIcon } from "./shared/Icons";
 import { deactivateProducto } from "../services/productsService";
+import { getOfertas } from "../services/ofertasService";
 import { formatCurrency } from "../utils/formatters";
 import "../styles/product-card.css";
 import env from "../config/env";
@@ -30,6 +32,8 @@ const ProductCard = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [affectedOffers, setAffectedOffers] = useState<Offer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
 
   const imageUrl = producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png";
 
@@ -59,6 +63,27 @@ const ProductCard = ({
       onProductUpdate(updatedProducto);
     }
     setIsModalOpen(false);
+  };
+
+  const loadAffectedOffers = async () => {
+    setLoadingOffers(true);
+    try {
+      const allOffers = await getOfertas(true); // Solo ofertas activas
+      
+      // Filtrar ofertas que contienen este producto
+      const affected = allOffers.filter(offer => 
+        offer.productos?.some(item => 
+          item.productos?.some(prod => prod.id === producto.id)
+        )
+      );
+      
+      setAffectedOffers(affected);
+    } catch (error) {
+      console.error("Error cargando ofertas afectadas:", error);
+      setAffectedOffers([]);
+    } finally {
+      setLoadingOffers(false);
+    }
   };
 
   const handleDeactivateProduct = async () => {
@@ -95,6 +120,7 @@ const ProductCard = ({
           onClick={(e) => {
             e.stopPropagation();
             setShowDeleteConfirm(true);
+            loadAffectedOffers();
           }}
           title="Desactivar producto"
         >
@@ -147,6 +173,50 @@ const ProductCard = ({
         message={
           <>
             ¿Está seguro que desea desactivar <strong style={{ color: "#ffffff" }}>{producto.nombre}</strong>?
+            {loadingOffers && (
+              <div style={{ marginTop: "10px", fontSize: "14px", color: "#aaa" }}>
+                Cargando ofertas relacionadas...
+              </div>
+            )}
+            {!loadingOffers && affectedOffers.length > 0 && (
+              <div style={{ 
+                marginTop: "15px", 
+                padding: "15px", 
+                backgroundColor: "rgba(255, 193, 7, 0.15)", 
+                borderRadius: "10px", 
+                border: "1px solid rgba(255, 193, 7, 0.4)",
+                textAlign: "left"
+              }}>
+                <div style={{ 
+                  color: "#ffc107", 
+                  fontWeight: 600, 
+                  marginBottom: "12px", 
+                  fontSize: "15px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <WarningIcon size={16} color="#ffc107" />
+                  También se desactivarán {affectedOffers.length} {affectedOffers.length === 1 ? "oferta" : "ofertas"}:
+                </div>
+                <ul style={{ 
+                  margin: 0, 
+                  paddingLeft: "28px", 
+                  fontSize: "14px", 
+                  color: "#ffffff",
+                  listStyleType: "disc"
+                }}>
+                  {affectedOffers.map(offer => (
+                    <li key={offer.id} style={{ 
+                      marginBottom: "6px",
+                      lineHeight: "1.5"
+                    }}>
+                      {offer.nombre}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </>
         }
         confirmText={isDeleting ? "Desactivando..." : "Desactivar"}
