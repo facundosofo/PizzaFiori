@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import { InfoIcon, WarningIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
@@ -39,6 +39,14 @@ const ProductModal = ({
   const [error, setError] = useState("");
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const [priceIndexToDelete, setPriceIndexToDelete] = useState<number | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll al error cuando aparece
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   useEffect(() => {
     if (producto && isOpen) {
@@ -167,7 +175,7 @@ const ProductModal = ({
             </div>
 
             <div className="product-modal-body">
-              {error && <div className="form-error">{error}</div>}
+              {error && <div className="form-error" ref={errorRef}>{error}</div>}
 
               <div className="edit-form">
                 <div className="form-group">

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { XIcon, TrashIcon, PlusIcon, MinusIcon } from "./shared/Icons";
 import Badge from "./shared/Badge";
 import OfferItemForm from "./OfferItemForm";
@@ -39,6 +39,14 @@ const OfferModal = ({
   const [showItemForm, setShowItemForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll al error cuando aparece
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   useEffect(() => {
     if (oferta && isOpen) {
@@ -218,7 +226,7 @@ const OfferModal = ({
 
           {/* Body */}
           <div className="modal-body">
-            {error && <div className="form-error">{error}</div>}
+            {error && <div className="form-error" ref={errorRef}>{error}</div>}
 
             <div className="offer-form">
               {/* Nombre */}
