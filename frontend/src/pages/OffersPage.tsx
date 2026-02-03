@@ -22,31 +22,31 @@ const OffersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState<Offer | null>(null);
 
+  const fetchData = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      
+      // Fetch ofertas activas, productos y categorías en paralelo
+      const [offersData, productsData, categoriasData] = await Promise.all([
+        getOfertas(true),
+        getProductos(),
+        getCategorias(),
+      ]);
+
+      setOfertas(offersData || []);
+      setProductos(productsData || []);
+      setCategorias(categoriasData || []);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error desconocido al cargar los datos";
+      setError(`Error al cargar: ${errorMessage}`);
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setError(null);
-        setLoading(true);
-        
-        // Fetch ofertas activas, productos y categorías en paralelo
-        const [offersData, productsData, categoriasData] = await Promise.all([
-          getOfertas(true),
-          getProductos(),
-          getCategorias(),
-        ]);
-
-        setOfertas(offersData || []);
-        setProductos(productsData || []);
-        setCategorias(categoriasData || []);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Error desconocido al cargar los datos";
-        setError(`Error al cargar: ${errorMessage}`);
-        console.error("Error fetching data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
 
     // Recargar ofertas cuando la ventana recupera el foco
@@ -87,16 +87,23 @@ const OffersPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = (oferta: Offer) => {
-    if (oferta.id && selectedOferta?.id && selectedOferta.id > 0) {
-      // Actualización
-      handleOfferUpdate(oferta);
+  const handleSave = async (oferta: Offer) => {
+    const isEditing = selectedOferta && selectedOferta.id > 0;
+    
+    if (isEditing) {
+      // Actualización: reemplazar la oferta existente
+      setOfertas((prev) =>
+        prev.map((o) => (o.id === selectedOferta.id ? oferta : o))
+      );
     } else {
-      // Creación
+      // Creación: agregar al inicio
       setOfertas((prev) => [oferta, ...prev]);
     }
     setIsModalOpen(false);
     setSelectedOferta(null);
+    
+    // Refrescar datos completos del servidor para asegurar sincronización
+    await fetchData();
   };
 
   const handleCloseModal = () => {

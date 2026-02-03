@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { XIcon, TrashIcon, PlusIcon } from "./shared/Icons";
+import { XIcon, TrashIcon, PlusIcon, MinusIcon } from "./shared/Icons";
 import Badge from "./shared/Badge";
 import OfferItemForm from "./OfferItemForm";
 import type { Offer } from "../types/offer";
@@ -10,6 +10,7 @@ import type { OfferItemRequest } from "../types/offer_item";
 import { createOffer, updateOffer } from "../services/ofertasService";
 import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
 import "../styles/shared/add-button.css";
+import "../styles/shared/quantity-controls.css";
 import "../styles/sale-modal.css";
 import "../styles/offer-modal.css";
 
@@ -113,6 +114,13 @@ const OfferModal = ({
 
   const handleRemoveItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
+  };
+
+  const handleQuantityChange = (index: number, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, cantidad: newQuantity } : item))
+    );
   };
 
   const handleSave = async () => {
@@ -355,7 +363,49 @@ const OfferModal = ({
                                 </Badge>
                               </td>
                               <td className="item-detail">{detalle}</td>
-                              <td className="item-cantidad">{item.cantidad}</td>
+                              <td className="item-cantidad">
+                                <div className="quantity-control" style={{ display: 'inline-flex' }}>
+                                  <button
+                                    type="button"
+                                    className="qty-btn qty-btn-minus"
+                                    onClick={() => handleQuantityChange(index, item.cantidad - 1)}
+                                    disabled={item.cantidad <= 1 || loading}
+                                    aria-label="Disminuir cantidad"
+                                  >
+                                    <MinusIcon size={14} />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="1000"
+                                    className="qty-input"
+                                    value={item.cantidad}
+                                    onInput={(e) => {
+                                      const value = parseInt((e.target as HTMLInputElement).value);
+                                      if (!isNaN(value)) {
+                                        handleQuantityChange(index, Math.max(1, value));
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      const value = parseInt(e.target.value);
+                                      if (isNaN(value) || value < 1) {
+                                        handleQuantityChange(index, 1);
+                                      }
+                                    }}
+                                    disabled={loading}
+                                    aria-label="Cantidad"
+                                  />
+                                  <button
+                                    type="button"
+                                    className="qty-btn qty-btn-plus"
+                                    onClick={() => handleQuantityChange(index, item.cantidad + 1)}
+                                    disabled={item.cantidad >= 1000 || loading}
+                                    aria-label="Aumentar cantidad"
+                                  >
+                                    <PlusIcon size={14} />
+                                  </button>
+                                </div>
+                              </td>
                               <td>
                                 <button
                                   type="button"
