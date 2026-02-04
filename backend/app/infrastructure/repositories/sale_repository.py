@@ -29,7 +29,9 @@ class SqlAlchemySaleRepository(
                 selectinload(Sale.items)
                 .selectinload(SaleItem.producto),
                 selectinload(Sale.items)
-                .selectinload(SaleItem.oferta)
+                .selectinload(SaleItem.oferta),
+                selectinload(Sale.items)
+                .selectinload(SaleItem.oferta_productos_snapshot)
             )
         )
         result = await self.session.execute(query)
@@ -48,7 +50,9 @@ class SqlAlchemySaleRepository(
                 selectinload(Sale.items)
                 .selectinload(SaleItem.producto),
                 selectinload(Sale.items)
-                .selectinload(SaleItem.oferta)
+                .selectinload(SaleItem.oferta),
+                selectinload(Sale.items)
+                .selectinload(SaleItem.oferta_productos_snapshot)
             )
         )
         

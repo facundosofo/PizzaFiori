@@ -434,8 +434,13 @@ class SaleService:
                         )
                     
                     precio_unitario = item.precio_unitario
+                    item_nombre = None
+                    item_descripcion = None
+                    item_categoria = None
+                    producto_sku = None
+                    oferta_productos_snapshot = []
                     
-                    # Validar que el producto o oferta existe
+                    # Validar que el producto o oferta existe y cargar snapshot
                     if item.producto_id:
                         producto = await uow.product_repo.get_by_id(item.producto_id)
                         if not producto:
@@ -443,6 +448,12 @@ class SaleService:
                                 error=f"Producto {item.producto_id} no encontrado",
                                 status_code=404,
                             )
+                        
+                        # Guardar snapshot del producto
+                        item_nombre = producto.nombre
+                        producto_sku = producto.sku
+                        item_categoria = producto.categoria.nombre if producto.categoria else 'Sin categoría'
+                        
                     elif item.oferta_id:
                         oferta = await uow.offer_repo.get_by_id(item.oferta_id)
                         if not oferta:
@@ -450,6 +461,34 @@ class SaleService:
                                 error=f"Oferta {item.oferta_id} no encontrada",
                                 status_code=404,
                             )
+                        
+                        # Guardar snapshot de la oferta actual (para referencia)
+                        # NOTA: No validamos contra los requisitos actuales de la oferta
+                        # porque las ventas son registros históricos que deben preservar
+                        # exactamente cómo se hicieron, incluso si la oferta cambió después
+                        item_nombre = oferta.nombre
+                        item_descripcion = oferta.descripcion
+                        item_categoria = 'Ofertas'
+                        
+                        # Crear snapshot de los productos que el cliente seleccionó
+                        # (preservar el snapshot histórico sin validar)
+                        if item.productos_seleccionados:
+                            for prod_sel in item.productos_seleccionados:
+                                # Obtener el producto para hacer el snapshot
+                                producto = await uow.product_repo.get_by_id(prod_sel.producto_id)
+                                if not producto:
+                                    return ServiceResult(
+                                        error=f"Producto {prod_sel.producto_id} en productos_seleccionados no encontrado",
+                                        status_code=404,
+                                    )
+                                
+                                snapshot = SaleItemOfferProduct(
+                                    producto_id=producto.id,
+                                    producto_nombre=producto.nombre,
+                                    categoria_nombre=producto.categoria.nombre if producto.categoria else 'Sin categoría',
+                                    cantidad=prod_sel.cantidad
+                                )
+                                oferta_productos_snapshot.append(snapshot)
                     
                     subtotal = Decimal(str(precio_unitario)) * Decimal(str(item.cantidad))
                     total += subtotal
@@ -460,6 +499,13 @@ class SaleService:
                         cantidad=item.cantidad,
                         precio_unitario=precio_unitario,
                         subtotal=subtotal,
+                        # Referencia de negocio (solo productos tienen SKU)
+                        producto_sku=producto_sku,
+                        # Snapshot completo
+                        item_nombre=item_nombre,
+                        item_categoria=item_categoria,
+                        item_descripcion=item_descripcion,
+                        oferta_productos_snapshot=oferta_productos_snapshot
                     )
                     sale_items.append(sale_item)
 
