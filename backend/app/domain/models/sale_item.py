@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Numeric, CheckConstraint
+from sqlalchemy import Column, Integer, ForeignKey, Numeric, CheckConstraint, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -21,6 +21,14 @@ class SaleItem(Base):
     cantidad = Column(Integer, nullable=False)
     precio_unitario = Column(Numeric(10, 2), nullable=False)
     subtotal = Column(Numeric(10, 2), nullable=False)
+    
+    # Referencia de negocio (inmutable) - solo para productos
+    producto_sku = Column(String(50), nullable=True, index=True)  # SKU del producto
+    
+    # Campos de snapshot para preservar información histórica
+    item_nombre = Column(String(255), nullable=False)  # Nombre del producto/oferta al momento de la venta
+    item_categoria = Column(String(100), nullable=False)  # Categoría al momento de la venta
+    item_descripcion = Column(Text, nullable=True)  # Descripción de la oferta (si aplica)
 
     __table_args__ = (
         CheckConstraint(
@@ -43,6 +51,13 @@ class SaleItem(Base):
         "Offer",
         foreign_keys=[oferta_id]
     )
+    
+    # Snapshot de productos que componían la oferta al momento de la venta
+    oferta_productos_snapshot = relationship(
+        "SaleItemOfferProduct",
+        back_populates="venta_item",
+        cascade="all, delete-orphan"
+    )
 
     @hybrid_property
     def producto_nombre(self) -> str | None:
@@ -60,3 +75,4 @@ class SaleItem(Base):
             f"producto_id={self.producto_id}, oferta_id={self.oferta_id}, "
             f"cantidad={self.cantidad}, subtotal={self.subtotal})>"
         )
+

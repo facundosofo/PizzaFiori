@@ -8,6 +8,7 @@ from app.domain.models.product_price import ProductPrice
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest
 from app.infrastructure.file_service import FileService
+from app.infrastructure.sku_generator import generar_sku_producto
 
 
 @dataclass
@@ -50,7 +51,19 @@ class ProductService:
                 self.logger.debug("Imagen guardada", ruta=ruta_imagen)
 
             async with self.uow as uow:
+                # Validar que la categoría existe
+                categoria_nombre = None
+                if producto_create.categoria_id:
+                    categoria = await uow.category_repo.get_by_id(producto_create.categoria_id)
+                    if not categoria:
+                        return ServiceResult(error="Categoría no encontrada", status_code=404)
+                    categoria_nombre = categoria.nombre
+                
+                # Generar SKU automáticamente
+                sku = generar_sku_producto(producto_create.nombre, categoria_nombre)
+                
                 producto = Product(
+                    sku=sku,
                     nombre=producto_create.nombre,
                     categoria_id=producto_create.categoria_id,
                     imagen=ruta_imagen,

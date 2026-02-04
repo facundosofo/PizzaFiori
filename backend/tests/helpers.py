@@ -58,6 +58,7 @@ def build_product_data(
     id: int = 1,
     nombre: str = "Empanada de Carne",
     categoria_id: int = 1,
+    sku: str = "EMPA-CARN-001",
     imagen: Optional[str] = None,
     activo: bool = True,
     precios: Optional[List[Dict]] = None
@@ -72,6 +73,7 @@ def build_product_data(
     
     return {
         "id": id,
+        "sku": sku,
         "nombre": nombre,
         "categoria_id": categoria_id,
         "imagen": imagen,
@@ -86,6 +88,7 @@ def build_product_model(
     id: int = 1,
     nombre: str = "Empanada de Carne",
     categoria_id: int = 1,
+    sku: str = "EMPA-CARN-001",
     imagen: Optional[str] = None,
     activo: bool = True,
     precios: Optional[List] = None
@@ -93,6 +96,7 @@ def build_product_model(
     """Build mock Product model instance."""
     product = MagicMock()
     product.id = id
+    product.sku = sku
     product.nombre = nombre
     product.categoria_id = categoria_id
     product.imagen = imagen
@@ -293,7 +297,12 @@ def build_sale_item_model(
     oferta_id: Optional[int] = None,
     cantidad: int = 6,
     precio_unitario: float = 1000.0,
-    subtotal: float = 6000.0
+    subtotal: float = 6000.0,
+    producto_sku: Optional[str] = "EMPA-CARN-001",
+    item_nombre: str = "Empanada de Carne",
+    item_categoria: str = "Empanadas",
+    item_descripcion: Optional[str] = None,
+    oferta_productos_snapshot: Optional[List] = None
 ) -> MagicMock:
     """Build mock SaleItem model instance."""
     item = MagicMock()
@@ -304,9 +313,31 @@ def build_sale_item_model(
     item.cantidad = cantidad
     item.precio_unitario = Decimal(str(precio_unitario))
     item.subtotal = Decimal(str(subtotal))
-    item.producto_nombre = None
-    item.oferta_nombre = None
+    item.producto_sku = producto_sku
+    item.item_nombre = item_nombre
+    item.item_categoria = item_categoria
+    item.item_descripcion = item_descripcion
+    item.oferta_productos_snapshot = oferta_productos_snapshot or []
     return item
+
+
+def build_sale_item_offer_product_model(
+    id: int = 1,
+    venta_item_id: int = 1,
+    producto_id: Optional[int] = 1,
+    producto_nombre: str = "Empanada de Carne",
+    categoria_nombre: Optional[str] = "Empanadas",
+    cantidad: int = 6
+) -> MagicMock:
+    """Build mock SaleItemOfferProduct model instance."""
+    snapshot = MagicMock()
+    snapshot.id = id
+    snapshot.venta_item_id = venta_item_id
+    snapshot.producto_id = producto_id
+    snapshot.producto_nombre = producto_nombre
+    snapshot.categoria_nombre = categoria_nombre
+    snapshot.cantidad = cantidad
+    return snapshot
 
 
 # ==================== Assertion Helpers ====================
