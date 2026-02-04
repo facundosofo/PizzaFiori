@@ -96,8 +96,8 @@ const OffersPage = () => {
         prev.map((o) => (o.id === selectedOferta.id ? oferta : o))
       );
     } else {
-      // Creación: agregar al inicio
-      setOfertas((prev) => [oferta, ...prev]);
+      // Creación: agregar al final
+      setOfertas((prev) => [...prev, oferta]);
     }
     setIsModalOpen(false);
     setSelectedOferta(null);
