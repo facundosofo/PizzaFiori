@@ -16,6 +16,8 @@ from tests.helpers import (
     build_product_model,
     build_product_price_model,
     build_offer_model,
+    build_offer_item_model,
+    build_category_model,
     build_sale_model
 )
 
@@ -245,6 +247,7 @@ async def test_create_sale_with_products(mock_uow, mock_logger):
             build_product_price_model(2, 1, 6, 6000.0)
         ]
     )
+    product.categoria = build_category_model(id=1, nombre="Empanadas")
     mock_uow.product_repo.get_by_id.return_value = product
     mock_uow.sale_repo.refresh = AsyncMock()
     
@@ -269,21 +272,34 @@ async def test_create_sale_with_offers(mock_uow, mock_logger):
     # Arrange
     service = SaleService(uow=mock_uow, logger=mock_logger)
     
-    request = SaleCreateRequest(
-        numero_orden="ORD-002",
-        items=[
-            SaleItemRequest(oferta_id=1, cantidad=2)
-        ]
-    )
+    # Mock product for productos_seleccionados
+    prod1 = build_product_model(id=10, nombre="Empanada", sku="EMP-001", categoria_id=1)
+    prod1.categoria = build_category_model(id=1, nombre="Empanadas")
     
     # Mock offer
     offer = build_offer_model(
         id=1,
         nombre="Promo Docena",
         precio=10000.0,
-        activo=True
+        activo=True,
+        productos=[
+            build_offer_item_model(id=1, oferta_id=1, cantidad=12, productos=[prod1])
+        ]
     )
+    
+    request = SaleCreateRequest(
+        numero_orden="ORD-002",
+        items=[
+            SaleItemRequest(
+                oferta_id=1,
+                cantidad=2,
+                productos_seleccionados=[{"producto_id": 10, "cantidad": 12}]
+            )
+        ]
+    )
+    
     mock_uow.offer_repo.get_by_id.return_value = offer
+    mock_uow.product_repo.get_by_id.return_value = prod1
     mock_uow.sale_repo.refresh = AsyncMock()
     
     # Act
@@ -304,21 +320,39 @@ async def test_create_sale_mixed_items(mock_uow, mock_logger):
     # Arrange
     service = SaleService(uow=mock_uow, logger=mock_logger)
     
-    request = SaleCreateRequest(
-        items=[
-            SaleItemRequest(producto_id=1, cantidad=6),
-            SaleItemRequest(oferta_id=1, cantidad=1)
-        ]
-    )
-    
-    # Mock product and offer
+    # Mock products
     product = build_product_model(
         id=1,
         precios=[build_product_price_model(1, 1, 6, 6000.0)]
     )
-    offer = build_offer_model(id=1, precio=10000.0)
+    product.categoria = build_category_model(id=1, nombre="Empanadas")
     
-    mock_uow.product_repo.get_by_id.return_value = product
+    prod_oferta = build_product_model(id=2, nombre="Pizza", sku="PIZZ-001", categoria_id=1)
+    prod_oferta.categoria = build_category_model(id=1, nombre="Pizzas")
+    
+    offer = build_offer_model(
+        id=1, 
+        precio=10000.0,
+        productos=[
+            build_offer_item_model(id=1, oferta_id=1, cantidad=1, productos=[prod_oferta])
+        ]
+    )
+    
+    request = SaleCreateRequest(
+        items=[
+            SaleItemRequest(producto_id=1, cantidad=6),
+            SaleItemRequest(
+                oferta_id=1,
+                cantidad=1,
+                productos_seleccionados=[{"producto_id": 2, "cantidad": 1}]
+            )
+        ]
+    )
+    
+    async def mock_get_product(id):
+        return product if id == 1 else prod_oferta
+    
+    mock_uow.product_repo.get_by_id = AsyncMock(side_effect=mock_get_product)
     mock_uow.offer_repo.get_by_id.return_value = offer
     mock_uow.sale_repo.refresh = AsyncMock()
     
@@ -327,7 +361,7 @@ async def test_create_sale_mixed_items(mock_uow, mock_logger):
     
     # Assert
     assert result.status_code == 201
-    mock_uow.product_repo.get_by_id.assert_called_once()
+    assert mock_uow.product_repo.get_by_id.call_count == 2
     mock_uow.offer_repo.get_by_id.assert_called_once()
 
 
@@ -362,7 +396,11 @@ async def test_create_sale_offer_not_found(mock_uow, mock_logger):
     
     request = SaleCreateRequest(
         items=[
-            SaleItemRequest(oferta_id=999, cantidad=1)
+            SaleItemRequest(
+                oferta_id=999,
+                cantidad=1,
+                productos_seleccionados=[{"producto_id": 1, "cantidad": 1}]
+            )
         ]
     )
     

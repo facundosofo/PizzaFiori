@@ -4,7 +4,7 @@ Tests business logic with mocked repositories, FileService and UnitOfWork.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import UploadFile
 from io import BytesIO
 
@@ -15,17 +15,77 @@ from app.presentation.schemas.product_schemas import (
     ProductoUpdateRequest,
     ProductoPrecioRequest
 )
-from tests.helpers import build_product_model, build_product_price_model
+from tests.helpers import build_product_model, build_product_price_model, build_category_model
 from decimal import Decimal
 
 
 # ==================== Create Tests ====================
 
 @pytest.mark.asyncio
+async def test_create_product_generates_sku(mock_uow, mock_file_service, mock_logger):
+    """Test that creating a product automatically generates SKU."""
+    # Arrange
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    
+    # Mock category
+    categoria = build_category_model(id=1, nombre="Empanadas")
+    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_repo.refresh = AsyncMock()
+    
+    request = ProductoCreateRequest(
+        nombre="Empanada de Carne",
+        categoria_id=1,
+        precios=[
+            ProductoPrecioRequest(cantidad=1, precio=Decimal("1200.00"))
+        ]
+    )
+    
+    # Act
+    with patch('app.application.product_service.generar_sku_producto', return_value="EMPA-CARN-001") as mock_sku:
+        result = await service.create(request, image=None)
+    
+    # Assert
+    assert result.status_code == 201
+    assert result.value is not None
+    mock_sku.assert_called_once_with("Empanada de Carne", "Empanadas")
+    mock_uow.product_repo.add.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_product_invalid_category(mock_uow, mock_file_service, mock_logger):
+    """Test creating product with non-existent category returns 404."""
+    # Arrange
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    
+    # Category doesn't exist
+    mock_uow.category_repo.get_by_id = AsyncMock(return_value=None)
+    
+    request = ProductoCreateRequest(
+        nombre="Empanada de Carne",
+        categoria_id=999,
+        precios=[
+            ProductoPrecioRequest(cantidad=1, precio=Decimal("1200.00"))
+        ]
+    )
+    
+    # Act
+    result = await service.create(request, image=None)
+    
+    # Assert
+    assert result.status_code == 404
+    assert result.error == "Categoría no encontrada"
+    mock_uow.product_repo.add.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_create_product_with_image(mock_uow, mock_file_service, mock_logger):
     """Test creating product with image."""
     # Arrange
     service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    
+    # Mock category
+    categoria = build_category_model(id=1, nombre="Empanadas")
+    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
     
     request = ProductoCreateRequest(
         nombre="Empanada de Carne",
@@ -44,7 +104,8 @@ async def test_create_product_with_image(mock_uow, mock_file_service, mock_logge
     mock_uow.product_repo.refresh = AsyncMock()
     
     # Act
-    result = await service.create(request, image)
+    with patch('app.application.product_service.generar_sku_producto', return_value="EMPA-CARN-001"):
+        result = await service.create(request, image)
     
     # Assert
     assert result.status_code == 201
@@ -64,6 +125,10 @@ async def test_create_product_without_image(mock_uow, mock_file_service, mock_lo
     # Arrange
     service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
     
+    # Mock category
+    categoria = build_category_model(id=1, nombre="Empanadas")
+    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
+    
     request = ProductoCreateRequest(
         nombre="Empanada de Pollo",
         categoria_id=1,
@@ -75,7 +140,8 @@ async def test_create_product_without_image(mock_uow, mock_file_service, mock_lo
     mock_uow.product_repo.refresh = AsyncMock()
     
     # Act
-    result = await service.create(request, image=None)
+    with patch('app.application.product_service.generar_sku_producto', return_value="EMPA-POLL-001"):
+        result = await service.create(request, image=None)
     
     # Assert
     assert result.status_code == 201
@@ -93,6 +159,10 @@ async def test_create_product_rollback_on_error(mock_uow, mock_file_service, moc
     # Arrange
     service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
     
+    # Mock category
+    categoria = build_category_model(id=1, nombre="Test")
+    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
+    
     request = ProductoCreateRequest(
         nombre="Test Product",
         categoria_id=1,
@@ -106,7 +176,8 @@ async def test_create_product_rollback_on_error(mock_uow, mock_file_service, moc
     mock_uow.product_repo.add.side_effect = Exception("Database error")
     
     # Act
-    result = await service.create(request, image)
+    with patch('app.application.product_service.generar_sku_producto', return_value="TEST-PROD-001"):
+        result = await service.create(request, image)
     
     # Assert
     assert result.status_code == 400
@@ -123,6 +194,10 @@ async def test_create_product_with_multiple_prices(mock_uow, mock_file_service, 
     # Arrange
     service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
     
+    # Mock category
+    categoria = build_category_model(id=1, nombre="Empanadas")
+    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
+    
     request = ProductoCreateRequest(
         nombre="Empanada Premium",
         categoria_id=1,
@@ -136,7 +211,8 @@ async def test_create_product_with_multiple_prices(mock_uow, mock_file_service, 
     mock_uow.product_repo.refresh = AsyncMock()
     
     # Act
-    result = await service.create(request, image=None)
+    with patch('app.application.product_service.generar_sku_producto', return_value="EMPA-PREM-001"):
+        result = await service.create(request, image=None)
     
     # Assert
     assert result.status_code == 201
