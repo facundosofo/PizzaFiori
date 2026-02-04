@@ -132,6 +132,17 @@ const ProductCard = ({
         </div>
 
         <div className="product-card-body">
+          {producto.sku && (
+            <div className="product-card-sku" style={{ 
+              fontSize: "10px", 
+              color: "#999", 
+              textAlign: "right",
+              marginBottom: "2px",
+              fontFamily: "monospace"
+            }}>
+              SKU: {producto.sku}
+            </div>
+          )}
           <h3 className="product-card-title">{producto.nombre.toUpperCase()}</h3>
 
           <div className="product-card-prices">

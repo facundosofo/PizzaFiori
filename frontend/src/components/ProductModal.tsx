@@ -178,6 +178,18 @@ const ProductModal = ({
               {error && <div className="form-error" ref={errorRef}>{error}</div>}
 
               <div className="edit-form">
+                {producto.id > 0 && producto.sku && (
+                  <div style={{ 
+                    fontSize: "10px", 
+                    color: "#999", 
+                    textAlign: "right",
+                    marginBottom: "8px",
+                    fontFamily: "monospace"
+                  }}>
+                    SKU: {producto.sku}
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label htmlFor="edit-nombre">Nombre del Producto:</label>
                   <input
