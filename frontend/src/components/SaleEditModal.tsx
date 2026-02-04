@@ -37,6 +37,7 @@ const SaleEditModal = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingPriceId, setEditingPriceId] = useState<number | null>(null);
 
   const toNumber = (value: unknown): number => {
     if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -364,15 +365,24 @@ const SaleEditModal = ({
                           </div>
                           <div className="sale-item-col-price">
                             <input
-                              type="number"
-                              min="0"
-                              step="0.01"
+                              type="text"
                               className="qty-input price-input"
-                              value={item.precio_unitario}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) =>
-                                handlePriceChange(item.id, parseFloat(e.target.value) || 0)
+                              value={
+                                editingPriceId === item.id
+                                  ? item.precio_unitario
+                                  : formatCurrency(item.precio_unitario)
                               }
+                              onFocus={(e) => {
+                                setEditingPriceId(item.id);
+                                e.target.select();
+                              }}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                handlePriceChange(item.id, value);
+                              }}
+                              onBlur={() => {
+                                setEditingPriceId(null);
+                              }}
                               disabled={saving || loading}
                             />
                           </div>
