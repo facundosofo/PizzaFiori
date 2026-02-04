@@ -5,7 +5,6 @@ import type { SaleItemWithDetails } from "../types/sale_item";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
 import { getSaleById, updateSale } from "../services/salesService";
-import { getOfertaById } from "../services/ofertasService";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/shared/quantity-controls.css";
 import "../styles/shared/add-button.css";
@@ -35,7 +34,6 @@ const SaleEditModal = ({
 }: SaleEditModalProps) => {
   const [sale, setSale] = useState<SaleWithDetails | null>(null);
   const [editedItems, setEditedItems] = useState<SaleItemWithDetails[]>([]);
-  const [offersById, setOffersById] = useState<Record<number, Offer>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -77,43 +75,6 @@ const SaleEditModal = ({
               };
             });
           setEditedItems(normalizedItems);
-
-          const offerIds = Array.from(
-            new Set(
-              normalizedItems
-                .map((i) => i.oferta_id)
-                .filter((id): id is number => typeof id === "number" && id > 0)
-            )
-          );
-
-          if (offerIds.length > 0) {
-            const next: Record<number, Offer> = {};
-
-            for (const id of offerIds) {
-              const cached = allOffers.find((o) => o.id === id);
-              if (cached) next[id] = cached;
-            }
-
-            const missingIds = offerIds.filter((id) => !next[id]);
-            if (missingIds.length > 0) {
-              const fetched = await Promise.all(
-                missingIds.map(async (id) => {
-                  try {
-                    return await getOfertaById(id);
-                  } catch {
-                    return null;
-                  }
-                })
-              );
-              for (const o of fetched) {
-                if (o?.id) next[o.id] = o;
-              }
-            }
-
-            setOffersById(next);
-          } else {
-            setOffersById({});
-          }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : "Error desconocido";
           setError(errorMessage);
@@ -177,14 +138,16 @@ const SaleEditModal = ({
 
     setError("");
 
-    // TODO: Reemplazar con componente compartido cuando pantalla Registrar Ventas esté lista
     let itemName = "";
     let precio = 0;
+    let itemCategoria = "";
+    let itemDescripcion: string | undefined;
 
     if (itemType === "producto") {
       const product = allProducts.find((p) => p.id === selectedProductId);
       if (product) {
         itemName = product.nombre;
+        itemCategoria = product.categoria?.nombre || "Sin categoría";
         // Get price for quantity 1 (default price)
         const defaultPrice = product.precios?.find((p) => p.cantidad === 1);
         precio = defaultPrice?.precio || 0;
@@ -193,6 +156,8 @@ const SaleEditModal = ({
       const offer = allOffers.find((o) => o.id === selectedOfferId);
       if (offer) {
         itemName = offer.nombre;
+        itemCategoria = "Ofertas";
+        itemDescripcion = offer.descripcion || undefined;
         precio = offer.precio;
       }
     }
@@ -204,8 +169,11 @@ const SaleEditModal = ({
       cantidad: newItemQuantity,
       precio_unitario: precio,
       subtotal: precio * newItemQuantity,
-      producto_nombre: itemType === "producto" ? itemName : undefined,
-      oferta_nombre: itemType === "oferta" ? itemName : undefined,
+      item_nombre: itemName,
+      item_categoria: itemCategoria,
+      item_descripcion: itemDescripcion,
+      producto_nombre: itemType === "producto" ? itemName : undefined, // Deprecated
+      oferta_nombre: itemType === "oferta" ? itemName : undefined, // Deprecated
     };
 
     setEditedItems((prev) => [...prev, newItem]);
@@ -343,13 +311,18 @@ const SaleEditModal = ({
                       {editedItems.map((item) => (
                         <div key={item.id} className="sale-items-row">
                           <div className="sale-item-col-name">
-                            {item.producto_nombre || item.oferta_nombre || "Item"}
+                            {item.item_nombre}
+                            {item.item_descripcion && (
+                              <div style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.85rem", marginTop: 2 }}>
+                                {item.item_descripcion}
+                              </div>
+                            )}
 
-                            {item.oferta_id && offersById[item.oferta_id]?.productos?.length ? (
+                            {item.oferta_id && item.oferta_productos_snapshot?.length ? (
                               <div style={{ marginTop: 6, paddingLeft: 14 }}>
-                                {offersById[item.oferta_id]!.productos!.map((p) => (
+                                {item.oferta_productos_snapshot.map((p) => (
                                   <div key={p.id} style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.9rem", fontWeight: 600 }}>
-                                    - {toNumber((p as any).cantidad) * toNumber((item as any).cantidad)} {p.producto_nombre || (p as any).producto?.nombre || `Producto #${p.producto_id}`}
+                                    - {p.cantidad * item.cantidad} {p.producto_nombre}
                                   </div>
                                 ))}
                               </div>
