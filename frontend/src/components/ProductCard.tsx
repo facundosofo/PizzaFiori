@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import type { Offer } from "../types/offer";

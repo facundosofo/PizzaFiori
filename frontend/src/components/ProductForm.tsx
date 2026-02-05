@@ -82,6 +82,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         activo: producto?.activo ?? true,
         fecha_creacion: producto?.fecha_creacion || new Date().toISOString(),
         fecha_actualizacion: new Date().toISOString(),
+        sku: ""
       };
 
       await onSave(nuevoProducto);
