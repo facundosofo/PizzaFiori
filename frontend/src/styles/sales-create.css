@@ -7,7 +7,7 @@
   /* inherit global background */
   background: transparent;
   padding: 24px;
-  padding-right: 420px; /* Space for cart drawer */
+  padding-right: 320px; /* Space for cart drawer (reducido) */
 }
 
 .sales-create-container {

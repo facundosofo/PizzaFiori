@@ -31,10 +31,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     <div className="cart-drawer">
       {/* Header */}
       <div className="cart-drawer-header">
-        <h2 className="cart-drawer-title">Carrito</h2>
-        <p className="cart-drawer-subtitle">
-          {isEmpty ? 'Sin items' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
-        </p>
+        <div className="cart-drawer-header-main">
+          <h2 className="cart-drawer-title">Carrito</h2>
+          <p className="cart-drawer-subtitle">
+            {isEmpty ? 'Sin items' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
+          </p>
+        </div>
+        {!isEmpty && (
+          <button
+            className="cart-btn cart-btn-clear"
+            onClick={onClearCart}
+            disabled={isConfirming}
+          >
+            <Icons.TrashIcon size={18} /> Vaciar
+          </button>
+        )}
       </div>
 
       {/* Items */}
@@ -143,21 +154,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
       {/* Footer */}
       <div className="cart-drawer-footer">
-        <div className="cart-total-section">
-          <p className="cart-total-label">Total</p>
-          <p className="cart-total-value">{formatCurrency(total)}</p>
-        </div>
+        <p className="cart-total-single">TOTAL: <span className="cart-total-amount">{formatCurrency(total)}</span></p>
 
         <div className="cart-actions">
-          {!isEmpty && (
-            <button
-              className="cart-btn cart-btn-clear"
-              onClick={onClearCart}
-              disabled={isConfirming}
-            >
-              <Icons.TrashIcon size={18} /> Vaciar
-            </button>
-          )}
+          {/* Botón de vaciar movido al header */}
           <button
             className="cart-btn cart-btn-confirm"
             onClick={onConfirmSale}
