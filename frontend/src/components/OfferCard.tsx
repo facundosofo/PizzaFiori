@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import type { Offer, OfferItem } from "../types/offer";
 import type { Product } from "../types/product";
-import { EditIcon, TrashIcon, WarningIcon } from "./shared/Icons";
+import * as Icons from './shared/Icons';
 import Badge from "./shared/Badge";
 import ConfirmDialog from "./shared/ConfirmDialog";
 import ErrorAlert from "./shared/ErrorAlert";
@@ -138,14 +138,14 @@ const OfferCard = ({
               onClick={handleEdit}
               title="Editar oferta"
             >
-              <EditIcon />
+              <Icons.EditIcon />
             </button>
             <button
               className="offer-action-btn offer-action-delete"
               onClick={() => setShowDeleteConfirm(true)}
               title="Desactivar oferta"
             >
-              <TrashIcon />
+              <Icons.TrashIcon />
             </button>
           </div>
         </div>
@@ -154,7 +154,7 @@ const OfferCard = ({
       {/* Confirm Dialog */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
-        title={<><WarningIcon size={18} /> Desactivar Oferta</>}
+        title={<><Icons.WarningIcon size={18} /> Desactivar Oferta</>}
         message={
           <>
             ¿Está seguro que desea desactivar <strong style={{ color: "#ffffff" }}>{oferta.nombre}</strong>?

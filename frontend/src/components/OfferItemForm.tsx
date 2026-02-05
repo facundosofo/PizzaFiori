@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import RadioGroup, { type RadioOption } from "./shared/RadioGroup";
 import MultiSelect, { type MultiSelectItem } from "./shared/MultiSelect";
 import SearchableSelect, { type SelectOption } from "./shared/SearchableSelect";
-import { InfoIcon, XIcon, PlusIcon } from "./shared/Icons";
+import * as Icons from './shared/Icons';
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import type { OfferItemRequest } from "../types/offer_item";
@@ -124,7 +124,7 @@ const OfferItemForm = ({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <label htmlFor="categoria-select">Categoría</label>
               <div className="info-tooltip">
-                <InfoIcon className="info-icon" />
+                <Icons.InfoIcon className="info-icon" />
                 <div className="tooltip-content">
                   Se podrá elegir cualquier producto activo de esta categoría
                 </div>
@@ -150,7 +150,7 @@ const OfferItemForm = ({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <label>Productos</label>
               <div className="info-tooltip">
-                <InfoIcon className="info-icon" />
+                <Icons.InfoIcon className="info-icon" />
                 <div className="tooltip-content">
                   Se podrá elegir un producto de entre todas las opciones seleccionadas
                 </div>
@@ -176,14 +176,14 @@ const OfferItemForm = ({
           className="btn-add"
           onClick={handleAdd}
         >
-          <PlusIcon size={16} /> Agregar Item
+          <Icons.PlusIcon size={16} /> Agregar Item
         </button>
         <button
           type="button"
           className="btn-cancel"
           onClick={onCancel}
         >
-          <XIcon size={16} /> Cancelar
+          <Icons.XIcon size={16} /> Cancelar
         </button>
       </div>
     </div>

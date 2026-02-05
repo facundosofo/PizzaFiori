@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { createPortal } from 'react-dom';
+import { useNavigate } from "react-router-dom";
 import { getSales, deleteSale } from "../services/salesService";
 import { getProductos } from "../services/productsService";
 import { getOfertas } from "../services/ofertasService";
@@ -8,7 +10,7 @@ import SaleDetailModal from "../components/SaleDetailModal";
 import SaleEditModal from "../components/SaleEditModal";
 import ConfirmDialog from "../components/shared/ConfirmDialog";
 import SalesFilters from "../components/SalesFilters";
-import { EyeIcon, EditIcon, TrashIcon, WarningIcon, XIcon } from "../components/shared/Icons";
+import * as Icons from "../components/shared/Icons";
 import type { Sale } from "../types/sale";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
@@ -16,6 +18,7 @@ import { formatCurrency, formatDateDisplay } from "../utils/formatters";
 import "../styles/sales.css";
 
 const SalesPage = () => {
+  const navigate = useNavigate();
   const [sales, setSales] = useState<Sale[]>([]);
   // Cache products and offers for use in detail/edit modals (Phase 2+)
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -225,13 +228,16 @@ const SalesPage = () => {
 
       <ErrorAlert message={error} onClose={() => setError(null)} />
 
-      {successMessage && (
-        <div className="sales-success-alert">
-          <p>{successMessage}</p>
-          <button onClick={() => setSuccessMessage(null)} className="close-btn">
-            <XIcon size={18} />
-          </button>
-        </div>
+      {successMessage && createPortal(
+        <div className="sales-success-modal" role="dialog" aria-modal="true">
+          <div className="sales-success-modal-box">
+            <p>{successMessage}</p>
+            <button onClick={() => setSuccessMessage(null)} className="sales-success-close" aria-label="Cerrar mensaje">
+              <Icons.XIcon size={18} />
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
 
       {loading ? (
@@ -241,7 +247,8 @@ const SalesPage = () => {
           ))}
         </div>
       ) : sales.length === 0 ? (
-        <div className="sales-empty">
+        <div className="product-selector-empty product-selector-empty-box">
+          <div className="product-selector-empty-icon"><Icons.PesoIcon size={36} /></div>
           <p>
             {dateFrom || dateTo
               ? "No se encontraron ventas en el rango seleccionado"
@@ -279,21 +286,21 @@ const SalesPage = () => {
                     onClick={() => handleViewDetail(sale.id)}
                     title="Ver detalle"
                   >
-                    <EyeIcon size={18} />
+                    <Icons.EyeIcon size={18} />
                   </button>
                   <button
                     className="sales-action-btn edit"
                     onClick={() => handleEdit(sale.id)}
                     title="Editar venta"
                   >
-                    <EditIcon size={18} />
+                    <Icons.EditIcon size={18} />
                   </button>
                   <button
                     className="sales-action-btn delete"
                     onClick={() => handleDeleteClick(sale.id)}
                     title="Eliminar venta"
                   >
-                    <TrashIcon size={18} />
+                    <Icons.TrashIcon size={18} />
                   </button>
                 </div>
               </div>
@@ -355,7 +362,7 @@ const SalesPage = () => {
 
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
-        title={<><WarningIcon size={18} /> Confirmar Eliminación</>}
+        title={<><Icons.WarningIcon size={18} /> Confirmar Eliminación</>}
         message={
           saleToDelete
             ? `¿Estás seguro de que deseas eliminar esta venta?`

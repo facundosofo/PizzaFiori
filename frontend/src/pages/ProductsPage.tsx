@@ -5,7 +5,7 @@ import ProductCard from "../components/ProductCard";
 import ProductModal from "../components/ProductModal";
 import SkeletonLoader from "../components/shared/SkeletonLoader";
 import ErrorAlert from "../components/shared/ErrorAlert";
-import { PlusIcon } from "../components/shared/Icons";
+import * as Icons from "../components/shared/Icons";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import "../styles/product-card.css";
@@ -70,6 +70,7 @@ const ProductosPage = () => {
   const handleCreateClick = () => {
     setNewProduct({
       id: 0,
+      sku: "",
       nombre: "",
       categoria_id: 0,
       imagen: undefined,
@@ -122,7 +123,7 @@ const ProductosPage = () => {
           className="btn-create-product"
           onClick={handleCreateClick}
         >
-          <PlusIcon size={16} /> Nuevo Producto
+          <Icons.PlusIcon size={16} /> Nuevo Producto
         </button>
       </div>
 
@@ -147,6 +148,11 @@ const ProductosPage = () => {
             <SkeletonLoader key={i} />
           ))}
         </div>
+      ) : productos.length === 0 ? (
+        <div className="product-selector-empty product-selector-empty-box">
+          <div className="product-selector-empty-icon"><Icons.PizzaIcon size={36} /></div>
+          <p>No hay productos disponibles</p>
+        </div>
       ) : categorias.length === 0 ? (
         <p className="product-empty-state">No hay categorías disponibles</p>
       ) : (
@@ -168,7 +174,7 @@ const ProductosPage = () => {
                   onClick={() => toggleCategoryCollapse(cat.id)}
                   aria-label={isCollapsed ? "Expandir" : "Colapsar"}
                 >
-                  ▼
+                  <Icons.ChevronDownIcon size={16} />
                 </button>
               </div>
 

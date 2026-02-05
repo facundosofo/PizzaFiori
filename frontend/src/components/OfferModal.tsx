@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import { XIcon, TrashIcon, PlusIcon, MinusIcon } from "./shared/Icons";
+import * as Icons from './shared/Icons';
 import Badge from "./shared/Badge";
 import OfferItemForm from "./OfferItemForm";
 import type { Offer } from "../types/offer";
@@ -131,6 +131,16 @@ const OfferModal = ({
     );
   };
 
+  // Helper to select the input value on focus/click/pointer up
+  const selectInputValue = (e: any) => {
+    try {
+      const input = (e.currentTarget || e.target) as HTMLInputElement;
+      if (input && typeof input.select === 'function') input.select();
+    } catch (err) {
+      /* ignore */
+    }
+  };
+
   const handleSave = async () => {
     setError("");
 
@@ -220,7 +230,7 @@ const OfferModal = ({
               aria-label="Cerrar"
               disabled={loading}
             >
-              <XIcon size={18} />
+              <Icons.XIcon size={18} />
             </button>
           </div>
 
@@ -315,7 +325,7 @@ const OfferModal = ({
                       onClick={() => setShowItemForm(true)}
                       disabled={loading}
                     >
-                      <PlusIcon size={16} /> Agregar Item
+                      <Icons.PlusIcon size={16} /> Agregar Item
                     </button>
                   )}
                 </div>
@@ -380,7 +390,7 @@ const OfferModal = ({
                                     disabled={item.cantidad <= 1 || loading}
                                     aria-label="Disminuir cantidad"
                                   >
-                                    <MinusIcon size={14} />
+                                    <Icons.MinusIcon size={14} />
                                   </button>
                                   <input
                                     type="number"
@@ -388,6 +398,10 @@ const OfferModal = ({
                                     max="1000"
                                     className="qty-input"
                                     value={item.cantidad}
+                                    onFocus={selectInputValue}
+                                    onClick={selectInputValue}
+                                    onPointerUp={selectInputValue}
+                                    onMouseUp={selectInputValue}
                                     onInput={(e) => {
                                       const value = parseInt((e.target as HTMLInputElement).value);
                                       if (!isNaN(value)) {
@@ -410,7 +424,7 @@ const OfferModal = ({
                                     disabled={item.cantidad >= 1000 || loading}
                                     aria-label="Aumentar cantidad"
                                   >
-                                    <PlusIcon size={14} />
+                                    <Icons.PlusIcon size={14} />
                                   </button>
                                 </div>
                               </td>
@@ -422,7 +436,7 @@ const OfferModal = ({
                                   disabled={loading}
                                   title="Eliminar item"
                                 >
-                                  <TrashIcon />
+                                  <Icons.TrashIcon />
                                 </button>
                               </td>
                             </tr>

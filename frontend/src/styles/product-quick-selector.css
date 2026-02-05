@@ -1,88 +1,32 @@
-/* ================================================================
-   PRODUCT-CARD.CSS - Estilos para la página de productos y tarjetas
-   ================================================================
-   Contiene estilos para:
-   - Contenedor principal de productos
-   - Categorías y sus tarjetas de productos
-   - Scroll horizontal de productos
-   - Cards individuales de productos
-   ================================================================ */
+/* ProductQuickSelector.css - Selector rápido de productos */
 
-@import './shared/page-header.css';
-
-/* ===== CONTENEDOR GENERAL ===== */
-
-/* Contenedor principal de la página de productos con gradiente */
-.productos-container {
-  padding: 40px 32px;
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  min-height: 100vh;
-  /* Inherit global background */
-  background: transparent;
-  color: white;
+.product-quick-selector {
+  margin-bottom: 32px;
 }
 
-/* Mensaje cuando no hay productos */
-.product-empty-state {
-  text-align: center;
-  font-size: 1.2rem;
-  color: #aaa;
-  margin-top: 60px;
-}
-
-/* Botón para crear nuevo producto */
-.btn-create-product {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  border: 2px solid #4ade80;
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
-}
-
-.btn-create-product:hover {
-  box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
-  transform: translateY(-2px);
-}
-
-.btn-create-product:active {
-  transform: translateY(0);
-}
-
-
-/* ===== CATEGORÍAS ===== */
-
-/* Sección de cada categoría con sus productos */
-.categoria-section {
+.product-category-section {
   margin-bottom: 56px;
 }
 
-/* Header de la categoría con título y botón de colapsar */
-.categoria-header {
+.product-category-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
 }
 
-/* Título de la categoría con borde rojo lateral */
-.categoria-title {
+.product-category-title {
   font-size: 1.9rem;
   font-weight: 700;
   padding-left: 14px;
   border-left: 5px solid #ff3b3b;
   color: #f5f5f5;
   margin: 0;
+  text-shadow: 0 0 15px rgba(255, 59, 59, 0.3);
 }
 
 /* Botón para colapsar/expandir categoría */
-.categoria-toggle {
+.product-category-toggle {
   background: linear-gradient(135deg, #ff3b3b, #ff5252);
   border: 2px solid #ff1744;
   color: white;
@@ -101,7 +45,7 @@
 }
 
 /* Hover del botón toggle */
-.categoria-toggle:hover {
+.product-category-toggle:hover {
   background: linear-gradient(135deg, #ff5252, #ff6b6b);
   transform: scale(1.1);
   box-shadow: 0 6px 18px rgba(255, 59, 59, 0.5);
@@ -109,23 +53,21 @@
 }
 
 /* Estado activo del botón toggle */
-.categoria-toggle:active {
+.product-category-toggle:active {
   transform: scale(0.95);
 }
 
 /* Estado normal (expandido) del toggle */
-.categoria-toggle {
+.product-category-toggle {
   transform: rotate(0deg);
 }
 
 /* Estado colapsado con rotación */
-.categoria-toggle.collapsed {
+.product-category-toggle.collapsed {
   transform: rotate(-90deg);
 }
 
-/* ===== SCROLL HORIZONTAL ===== */
-
-/* Contenedor con scroll horizontal para las tarjetas de producto */
+/* Scroll horizontal para las tarjetas de producto */
 .product-scroll-horizontal {
   display: flex;
   gap: 24px;
@@ -162,9 +104,13 @@
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
 }
 
-/* ===== PRODUCT CARD ===== */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
 
-/* Tarjeta individual de producto */
+/* Product Card */
 .product-card {
   flex: 0 0 240px;
   background: linear-gradient(145deg, #1e1e1e, #121212);
@@ -179,53 +125,9 @@
   position: relative;
 }
 
-/* Hover de la tarjeta con sombra roja */
 .product-card:hover {
   box-shadow: 0 18px 40px rgba(255, 59, 59, 0.35);
 }
-
-/* Botón de eliminar en la esquina superior izquierda */
-.product-card-deactivate {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: linear-gradient(135deg, #ff3b3b, #ff5252);
-  border: 2px solid #ff1744;
-  color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 20;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 1;
-}
-
-/* Icono SVG dentro del botón eliminar */
-.product-card-deactivate svg {
-  stroke: white;
-  width: 18px;
-  height: 18px;
-}
-
-/* Hover del botón eliminar con rotación */
-.product-card-deactivate:hover {
-  background: linear-gradient(135deg, #ff5252, #ff6b6b);
-  transform: scale(1.15) rotate(10deg);
-  box-shadow: 0 6px 18px rgba(255, 59, 59, 0.5);
-  border-color: #ff6b6b;
-}
-
-/* Estado activo del botón desactivar */
-.product-card-deactivate:active {
-  transform: scale(0.95);
-}
-
-/* ===== PRODUCT CARD IMAGE ===== */
 
 /* Contenedor de la imagen del producto */
 .product-card-image {
@@ -250,10 +152,7 @@
   transform: scale(1.08);
 }
 
-/* ===== PRODUCT CARD BODY ===== */
-
-/* Cuerpo de la tarjeta con información del producto */
-.product-card-body {
+.product-card-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -261,8 +160,7 @@
   justify-content: space-between;
 }
 
-/* Nombre del producto en blanco con efecto sutil verde */
-.product-card-title {
+.product-card-name {
   font-size: 1.1rem;
   font-weight: 700;
   text-align: center;
@@ -299,7 +197,7 @@
   font-size: 0.85rem;
 }
 
-/* Texto de la cantidad del precio (ej: "1/2 Molde") */
+/* Texto de la cantidad del precio (ej: "1/2 Docena") */
 .price-cantidad {
   color: #e8e8e8;
   font-weight: 600;
@@ -326,9 +224,33 @@
   border: 1px dashed #666;
 }
 
-/* Botón de ver detalles del producto */
-.product-card-btn {
-  background: linear-gradient(135deg, #6dff7a, #4ade80);
+.product-card-price {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+  margin: 0;
+  text-align: center;
+}
+
+.product-card-prices-multiple {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: -4px 0 0 0;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Quantity Controls */
+.product-qty-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.product-qty-btn-add {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   border: none;
   color: #1a1a1a;
   padding: 11px 16px;
@@ -339,63 +261,92 @@
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
+  width: 100%;
 }
 
-/* Hover del botón con efecto verde brillante */
-.product-card-btn:hover {
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+.product-qty-btn-add:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d);
   transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(109, 255, 122, 0.4);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
 }
 
-/* Estado activo del botón */
-.product-card-btn:active {
+.product-qty-btn-add:active {
   transform: scale(0.98);
 }
 
-/* ===== RESPONSIVE ===== */
+/* Badge cuando está en carrito */
+.product-in-cart-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #ff3b3b 0%, #ff5252 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(255, 59, 59, 0.4);
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
 
-/* Ajustes para tablets y móviles */
+/* Loading state */
+.product-selector-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 64px 0;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Empty state */
+.product-selector-empty {
+  text-align: center;
+  padding: 64px 32px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.product-selector-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+/* Boxed/dashed variant to match offer empty-state */
+.product-selector-empty-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  /* Padding reducido en dispositivos móviles */
-  .productos-container {
-    padding: 24px 16px;
-  }
-
-  /* Título más pequeño en móviles */
-  .productos-title {
-    font-size: 2rem;
-    margin-bottom: 28px;
-  }
-
-  /* Título de categoría más pequeño */
-  .categoria-title {
+  .product-category-title {
     font-size: 1.5rem;
-    margin-bottom: 18px;
   }
 
-  /* Menor espacio entre cards en scroll */
   .product-scroll-horizontal {
     gap: 16px;
   }
-
-  /* Tamaño de card optimizado para móvil */
+  
   .product-card {
     flex: 0 0 200px;
+    padding: 12px;
   }
 
-  /* Altura reducida de imagen en móviles */
   .product-card-image {
     height: 140px;
   }
-
-  /* Título de producto más pequeño */
-  .product-card-title {
-    font-size: 0.95rem;
+  
+  .product-card-name {
+    font-size: 14px;
   }
-
-  /* Precio más pequeño en móviles */
+  
   .product-card-price {
-    font-size: 1.2rem;
+    font-size: 16px;
   }
 }

@@ -6,7 +6,7 @@ import type { Offer } from "../types/offer";
 import ProductModal from "./ProductModal";
 import ErrorAlert from "./shared/ErrorAlert";
 import ConfirmDialog from "./shared/ConfirmDialog";
-import { TrashIcon, WarningIcon } from "./shared/Icons";
+import * as Icons from './shared/Icons';
 import { deactivateProducto } from "../services/productsService";
 import { getOfertas } from "../services/ofertasService";
 import { formatCurrency } from "../utils/formatters";
@@ -124,7 +124,7 @@ const ProductCard = ({
           }}
           title="Desactivar producto"
         >
-          <TrashIcon />
+          <Icons.TrashIcon />
         </button>
 
         <div className="product-card-image">
@@ -180,7 +180,7 @@ const ProductCard = ({
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}
-        title={<><WarningIcon size={18} /> Desactivar Producto</>}
+        title={<><Icons.WarningIcon size={18} /> Desactivar Producto</>}
         message={
           <>
             ¿Está seguro que desea desactivar <strong style={{ color: "#ffffff" }}>{producto.nombre}</strong>?
@@ -207,7 +207,7 @@ const ProductCard = ({
                   alignItems: "center",
                   gap: "8px"
                 }}>
-                  <WarningIcon size={16} color="#ffc107" />
+                  <Icons.WarningIcon size={16} color="#ffc107" />
                   También se desactivarán {affectedOffers.length} {affectedOffers.length === 1 ? "oferta" : "ofertas"}:
                 </div>
                 <ul style={{ 

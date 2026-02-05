@@ -9,7 +9,8 @@ import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/shared/quantity-controls.css";
 import "../styles/shared/add-button.css";
 import "../styles/sale-modal.css";
-import { ErrorIcon, SpinnerIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
+import ErrorAlert from './shared/ErrorAlert';
+import * as Icons from './shared/Icons';
 
 type SaleWithDetails = Omit<Sale, 'items'> & {
   items: SaleItemWithDetails[];
@@ -259,7 +260,7 @@ const SaleEditModal = ({
                 onClick={onClose}
                 aria-label="Cerrar modal"
               >
-                <XIcon size={18} />
+                <Icons.XIcon size={18} />
               </button>
             </div>
 
@@ -271,15 +272,13 @@ const SaleEditModal = ({
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   >
-                    <SpinnerIcon size={36} />
+                    <Icons.SpinnerIcon size={36} />
                   </motion.div>
                   <p>Cargando detalles...</p>
                 </div>
               ) : error ? (
                 <div className="sale-detail-error">
-                  <p>
-                    <ErrorIcon size={18} /> {error}
-                  </p>
+                  <ErrorAlert message={error} onClose={() => setError("")} />
                 </div>
               ) : sale ? (
                 <>
@@ -338,7 +337,7 @@ const SaleEditModal = ({
                                 onClick={() => handleQuantityChange(item.id, item.cantidad - 1)}
                                 disabled={saving || loading}
                               >
-                                <MinusIcon size={14} />
+                                <Icons.MinusIcon size={14} />
                               </button>
                               <input
                                 type="number"
@@ -359,7 +358,7 @@ const SaleEditModal = ({
                                 onClick={() => handleQuantityChange(item.id, item.cantidad + 1)}
                                 disabled={saving || loading}
                               >
-                                <PlusIcon size={14} />
+                                <Icons.PlusIcon size={14} />
                               </button>
                             </div>
                           </div>
@@ -395,7 +394,7 @@ const SaleEditModal = ({
                               onClick={() => handleRemoveItem(item.id)}
                               title="Eliminar item"
                             >
-                              <XIcon size={16} />
+                              <Icons.XIcon size={16} />
                             </button>
                           </div>
                         </div>
@@ -468,7 +467,7 @@ const SaleEditModal = ({
                         <div className="form-group">
                           <label>&nbsp;</label>
                           <button className="btn-add-item" onClick={handleAddItem}>
-                            <PlusIcon size={16} /> Agregar
+                            <Icons.PlusIcon size={16} /> Agregar
                           </button>
                         </div>
                       </div>
