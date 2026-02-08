@@ -15,6 +15,7 @@
   height: 100%;
 }
 
+
 .offer-card:hover {
   border-color: #22c55e;
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
@@ -28,7 +29,6 @@
   gap: 0.5rem;
   margin-top: auto;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .offer-action-buttons {
@@ -143,6 +143,41 @@
   line-height: 1.5;
 }
 
+.offer-description-expanded {
+  white-space: normal;
+  word-break: break-word;
+  display: block;
+}
+
+.offer-description-ellipsis {
+  margin-left: 2px;
+}
+
+.offer-card-see-more:hover {
+  color: #ffffff;
+}
+
+.offer-description-see-more {
+  background: none;
+  border: none;
+  color: #e5e5e5;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.offer-card-separator {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(74,222,128,0.10) 0%, rgba(255,255,255,0.10) 100%);
+  margin: 14px 0 14px 0;
+  border: none;
+}
+
 /* Ahorro */
 .offer-savings {
   display: flex;
@@ -154,7 +189,6 @@
 .offer-items {
   margin-top: 0.5rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .offer-items-label {
@@ -179,7 +213,7 @@
 .offer-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.65rem;
+  gap: 0.5rem;
   padding: 0.45rem 0;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.9);
@@ -200,6 +234,7 @@
   min-width: 34px;
   font-weight: 900;
   color: rgba(255, 255, 255, 0.88);
+  flex-shrink: 0
 }
 
 

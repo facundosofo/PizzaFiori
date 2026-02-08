@@ -88,7 +88,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       onClick={() => onRemoveItem(item.id)}
                       title="Eliminar"
                     >
-                      <Icons.XIcon size={18} />
+                      <Icons.TrashIcon size={18} />
                     </button>
                   </div>
 

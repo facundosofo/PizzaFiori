@@ -228,19 +228,19 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
                   {/* Category-based configuration */}
                   {type === 'category' && (
                     <div className="offer-config-category">
-                      <h3 className="offer-config-category-title">
-                        {item.categoria_nombre || 'Productos disponibles'} ({item.cantidad}x)
-                      </h3>
-                      
-                      {/* Counter */}
-                      <div className="offer-config-counter">
-                        {(() => {
-                          const selections = categorySelections.get(index);
-                          const total = selections
-                            ? Array.from(selections.values()).reduce((sum, qty) => sum + qty, 0)
-                            : 0;
-                          return `${total} / ${item.cantidad} seleccionados`;
-                        })()}
+                      <div className="offer-config-category-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                        <h3 className="offer-config-category-title" style={{ margin: 0 }}>
+                          {item.categoria_nombre || 'Productos disponibles'} ({item.cantidad}x)
+                        </h3>
+                        <div className="offer-config-counter">
+                          {(() => {
+                            const selections = categorySelections.get(index);
+                            const total = selections
+                              ? Array.from(selections.values()).reduce((sum, qty) => sum + qty, 0)
+                              : 0;
+                            return `${total} / ${item.cantidad} seleccionados`;
+                          })()}
+                        </div>
                       </div>
 
                       <div className="offer-config-products-grid">
