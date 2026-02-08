@@ -4,6 +4,7 @@ import ProductosPage from "./pages/ProductsPage";
 import SalesPage from "./pages/SalesPage";
 import SalesCreatePage from "./pages/SalesCreate";
 import OffersPage from "./pages/OffersPage";
+import DashboardOverview from "./pages/DashboardOverview";
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
         <Route path="/ofertas" element={<OffersPage />} />
         <Route path="/ventas" element={<SalesPage />} />
         <Route path="/registrar-venta" element={<SalesCreatePage />} />
+        <Route path="/dashboard" element={<DashboardOverview />} />
+        <Route path="/reportes" element={<DashboardOverview />} />
       </Routes>
     </Router>
   );
