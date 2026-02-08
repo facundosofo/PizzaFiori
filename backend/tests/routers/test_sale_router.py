@@ -37,7 +37,11 @@ async def test_create_sale_solo_ofertas(async_client: AsyncClient, mock_sale_ser
     mock_sale_service.create.return_value.value = venta
     
     sale_data = {
-        "items": [{"oferta_id": 1, "cantidad": 1}]
+        "items": [{
+            "oferta_id": 1,
+            "cantidad": 1,
+            "productos_seleccionados": [{"producto_id": 5, "cantidad": 12}]
+        }]
     }
     
     response = await async_client.post("/ventas/", json=sale_data)
@@ -58,7 +62,11 @@ async def test_create_sale_productos_y_ofertas(async_client: AsyncClient, mock_s
     sale_data = {
         "items": [
             {"producto_id": 1, "cantidad": 2},
-            {"oferta_id": 1, "cantidad": 1}
+            {
+                "oferta_id": 1,
+                "cantidad": 1,
+                "productos_seleccionados": [{"producto_id": 3, "cantidad": 6}]
+            }
         ]
     }
     
@@ -121,7 +129,11 @@ async def test_create_sale_oferta_no_existe_retorna_404(async_client: AsyncClien
     mock_sale_service.create.return_value.status_code = 404
     
     sale_data = {
-        "items": [{"oferta_id": 999, "cantidad": 1}]
+        "items": [{
+            "oferta_id": 999,
+            "cantidad": 1,
+            "productos_seleccionados": [{"producto_id": 1, "cantidad": 1}]
+        }]
     }
     
     response = await async_client.post("/ventas/", json=sale_data)
@@ -151,7 +163,11 @@ async def test_create_sale_oferta_inactiva_retorna_400(async_client: AsyncClient
     mock_sale_service.create.return_value.status_code = 400
     
     sale_data = {
-        "items": [{"oferta_id": 1, "cantidad": 1}]
+        "items": [{
+            "oferta_id": 1,
+            "cantidad": 1,
+            "productos_seleccionados": [{"producto_id": 2, "cantidad": 6}]
+        }]
     }
     
     response = await async_client.post("/ventas/", json=sale_data)

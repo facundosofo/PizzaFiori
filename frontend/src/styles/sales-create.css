@@ -1,0 +1,310 @@
+/* SalesCreate.css - Página de creación de ventas */
+
+@import './shared/page-header.css';
+
+.sales-create-page {
+  min-height: 100vh;
+  /* inherit global background */
+  background: transparent;
+  padding: 24px;
+  padding-right: 320px; /* Space for cart drawer (reducido) */
+}
+
+.sales-create-container {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* Tabs */
+.sales-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.sales-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+  font-weight: 600;
+  padding: 16px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  bottom: -2px;
+}
+
+.sales-tab:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sales-tab.active {
+  color: #22c55e;
+  border-bottom-color: #22c55e;
+  text-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+}
+
+/* Back button */
+.sales-create-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: #f5f5f5;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 24px;
+  text-decoration: none;
+}
+
+.sales-create-back:hover {
+  border-color: #22c55e;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  transform: translateX(-4px);
+}
+
+/* Content */
+.sales-create-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Loading */
+.sales-create-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+}
+
+.sales-create-loading-spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 12px;
+  font-size: 24px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error */
+.sales-create-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  padding: 24px;
+  color: #ef4444;
+  text-align: center;
+}
+
+.sales-create-error-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.sales-create-error-message {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Success message */
+.sales-create-success {
+  /* Rely on overlay flexbox to center this box */
+  position: relative;
+  background: linear-gradient(180deg, 
+    rgba(34, 197, 94, 0.95) 0%, 
+    rgba(22, 163, 74, 0.95) 100%);
+  border: 2px solid #4ade80;
+  border-radius: 12px;
+  padding: 32px 48px;
+  box-shadow: 
+    0 10px 50px rgba(0, 0, 0, 0.8),
+    0 0 60px rgba(34, 197, 94, 0.6);
+  z-index: 11001;
+  text-align: center;
+  max-width: 90%;
+}
+
+.sales-create-success-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.sales-create-success-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.sales-create-success-message {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+}
+
+/* Confirmation Modal */
+.confirmation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 11000;
+}
+
+.confirmation-modal {
+  background: #1a1a1a;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 10px 50px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(74, 222, 128, 0.2);
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 480px;
+  width: 90%;
+}
+
+.confirmation-modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 16px 0;
+  text-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+.confirmation-modal-message {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.confirmation-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.confirmation-modal-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirmation-modal-btn-cancel {
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: #f5f5f5;
+}
+
+.confirmation-modal-btn-cancel:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.confirmation-modal-btn-confirm {
+  background: transparent;
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.confirmation-modal-btn-confirm:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+/* Add to Cart Toast */
+.add-to-cart-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #262626 100%);
+  border: 2px solid #22c55e;
+  border-radius: 12px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.3),
+              0 0 0 1px rgba(34, 197, 94, 0.1);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #22c55e;
+  border-radius: 50%;
+  font-size: 18px;
+  color: #0d0d0d;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.toast-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sales-create-page {
+    padding: 16px;
+    padding-bottom: 480px; /* Space for mobile cart */
+    padding-right: 16px;
+  }
+  
+  .sales-create-title {
+    font-size: 24px;
+  }
+  
+  .sales-create-subtitle {
+    font-size: 14px;
+  }
+}

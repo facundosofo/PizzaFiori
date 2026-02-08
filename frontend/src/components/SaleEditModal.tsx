@@ -5,12 +5,12 @@ import type { SaleItemWithDetails } from "../types/sale_item";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
 import { getSaleById, updateSale } from "../services/salesService";
-import { getOfertaById } from "../services/ofertasService";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/shared/quantity-controls.css";
 import "../styles/shared/add-button.css";
 import "../styles/sale-modal.css";
-import { ErrorIcon, SpinnerIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
+import ErrorAlert from './shared/ErrorAlert';
+import * as Icons from './shared/Icons';
 
 type SaleWithDetails = Omit<Sale, 'items'> & {
   items: SaleItemWithDetails[];
@@ -35,10 +35,10 @@ const SaleEditModal = ({
 }: SaleEditModalProps) => {
   const [sale, setSale] = useState<SaleWithDetails | null>(null);
   const [editedItems, setEditedItems] = useState<SaleItemWithDetails[]>([]);
-  const [offersById, setOffersById] = useState<Record<number, Offer>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingPriceId, setEditingPriceId] = useState<number | null>(null);
 
   const toNumber = (value: unknown): number => {
     if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -77,43 +77,6 @@ const SaleEditModal = ({
               };
             });
           setEditedItems(normalizedItems);
-
-          const offerIds = Array.from(
-            new Set(
-              normalizedItems
-                .map((i) => i.oferta_id)
-                .filter((id): id is number => typeof id === "number" && id > 0)
-            )
-          );
-
-          if (offerIds.length > 0) {
-            const next: Record<number, Offer> = {};
-
-            for (const id of offerIds) {
-              const cached = allOffers.find((o) => o.id === id);
-              if (cached) next[id] = cached;
-            }
-
-            const missingIds = offerIds.filter((id) => !next[id]);
-            if (missingIds.length > 0) {
-              const fetched = await Promise.all(
-                missingIds.map(async (id) => {
-                  try {
-                    return await getOfertaById(id);
-                  } catch {
-                    return null;
-                  }
-                })
-              );
-              for (const o of fetched) {
-                if (o?.id) next[o.id] = o;
-              }
-            }
-
-            setOffersById(next);
-          } else {
-            setOffersById({});
-          }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : "Error desconocido";
           setError(errorMessage);
@@ -177,14 +140,16 @@ const SaleEditModal = ({
 
     setError("");
 
-    // TODO: Reemplazar con componente compartido cuando pantalla Registrar Ventas esté lista
     let itemName = "";
     let precio = 0;
+    let itemCategoria = "";
+    let itemDescripcion: string | undefined;
 
     if (itemType === "producto") {
       const product = allProducts.find((p) => p.id === selectedProductId);
       if (product) {
         itemName = product.nombre;
+        itemCategoria = product.categoria?.nombre || "Sin categoría";
         // Get price for quantity 1 (default price)
         const defaultPrice = product.precios?.find((p) => p.cantidad === 1);
         precio = defaultPrice?.precio || 0;
@@ -193,6 +158,8 @@ const SaleEditModal = ({
       const offer = allOffers.find((o) => o.id === selectedOfferId);
       if (offer) {
         itemName = offer.nombre;
+        itemCategoria = "Ofertas";
+        itemDescripcion = offer.descripcion || undefined;
         precio = offer.precio;
       }
     }
@@ -204,8 +171,11 @@ const SaleEditModal = ({
       cantidad: newItemQuantity,
       precio_unitario: precio,
       subtotal: precio * newItemQuantity,
-      producto_nombre: itemType === "producto" ? itemName : undefined,
-      oferta_nombre: itemType === "oferta" ? itemName : undefined,
+      item_nombre: itemName,
+      item_categoria: itemCategoria,
+      item_descripcion: itemDescripcion,
+      producto_nombre: itemType === "producto" ? itemName : undefined, // Deprecated
+      oferta_nombre: itemType === "oferta" ? itemName : undefined, // Deprecated
     };
 
     setEditedItems((prev) => [...prev, newItem]);
@@ -290,7 +260,7 @@ const SaleEditModal = ({
                 onClick={onClose}
                 aria-label="Cerrar modal"
               >
-                <XIcon size={18} />
+                <Icons.XIcon size={18} />
               </button>
             </div>
 
@@ -302,15 +272,13 @@ const SaleEditModal = ({
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   >
-                    <SpinnerIcon size={36} />
+                    <Icons.SpinnerIcon size={36} />
                   </motion.div>
                   <p>Cargando detalles...</p>
                 </div>
               ) : error ? (
                 <div className="sale-detail-error">
-                  <p>
-                    <ErrorIcon size={18} /> {error}
-                  </p>
+                  <ErrorAlert message={error} onClose={() => setError("")} />
                 </div>
               ) : sale ? (
                 <>
@@ -343,13 +311,18 @@ const SaleEditModal = ({
                       {editedItems.map((item) => (
                         <div key={item.id} className="sale-items-row">
                           <div className="sale-item-col-name">
-                            {item.producto_nombre || item.oferta_nombre || "Item"}
+                            {item.item_nombre}
+                            {item.item_descripcion && (
+                              <div style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.85rem", marginTop: 2 }}>
+                                {item.item_descripcion}
+                              </div>
+                            )}
 
-                            {item.oferta_id && offersById[item.oferta_id]?.productos?.length ? (
+                            {item.oferta_id && item.oferta_productos_snapshot?.length ? (
                               <div style={{ marginTop: 6, paddingLeft: 14 }}>
-                                {offersById[item.oferta_id]!.productos!.map((p) => (
+                                {item.oferta_productos_snapshot.map((p) => (
                                   <div key={p.id} style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "0.9rem", fontWeight: 600 }}>
-                                    - {toNumber((p as any).cantidad) * toNumber((item as any).cantidad)} {p.producto_nombre || (p as any).producto?.nombre || `Producto #${p.producto_id}`}
+                                    - {p.cantidad * item.cantidad} {p.producto_nombre}
                                   </div>
                                 ))}
                               </div>
@@ -364,7 +337,7 @@ const SaleEditModal = ({
                                 onClick={() => handleQuantityChange(item.id, item.cantidad - 1)}
                                 disabled={saving || loading}
                               >
-                                <MinusIcon size={14} />
+                                <Icons.MinusIcon size={14} />
                               </button>
                               <input
                                 type="number"
@@ -385,21 +358,30 @@ const SaleEditModal = ({
                                 onClick={() => handleQuantityChange(item.id, item.cantidad + 1)}
                                 disabled={saving || loading}
                               >
-                                <PlusIcon size={14} />
+                                <Icons.PlusIcon size={14} />
                               </button>
                             </div>
                           </div>
                           <div className="sale-item-col-price">
                             <input
-                              type="number"
-                              min="0"
-                              step="0.01"
+                              type="text"
                               className="qty-input price-input"
-                              value={item.precio_unitario}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) =>
-                                handlePriceChange(item.id, parseFloat(e.target.value) || 0)
+                              value={
+                                editingPriceId === item.id
+                                  ? item.precio_unitario
+                                  : formatCurrency(item.precio_unitario)
                               }
+                              onFocus={(e) => {
+                                setEditingPriceId(item.id);
+                                e.target.select();
+                              }}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                handlePriceChange(item.id, value);
+                              }}
+                              onBlur={() => {
+                                setEditingPriceId(null);
+                              }}
                               disabled={saving || loading}
                             />
                           </div>
@@ -412,7 +394,7 @@ const SaleEditModal = ({
                               onClick={() => handleRemoveItem(item.id)}
                               title="Eliminar item"
                             >
-                              <XIcon size={16} />
+                              <Icons.XIcon size={16} />
                             </button>
                           </div>
                         </div>
@@ -485,7 +467,7 @@ const SaleEditModal = ({
                         <div className="form-group">
                           <label>&nbsp;</label>
                           <button className="btn-add-item" onClick={handleAddItem}>
-                            <PlusIcon size={16} /> Agregar
+                            <Icons.PlusIcon size={16} /> Agregar
                           </button>
                         </div>
                       </div>

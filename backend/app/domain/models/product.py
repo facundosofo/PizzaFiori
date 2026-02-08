@@ -9,6 +9,7 @@ class Product(Base):
     __tablename__ = "Productos"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    sku = Column(String(50), unique=True, nullable=False, index=True)
     nombre = Column(String(255), nullable=False)
     categoria_id = Column(Integer, ForeignKey("Categorias.id"), nullable=True)
     imagen = Column(String(255), nullable=True)

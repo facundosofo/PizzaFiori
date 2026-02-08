@@ -4,9 +4,10 @@
 @import './shared/page-header.css';
 
 .offers-container {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 2rem 24px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   min-height: 100vh;
 }
 
@@ -36,8 +37,8 @@
 /* Grid de ofertas */
 .offers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 32px;
   margin-top: 2rem;
   align-items: stretch;
 }

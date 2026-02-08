@@ -36,7 +36,10 @@ def test_sale_item_with_offer():
     data = {
         "producto_id": None,
         "oferta_id": 1,
-        "cantidad": 2
+        "cantidad": 2,
+        "productos_seleccionados": [
+            {"producto_id": 5, "cantidad": 12}
+        ]
     }
     
     item = SaleItemRequest(**data)
@@ -44,6 +47,7 @@ def test_sale_item_with_offer():
     assert item.producto_id is None
     assert item.oferta_id == 1
     assert item.cantidad == 2
+    assert len(item.productos_seleccionados) == 1
 
 
 def test_sale_item_product_only():
@@ -61,10 +65,14 @@ def test_sale_item_product_only():
 
 
 def test_sale_item_offer_only():
-    """Test sale item with only oferta_id (omitting producto_id)."""
+    """Test sale item with only oferta_id and productos_seleccionados."""
     data = {
         "oferta_id": 3,
-        "cantidad": 1
+        "cantidad": 1,
+        "productos_seleccionados": [
+            {"producto_id": 1, "cantidad": 1},
+            {"producto_id": 2, "cantidad": 6}
+        ]
     }
     
     item = SaleItemRequest(**data)
@@ -72,6 +80,7 @@ def test_sale_item_offer_only():
     assert item.producto_id is None
     assert item.oferta_id == 3
     assert item.cantidad == 1
+    assert len(item.productos_seleccionados) == 2
 
 
 def test_sale_item_both_null():
@@ -96,7 +105,8 @@ def test_sale_item_both_present():
     data = {
         "producto_id": 1,
         "oferta_id": 2,
-        "cantidad": 5
+        "cantidad": 5,
+        "productos_seleccionados": [{"producto_id": 3, "cantidad": 1}]
     }
     
     with pytest.raises(ValidationError) as exc_info:
@@ -137,6 +147,54 @@ def test_sale_item_missing_cantidad():
     assert any(error["loc"] == ("cantidad",) for error in errors)
 
 
+def test_sale_item_offer_without_productos_seleccionados():
+    """Test that oferta_id requires productos_seleccionados."""
+    data = {
+        "oferta_id": 1,
+        "cantidad": 1
+    }
+    
+    with pytest.raises(ValidationError) as exc_info:
+        SaleItemRequest(**data)
+    
+    errors = exc_info.value.errors()
+    assert len(errors) > 0
+    assert any("productos_seleccionados" in str(error.get("ctx", {}).get("error", "")).lower()
+               for error in errors)
+
+
+def test_sale_item_offer_with_empty_productos_seleccionados():
+    """Test that oferta_id with empty productos_seleccionados is rejected."""
+    data = {
+        "oferta_id": 1,
+        "cantidad": 1,
+        "productos_seleccionados": []
+    }
+    
+    with pytest.raises(ValidationError) as exc_info:
+        SaleItemRequest(**data)
+    
+    errors = exc_info.value.errors()
+    assert len(errors) > 0
+
+
+def test_sale_item_product_with_productos_seleccionados():
+    """Test that producto_id cannot have productos_seleccionados."""
+    data = {
+        "producto_id": 1,
+        "cantidad": 6,
+        "productos_seleccionados": [{"producto_id": 2, "cantidad": 3}]
+    }
+    
+    with pytest.raises(ValidationError) as exc_info:
+        SaleItemRequest(**data)
+    
+    errors = exc_info.value.errors()
+    assert len(errors) > 0
+    assert any("productos_seleccionados" in str(error.get("ctx", {}).get("error", "")).lower()
+               for error in errors)
+
+
 # ==================== SaleCreateRequest Tests ====================
 
 def test_create_sale_valid_with_products():
@@ -162,7 +220,14 @@ def test_create_sale_valid_with_offers():
     data = {
         "numero_orden": "ORD-002",
         "items": [
-            {"oferta_id": 1, "cantidad": 2}
+            {
+                "oferta_id": 1, 
+                "cantidad": 2,
+                "productos_seleccionados": [
+                    {"producto_id": 1, "cantidad": 6},
+                    {"producto_id": 2, "cantidad": 6}
+                ]
+            }
         ]
     }
     
@@ -171,7 +236,7 @@ def test_create_sale_valid_with_offers():
     assert sale.numero_orden == "ORD-002"
     assert len(sale.items) == 1
     assert sale.items[0].oferta_id == 1
-
+    assert len(sale.items[0].productos_seleccionados) == 2
 
 def test_create_sale_valid_mixed_items():
     """Test creating sale with both products and offers."""
@@ -179,7 +244,11 @@ def test_create_sale_valid_mixed_items():
         "numero_orden": "ORD-003",
         "items": [
             {"producto_id": 1, "cantidad": 6},
-            {"oferta_id": 1, "cantidad": 1},
+            {
+                "oferta_id": 1, 
+                "cantidad": 1,
+                "productos_seleccionados": [{"producto_id": 5, "cantidad": 12}]
+            },
             {"producto_id": 3, "cantidad": 3}
         ]
     }
@@ -285,7 +354,12 @@ def test_sale_response_valid():
                 "oferta_id": None,
                 "cantidad": 6,
                 "precio_unitario": Decimal("1000.00"),
-                "subtotal": Decimal("6000.00")
+                "subtotal": Decimal("6000.00"),
+                "producto_sku": "EMPA-CARN-001",
+                "item_nombre": "Empanada de Carne",
+                "item_categoria": "Empanadas",
+                "item_descripcion": None,
+                "oferta_productos_snapshot": None
             },
             {
                 "id": 2,
@@ -293,7 +367,12 @@ def test_sale_response_valid():
                 "oferta_id": 1,
                 "cantidad": 1,
                 "precio_unitario": Decimal("6000.00"),
-                "subtotal": Decimal("6000.00")
+                "subtotal": Decimal("6000.00"),
+                "producto_sku": None,
+                "item_nombre": "Promo Docena",
+                "item_categoria": "Ofertas",
+                "item_descripcion": "12 empanadas surtidas",
+                "oferta_productos_snapshot": []
             }
         ]
     }
@@ -323,7 +402,12 @@ def test_sale_response_without_numero_orden():
                 "oferta_id": None,
                 "cantidad": 6,
                 "precio_unitario": Decimal("1000.00"),
-                "subtotal": Decimal("6000.00")
+                "subtotal": Decimal("6000.00"),
+                "producto_sku": "EMPA-CARN-001",
+                "item_nombre": "Empanada de Carne",
+                "item_categoria": "Empanadas",
+                "item_descripcion": None,
+                "oferta_productos_snapshot": None
             }
         ]
     }

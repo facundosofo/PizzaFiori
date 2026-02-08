@@ -28,7 +28,8 @@ export const HomePage = () => {
       >
         <ModuleCard title="Productos" to="/productos" />
         <ModuleCard title="Ofertas" to="/ofertas" />
-        <ModuleCard title="Ventas" to="/ventas" />
+        <ModuleCard title="Registrar Venta" to="/registrar-venta" />
+        <ModuleCard title="Ver Ventas" to="/ventas" />
         <ModuleCard title="Reportes" to="/reportes" />
       </motion.div>
     </div>

@@ -3,6 +3,7 @@ import type { ProductPrice } from './product_price';
 import type { OfferItem } from './offer_item';
 
 export interface Product {
+  sku: string;
   id: number;
   nombre: string;
   categoria_id?: number | null;

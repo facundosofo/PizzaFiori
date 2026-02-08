@@ -7,7 +7,7 @@ import OfferCard from "../components/OfferCard";
 import OfferModal from "../components/OfferModal";
 import SkeletonLoader from "../components/shared/SkeletonLoader";
 import ErrorAlert from "../components/shared/ErrorAlert";
-import { PlusIcon } from "../components/shared/Icons";
+import * as Icons from "../components/shared/Icons";
 import type { Offer } from "../types/offer";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
@@ -96,8 +96,8 @@ const OffersPage = () => {
         prev.map((o) => (o.id === selectedOferta.id ? oferta : o))
       );
     } else {
-      // Creación: agregar al inicio
-      setOfertas((prev) => [oferta, ...prev]);
+      // Creación: agregar al final
+      setOfertas((prev) => [...prev, oferta]);
     }
     setIsModalOpen(false);
     setSelectedOferta(null);
@@ -121,7 +121,7 @@ const OffersPage = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <PlusIcon size={16} /> Nueva Oferta
+          <Icons.PlusIcon size={16} /> Nueva Oferta
         </motion.button>
       </div>
 
@@ -145,12 +145,15 @@ const OffersPage = () => {
         </div>
       ) : ofertas.length === 0 ? (
         <motion.div 
-          className="empty-state"
+          className="offer-quick-selector"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p>No hay ofertas disponibles</p>
-          <p className="empty-state-subtitle">Crea tu primera oferta para comenzar</p>
+          <div className="offer-selector-empty">
+            <div className="offer-selector-empty-icon"><Icons.DiscountIcon size={36} /></div>
+            <p>No hay ofertas disponibles</p>
+            <p className="offer-selector-empty-sub">Crea tu primera oferta para comenzar</p>
+          </div>
         </motion.div>
       ) : (
         <div className="offers-grid">

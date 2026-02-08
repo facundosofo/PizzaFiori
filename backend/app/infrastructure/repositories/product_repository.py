@@ -24,7 +24,10 @@ class SqlAlchemyProductRepository(
         query = (
             select(Product)
             .where(Product.id == producto_id)
-            .options(selectinload(Product.precios))
+            .options(
+                selectinload(Product.precios),
+                selectinload(Product.categoria)
+            )
         )
         result = await self.session.execute(query)
         return result.scalars().first()
@@ -36,7 +39,10 @@ class SqlAlchemyProductRepository(
     ) -> List[Product]:
         query = (
             select(Product)
-            .options(selectinload(Product.precios))
+            .options(
+                selectinload(Product.precios),
+                selectinload(Product.categoria)
+            )
             .order_by(Product.id.asc())
         )
 

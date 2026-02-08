@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
-import { InfoIcon, WarningIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
+import * as Icons from './shared/Icons';
 import ConfirmDialog from "./shared/ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
 import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
@@ -164,7 +164,7 @@ const ProductModal = ({
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="product-modal-close" onClick={onClose} aria-label="Cerrar"><XIcon size={18} /></button>
+            <button className="product-modal-close" onClick={onClose} aria-label="Cerrar"><Icons.XIcon size={18} /></button>
 
             <div className="product-modal-header-edit">
               <h2 className="product-modal-title">{producto.id === 0 ? "Nuevo Producto" : "Editar Producto"}</h2>
@@ -178,6 +178,18 @@ const ProductModal = ({
               {error && <div className="form-error" ref={errorRef}>{error}</div>}
 
               <div className="edit-form">
+                {producto.id > 0 && producto.sku && (
+                  <div style={{ 
+                    fontSize: "10px", 
+                    color: "#999", 
+                    textAlign: "right",
+                    marginBottom: "8px",
+                    fontFamily: "monospace"
+                  }}>
+                    SKU: {producto.sku}
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label htmlFor="edit-nombre">Nombre del Producto:</label>
                   <input
@@ -199,7 +211,7 @@ const ProductModal = ({
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <label>Precios:</label>
                     <div className="info-tooltip">
-                      <InfoIcon className="info-icon" />
+                      <Icons.InfoIcon className="info-icon" />
                       <div className="tooltip-content">
                         Debe existir un precio unitario.<br />
                         No se permiten cantidades duplicadas.
@@ -248,7 +260,7 @@ const ProductModal = ({
                                 }}
                                 disabled={loading}
                               >
-                                <MinusIcon size={14} />
+                                <Icons.MinusIcon size={14} />
                               </button>
                               <input
                                 type="number"
@@ -276,7 +288,7 @@ const ProductModal = ({
                                 }}
                                 disabled={loading}
                               >
-                                <PlusIcon size={14} />
+                                <Icons.PlusIcon size={14} />
                               </button>
                             </div>
                           </div>
@@ -343,7 +355,7 @@ const ProductModal = ({
                               ? "No se puede eliminar el único precio unitario" 
                               : "Eliminar precio"}
                           >
-                            <XIcon size={16} />
+                            <Icons.XIcon size={16} />
                           </button>
                         </div>
                       ))
@@ -372,7 +384,7 @@ const ProductModal = ({
                     }}
                     disabled={loading}
                   >
-                    <PlusIcon size={16} /> Agregar Precio
+                    <Icons.PlusIcon size={16} /> Agregar Precio
                   </button>
                 </div>
 
@@ -451,7 +463,7 @@ const ProductModal = ({
           {/* Diálogo de confirmación para eliminar precio unitario */}
           <ConfirmDialog
             isOpen={showDeleteWarning}
-            title={<><WarningIcon size={18} /> Eliminar Precio unitario</>}
+            title={<><Icons.WarningIcon size={18} /> Eliminar Precio unitario</>}
             message={
               <>
                 Estás eliminando el precio <strong>Unitario</strong>.

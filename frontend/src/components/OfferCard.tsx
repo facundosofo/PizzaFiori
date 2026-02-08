@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import type { Offer, OfferItem } from "../types/offer";
 import type { Product } from "../types/product";
-import { EditIcon, TrashIcon, WarningIcon } from "./shared/Icons";
+import * as Icons from "./shared/Icons";
 import Badge from "./shared/Badge";
 import ConfirmDialog from "./shared/ConfirmDialog";
 import ErrorAlert from "./shared/ErrorAlert";
@@ -18,21 +18,43 @@ interface OfferCardProps {
   onOfferDelete?: (ofertaId: number) => void;
 }
 
+/* -------------------- Helpers -------------------- */
+
+const getItemDetail = (
+  item: OfferItem
+): { cantidad: number; detalle: string } => {
+  let detalle = "Producto";
+
+  if (item.productos && item.productos.length > 1) {
+    detalle = item.productos.map((p) => p.nombre).join(", ");
+  } else if (item.categoria_id) {
+    detalle = item.categoria_nombre || "Categoría";
+  } else if (item.productos && item.productos.length === 1) {
+    detalle = item.productos[0].nombre;
+  }
+
+  return { cantidad: item.cantidad, detalle };
+};
+
+/* -------------------- Component -------------------- */
+
 const OfferCard = ({
   oferta,
   productos,
   onEdit,
-
   onOfferDelete,
 }: OfferCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  const [expanded, setExpanded] = useState(false);
+
+  const shouldTruncate =
+    oferta.descripcion && oferta.descripcion.length > 52;
+
   const handleEdit = () => {
-    if (onEdit) {
-      onEdit(oferta);
-    }
+    onEdit?.(oferta);
   };
 
   const handleDeactivate = async () => {
@@ -40,55 +62,17 @@ const OfferCard = ({
     setDeleteError(null);
     try {
       await deactivateOffer(oferta.id);
-      if (onOfferDelete) {
-        onOfferDelete(oferta.id);
-      }
+      onOfferDelete?.(oferta.id);
       setShowDeleteConfirm(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido al desactivar oferta";
-      setDeleteError(`No se pudo desactivar: ${errorMessage}`);
-      console.error("Error desactivando oferta:", error);
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al desactivar oferta";
+      setDeleteError(`No se pudo desactivar: ${msg}`);
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const getItemBadgeVariant = (item: OfferItem) => {
-    if (!item) return "neutral";
-    if (item.productos && item.productos.length > 1) return "warning"; // Opciones múltiples
-    if (item.categoria_id) return "info"; // Categoría
-    return "neutral"; // Producto específico
-  };
-
-  const getItemTypeLabel = (item: OfferItem) => {
-    if (!item) return "Producto";
-    if (item.productos && item.productos.length > 1) return "Opciones";
-    if (item.categoria_id) return "Categoría";
-    return "Específico";
-  };
-
-  const getItemDetail = (item: OfferItem): { cantidad: number; detalle: string } => {
-    if (!item) return { cantidad: 0, detalle: "" };
-    
-    let detalle = "";
-    
-    // Opciones múltiples
-    if (item.productos && item.productos.length > 1) {
-      detalle = item.productos.map((p) => p.nombre).join(", ");
-    }
-    // Categoría
-    else if (item.categoria_id) {
-      detalle = item.categoria_nombre || "Categoría";
-    }
-    // Producto específico
-    else if (item.productos && item.productos.length === 1) {
-      detalle = item.productos[0].nombre;
-    }
-    else {
-      detalle = "Producto";
-    }
-    
-    return { cantidad: item.cantidad, detalle };
   };
 
   return (
@@ -100,17 +84,51 @@ const OfferCard = ({
         transition={{ duration: 0.4 }}
         whileHover={{ scale: 1.02, y: -4 }}
       >
-        {/* Contenido principal */}
+        {/* Cuerpo */}
         <div className="offer-card-body">
           <div className="offer-card-header">
             <h3 className="offer-card-title">{oferta.nombre}</h3>
           </div>
 
           {oferta.descripcion && (
-            <p className="offer-description">{oferta.descripcion}</p>
+            <>
+              <p
+                className={
+                  expanded
+                    ? "offer-description offer-description-expanded"
+                    : "offer-description"
+                }
+              >
+                {expanded || !shouldTruncate ? (
+                  oferta.descripcion
+                ) : (
+                  <>
+                    {oferta.descripcion.slice(0, 52)}
+                    <span className="offer-description-ellipsis">…</span>
+                    <button
+                      className="offer-description-see-more"
+                      onClick={() => setExpanded(true)}
+                    >
+                      Ver más
+                    </button>
+                  </>
+                )}
+              </p>
+
+              {expanded && (
+                <button
+                  className="offer-description-see-more"
+                  onClick={() => setExpanded(false)}
+                >
+                  Ver menos
+                </button>
+              )}
+            </>
           )}
 
-          {/* Items incluidos */}
+          <div className="offer-card-separator" />
+
+          {/* Items */}
           {oferta.productos && oferta.productos.length > 0 && (
             <div className="offer-items">
               <span className="offer-items-label">Incluye:</span>
@@ -129,35 +147,49 @@ const OfferCard = ({
           )}
         </div>
 
-        {/* Acciones - Abajo con precio y botones */}
+        <div className="offer-card-separator" />
+
+        {/* Footer */}
         <div className="offer-card-actions">
-          <div className="offer-price">{formatCurrency(oferta.precio)}</div>
+          <div className="offer-price">
+            {formatCurrency(oferta.precio)}
+          </div>
+
           <div className="offer-action-buttons">
             <button
               className="offer-action-btn offer-action-edit"
               onClick={handleEdit}
               title="Editar oferta"
             >
-              <EditIcon />
+              <Icons.EditIcon />
             </button>
+
             <button
               className="offer-action-btn offer-action-delete"
               onClick={() => setShowDeleteConfirm(true)}
               title="Desactivar oferta"
             >
-              <TrashIcon />
+              <Icons.TrashIcon />
             </button>
           </div>
         </div>
       </motion.div>
 
-      {/* Confirm Dialog */}
+      {/* Confirmación */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
-        title={<><WarningIcon size={18} /> Desactivar Oferta</>}
+        title={
+          <>
+            <Icons.WarningIcon size={18} /> Desactivar Oferta
+          </>
+        }
         message={
           <>
-            ¿Está seguro que desea desactivar <strong style={{ color: "#ffffff" }}>{oferta.nombre}</strong>?
+            ¿Está seguro que desea desactivar{" "}
+            <strong style={{ color: "#ffffff" }}>
+              {oferta.nombre}
+            </strong>
+            ?
           </>
         }
         confirmText={isDeleting ? "Desactivando..." : "Desactivar"}
@@ -169,7 +201,10 @@ const OfferCard = ({
         cancelDisabled={isDeleting}
       />
 
-      <ErrorAlert message={deleteError} onClose={() => setDeleteError(null)} />
+      <ErrorAlert
+        message={deleteError}
+        onClose={() => setDeleteError(null)}
+      />
     </>
   );
 };

@@ -6,6 +6,7 @@ import structlog
 
 from app.domain.models.sale import Sale
 from app.domain.models.sale_item import SaleItem
+from app.domain.models.sale_item_offer_product import SaleItemOfferProduct
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.sale_schemas import SaleCreateRequest
 
@@ -83,6 +84,107 @@ class SaleService:
         
         return oferta.precio
 
+    async def _validate_offer_products(self, oferta, productos_seleccionados, uow) -> Optional[ServiceResult]:
+        """
+        Valida que los productos seleccionados cumplan con los requisitos de la oferta.
+        
+        Para cada OfferItem de la oferta, verifica que:
+        - Si tiene UN producto específico: el cliente debe seleccionar ese producto exacto
+          con la cantidad requerida
+        - Si tiene opciones múltiples (varios productos): el cliente debe elegir UNO de ellos
+          con la cantidad exacta requerida. Ejemplo: "6 empanadas de: jamón, carne o pollo"
+          → el cliente elige 6 de jamón, o 6 de carne, o 6 de pollo (no puede combinar)
+        - Si tiene categoría: el cliente puede combinar varios productos de esa categoría
+          sumando cantidades hasta alcanzar la cantidad requerida
+        - Las cantidades coincidan exactamente con lo requerido
+        - No se reutilicen productos entre diferentes OfferItems
+        - No se envíen productos extra que no pertenezcan a ningún item
+        
+        Args:
+            oferta: La oferta que se está validando
+            productos_seleccionados: Lista de productos seleccionados por el cliente
+            uow: Unit of Work para acceder a repositorios
+            
+        Returns:
+            ServiceResult con error si la validación falla, None si es exitosa
+        """
+        # Convertir lista de productos seleccionados a diccionario para búsqueda rápida
+        productos_seleccionados_validados = {}
+        for prod_sel in productos_seleccionados:
+            productos_seleccionados_validados[prod_sel.producto_id] = prod_sel.cantidad
+        
+        # Mapeo de productos ya utilizados para evitar duplicados entre OfferItems
+        productos_usados = set()
+        
+        # Verificar cada OfferItem de la oferta
+        for oferta_item in oferta.productos:
+            cantidad_requerida = oferta_item.cantidad
+            cantidad_seleccionada = 0
+            productos_de_este_item = []
+            
+            # Caso 1: OfferItem con producto(s) específico(s)
+            # - Un producto: el cliente debe seleccionar ese producto con la cantidad exacta
+            # - Opciones múltiples: el cliente debe elegir UNO de ellos con la cantidad exacta
+            # Ejemplo: "6 empanadas de: jamón, carne o pollo" → elegir 6 de UNO solo
+            if oferta_item.productos:
+                productos_permitidos_ids = [p.id for p in oferta_item.productos]
+                
+                # Buscar producto seleccionado de la lista permitida
+                # Solo se permite elegir UNO de los productos disponibles
+                for prod_id, cantidad in productos_seleccionados_validados.items():
+                    if prod_id in productos_permitidos_ids and prod_id not in productos_usados:
+                        productos_de_este_item.append(prod_id)
+                        cantidad_seleccionada = cantidad
+                        productos_usados.add(prod_id)
+                        break
+                
+                if not productos_de_este_item:
+                    productos_nombres = [p.nombre for p in oferta_item.productos]
+                    return ServiceResult(
+                        error=f"La oferta '{oferta.nombre}' requiere seleccionar {cantidad_requerida} de: {', '.join(productos_nombres)}",
+                        status_code=400,
+                    )
+            
+            # Caso 2: OfferItem con categoría (permite combinar productos)
+            # El cliente puede seleccionar varios productos de la categoría
+            # y sumar sus cantidades hasta alcanzar la cantidad requerida
+            # Ejemplo: "6 empanadas" → 2 jamón + 2 carne + 2 pollo = 6 ✓
+            elif oferta_item.categoria_id:
+                # Buscar TODOS los productos seleccionados de la categoría correcta
+                for prod_id, cantidad in productos_seleccionados_validados.items():
+                    if prod_id not in productos_usados:
+                        # Obtener el producto para verificar su categoría
+                        producto_temp = await uow.product_repo.get_by_id(prod_id)
+                        if producto_temp and producto_temp.categoria_id == oferta_item.categoria_id:
+                            productos_de_este_item.append(prod_id)
+                            cantidad_seleccionada += cantidad
+                            productos_usados.add(prod_id)
+                
+                if not productos_de_este_item:
+                    categoria_nombre = oferta_item.categoria_nombre or f"categoría {oferta_item.categoria_id}"
+                    return ServiceResult(
+                        error=f"La oferta '{oferta.nombre}' requiere seleccionar {cantidad_requerida} de la categoría: {categoria_nombre}",
+                        status_code=400,
+                    )
+            
+            # Validar que la cantidad coincida
+            if cantidad_seleccionada != cantidad_requerida:
+                return ServiceResult(
+                    error=f"La oferta '{oferta.nombre}' requiere {cantidad_requerida} unidades, pero se enviaron {cantidad_seleccionada}",
+                    status_code=400,
+                )
+        
+        # Validar que no se enviaron productos extra que no se usaron
+        productos_no_usados = set(productos_seleccionados_validados.keys()) - productos_usados
+        if productos_no_usados:
+            return ServiceResult(
+                error=f"Se enviaron productos que no pertenecen a ningún item de la oferta '{oferta.nombre}'",
+                status_code=400,
+            )
+        
+        # Validación exitosa
+        return None
+
     async def create(self, sale_create: SaleCreateRequest) -> ServiceResult:
         """Crea una nueva venta."""
         try:
@@ -99,6 +201,11 @@ class SaleService:
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
                     precio_unitario = None
+                    item_nombre = None
+                    item_descripcion = None
+                    item_categoria = None
+                    producto_sku = None
+                    oferta_productos_snapshot = []
                     
                     if item.producto_id:
                         # Validar que el producto existe y está activo
@@ -116,6 +223,11 @@ class SaleService:
                                 error=f"No se pudo obtener el precio para el producto {item.producto_id} con cantidad {item.cantidad}",
                                 status_code=400,
                             )
+                        
+                        # Guardar snapshot del producto
+                        item_nombre = producto.nombre
+                        producto_sku = producto.sku
+                        item_categoria = producto.categoria.nombre if producto.categoria else 'Sin categoría'
                     
                     elif item.oferta_id:
                         # Validar que la oferta existe y está activa
@@ -133,6 +245,39 @@ class SaleService:
                                 error=f"No se pudo obtener el precio para la oferta {item.oferta_id}",
                                 status_code=400,
                             )
+                        
+                        # Guardar snapshot de la oferta
+                        item_nombre = oferta.nombre
+                        item_descripcion = oferta.descripcion
+                        item_categoria = 'Ofertas'
+                        
+                        # Validar productos seleccionados contra requisitos de la oferta
+                        validation_error = await self._validate_offer_products(
+                            oferta, 
+                            item.productos_seleccionados, 
+                            uow
+                        )
+                        if validation_error:
+                            return validation_error
+                        
+                        # Crear snapshot de los productos que el cliente seleccionó
+                        if item.productos_seleccionados:
+                            for prod_sel in item.productos_seleccionados:
+                                # Obtener el producto para hacer el snapshot
+                                producto = await uow.product_repo.get_by_id(prod_sel.producto_id)
+                                if not producto:
+                                    return ServiceResult(
+                                        error=f"Producto {prod_sel.producto_id} en productos_seleccionados no encontrado",
+                                        status_code=404,
+                                    )
+                                
+                                snapshot = SaleItemOfferProduct(
+                                    producto_id=producto.id,
+                                    producto_nombre=producto.nombre,
+                                    categoria_nombre=producto.categoria.nombre if producto.categoria else 'Sin categoría',
+                                    cantidad=prod_sel.cantidad
+                                )
+                                oferta_productos_snapshot.append(snapshot)
                     
                     # Calcular subtotal
                     subtotal = Decimal(str(precio_unitario)) * Decimal(str(item.cantidad))
@@ -144,6 +289,13 @@ class SaleService:
                         cantidad=item.cantidad,
                         precio_unitario=precio_unitario,
                         subtotal=subtotal,
+                        # Referencia de negocio (solo productos tienen SKU)
+                        producto_sku=producto_sku,
+                        # Snapshot completo
+                        item_nombre=item_nombre,
+                        item_categoria=item_categoria,
+                        item_descripcion=item_descripcion,
+                        oferta_productos_snapshot=oferta_productos_snapshot
                     )
                     sale_items.append(sale_item)
 
@@ -282,8 +434,13 @@ class SaleService:
                         )
                     
                     precio_unitario = item.precio_unitario
+                    item_nombre = None
+                    item_descripcion = None
+                    item_categoria = None
+                    producto_sku = None
+                    oferta_productos_snapshot = []
                     
-                    # Validar que el producto o oferta existe
+                    # Validar que el producto o oferta existe y cargar snapshot
                     if item.producto_id:
                         producto = await uow.product_repo.get_by_id(item.producto_id)
                         if not producto:
@@ -291,6 +448,12 @@ class SaleService:
                                 error=f"Producto {item.producto_id} no encontrado",
                                 status_code=404,
                             )
+                        
+                        # Guardar snapshot del producto
+                        item_nombre = producto.nombre
+                        producto_sku = producto.sku
+                        item_categoria = producto.categoria.nombre if producto.categoria else 'Sin categoría'
+                        
                     elif item.oferta_id:
                         oferta = await uow.offer_repo.get_by_id(item.oferta_id)
                         if not oferta:
@@ -298,6 +461,34 @@ class SaleService:
                                 error=f"Oferta {item.oferta_id} no encontrada",
                                 status_code=404,
                             )
+                        
+                        # Guardar snapshot de la oferta actual (para referencia)
+                        # NOTA: No validamos contra los requisitos actuales de la oferta
+                        # porque las ventas son registros históricos que deben preservar
+                        # exactamente cómo se hicieron, incluso si la oferta cambió después
+                        item_nombre = oferta.nombre
+                        item_descripcion = oferta.descripcion
+                        item_categoria = 'Ofertas'
+                        
+                        # Crear snapshot de los productos que el cliente seleccionó
+                        # (preservar el snapshot histórico sin validar)
+                        if item.productos_seleccionados:
+                            for prod_sel in item.productos_seleccionados:
+                                # Obtener el producto para hacer el snapshot
+                                producto = await uow.product_repo.get_by_id(prod_sel.producto_id)
+                                if not producto:
+                                    return ServiceResult(
+                                        error=f"Producto {prod_sel.producto_id} en productos_seleccionados no encontrado",
+                                        status_code=404,
+                                    )
+                                
+                                snapshot = SaleItemOfferProduct(
+                                    producto_id=producto.id,
+                                    producto_nombre=producto.nombre,
+                                    categoria_nombre=producto.categoria.nombre if producto.categoria else 'Sin categoría',
+                                    cantidad=prod_sel.cantidad
+                                )
+                                oferta_productos_snapshot.append(snapshot)
                     
                     subtotal = Decimal(str(precio_unitario)) * Decimal(str(item.cantidad))
                     total += subtotal
@@ -308,6 +499,13 @@ class SaleService:
                         cantidad=item.cantidad,
                         precio_unitario=precio_unitario,
                         subtotal=subtotal,
+                        # Referencia de negocio (solo productos tienen SKU)
+                        producto_sku=producto_sku,
+                        # Snapshot completo
+                        item_nombre=item_nombre,
+                        item_categoria=item_categoria,
+                        item_descripcion=item_descripcion,
+                        oferta_productos_snapshot=oferta_productos_snapshot
                     )
                     sale_items.append(sale_item)
 

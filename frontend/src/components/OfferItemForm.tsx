@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import RadioGroup, { type RadioOption } from "./shared/RadioGroup";
 import MultiSelect, { type MultiSelectItem } from "./shared/MultiSelect";
 import SearchableSelect, { type SelectOption } from "./shared/SearchableSelect";
-import { InfoIcon, XIcon, PlusIcon, MinusIcon } from "./shared/Icons";
+import * as Icons from './shared/Icons';
 import type { Product } from "../types/product";
 import type { Category } from "../types/category";
 import type { OfferItemRequest } from "../types/offer_item";
 import "../styles/offer-item-form.css";
-import "../styles/shared/quantity-controls.css";
 import "../styles/shared/add-button.css";
 
 type TipoOfferItem = "producto" | "categoria" | "opciones";
@@ -29,7 +28,6 @@ const OfferItemForm = ({
   const [productoId, setProductoId] = useState<number>(0);
   const [categoriaId, setCategoriaId] = useState<number>(0);
   const [productosSeleccionados, setProductosSeleccionados] = useState<number[]>([]);
-  const [cantidad, setCantidad] = useState<number>(1);
   const [error, setError] = useState<string>("");
 
   const tipoOptions: RadioOption[] = [
@@ -73,13 +71,9 @@ const OfferItemForm = ({
       }
     }
 
-    if (cantidad <= 0) {
-      return setError("La cantidad debe ser mayor a 0");
-    }
-
     // Construir el item según el tipo
     const item: OfferItemRequest = {
-      cantidad,
+      cantidad: 1,
     };
 
     if (tipo === "producto") {
@@ -130,7 +124,7 @@ const OfferItemForm = ({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <label htmlFor="categoria-select">Categoría</label>
               <div className="info-tooltip">
-                <InfoIcon className="info-icon" />
+                <Icons.InfoIcon className="info-icon" />
                 <div className="tooltip-content">
                   Se podrá elegir cualquier producto activo de esta categoría
                 </div>
@@ -156,7 +150,7 @@ const OfferItemForm = ({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <label>Productos</label>
               <div className="info-tooltip">
-                <InfoIcon className="info-icon" />
+                <Icons.InfoIcon className="info-icon" />
                 <div className="tooltip-content">
                   Se podrá elegir un producto de entre todas las opciones seleccionadas
                 </div>
@@ -173,39 +167,6 @@ const OfferItemForm = ({
             />
           </div>
         )}
-
-        {/* Cantidad */}
-        <div className="form-group quantity-row">
-          <label className="quantity-label-left">Seleccione la cantidad de Items: </label>
-          <div className="quantity-control">
-            <button
-              type="button"
-              className="qty-btn qty-btn-minus"
-              onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-              disabled={cantidad <= 1}
-              aria-label="Disminuir cantidad"
-            >
-              <MinusIcon size={14} />
-            </button>
-            <input
-              type="number"
-              min="1"
-              max="1000"
-              className="qty-input"
-              value={cantidad}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value) || 1))}
-            />
-            <button
-              type="button"
-              className="qty-btn qty-btn-plus"
-              onClick={() => setCantidad(cantidad + 1)}
-              aria-label="Aumentar cantidad"
-            >
-              <PlusIcon size={14} />
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Acciones */}
@@ -215,14 +176,14 @@ const OfferItemForm = ({
           className="btn-add"
           onClick={handleAdd}
         >
-          <PlusIcon size={16} /> Agregar Item
+          <Icons.PlusIcon size={16} /> Agregar Item
         </button>
         <button
           type="button"
           className="btn-cancel"
           onClick={onCancel}
         >
-          <XIcon size={16} /> Cancelar
+          <Icons.XIcon size={16} /> Cancelar
         </button>
       </div>
     </div>

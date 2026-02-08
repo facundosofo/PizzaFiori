@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
-import { SearchIcon, WarningIcon, XIcon } from "./shared/Icons";
+import * as Icons from './shared/Icons';
 import { validateDateRange } from "../utils/formatters";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/sales-filters.css";
@@ -151,7 +151,7 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
             onClick={handleSearch}
             title="Buscar ventas"
           >
-            <SearchIcon size={18} />
+            <Icons.SearchIcon size={18} />
             <span>Buscar</span>
           </button>
 
@@ -160,7 +160,7 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
             onClick={handleClear}
             title="Limpiar filtros"
           >
-            <XIcon size={18} />
+            <Icons.XIcon size={18} />
             <span>Limpiar</span>
           </button>
         </div>
@@ -168,7 +168,7 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
 
       {error && (
         <div className="filter-error">
-          <WarningIcon size={18} /> {error}
+          <Icons.WarningIcon size={18} /> {error}
         </div>
       )}
     </div>

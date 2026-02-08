@@ -1,0 +1,36 @@
+from sqlalchemy import Column, Integer, ForeignKey, String
+from sqlalchemy.orm import relationship
+
+from app.domain.models.base import Base
+
+
+class SaleItemOfferProduct(Base):
+    """Snapshot de productos incluidos en una oferta al momento de la venta.
+    
+    Esta tabla preserva qué productos componían una oferta cuando se realizó la venta,
+    permitiendo mantener el historial incluso si la oferta cambia después.
+    """
+    __tablename__ = "VentaItemOfertaProductos"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    venta_item_id = Column(Integer, ForeignKey("VentaItems.id", ondelete="CASCADE"), nullable=False)
+    producto_id = Column(Integer, ForeignKey("Productos.id"), nullable=True)  # Referencia (puede ser null si se borra)
+    producto_nombre = Column(String(255), nullable=False)  # Nombre guardado al momento de la venta
+    categoria_nombre = Column(String(255), nullable=True)  # Categoría del producto en la oferta
+    cantidad = Column(Integer, nullable=False)  # Cantidad de este producto en la oferta
+
+    venta_item = relationship(
+        "SaleItem",
+        back_populates="oferta_productos_snapshot"
+    )
+
+    producto = relationship(
+        "Product",
+        foreign_keys=[producto_id]
+    )
+
+    def __repr__(self):
+        return (
+            f"<SaleItemOfferProduct(id={self.id}, venta_item_id={self.venta_item_id}, "
+            f"producto_nombre={self.producto_nombre}, cantidad={self.cantidad})>"
+        )

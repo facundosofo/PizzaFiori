@@ -22,7 +22,11 @@ export const getOfertas = async (active?: boolean): Promise<Offer[]> => {
       throw new Error(errorMsg);
     }
     const data = await res.json();
-    return data as Offer[];
+    // Ensure precio is a number
+    return (data as Offer[]).map(offer => ({
+      ...offer,
+      precio: Number(offer.precio)
+    }));
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     console.error("Error fetching ofertas:", err);

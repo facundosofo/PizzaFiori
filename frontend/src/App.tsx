@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import ProductosPage from "./pages/ProductsPage";
 import SalesPage from "./pages/SalesPage";
+import SalesCreatePage from "./pages/SalesCreate";
 import OffersPage from "./pages/OffersPage";
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
         <Route path="/productos" element={<ProductosPage />} />
         <Route path="/ofertas" element={<OffersPage />} />
         <Route path="/ventas" element={<SalesPage />} />
+        <Route path="/registrar-venta" element={<SalesCreatePage />} />
       </Routes>
     </Router>
   );

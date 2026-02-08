@@ -5,18 +5,28 @@ Documentación completa de la suite de tests del proyecto PizzaFiori.
 ## 📊 Resumen de Tests
 
 **Estado Actual:**
-- ✅ **202 tests pasando al 100%**
-- ✅ **Coverage: 86.00%** (objetivo: 70-80%)
-- ⚡ Tiempo de ejecución: ~1.7 segundos
+- ✅ **254 tests pasando al 100%**
+- ✅ **Coverage: 81.18%** (objetivo: 70%)
+- ⚡ Tiempo de ejecución: ~1.85 segundos
 
 ### Distribución de Tests
 
 | Categoría | Cantidad | Archivos |
 |-----------|----------|----------|
-| **Schemas** | 80 tests | 4 archivos |
-| **Services** | 64 tests | 4 archivos |
-| **Routers** | 58 tests | 4 archivos |
-| **TOTAL** | **202 tests** | **12 archivos** |
+| **Schemas** | ~88 tests | 4 archivos |
+| **Services** | ~100 tests | 7 archivos |
+| **Infrastructure** | 13 tests | 1 archivo |
+| **Routers** | ~53 tests | 4 archivos |
+| **TOTAL** | **254 tests** | **16 archivos** |
+
+### Nuevos Tests (Snapshot Feature)
+
+| Módulo | Tests | Descripción |
+|--------|-------|-------------|
+| `test_sale_service_snapshots.py` | 9 tests | Captura de snapshots en ventas + validación ofertas |
+| `test_sku_generator.py` | 13 tests | Generación y normalización de SKUs |
+| `test_product_service.py` | +3 tests | Auto-generación SKU, validación categoría |
+| `test_sale_service.py` | +3 tests | Validación de productos en ofertas con categoría |
 
 ## 🎯 Coverage por Capa
 
@@ -27,28 +37,31 @@ Documentación completa de la suite de tests del proyecto PizzaFiori.
 - ✅ **Sale Router:** 100%
 - ✅ **Category Schemas:** 100%
 - ✅ **Product Schemas:** 100%
-- ✅ **Offer Schemas:** 95%
-- ✅ **Sale Schemas:** 96%
+- **Offer Schemas:** 90%
+- **Sale Schemas:** 97%
 
 ### Application Layer (Services)
 - ✅ **CategoryService:** 100%
 - ✅ **ProductService:** 100%
-- ✅ **OfferService:** 92%
-- ✅ **SaleService:** 89%
-
-### Domain Layer
-- ✅ **Models:** 91-94%
-- ✅ **Repositories (interfaces):** 100%
-- ✅ **Unit of Work:** 87%
+- **OfferService:** 83%
+- **SaleService:** 63% *(requiere tests adicionales para validación de ofertas)*
 
 ### Infrastructure Layer
+- ✅ **SKU Generator:** 100%
 - **Database:** 83%
-- **Logging:** 81%
+- **Logging:** 82%
 - **Middleware:** 78%
-- **Repositories (implementaciones):** 43-89%
+- **Repositories (base):** 41%
+- **Repositories (implementaciones):** 42-89%
 - **File Service:** 30%
+- **Unit of Work:** 43%
 
-> **Nota:** El coverage de infrastructure es menor porque no se conecta a la base de datos real ni al sistema de archivos en los tests unitarios.
+### Domain Layer
+- **Models:** 89-94%
+- ✅ **Repositories (interfaces):** 100%
+- **Unit of Work:** 87%
+
+> **Nota:** El coverage de infrastructure es menor porque no se conecta a la base de datos real ni al sistema de archivos en los tests unitarios. El coverage de SaleService (63%) indica que faltan tests para las nuevas validaciones de ofertas con categorías y productos combinados.
 
 ## 🛠️ Stack de Testing
 
@@ -75,25 +88,29 @@ httpx==0.25.2                    # Cliente HTTP async para tests
 ```
 backend/tests/
 ├── conftest.py                           # Fixtures globales (333 líneas)
-├── helpers.py                            # Funciones auxiliares (323 líneas)
+├── helpers.py                            # Funciones auxiliares (incluye SKU y snapshots)
 │
 ├── presentation/schemas/                 # Tests de validación Pydantic
 │   ├── test_category_schemas.py         # 12 tests - validación categorías
-│   ├── test_product_schemas.py          # 22 tests - validación productos
-│   ├── test_offer_schemas.py            # 28 tests - validación ofertas
-│   └── test_sale_schemas.py             # 18 tests - validación ventas
+│   ├── test_product_schemas.py          # 22 tests - validación productos (incluye SKU)
+│   ├── test_offer_schemas.py            # 28 tests - validación ofertas + duplicados
+│   └── test_sale_schemas.py             # 26 tests - validación ventas (incluye snapshots)
 │
 ├── application/                          # Tests de lógica de negocio
 │   ├── test_category_service.py         # 14 tests - CRUD categorías
-│   ├── test_product_service.py          # 16 tests - CRUD productos + files
-│   ├── test_offer_service.py            # 13 tests - CRUD ofertas
-│   └── test_sale_service.py             # 21 tests - CRUD ventas + pricing
+│   ├── test_product_service.py          # 19 tests - CRUD productos + SKU + validación
+│   ├── test_offer_service.py            # 26 tests - CRUD ofertas + validación duplicados + desactivación
+│   ├── test_sale_service.py             # 21 tests - CRUD ventas + pricing con rangos
+│   └── test_sale_service_snapshots.py   # 9 tests - snapshot de productos/ofertas + validación (ACTUALIZADO)
+│
+├── infrastructure/                       # Tests de infraestructura
+│   └── test_sku_generator.py            # 13 tests - generación y normalización SKU (NUEVO)
 │
 └── routers/                              # Tests de endpoints HTTP
     ├── test_category_router.py          # 15 tests - endpoints categorías
-    ├── test_product_router.py           # 16 tests - endpoints productos
-    ├── test_offer_router.py             # 18 tests - endpoints ofertas
-    └── test_sale_router.py              # 19 tests - endpoints ventas
+    ├── test_product_router.py           # 17 tests - endpoints productos + desactivación
+    ├── test_offer_router.py             # 18 tests - endpoints ofertas + desactivación
+    └── test_sale_router.py              # 15 tests - endpoints ventas
 ```
 
 ## 🚀 Comandos Útiles
@@ -623,6 +640,29 @@ jobs:
 
 ---
 
-**Última actualización:** Enero 2026  
+**Última actualización:** Febrero 2026  
 **Coverage actual:** 86%  
-**Tests totales:** 202
+**Tests totales:** 234
+
+## 📝 Changelog de Tests
+
+### Febrero 2026 - Snapshot Feature
+
+**Nuevos archivos:**
+- `tests/application/test_sale_service_snapshots.py` - 6 tests para captura de snapshots
+- `tests/infrastructure/test_sku_generator.py` - 13 tests para generación de SKUs
+
+**Archivos actualizados:**
+- `tests/application/test_product_service.py` - +3 tests (SKU auto-generación, validación categoría)
+- `tests/presentation/schemas/test_sale_schemas.py` - Actualizado con campos snapshot
+- `tests/helpers.py` - Agregado soporte para SKU y snapshots en builders
+
+**Features testeados:**
+- ✅ Auto-generación de SKU al crear productos
+- ✅ Validación de existencia de categoría antes de crear producto
+- ✅ Captura de snapshot de productos en ventas (SKU, nombre, categoría, descripción)
+- ✅ Captura de snapshot de ofertas en ventas (productos incluidos, nombres, categorías)
+- ✅ Normalización de texto para SKUs (eliminar acentos, caracteres especiales)
+- ✅ Manejo de nombres largos en generación de SKUs
+- ✅ Preservación de datos históricos en ventas
+

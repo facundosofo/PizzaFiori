@@ -16,6 +16,8 @@ from tests.helpers import (
     build_product_model,
     build_product_price_model,
     build_offer_model,
+    build_offer_item_model,
+    build_category_model,
     build_sale_model
 )
 
@@ -245,6 +247,7 @@ async def test_create_sale_with_products(mock_uow, mock_logger):
             build_product_price_model(2, 1, 6, 6000.0)
         ]
     )
+    product.categoria = build_category_model(id=1, nombre="Empanadas")
     mock_uow.product_repo.get_by_id.return_value = product
     mock_uow.sale_repo.refresh = AsyncMock()
     
@@ -269,21 +272,34 @@ async def test_create_sale_with_offers(mock_uow, mock_logger):
     # Arrange
     service = SaleService(uow=mock_uow, logger=mock_logger)
     
-    request = SaleCreateRequest(
-        numero_orden="ORD-002",
-        items=[
-            SaleItemRequest(oferta_id=1, cantidad=2)
-        ]
-    )
+    # Mock product for productos_seleccionados
+    prod1 = build_product_model(id=10, nombre="Empanada", sku="EMP-001", categoria_id=1)
+    prod1.categoria = build_category_model(id=1, nombre="Empanadas")
     
     # Mock offer
     offer = build_offer_model(
         id=1,
         nombre="Promo Docena",
         precio=10000.0,
-        activo=True
+        activo=True,
+        productos=[
+            build_offer_item_model(id=1, oferta_id=1, cantidad=12, productos=[prod1])
+        ]
     )
+    
+    request = SaleCreateRequest(
+        numero_orden="ORD-002",
+        items=[
+            SaleItemRequest(
+                oferta_id=1,
+                cantidad=2,
+                productos_seleccionados=[{"producto_id": 10, "cantidad": 12}]
+            )
+        ]
+    )
+    
     mock_uow.offer_repo.get_by_id.return_value = offer
+    mock_uow.product_repo.get_by_id.return_value = prod1
     mock_uow.sale_repo.refresh = AsyncMock()
     
     # Act
@@ -304,21 +320,39 @@ async def test_create_sale_mixed_items(mock_uow, mock_logger):
     # Arrange
     service = SaleService(uow=mock_uow, logger=mock_logger)
     
-    request = SaleCreateRequest(
-        items=[
-            SaleItemRequest(producto_id=1, cantidad=6),
-            SaleItemRequest(oferta_id=1, cantidad=1)
-        ]
-    )
-    
-    # Mock product and offer
+    # Mock products
     product = build_product_model(
         id=1,
         precios=[build_product_price_model(1, 1, 6, 6000.0)]
     )
-    offer = build_offer_model(id=1, precio=10000.0)
+    product.categoria = build_category_model(id=1, nombre="Empanadas")
     
-    mock_uow.product_repo.get_by_id.return_value = product
+    prod_oferta = build_product_model(id=2, nombre="Pizza", sku="PIZZ-001", categoria_id=1)
+    prod_oferta.categoria = build_category_model(id=1, nombre="Pizzas")
+    
+    offer = build_offer_model(
+        id=1, 
+        precio=10000.0,
+        productos=[
+            build_offer_item_model(id=1, oferta_id=1, cantidad=1, productos=[prod_oferta])
+        ]
+    )
+    
+    request = SaleCreateRequest(
+        items=[
+            SaleItemRequest(producto_id=1, cantidad=6),
+            SaleItemRequest(
+                oferta_id=1,
+                cantidad=1,
+                productos_seleccionados=[{"producto_id": 2, "cantidad": 1}]
+            )
+        ]
+    )
+    
+    async def mock_get_product(id):
+        return product if id == 1 else prod_oferta
+    
+    mock_uow.product_repo.get_by_id = AsyncMock(side_effect=mock_get_product)
     mock_uow.offer_repo.get_by_id.return_value = offer
     mock_uow.sale_repo.refresh = AsyncMock()
     
@@ -327,7 +361,7 @@ async def test_create_sale_mixed_items(mock_uow, mock_logger):
     
     # Assert
     assert result.status_code == 201
-    mock_uow.product_repo.get_by_id.assert_called_once()
+    assert mock_uow.product_repo.get_by_id.call_count == 2
     mock_uow.offer_repo.get_by_id.assert_called_once()
 
 
@@ -362,7 +396,11 @@ async def test_create_sale_offer_not_found(mock_uow, mock_logger):
     
     request = SaleCreateRequest(
         items=[
-            SaleItemRequest(oferta_id=999, cantidad=1)
+            SaleItemRequest(
+                oferta_id=999,
+                cantidad=1,
+                productos_seleccionados=[{"producto_id": 1, "cantidad": 1}]
+            )
         ]
     )
     
@@ -484,3 +522,232 @@ async def test_get_all_sales_error(mock_uow, mock_logger):
     # Assert
     assert result == []
     mock_logger.error.assert_called_once()
+
+
+# ==================== Update Sale Tests ====================
+
+@pytest.mark.asyncio
+async def test_update_sale_with_products(mock_uow, mock_logger, sample_sale):
+    """Test updating sale with product items."""
+    # Arrange
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+    
+    request = SaleUpdateRequest(
+        numero_orden="ORD-UPDATED",
+        items=[
+            SaleItemRequest(producto_id=1, cantidad=12, precio_unitario=Decimal("900.00"))
+        ]
+    )
+    
+    # Mock existing sale
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    
+    # Mock product with category
+    category = build_category_model(id=1, nombre="Empanadas")
+    product = build_product_model(
+        id=1,
+        nombre="Empanada Actualizada",
+        sku="EMPA-ACT-001",
+        categoria_id=1
+    )
+    product.categoria = category
+    mock_uow.product_repo.get_by_id.return_value = product
+    mock_uow.sale_repo.refresh = AsyncMock()
+    
+    # Act
+    result = await service.update(1, request)
+    
+    # Assert
+    assert result.status_code == 200
+    assert result.value is not None
+    
+    # Verify sale was updated
+    mock_uow.sale_repo.update.assert_called_once()
+    mock_uow.commit.assert_called_once()
+    
+    # Verify product snapshot was captured
+    updated_sale = sample_sale
+    assert updated_sale.numero_orden == "ORD-UPDATED"
+    assert len(updated_sale.items) == 1
+    assert updated_sale.items[0].item_nombre == "Empanada Actualizada"
+    assert updated_sale.items[0].producto_sku == "EMPA-ACT-001"
+    assert updated_sale.items[0].item_categoria == "Empanadas"
+
+
+@pytest.mark.asyncio
+async def test_update_sale_with_offers_no_validation(mock_uow, mock_logger, sample_sale):
+    """Test updating sale with offers does NOT validate products against current offer requirements.
+    
+    This is important because sales are historical records. If the offer changed after
+    the sale was created, we should still allow updating the sale without validating
+    against the new offer requirements.
+    """
+    # Arrange
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest, SelectedProduct
+    
+    request = SaleUpdateRequest(
+        numero_orden="ORD-HISTORICAL",
+        items=[
+            SaleItemRequest(
+                oferta_id=1,
+                cantidad=2,
+                precio_unitario=Decimal("8000.00"),
+                productos_seleccionados=[SelectedProduct(producto_id=10, cantidad=6)]
+            )
+        ]
+    )
+    
+    # Mock existing sale
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    
+    # Mock current offer (could have different requirements than when sale was created)
+    cat1 = build_category_model(id=1, nombre="Empanadas")
+    prod1 = build_product_model(id=10, nombre="Empanada Carne", sku="EMPA-CARN-001", categoria_id=1)
+    prod1.categoria = cat1
+    
+    # Current offer now requires 12 empanadas (changed from original 6)
+    oferta_actual = build_offer_model(
+        id=1,
+        nombre="Promo Docena",
+        descripcion="12 empanadas",
+        precio=10000.0,
+        productos=[
+            build_offer_item_model(id=1, oferta_id=1, cantidad=12, productos=[prod1])
+        ]
+    )
+    
+    mock_uow.offer_repo.get_by_id.return_value = oferta_actual
+    mock_uow.product_repo.get_by_id.return_value = prod1
+    mock_uow.sale_repo.refresh = AsyncMock()
+    
+    # Act - update should succeed even though productos_seleccionados (6) don't match
+    # current offer requirements (12), because we don't validate on update
+    result = await service.update(1, request)
+    
+    # Assert
+    assert result.status_code == 200
+    assert result.value is not None
+    
+    # Verify snapshot was captured with current offer name (for reference)
+    # but without validating the productos_seleccionados
+    updated_sale = sample_sale
+    assert len(updated_sale.items) == 1
+    assert updated_sale.items[0].item_nombre == "Promo Docena"
+    assert updated_sale.items[0].item_categoria == "Ofertas"
+    assert updated_sale.items[0].item_descripcion == "12 empanadas"
+    assert len(updated_sale.items[0].oferta_productos_snapshot) == 1
+
+
+@pytest.mark.asyncio
+async def test_update_sale_missing_precio_unitario(mock_uow, mock_logger, sample_sale):
+    """Test updating sale without precio_unitario fails."""
+    # Arrange
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+    
+    request = SaleUpdateRequest(
+        numero_orden="ORD-001",
+        items=[
+            SaleItemRequest(producto_id=1, cantidad=6)  # Missing precio_unitario
+        ]
+    )
+    
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    
+    # Act
+    result = await service.update(1, request)
+    
+    # Assert
+    assert result.status_code == 400
+    assert "precio_unitario" in result.error
+    mock_uow.sale_repo.update.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_sale_not_found(mock_uow, mock_logger):
+    """Test updating non-existent sale fails."""
+    # Arrange
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+    
+    request = SaleUpdateRequest(
+        numero_orden="ORD-001",
+        items=[
+            SaleItemRequest(producto_id=1, cantidad=6, precio_unitario=Decimal("1000.00"))
+        ]
+    )
+    
+    mock_uow.sale_repo.get_by_id.return_value = None
+    
+    # Act
+    result = await service.update(999, request)
+    
+    # Assert
+    assert result.status_code == 404
+    assert "Venta 999 no encontrada" in result.error
+    mock_uow.sale_repo.update.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_sale_product_not_found(mock_uow, mock_logger, sample_sale):
+    """Test updating sale with non-existent product fails."""
+    # Arrange
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+    
+    request = SaleUpdateRequest(
+        numero_orden="ORD-001",
+        items=[
+            SaleItemRequest(producto_id=999, cantidad=6, precio_unitario=Decimal("1000.00"))
+        ]
+    )
+    
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    mock_uow.product_repo.get_by_id.return_value = None
+    
+    # Act
+    result = await service.update(1, request)
+    
+    # Assert
+    assert result.status_code == 404
+    assert "Producto 999 no encontrado" in result.error
+    mock_uow.sale_repo.update.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_sale_offer_not_found(mock_uow, mock_logger, sample_sale):
+    """Test updating sale with non-existent offer fails."""
+    # Arrange
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest, SelectedProduct
+    
+    request = SaleUpdateRequest(
+        numero_orden="ORD-001",
+        items=[
+            SaleItemRequest(
+                oferta_id=999,
+                cantidad=1,
+                precio_unitario=Decimal("8000.00"),
+                productos_seleccionados=[SelectedProduct(producto_id=1, cantidad=6)]
+            )
+        ]
+    )
+    
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    mock_uow.offer_repo.get_by_id.return_value = None
+    
+    # Act
+    result = await service.update(1, request)
+    
+    # Assert
+    assert result.status_code == 404
+    assert "Oferta 999 no encontrada" in result.error
+    mock_uow.sale_repo.update.assert_not_called()
