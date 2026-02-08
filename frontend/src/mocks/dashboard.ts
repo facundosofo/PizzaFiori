@@ -4,48 +4,41 @@
  */
 
 export interface DailyRevenue {
-  date: string;
-  revenue: number;
-  orders: number;
-}
-
-export interface HourlyRevenue {
-  hour: string;
-  revenue: number;
-  orders: number;
+  fecha: string;
+  ingresos: number;
+  ordenes: number;
 }
 
 export interface WeeklyRevenue {
-  week: string;
-  revenue: number;
-  orders: number;
+  semana: string;
+  ingresos: number;
+  ordenes: number;
 }
 
 export interface MonthlyRevenue {
-  month: string;
-  revenue: number;
-  orders: number;
+  mes: string;
+  ingresos: number;
+  ordenes: number;
 }
 
 export interface YearlyRevenue {
-  year: string;
-  revenue: number;
-  orders: number;
+  año: string;
+  ingresos: number;
+  ordenes: number;
 }
 
 export interface TopProduct {
   id: number;
-  name: string;
-  category: string;
-  price: number;
-  quantity: number;
-  inStock: boolean;
+  nombre: string;
+  categoria: string;
+  precio: number;
+  cantidad: number;
+  enStock: boolean;
 }
 
 export interface DashboardMetrics {
-  totalRevenue: number;
-  totalOrders: number;
-  totalVisitors: number;
+  ingresoTotal: number;
+  ordenesTotal: number;
 }
 
 // Generar datos de los últimos 30 días
@@ -64,9 +57,9 @@ const generateDailyRevenue = (): DailyRevenue[] => {
     const variance = Math.random() * 0.3 - 0.15; // ±15%
     
     data.push({
-      date: date.toISOString().split('T')[0],
-      revenue: Math.round(baseRevenue * (1 + variance)),
-      orders: Math.round((baseRevenue * (1 + variance)) / 450), // ~450 pesos por orden promedio
+      fecha: date.toISOString().split('T')[0],
+      ingresos: Math.round(baseRevenue * (1 + variance)),
+      ordenes: Math.round((baseRevenue * (1 + variance)) / 450), // ~450 pesos por orden promedio
     });
   }
   
@@ -89,9 +82,9 @@ const generateWeeklyRevenue = (): WeeklyRevenue[] => {
     const variance = Math.random() * 0.25 - 0.125; // ±12.5%
     
     data.push({
-      week: `W${weekNum} ${month}`,
-      revenue: Math.round(baseRevenue * (1 + variance)),
-      orders: Math.round((baseRevenue * (1 + variance)) / 450),
+      semana: `W${weekNum} ${month}`,
+      ingresos: Math.round(baseRevenue * (1 + variance)),
+      ordenes: Math.round((baseRevenue * (1 + variance)) / 450),
     });
   }
   
@@ -111,9 +104,9 @@ const generateMonthlyRevenue = (): MonthlyRevenue[] => {
     const variance = Math.random() * 0.2 - 0.1; // ±10%
     
     data.push({
-      month: month.charAt(0).toUpperCase() + month.slice(1),
-      revenue: Math.round(baseRevenue * (1 + variance)),
-      orders: Math.round((baseRevenue * (1 + variance)) / 450),
+      mes: month.charAt(0).toUpperCase() + month.slice(1),
+      ingresos: Math.round(baseRevenue * (1 + variance)),
+      ordenes: Math.round((baseRevenue * (1 + variance)) / 450),
     });
   }
   
@@ -131,9 +124,9 @@ const generateYearlyRevenue = (): YearlyRevenue[] => {
     const growth = i === 0 ? 1.15 : 1 - (i * 0.08); // Crecimiento año actual
     
     data.push({
-      year: year.toString(),
-      revenue: Math.round(baseRevenue * growth),
-      orders: Math.round((baseRevenue * growth) / 450),
+      año: year.toString(),
+      ingresos: Math.round(baseRevenue * growth),
+      ordenes: Math.round((baseRevenue * growth) / 450),
     });
   }
   
@@ -142,78 +135,60 @@ const generateYearlyRevenue = (): YearlyRevenue[] => {
 
 // Datos por mes del año actual (para gráfico de barras mensual)
 export const mockMonthlyRevenueByMonth: MonthlyRevenue[] = [
-  { month: 'Ene', revenue: 245000, orders: 544 },
-  { month: 'Feb', revenue: 268000, orders: 596 },
-  { month: 'Mar', revenue: 292000, orders: 649 },
-  { month: 'Abr', revenue: 278000, orders: 618 },
-  { month: 'May', revenue: 310000, orders: 689 },
-  { month: 'Jun', revenue: 295000, orders: 656 },
-  { month: 'Jul', revenue: 325000, orders: 722 },
-  { month: 'Ago', revenue: 318000, orders: 707 },
-  { month: 'Sep', revenue: 288000, orders: 640 },
-  { month: 'Oct', revenue: 305000, orders: 678 },
-  { month: 'Nov', revenue: 298000, orders: 662 },
-  { month: 'Dic', revenue: 342000, orders: 760 },
-];
-
-// Datos por franja horaria (11:00 - 23:00)
-export const mockHourlyRevenue: HourlyRevenue[] = [
-  { hour: '11:00', revenue: 1200, orders: 3 },
-  { hour: '12:00', revenue: 3800, orders: 9 },
-  { hour: '13:00', revenue: 5200, orders: 12 },
-  { hour: '14:00', revenue: 4100, orders: 10 },
-  { hour: '15:00', revenue: 2600, orders: 6 },
-  { hour: '16:00', revenue: 1800, orders: 4 },
-  { hour: '17:00', revenue: 2400, orders: 5 },
-  { hour: '18:00', revenue: 3200, orders: 7 },
-  { hour: '19:00', revenue: 6800, orders: 15 },
-  { hour: '20:00', revenue: 8900, orders: 20 },
-  { hour: '21:00', revenue: 9400, orders: 21 },
-  { hour: '22:00', revenue: 7200, orders: 16 },
-  { hour: '23:00', revenue: 4500, orders: 10 },
+  { mes: 'Ene', ingresos: 245000, ordenes: 544 },
+  { mes: 'Feb', ingresos: 268000, ordenes: 596 },
+  { mes: 'Mar', ingresos: 292000, ordenes: 649 },
+  { mes: 'Abr', ingresos: 278000, ordenes: 618 },
+  { mes: 'May', ingresos: 310000, ordenes: 689 },
+  { mes: 'Jun', ingresos: 295000, ordenes: 656 },
+  { mes: 'Jul', ingresos: 325000, ordenes: 722 },
+  { mes: 'Ago', ingresos: 318000, ordenes: 707 },
+  { mes: 'Sep', ingresos: 288000, ordenes: 640 },
+  { mes: 'Oct', ingresos: 305000, ordenes: 678 },
+  { mes: 'Nov', ingresos: 298000, ordenes: 662 },
+  { mes: 'Dic', ingresos: 342000, ordenes: 760 },
 ];
 
 // Productos más vendidos
 export const mockTopProducts: TopProduct[] = [
   {
     id: 1,
-    name: 'Muzzarella',
-    category: 'Pizzas',
-    price: 4500,
-    quantity: 248,
-    inStock: true,
+    nombre: 'Muzzarella',
+    categoria: 'Pizzas',
+    precio: 4500,
+    cantidad: 248,
+    enStock: true,
   },
   {
     id: 2,
-    name: 'Napolitana',
-    category: 'Pizzas',
-    price: 5200,
-    quantity: 186,
-    inStock: true,
+    nombre: 'Napolitana',
+    categoria: 'Pizzas',
+    precio: 5200,
+    cantidad: 186,
+    enStock: true,
   },
   {
     id: 3,
-    name: 'Fugazzeta',
-    category: 'Pizzas',
-    price: 4800,
-    quantity: 142,
-    inStock: false,
+    nombre: 'Fugazzeta',
+    categoria: 'Pizzas',
+    precio: 4800,
+    cantidad: 142,
+    enStock: false,
   },
   {
     id: 4,
-    name: 'Coca-Cola 1.5L',
-    category: 'Bebidas',
-    price: 800,
-    quantity: 312,
-    inStock: true,
+    nombre: 'Coca-Cola 1.5L',
+    categoria: 'Bebidas',
+    precio: 800,
+    cantidad: 312,
+    enStock: true,
   },
 ];
 
 // Métricas clave
 export const mockDashboardMetrics: DashboardMetrics = {
-  totalRevenue: 345280,
-  totalOrders: 1542,
-  totalVisitors: 2834,
+  ingresoTotal: 345280,
+  ordenesTotal: 1542,
 };
 
 export const mockDailyRevenue = generateDailyRevenue();

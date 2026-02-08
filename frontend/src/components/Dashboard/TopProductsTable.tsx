@@ -3,7 +3,7 @@
  * Componente reutilizable para mostrar ranking de productos con estado de stock
  */
 
-import type { TopProduct } from '../../mocks/dashboard';
+import type { TopProduct } from '../../services/dashboardService';
 
 interface TopProductsTableProps {
   products: TopProduct[];
@@ -33,14 +33,14 @@ const TopProductsTable = ({ products }: TopProductsTableProps) => {
         </thead>
         <tbody>
           {products.map((product) => (
-            <tr key={product.id}>
-              <td className="product-name">{product.name}</td>
-              <td className="category">{product.category}</td>
-              <td className="price">{formatCurrency(product.price)}</td>
-              <td className="text-center quantity">{product.quantity}</td>
+            <tr key={`${product.nombre}-${product.categoria}`}>
+              <td className="product-name">{product.nombre}</td>
+              <td className="category">{product.categoria}</td>
+              <td className="price">{formatCurrency(product.precio)}</td>
+              <td className="text-center quantity">{product.cantidad}</td>
               <td className="text-center">
-                <span className={`status-badge ${product.inStock ? 'in-stock' : 'out-of-stock'}`}>
-                  {product.inStock ? 'Disponible' : 'Sin stock'}
+                <span className={`status-badge ${product.enStock ? 'in-stock' : 'out-of-stock'}`}>
+                  {product.enStock ? 'Disponible' : 'Sin stock'}
                 </span>
               </td>
             </tr>

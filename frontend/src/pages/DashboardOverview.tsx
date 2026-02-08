@@ -98,15 +98,11 @@ const DashboardOverview = () => {
           {/* <div className="metrics-row">
             <div className="metric-card">
               <span className="metric-label">Ingresos Totales</span>
-              <span className="metric-value">${data.metrics.totalRevenue.toLocaleString()}</span>
+              <span className="metric-value">${data.metrics.ingresoTotal.toLocaleString()}</span>
             </div>
             <div className="metric-card">
               <span className="metric-label">Órdenes</span>
-              <span className="metric-value">{data.metrics.totalOrders}</span>
-            </div>
-            <div className="metric-card">
-              <span className="metric-label">Visitantes</span>
-              <span className="metric-value">{data.metrics.totalVisitors}</span>
+              <span className="metric-value">{data.metrics.ordenesTotal}</span>
             </div>
           </div> */}
 

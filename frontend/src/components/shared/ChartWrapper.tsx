@@ -26,6 +26,7 @@ export interface DataSeries {
   key: string;
   name: string;
   color: string;
+  labelColor?: string; // Color separado para el texto/label (opcional)
   type?: ChartType; // Permite mixed charts (line + bar)
 }
 
@@ -41,6 +42,9 @@ export interface ChartWrapperProps {
   showLegend?: boolean;
   showTooltip?: boolean;
   tooltipFormatter?: (value: any) => string;
+  yAxisFormatter?: (value: any) => string; // Formateador de valores eje Y
+  yAxisDomain?: [number, number]; // [mínimo, máximo] del eje Y
+  yAxisTicks?: number[]; // Valores específicos para el eje Y
   gridOpacity?: number;
   curved?: boolean; // Para line/area charts
 }
@@ -57,9 +61,47 @@ const ChartWrapper = ({
   showLegend = false,
   showTooltip = true,
   tooltipFormatter,
+  yAxisFormatter,
+  yAxisDomain,
+  yAxisTicks,
   gridOpacity = 0.1,
   curved = true,
 }: ChartWrapperProps) => {
+  // Calcular dominio automático del eje Y si no se especifica
+  const calculateYAxisDomain = (): [number, number] | undefined => {
+    if (yAxisDomain) return yAxisDomain;
+    
+    if (!data || data.length === 0) return undefined;
+    
+    // Obtener todos los valores de las series
+    const allValues: number[] = [];
+    series.forEach(s => {
+      data.forEach(item => {
+        const value = item[s.key];
+        if (typeof value === 'number') {
+          allValues.push(value);
+        }
+      });
+    });
+    
+    if (allValues.length === 0) return undefined;
+    
+    const max = Math.max(...allValues);
+    const min = Math.min(...allValues);
+    
+    // Agregar 10% de padding arriba para que no toque el borde
+    const padding = (max - min) * 0.1;
+    return [Math.max(0, min - padding), max + padding];
+  };
+
+  const calculatedDomain = calculateYAxisDomain();
+
+  // Mapa de series con sus colores de label
+  const seriesLabelColorMap = series.reduce((acc, s) => {
+    acc[s.name] = s.labelColor || s.color;
+    return acc;
+  }, {} as Record<string, string>);
+
   // Tooltip personalizado con estilos dark mode
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload || !payload.length) return null;
@@ -75,7 +117,7 @@ const ChartWrapper = ({
         }}
       >
         {payload.map((entry: any, index: number) => (
-          <div key={index} style={{ color: entry.color, marginBottom: index < payload.length - 1 ? '4px' : 0 }}>
+          <div key={index} style={{ color: seriesLabelColorMap[entry.name] || entry.color, marginBottom: index < payload.length - 1 ? '4px' : 0 }}>
             <strong>{entry.name}:</strong>{' '}
             {tooltipFormatter ? tooltipFormatter(entry.value) : entry.value}
           </div>
@@ -102,7 +144,13 @@ const ChartWrapper = ({
           <LineChart {...commonProps}>
             {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={`rgba(255, 255, 255, ${gridOpacity})`} />}
             <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
-            <YAxis {...commonAxisProps} label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
+            <YAxis 
+              {...commonAxisProps} 
+              label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
+              domain={calculatedDomain}
+              ticks={yAxisTicks}
+              tickFormatter={yAxisFormatter}
+            />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: '#e8e8e8' }} />}
             {series.map((s) => (
@@ -125,7 +173,13 @@ const ChartWrapper = ({
           <BarChart {...commonProps}>
             {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={`rgba(255, 255, 255, ${gridOpacity})`} />}
             <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
-            <YAxis {...commonAxisProps} label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
+            <YAxis 
+              {...commonAxisProps} 
+              label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
+              domain={calculatedDomain}
+              ticks={yAxisTicks}
+              tickFormatter={yAxisFormatter}
+            />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: '#e8e8e8' }} />}
             {series.map((s) => (
@@ -143,9 +197,33 @@ const ChartWrapper = ({
       case 'area':
         return (
           <AreaChart {...commonProps}>
+            <defs>
+              {series.map((s) => (
+                <linearGradient key={`gradient-${s.key}`} id={`gradient-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={s.color} stopOpacity={0.4} />
+                  <stop offset="50%" stopColor={s.color} stopOpacity={0.2} />
+                  <stop offset="100%" stopColor={s.color} stopOpacity={0.05} />
+                </linearGradient>
+              ))}
+              {series.map((s) => (
+                <filter key={`glow-${s.key}`} id={`glow-${s.key}`} x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              ))}
+            </defs>
             {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={`rgba(255, 255, 255, ${gridOpacity})`} />}
             <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
-            <YAxis {...commonAxisProps} label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
+            <YAxis 
+              {...commonAxisProps} 
+              label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
+              domain={calculatedDomain}
+              ticks={yAxisTicks}
+              tickFormatter={yAxisFormatter}
+            />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: '#e8e8e8' }} />}
             {series.map((s) => (
@@ -155,9 +233,9 @@ const ChartWrapper = ({
                 dataKey={s.key}
                 name={s.name}
                 stroke={s.color}
-                fill={s.color}
-                fillOpacity={0.2}
-                strokeWidth={2}
+                fill={`url(#gradient-${s.key})`}
+                strokeWidth={3}
+                style={{ filter: `url(#glow-${s.key})` }}
               />
             ))}
           </AreaChart>

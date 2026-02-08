@@ -4,7 +4,7 @@
  */
 
 import ChartWrapper from '../shared/ChartWrapper';
-import type { MonthlyRevenue } from '../../mocks/dashboard';
+import type { MonthlyRevenue } from '../../services/dashboardService';
 
 interface MonthlyChartProps {
   data: MonthlyRevenue[];
@@ -27,15 +27,23 @@ const MonthlyChart = ({ data, height = 300 }: MonthlyChartProps) => {
     }).format(value);
   };
 
+  // Formatear eje Y (en miles o millones)
+  const formatYAxis = (value: number): string => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    }
+    return `$${(value / 1000).toFixed(0)}K`;
+  };
+
   return (
     <div className="chart-container">
       <ChartWrapper
         type="bar"
         data={data}
-        xAxisKey="month"
+        xAxisKey="mes"
         series={[
           {
-            key: 'revenue',
+            key: 'ingresos',
             name: 'Ingresos',
             color: '#3b82f6', // Azul suave para diferenciación
           },
@@ -44,6 +52,7 @@ const MonthlyChart = ({ data, height = 300 }: MonthlyChartProps) => {
         showGrid={true}
         showTooltip={true}
         tooltipFormatter={formatCurrency}
+        yAxisFormatter={formatYAxis}
         gridOpacity={0.08}
       />
     </div>

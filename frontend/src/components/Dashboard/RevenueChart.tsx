@@ -36,6 +36,14 @@ const RevenueChart = ({
     }).format(value);
   };
 
+  // Formatear eje Y (en miles o millones)
+  const formatYAxis = (value: number): string => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    }
+    return `$${(value / 1000).toFixed(0)}K`;
+  };
+
   // Obtener datos según período seleccionado
   const getData = () => {
     if (!dailyData || !weeklyData || !monthlyData || !yearlyData) {
@@ -45,7 +53,7 @@ const RevenueChart = ({
     switch (selectedPeriod) {
       case 'daily':
         return dailyData.map((item) => {
-          const date = new Date(item.date);
+          const date = new Date(item.fecha);
           const day = date.getDate();
           const month = date.getMonth() + 1;
           return {
@@ -56,17 +64,17 @@ const RevenueChart = ({
       case 'weekly':
         return weeklyData.map((item) => ({
           ...item,
-          displayLabel: item.week,
+          displayLabel: item.semana,
         }));
       case 'monthly':
         return monthlyData.map((item) => ({
           ...item,
-          displayLabel: item.month,
+          displayLabel: item.mes,
         }));
       case 'yearly':
         return yearlyData.map((item) => ({
           ...item,
-          displayLabel: item.year,
+          displayLabel: item.año,
           }));
       default:
         return dailyData || [];
@@ -82,21 +90,23 @@ const RevenueChart = ({
         />
       </div>
       <ChartWrapper
-        type="line"
+        type="area"
         data={getData()}
         xAxisKey="displayLabel"
         series={[
           {
-            key: 'revenue',
-            name: 'Ingresos',
-            color: '#22c55e', // Verde suave (no neón)
+            key: 'ingresos',
+            name: 'Ventas',
+            color: '#22c55e',
+            labelColor: '#f7f7f7',
           },
         ]}
         height={height}
         showGrid={true}
         showTooltip={true}
         tooltipFormatter={formatCurrency}
-        gridOpacity={0.08}
+        yAxisFormatter={formatYAxis}
+        gridOpacity={0.05}
         curved={true}
       />
     </div>

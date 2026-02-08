@@ -6,6 +6,7 @@ from .presentation.routers.product_router import router as product_router
 from .presentation.routers.category_router import router as category_router
 from .presentation.routers.offer_router import router as offer_router
 from .presentation.routers.sale_router import router as sale_router
+from .presentation.routers.dashboard_router import router as dashboard_router
 from app.domain import *
 from app.containers import Container
 from app.infrastructure.middleware.http_logging_middleware import HttpLoggingMiddleware
@@ -40,11 +41,12 @@ app.add_middleware(
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# Agregar el router
+# Agregar los routers
 app.include_router(product_router)
 app.include_router(category_router)
 app.include_router(offer_router)
 app.include_router(sale_router)
+app.include_router(dashboard_router)
 
 # Ruta raíz opcional
 @app.get("/")

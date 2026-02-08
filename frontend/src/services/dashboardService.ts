@@ -1,39 +1,52 @@
 /**
  * Dashboard Service
  * 
- * TODO: Conectar con backend cuando los endpoints estén disponibles
- * 
- * Endpoints esperados:
- * - GET /api/dashboard/revenue/daily?days=30
- *   Response: Array<{ date: string, revenue: number, orders: number }>
- * 
- * - GET /api/dashboard/revenue/hourly?date=YYYY-MM-DD
- *   Response: Array<{ hour: string, revenue: number, orders: number }>
- * 
- * - GET /api/dashboard/products/top?limit=10
- *   Response: Array<{ id: number, name: string, category: string, price: number, quantity: number, inStock: boolean }>
- * 
- * - GET /api/dashboard/metrics
- *   Response: { totalRevenue: number, totalOrders: number, totalVisitors: number }
+ * Endpoints:
+ * - GET /dashboard/revenue?period={period}&limit={limit}
+ * - GET /dashboard/revenue/monthly
+ * - GET /dashboard/products/top?limit={limit}
+ * - GET /dashboard/metrics
  */
 
-import {
-  mockDailyRevenue,
-  mockWeeklyRevenue,
-  mockMonthlyRevenue,
-  mockYearlyRevenue,
-  mockMonthlyRevenueByMonth,
-  mockHourlyRevenue,
-  mockTopProducts,
-  mockDashboardMetrics,
-  type DailyRevenue,
-  type WeeklyRevenue,
-  type MonthlyRevenue,
-  type YearlyRevenue,
-  type HourlyRevenue,
-  type TopProduct,
-  type DashboardMetrics,
-} from '../mocks/dashboard';
+import env from '../config/env';
+
+export interface DailyRevenue {
+  fecha: string;
+  ingresos: number;
+  ordenes: number;
+}
+
+export interface WeeklyRevenue {
+  semana: string;
+  ingresos: number;
+  ordenes: number;
+}
+
+export interface MonthlyRevenue {
+  mes: string;
+  ingresos: number;
+  ordenes: number;
+}
+
+export interface YearlyRevenue {
+  año: string;
+  ingresos: number;
+  ordenes: number;
+}
+
+export interface TopProduct {
+  id?: number;
+  nombre: string;
+  categoria: string;
+  precio: number;
+  cantidad: number;
+  enStock: boolean;
+}
+
+export interface DashboardMetrics {
+  ingresoTotal: number;
+  ordenesTotal: number;
+}
 
 export type { DailyRevenue, WeeklyRevenue, MonthlyRevenue, YearlyRevenue };
 export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -44,10 +57,17 @@ export interface DashboardData {
   monthlyRevenue: MonthlyRevenue[];
   yearlyRevenue: YearlyRevenue[];
   monthlyRevenueByMonth: MonthlyRevenue[];
-  hourlyRevenue: HourlyRevenue[];
   topProducts: TopProduct[];
   metrics: DashboardMetrics;
 }
+
+const fetchJson = async <T>(path: string): Promise<T> => {
+  const res = await fetch(`${env.API_BASE_URL}${path}`);
+  if (!res.ok) {
+    throw new Error(`Error ${res.status} al consultar ${path}`);
+  }
+  return res.json() as Promise<T>;
+};
 
 /**
  * Obtener todos los datos del dashboard
@@ -56,23 +76,32 @@ export interface DashboardData {
  * Actualmente retorna datos mock para desarrollo y diseño
  */
 export const getDashboardData = async (): Promise<DashboardData> => {
-  // Simular delay de red
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  // TODO: Implementar cuando backend esté listo:
-  // const response = await fetch(`${API_BASE_URL}/api/dashboard/data`);
-  // if (!response.ok) throw new Error('Failed to fetch dashboard data');
-  // return response.json();
+  const [
+    dailyRevenue,
+    weeklyRevenue,
+    monthlyRevenue,
+    yearlyRevenue,
+    monthlyRevenueByMonth,
+    topProducts,
+    metrics,
+  ] = await Promise.all([
+    getRevenueByPeriod('daily', 30) as Promise<DailyRevenue[]>,
+    getRevenueByPeriod('weekly', 12) as Promise<WeeklyRevenue[]>,
+    getRevenueByPeriod('monthly', 12) as Promise<MonthlyRevenue[]>,
+    getRevenueByPeriod('yearly', 5) as Promise<YearlyRevenue[]>,
+    getMonthlyRevenue(),
+    getTopProducts(10),
+    getDashboardMetrics(),
+  ]);
 
   return {
-    dailyRevenue: mockDailyRevenue,
-    weeklyRevenue: mockWeeklyRevenue,
-    monthlyRevenue: mockMonthlyRevenue,
-    yearlyRevenue: mockYearlyRevenue,
-    monthlyRevenueByMonth: mockMonthlyRevenueByMonth,
-    hourlyRevenue: mockHourlyRevenue,
-    topProducts: mockTopProducts,
-    metrics: mockDashboardMetrics,
+    dailyRevenue,
+    weeklyRevenue,
+    monthlyRevenue,
+    yearlyRevenue,
+    monthlyRevenueByMonth,
+    topProducts,
+    metrics,
   };
 };
 
@@ -85,22 +114,11 @@ export const getRevenueByPeriod = async (
   period: Period,
   limit?: number
 ): Promise<DailyRevenue[] | WeeklyRevenue[] | MonthlyRevenue[] | YearlyRevenue[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  
-  // TODO: const response = await fetch(`${API_BASE_URL}/api/dashboard/revenue?period=${period}&limit=${limit}`);
-  
-  switch (period) {
-    case 'daily':
-      return limit ? mockDailyRevenue.slice(-limit) : mockDailyRevenue;
-    case 'weekly':
-      return limit ? mockWeeklyRevenue.slice(-limit) : mockWeeklyRevenue;
-    case 'monthly':
-      return limit ? mockMonthlyRevenue.slice(-limit) : mockMonthlyRevenue;
-    case 'yearly':
-      return limit ? mockYearlyRevenue.slice(-limit) : mockYearlyRevenue;
-    default:
-      return mockDailyRevenue;
+  const params = new URLSearchParams({ period });
+  if (limit) {
+    params.set('limit', String(limit));
   }
+  return fetchJson(`/dashboard/revenue?${params.toString()}`);
 };
 
 /**
@@ -109,24 +127,7 @@ export const getRevenueByPeriod = async (
  * TODO: Conectar con GET /api/dashboard/revenue/daily?days={days}
  */
 export const getDailyRevenue = async (days: number = 30): Promise<DailyRevenue[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  
-  // TODO: const response = await fetch(`${API_BASE_URL}/api/dashboard/revenue/daily?days=${days}`);
-  
-  return mockDailyRevenue.slice(-days);
-};
-
-/**
- * Obtener ventas por franja horaria
- * 
- * TODO: Conectar con GET /api/dashboard/revenue/hourly?date={date}
- */
-export const getHourlyRevenue = async (date?: string): Promise<HourlyRevenue[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  
-  // TODO: const response = await fetch(`${API_BASE_URL}/api/dashboard/revenue/hourly?date=${date || 'today'}`);
-  
-  return mockHourlyRevenue;
+  return getRevenueByPeriod('daily', days) as Promise<DailyRevenue[]>;
 };
 
 /**
@@ -135,11 +136,7 @@ export const getHourlyRevenue = async (date?: string): Promise<HourlyRevenue[]> 
  * TODO: Conectar con GET /api/dashboard/products/top?limit={limit}
  */
 export const getTopProducts = async (limit: number = 10): Promise<TopProduct[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  
-  // TODO: const response = await fetch(`${API_BASE_URL}/api/dashboard/products/top?limit=${limit}`);
-  
-  return mockTopProducts.slice(0, limit);
+  return fetchJson(`/dashboard/products/top?limit=${limit}`);
 };
 
 /**
@@ -148,9 +145,9 @@ export const getTopProducts = async (limit: number = 10): Promise<TopProduct[]> 
  * TODO: Conectar con GET /api/dashboard/metrics
  */
 export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  
-  // TODO: const response = await fetch(`${API_BASE_URL}/api/dashboard/metrics`);
-  
-  return mockDashboardMetrics;
+  return fetchJson('/dashboard/metrics');
+};
+
+export const getMonthlyRevenue = async (): Promise<MonthlyRevenue[]> => {
+  return fetchJson('/dashboard/revenue/monthly');
 };
