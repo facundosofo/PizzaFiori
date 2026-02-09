@@ -8,6 +8,7 @@ from app.presentation.schemas.dashboard_schemas import (
     RevenuePorPeriodoResponse,
     RevenueEn12MesesResponse,
     ProductoDestacadoResponse,
+    VentasPorCategoriaResponse,
     MetricasDashboardResponse,
     TipoPeriodo,
 )
@@ -87,8 +88,8 @@ async def get_monthly_revenue(
 @router.get(
     "/products/top",
     response_model=List[ProductoDestacadoResponse],
-    summary="Obtener productos más vendidos",
-    description="Devuelve los productos con mayor cantidad de unidades vendidas.",
+    summary="Obtener productos más o menos vendidos",
+    description="Devuelve productos ordenados por cantidad de unidades vendidas.",
     responses={
         500: {"description": "Error interno del servidor"},
     },
@@ -96,14 +97,20 @@ async def get_monthly_revenue(
 @inject
 async def get_top_products(
     limit: int = Query(10, ge=1, le=100, description="Cantidad máxima de productos"),
+    period: TipoPeriodo = Query(
+        TipoPeriodo.ANUAL,
+        description="Tipo de período: daily, weekly, monthly, yearly"
+    ),
+    sort: str = Query("top", description="Orden: 'top' (más vendidos) o 'bottom' (menos vendidos)"),
+    category: str | None = Query(None, description="Filtrar por categoría (opcional)"),
     service: DashboardService = Depends(Provide[Container.dashboard_service]),
 ):
     """
-    Obtiene los N productos más vendidos en orden descendente.
+    Obtiene los N productos más o menos vendidos ordenados según el parámetro sort.
     
     Los datos se basan en el historial completo de ventas.
     """
-    result = await service.get_top_products(limit=limit)
+    result = await service.get_top_products(limit=limit, period=period, sort=sort, category=category)
     
     if result.error:
         raise HTTPException(
@@ -140,4 +147,38 @@ async def get_metrics(
             detail=result.error
         )
     
+    return result.value
+
+
+@router.get(
+    "/sales-by-category",
+    response_model=List[VentasPorCategoriaResponse],
+    summary="Obtener ventas por categoria",
+    description="Devuelve la cantidad de ventas agrupadas por categoria.",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_sales_by_category(
+    limit: int | None = Query(None, ge=1, le=100, description="Maximo de categorias"),
+    period: TipoPeriodo = Query(
+        TipoPeriodo.ANUAL,
+        description="Tipo de período: daily, weekly, monthly, yearly"
+    ),
+    service: DashboardService = Depends(Provide[Container.dashboard_service]),
+):
+    """
+    Obtiene cantidad vendida por categoria.
+
+    Se incluyen productos directos y productos de ofertas.
+    """
+    result = await service.get_sales_by_category(limit=limit, period=period)
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
     return result.value

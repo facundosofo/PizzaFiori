@@ -1,6 +1,6 @@
 /**
  * PeriodSelector - Componente reutilizable para seleccionar períodos de tiempo
- * Usado en gráficos y análisis con tabs: Daily, Weekly, Monthly, Yearly
+ * Usado en gráficos y análisis con tabs: diario,semanal,mensual y anual
  */
 
 import '../../styles/shared/period-selector.css';
@@ -14,10 +14,10 @@ interface PeriodSelectorProps {
 
 const PeriodSelector = ({ selectedPeriod, onPeriodChange }: PeriodSelectorProps) => {
   const periods: { value: Period; label: string }[] = [
-    { value: 'daily', label: 'Daily' },
-    { value: 'weekly', label: 'Weekly' },
-    { value: 'monthly', label: 'Monthly' },
-    { value: 'yearly', label: 'Yearly' },
+    { value: 'daily', label: 'Diario' },
+    { value: 'weekly', label: 'Semanal' },
+    { value: 'monthly', label: 'Mensual' },
+    { value: 'yearly', label: 'Anual' },
   ];
 
   return (

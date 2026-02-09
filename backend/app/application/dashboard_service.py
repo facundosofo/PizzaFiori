@@ -9,6 +9,7 @@ from app.domain.models.sale import Sale
 from app.domain.models.sale_item import SaleItem
 from app.domain.models.sale_item_offer_product import SaleItemOfferProduct
 from app.domain.models.product import Product
+from app.domain.models.product_price import ProductPrice
 from app.domain.models.category import Category
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.dashboard_schemas import (
@@ -92,19 +93,32 @@ class DashboardService:
                 status_code=500
             )
 
-    async def get_top_products(self, limit: int = 10) -> ServiceResult:
+    async def get_top_products(
+        self,
+        limit: int = 10,
+        period: TipoPeriodo = TipoPeriodo.ANUAL,
+        sort: str = "top",
+        category: str | None = None,
+    ) -> ServiceResult:
         """
-        Obtiene los productos más vendidos.
+        Obtiene los productos más/menos vendidos.
         
         Args:
             limit: Cantidad máxima de productos a devolver
+            period: Tipo de período
+            sort: 'top' para más vendidos, 'bottom' para menos vendidos
+            category: Filtrar por categoría (opcional)
             
         Returns:
             ServiceResult con lista de TopProductResponse
         """
         try:
             async with self.uow:
-                result = await self._get_top_products_data(limit)
+                self.logger.info(f"Getting products with period: {period}, limit: {limit}, sort: {sort}, category: {category}")
+                start_date = self._get_start_date_for_period(period)
+                self.logger.info(f"Start date calculated: {start_date}")
+                result = await self._get_top_products_data(limit, start_date, sort=sort, category=category)
+                self.logger.info(f"Products result count: {len(result)}")
                 return ServiceResult(value=result)
                 
         except Exception as e:
@@ -133,7 +147,55 @@ class DashboardService:
                 status_code=500
             )
 
+    async def get_sales_by_category(
+        self,
+        limit: int | None = None,
+        period: TipoPeriodo = TipoPeriodo.ANUAL,
+    ) -> ServiceResult:
+        """
+        Obtiene ventas agrupadas por categoria.
+
+        Args:
+            limit: Cantidad maxima de categorias a devolver (opcional)
+
+        Returns:
+            ServiceResult con lista de categorias y cantidades
+        """
+        try:
+            async with self.uow:
+                self.logger.info(f"Getting sales by category with period: {period}, limit: {limit}")
+                start_date = self._get_start_date_for_period(period)
+                self.logger.info(f"Start date calculated: {start_date}")
+                result = await self._get_sales_by_category_data(limit, start_date)
+                self.logger.info(f"Sales by category result count: {len(result)}")
+                return ServiceResult(value=result)
+
+        except Exception as e:
+            self.logger.error(f"Error obteniendo ventas por categoria: {str(e)}")
+            return ServiceResult(
+                error=f"Error al obtener ventas por categoria: {str(e)}",
+                status_code=500
+            )
+
     # === Métodos privados para queries ===
+
+    def _get_start_date_for_period(self, period: TipoPeriodo) -> datetime:
+        self.logger.info(f"Calculating start date for period: {period} (type: {type(period)})")
+        if period == TipoPeriodo.DIARIO:
+            result = datetime.now() - timedelta(days=30)
+            self.logger.info(f"Period is DIARIO, start_date: {result}")
+            return result
+        if period == TipoPeriodo.SEMANAL:
+            result = datetime.now() - timedelta(days=12 * 7)
+            self.logger.info(f"Period is SEMANAL, start_date: {result}")
+            return result
+        if period == TipoPeriodo.MENSUAL:
+            result = datetime.now() - timedelta(days=12 * 30)
+            self.logger.info(f"Period is MENSUAL, start_date: {result}")
+            return result
+        result = datetime.now() - timedelta(days=5 * 365)
+        self.logger.info(f"Period is ANUAL (default), start_date: {result}")
+        return result
 
     async def _get_daily_revenue(self, limit: int) -> List[dict]:
         """Agregación diaria del último mes."""
@@ -143,7 +205,9 @@ class DashboardService:
         query = select(
             cast(Sale.fecha_creacion, Date).label("date"),
             func.sum(Sale.total).label("revenue"),
-            func.count(Sale.id).label("orders"),
+            func.sum(SaleItem.cantidad).label("cantidad"),
+        ).select_from(Sale).join(
+            SaleItem, Sale.id == SaleItem.venta_id
         ).where(Sale.fecha_creacion >= start_date).group_by(
             cast(Sale.fecha_creacion, Date)
         ).order_by("date")
@@ -155,7 +219,7 @@ class DashboardService:
             {
                 "fecha": row.date.strftime("%Y-%m-%d"),
                 "ingresos": float(row.revenue or 0),
-                "ordenes": row.orders or 0,
+                "cantidad": int(row.cantidad or 0),
             }
             for row in rows
         ]
@@ -169,7 +233,9 @@ class DashboardService:
             func.year(Sale.fecha_creacion).label("year"),
             extract('week', Sale.fecha_creacion).label("week"),
             func.sum(Sale.total).label("revenue"),
-            func.count(Sale.id).label("orders"),
+            func.sum(SaleItem.cantidad).label("cantidad"),
+        ).select_from(Sale).join(
+            SaleItem, Sale.id == SaleItem.venta_id
         ).where(Sale.fecha_creacion >= start_date).group_by(
             func.year(Sale.fecha_creacion),
             extract('week', Sale.fecha_creacion)
@@ -182,21 +248,42 @@ class DashboardService:
             {
                 "semana": f"W{row.week:02d} {datetime.now().strftime('%b')}",
                 "ingresos": float(row.revenue or 0),
-                "ordenes": row.orders or 0,
+                "cantidad": int(row.cantidad or 0),
             }
             for row in rows
         ]
 
     async def _get_monthly_revenue(self, limit: int) -> List[dict]:
         """Agregación mensual de los últimos N meses."""
-        start_date = datetime.now() - timedelta(days=limit * 30)
+        now = datetime.now()
+
+        # Start at the first day of the month, N-1 months ago
+        start_year = now.year
+        start_month = now.month - (limit - 1)
+        while start_month <= 0:
+            start_month += 12
+            start_year -= 1
+        start_date = datetime(start_year, start_month, 1)
+
+        # End at the first day of next month to include current month
+        if now.month == 12:
+            end_date = datetime(now.year + 1, 1, 1)
+        else:
+            end_date = datetime(now.year, now.month + 1, 1)
         
         query = select(
             func.year(Sale.fecha_creacion).label("year"),
             func.month(Sale.fecha_creacion).label("month"),
             func.sum(Sale.total).label("revenue"),
-            func.count(Sale.id).label("orders"),
-        ).where(Sale.fecha_creacion >= start_date).group_by(
+            func.sum(SaleItem.cantidad).label("cantidad"),
+        ).select_from(Sale).join(
+            SaleItem, Sale.id == SaleItem.venta_id
+        ).where(
+            and_(
+                Sale.fecha_creacion >= start_date,
+                Sale.fecha_creacion < end_date,
+            )
+        ).group_by(
             func.year(Sale.fecha_creacion),
             func.month(Sale.fecha_creacion)
         ).order_by("year", "month").limit(limit)
@@ -209,14 +296,31 @@ class DashboardService:
             "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
         ]
         
-        return [
-            {
-                "mes": f"{months[row.month - 1]} {row.year}",
-                "ingresos": float(row.revenue or 0),
-                "ordenes": row.orders or 0,
-            }
+        revenue_by_month = {
+            (row.year, row.month): row
             for row in rows
-        ]
+        }
+
+        results: List[dict] = []
+        current_year = start_year
+        current_month = start_month
+        for _ in range(limit):
+            row = revenue_by_month.get((current_year, current_month))
+            results.append(
+                {
+                    "mes": f"{months[current_month - 1]} {current_year}",
+                    "ingresos": float(row.revenue or 0) if row else 0,
+                    "cantidad": int(row.cantidad or 0) if row else 0,
+                }
+            )
+
+            if current_month == 12:
+                current_month = 1
+                current_year += 1
+            else:
+                current_month += 1
+
+        return results
 
     async def _get_yearly_revenue(self, limit: int) -> List[dict]:
         """Agregación anual de los últimos 5 años."""
@@ -225,7 +329,9 @@ class DashboardService:
         query = select(
             func.year(Sale.fecha_creacion).label("year"),
             func.sum(Sale.total).label("revenue"),
-            func.count(Sale.id).label("orders"),
+            func.sum(SaleItem.cantidad).label("cantidad"),
+        ).select_from(Sale).join(
+            SaleItem, Sale.id == SaleItem.venta_id
         ).where(Sale.fecha_creacion >= start_date).group_by(
             func.year(Sale.fecha_creacion)
         ).order_by("year").limit(limit)
@@ -237,7 +343,7 @@ class DashboardService:
             {
                 "año": str(row.year),
                 "ingresos": float(row.revenue or 0),
-                "ordenes": row.orders or 0,
+                "cantidad": int(row.cantidad or 0),
             }
             for row in rows
         ]
@@ -249,7 +355,9 @@ class DashboardService:
         query = select(
             func.month(Sale.fecha_creacion).label("month"),
             func.sum(Sale.total).label("revenue"),
-            func.count(Sale.id).label("orders"),
+            func.sum(SaleItem.cantidad).label("cantidad"),
+        ).select_from(Sale).join(
+            SaleItem, Sale.id == SaleItem.venta_id
         ).where(
             func.year(Sale.fecha_creacion) == current_year
         ).group_by(
@@ -273,18 +381,30 @@ class DashboardService:
                 "mes": months[i],
                 "ingresos": float(revenue_by_month.get(i + 1, {}).revenue or 0)
                     if i + 1 in revenue_by_month else 0,
-                "ordenes": revenue_by_month.get(i + 1, {}).orders or 0
+                "cantidad": int(revenue_by_month.get(i + 1, {}).cantidad or 0)
                     if i + 1 in revenue_by_month else 0,
             }
             for i in range(12)
         ]
 
-    async def _get_top_products_data(self, limit: int) -> List[dict]:
+    async def _get_top_products_data(
+        self,
+        limit: int,
+        start_date: datetime | None,
+        sort: str = "top",
+        category: str | None = None,
+    ) -> List[dict]:
         """
-        Obtiene los productos más vendidos con cantidad total vendida.
+        Obtiene los productos más/menos vendidos con cantidad total vendida.
         
         Nota: Los datos se obtienen de la tabla SaleItem (snapshots históricos).
         Resuelve nombres de categorías por FK del producto, fallback a item_categoria raw.
+        
+        Args:
+            limit: Cantidad máxima de productos a devolver
+            start_date: Fecha de inicio para filtrar (opcional)
+            sort: 'top' para descendente (más vendidos), 'bottom' para ascendente (menos vendidos)
+            category: Filtrar por categoría (opcional)
         """
         # Query para productos directos con JOIN a categoría por producto
         direct_query = select(
@@ -294,11 +414,19 @@ class DashboardService:
                 SaleItem.item_categoria  # Fallback: valor raw o ID
             ).label("category"),
             func.sum(SaleItem.cantidad).label("total_quantity"),
-            func.avg(SaleItem.precio_unitario).label("avg_price"),
+            func.max(ProductPrice.precio).label("price"),
+        ).join(
+            Sale, SaleItem.venta_id == Sale.id
         ).outerjoin(
             Product, SaleItem.producto_id == Product.id
         ).outerjoin(
             Category, Product.categoria_id == Category.id
+        ).outerjoin(
+            ProductPrice,
+            and_(
+                ProductPrice.producto_id == Product.id,
+                ProductPrice.cantidad == 1,
+            )
         ).where(
             SaleItem.producto_id.isnot(None)  # Solo productos directos
         ).group_by(
@@ -309,6 +437,15 @@ class DashboardService:
             )
         )
 
+        if start_date is not None:
+            direct_query = direct_query.where(Sale.fecha_creacion >= start_date)
+        
+        # Aplicar filtro de categoría si se proporciona
+        if category:
+            direct_query = direct_query.where(
+                func.coalesce(Category.nombre, SaleItem.item_categoria) == category
+            )
+
         # Query para productos en ofertas
         offer_query = select(
             SaleItemOfferProduct.producto_nombre.label("name"),
@@ -317,13 +454,22 @@ class DashboardService:
                 SaleItemOfferProduct.categoria_nombre  # Fallback: valor raw
             ).label("category"),
             func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
+            func.max(ProductPrice.precio).label("price"),
+        ).join(
+            SaleItem,
+            SaleItemOfferProduct.venta_item_id == SaleItem.id
+        ).join(
+            Sale, SaleItem.venta_id == Sale.id
         ).outerjoin(
             Product, SaleItemOfferProduct.producto_id == Product.id
         ).outerjoin(
             Category, Product.categoria_id == Category.id
-        ).join(
-            SaleItem,
-            SaleItemOfferProduct.venta_item_id == SaleItem.id
+        ).outerjoin(
+            ProductPrice,
+            and_(
+                ProductPrice.producto_id == Product.id,
+                ProductPrice.cantidad == 1,
+            )
         ).where(
             SaleItem.oferta_id.isnot(None)
         ).group_by(
@@ -333,6 +479,15 @@ class DashboardService:
                 SaleItemOfferProduct.categoria_nombre
             )
         )
+
+        if start_date is not None:
+            offer_query = offer_query.where(Sale.fecha_creacion >= start_date)
+        
+        # Aplicar filtro de categoría si se proporciona
+        if category:
+            offer_query = offer_query.where(
+                func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre) == category
+            )
 
         direct_result = await self.uow.session.execute(direct_query)
         offer_result = await self.uow.session.execute(offer_query)
@@ -347,7 +502,7 @@ class DashboardService:
                 "nombre": row.name,
                 "categoria": categoria,
                 "cantidad": int(row.total_quantity or 0),
-                "precio": float(row.avg_price or 0),
+                "precio": float(row.price or 0),
                 "enStock": True,
             }
 
@@ -362,14 +517,14 @@ class DashboardService:
                     "nombre": row.name,
                     "categoria": category,
                     "cantidad": int(row.total_quantity or 0),
-                    "precio": 0.0,
+                    "precio": float(row.price or 0),
                     "enStock": True,
                 }
 
         ordered = sorted(
             totals.values(),
             key=lambda item: item["cantidad"],
-            reverse=True
+            reverse=(sort == "top")  # reverse=True para 'top', reverse=False para 'bottom'
         )
 
         return ordered[:limit]
@@ -390,3 +545,90 @@ class DashboardService:
             "ingresoTotal": float(total_revenue),
             "ordenesTotal": int(total_orders),
         }
+
+    async def _get_sales_by_category_data(
+        self,
+        limit: int | None,
+        start_date: datetime | None,
+    ) -> List[dict]:
+        """Agrega cantidad vendida por categoria (productos directos y en ofertas)."""
+        direct_query = select(
+            func.coalesce(
+                Category.nombre,
+                SaleItem.item_categoria
+            ).label("category"),
+            func.sum(SaleItem.cantidad).label("total_quantity"),
+        ).join(
+            Sale, SaleItem.venta_id == Sale.id
+        ).outerjoin(
+            Product, SaleItem.producto_id == Product.id
+        ).outerjoin(
+            Category, Product.categoria_id == Category.id
+        ).where(
+            SaleItem.producto_id.isnot(None)
+        ).group_by(
+            func.coalesce(
+                Category.nombre,
+                SaleItem.item_categoria
+            )
+        )
+
+        if start_date is not None:
+            direct_query = direct_query.where(Sale.fecha_creacion >= start_date)
+
+        offer_query = select(
+            func.coalesce(
+                Category.nombre,
+                SaleItemOfferProduct.categoria_nombre
+            ).label("category"),
+            func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
+        ).join(
+            SaleItem,
+            SaleItemOfferProduct.venta_item_id == SaleItem.id
+        ).join(
+            Sale, SaleItem.venta_id == Sale.id
+        ).outerjoin(
+            Product, SaleItemOfferProduct.producto_id == Product.id
+        ).outerjoin(
+            Category, Product.categoria_id == Category.id
+        ).where(
+            SaleItem.oferta_id.isnot(None)
+        ).group_by(
+            func.coalesce(
+                Category.nombre,
+                SaleItemOfferProduct.categoria_nombre
+            )
+        )
+
+        if start_date is not None:
+            offer_query = offer_query.where(Sale.fecha_creacion >= start_date)
+
+        direct_result = await self.uow.session.execute(direct_query)
+        offer_result = await self.uow.session.execute(offer_query)
+
+        totals: dict[str, int] = {}
+
+        for row in direct_result.fetchall():
+            category = row.category or "Sin categoria"
+            totals[category] = totals.get(category, 0) + int(row.total_quantity or 0)
+
+        for row in offer_result.fetchall():
+            category = row.category or "Sin categoria"
+            totals[category] = totals.get(category, 0) + int(row.total_quantity or 0)
+
+        ordered = sorted(
+            [
+                {
+                    "categoria": category,
+                    "cantidad": total,
+                }
+                for category, total in totals.items()
+            ],
+            key=lambda item: item["cantidad"],
+            reverse=True
+        )
+
+        if limit is None:
+            return ordered
+
+        return ordered[:limit]

@@ -16,7 +16,6 @@ function App() {
         <Route path="/ventas" element={<SalesPage />} />
         <Route path="/registrar-venta" element={<SalesCreatePage />} />
         <Route path="/dashboard" element={<DashboardOverview />} />
-        <Route path="/reportes" element={<DashboardOverview />} />
       </Routes>
     </Router>
   );

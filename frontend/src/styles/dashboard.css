@@ -94,12 +94,30 @@
   min-height: 350px;
 }
 
+.chart-full {
+  /* Grafico a ancho completo */
+  min-height: 320px;
+}
+
 .chart-title {
   font-size: 16px;
   font-weight: 600;
   color: #f5f5f5;
   margin: 0 0 20px 0;
   letter-spacing: -0.01em;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.section-header .chart-title,
+.section-header .section-title {
+  margin-bottom: 0;
 }
 
 .chart-container {

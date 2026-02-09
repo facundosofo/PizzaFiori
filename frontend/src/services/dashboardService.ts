@@ -13,25 +13,25 @@ import env from '../config/env';
 export interface DailyRevenue {
   fecha: string;
   ingresos: number;
-  ordenes: number;
+  cantidad: number;
 }
 
 export interface WeeklyRevenue {
   semana: string;
   ingresos: number;
-  ordenes: number;
+  cantidad: number;
 }
 
 export interface MonthlyRevenue {
   mes: string;
   ingresos: number;
-  ordenes: number;
+  cantidad: number;
 }
 
 export interface YearlyRevenue {
   año: string;
   ingresos: number;
-  ordenes: number;
+  cantidad: number;
 }
 
 export interface TopProduct {
@@ -48,8 +48,13 @@ export interface DashboardMetrics {
   ordenesTotal: number;
 }
 
-export type { DailyRevenue, WeeklyRevenue, MonthlyRevenue, YearlyRevenue };
+export interface SalesByCategory {
+  categoria: string;
+  cantidad: number;
+}
+
 export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type ProductSort = 'top' | 'bottom';
 
 export interface DashboardData {
   dailyRevenue: DailyRevenue[];
@@ -58,6 +63,7 @@ export interface DashboardData {
   yearlyRevenue: YearlyRevenue[];
   monthlyRevenueByMonth: MonthlyRevenue[];
   topProducts: TopProduct[];
+  salesByCategory: SalesByCategory[];
   metrics: DashboardMetrics;
 }
 
@@ -83,6 +89,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     yearlyRevenue,
     monthlyRevenueByMonth,
     topProducts,
+    salesByCategory,
     metrics,
   ] = await Promise.all([
     getRevenueByPeriod('daily', 30) as Promise<DailyRevenue[]>,
@@ -90,7 +97,8 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     getRevenueByPeriod('monthly', 12) as Promise<MonthlyRevenue[]>,
     getRevenueByPeriod('yearly', 5) as Promise<YearlyRevenue[]>,
     getMonthlyRevenue(),
-    getTopProducts(10),
+    getTopProducts(5, 'monthly'),
+    getSalesByCategory(8, 'monthly'),
     getDashboardMetrics(),
   ]);
 
@@ -101,6 +109,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     yearlyRevenue,
     monthlyRevenueByMonth,
     topProducts,
+    salesByCategory,
     metrics,
   };
 };
@@ -131,12 +140,26 @@ export const getDailyRevenue = async (days: number = 30): Promise<DailyRevenue[]
 };
 
 /**
- * Obtener productos más vendidos
+ * Obtener productos más/menos vendidos
  * 
- * TODO: Conectar con GET /api/dashboard/products/top?limit={limit}
+ * TODO: Conectar con GET /api/dashboard/products/top?limit={limit}&sort={sort}&category={category}
  */
-export const getTopProducts = async (limit: number = 10): Promise<TopProduct[]> => {
-  return fetchJson(`/dashboard/products/top?limit=${limit}`);
+export const getTopProducts = async (
+  limit: number = 10,
+  period?: Period,
+  sort: ProductSort = 'top',
+  category?: string
+): Promise<TopProduct[]> => {
+  const params = new URLSearchParams({ limit: String(limit), sort });
+  if (period) {
+    params.set('period', period);
+  }
+  if (category) {
+    params.set('category', category);
+  }
+  const url = `/dashboard/products/top?${params.toString()}`;
+  console.log('[Service] Fetching products:', url);
+  return fetchJson(url);
 };
 
 /**
@@ -150,4 +173,21 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
 
 export const getMonthlyRevenue = async (): Promise<MonthlyRevenue[]> => {
   return fetchJson('/dashboard/revenue/monthly');
+};
+
+export const getSalesByCategory = async (
+  limit?: number,
+  period?: Period
+): Promise<SalesByCategory[]> => {
+  const params = new URLSearchParams();
+  if (limit) {
+    params.set('limit', String(limit));
+  }
+  if (period) {
+    params.set('period', period);
+  }
+  const query = params.toString();
+  const url = `/dashboard/sales-by-category${query ? `?${query}` : ''}`;
+  console.log('[Service] Fetching sales by category:', url);
+  return fetchJson(url);
 };

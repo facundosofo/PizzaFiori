@@ -1,5 +1,5 @@
 /**
- * TopProductsTable - Tabla de productos más vendidos
+ * TopProductsTable - Tabla de Ranking de productos
  * Componente reutilizable para mostrar ranking de productos con estado de stock
  */
 

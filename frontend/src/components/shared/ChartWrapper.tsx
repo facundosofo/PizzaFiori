@@ -45,6 +45,7 @@ export interface ChartWrapperProps {
   yAxisFormatter?: (value: any) => string; // Formateador de valores eje Y
   yAxisDomain?: [number, number]; // [mínimo, máximo] del eje Y
   yAxisTicks?: number[]; // Valores específicos para el eje Y
+  allowDecimals?: boolean; // Permitir decimales en eje Y
   gridOpacity?: number;
   curved?: boolean; // Para line/area charts
 }
@@ -64,6 +65,7 @@ const ChartWrapper = ({
   yAxisFormatter,
   yAxisDomain,
   yAxisTicks,
+  allowDecimals = true,
   gridOpacity = 0.1,
   curved = true,
 }: ChartWrapperProps) => {
@@ -179,6 +181,7 @@ const ChartWrapper = ({
               domain={calculatedDomain}
               ticks={yAxisTicks}
               tickFormatter={yAxisFormatter}
+              allowDecimals={allowDecimals}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: '#e8e8e8' }} />}
@@ -222,6 +225,7 @@ const ChartWrapper = ({
               label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
               domain={calculatedDomain}
               ticks={yAxisTicks}
+              allowDecimals={allowDecimals}
               tickFormatter={yAxisFormatter}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
