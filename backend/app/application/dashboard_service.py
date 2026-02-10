@@ -89,7 +89,13 @@ class DashboardService:
                 self.logger.info(f"Getting products with time_filter: {time_filter}, limit: {limit}, sort: {sort}, category: {category}")
                 start_date = self._get_start_date_for_time_filter(time_filter)
                 self.logger.info(f"Start date calculated: {start_date}")
-                result = await self._get_top_products_data(limit, start_date, sort=sort, category=category)
+                result = await self._get_top_products_data(
+                    limit,
+                    start_date,
+                    time_filter=time_filter,
+                    sort=sort,
+                    category=category,
+                )
                 self.logger.info(f"Products result count: {len(result)}")
                 return ServiceResult(value=result)
                 
@@ -121,7 +127,7 @@ class DashboardService:
                 self.logger.info(f"Getting sales by category with time_filter: {time_filter}, limit: {limit}")
                 start_date = self._get_start_date_for_time_filter(time_filter)
                 self.logger.info(f"Start date calculated: {start_date}")
-                result = await self._get_sales_by_category_data(limit, start_date)
+                result = await self._get_sales_by_category_data(limit, start_date, time_filter=time_filter)
                 self.logger.info(f"Sales by category result count: {len(result)}")
                 return ServiceResult(value=result)
 
@@ -440,6 +446,7 @@ class DashboardService:
         self,
         limit: int,
         start_date: datetime | None,
+        time_filter: FiltroTiempo,
         sort: str = "top",
         category: str | None = None,
     ) -> List[dict]:
@@ -452,12 +459,18 @@ class DashboardService:
         - Agregación y ordenamiento en SQL para mejor rendimiento
         - Índices en columnas clave (venta_id, categoria_id)
         """
-        from sqlalchemy import union_all
+        from sqlalchemy import union_all, text
         
         # ==== SUBCONSULTA: Pre-filtrar ventas por fecha ====
         # Esto reduce drásticamente el tamaño de los JOINs posteriores
         sales_filtered = select(Sale.id)
-        if start_date is not None:
+        if time_filter == FiltroTiempo.HOY:
+            business_date_expr = cast(
+                func.dateadd(text('HOUR'), -6, Sale.fecha_creacion),
+                Date
+            )
+            sales_filtered = sales_filtered.where(business_date_expr == datetime.now().date())
+        elif start_date is not None:
             sales_filtered = sales_filtered.where(Sale.fecha_creacion >= start_date)
         
         sales_subq = sales_filtered.subquery()
@@ -571,6 +584,7 @@ class DashboardService:
         self,
         limit: int | None,
         start_date: datetime | None,
+        time_filter: FiltroTiempo,
     ) -> List[dict]:
         """
         Agrega cantidad vendida por categoría (OPTIMIZADA).
@@ -581,12 +595,18 @@ class DashboardService:
         - Agregación y ordenamiento en SQL
         - Índices en columnas clave (venta_id, categoria_id)
         """
-        from sqlalchemy import union_all
+        from sqlalchemy import union_all, text
         
         # ==== SUBCONSULTA: Pre-filtrar ventas por fecha ====
         # Esto reduce drásticamente el tamaño de los JOINs posteriores
         sales_filtered = select(Sale.id)
-        if start_date is not None:
+        if time_filter == FiltroTiempo.HOY:
+            business_date_expr = cast(
+                func.dateadd(text('HOUR'), -6, Sale.fecha_creacion),
+                Date
+            )
+            sales_filtered = sales_filtered.where(business_date_expr == datetime.now().date())
+        elif start_date is not None:
             sales_filtered = sales_filtered.where(Sale.fecha_creacion >= start_date)
         
         sales_subq = sales_filtered.subquery()
