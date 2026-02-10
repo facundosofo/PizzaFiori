@@ -256,22 +256,66 @@ class DashboardService:
             return None
 
 
-
     async def _get_daily_revenue(self, limit: int) -> List[dict]:
-        """Agregación diaria del último mes."""
-        # Obtener fecha hace 'limit' días
+        """
+        Agregación diaria optimizada con horario de negocio.
+        
+        Optimizaciones aplicadas:
+        - Subconsultas para evitar GROUP BY con funciones complejas
+        - Pre-filtrado de ventas antes del JOIN
+        - Aprovecha índices en fecha_creacion y venta_id
+        
+        Resta 6 horas a la fecha de creación para que ventas entre 00:00-05:59
+        se asignen al día anterior (horario de negocio 16:00 a 06:00).
+        """
+        from sqlalchemy import text
+        
+        # Fecha de inicio ajustada
         start_date = datetime.now() - timedelta(days=limit)
         
+        # PASO 1: Subconsulta de ventas (pre-filtrado)
+        # Calcula la fecha de negocio UNA VEZ por venta
+        business_date_expr = cast(
+            func.dateadd(text('HOUR'), -6, Sale.fecha_creacion),
+            Date
+        )
+        
+        sale_subquery = select(
+            Sale.id.label("sale_id"),
+            business_date_expr.label("business_date"),
+            Sale.total.label("sale_total")
+        ).where(
+            Sale.fecha_creacion >= start_date
+        ).subquery()
+        
+        # PASO 2: Agregar items por venta
+        items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("total_items")
+        ).where(
+            SaleItem.venta_id.in_(
+                select(sale_subquery.c.sale_id)
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 3: JOIN y agregación final
         query = select(
-            cast(Sale.fecha_creacion, Date).label("date"),
-            func.sum(Sale.total).label("revenue"),
-            func.count(distinct(Sale.id)).label("pedidos"),
-            func.sum(SaleItem.cantidad).label("cantidad"),
-        ).select_from(Sale).join(
-            SaleItem, Sale.id == SaleItem.venta_id
-        ).where(Sale.fecha_creacion >= start_date).group_by(
-            cast(Sale.fecha_creacion, Date)
-        ).order_by("date")
+            sale_subquery.c.business_date.label("date"),
+            func.sum(sale_subquery.c.sale_total).label("revenue"),
+            func.count(sale_subquery.c.sale_id).label("pedidos"),
+            func.sum(items_subquery.c.total_items).label("cantidad")
+        ).select_from(
+            sale_subquery
+        ).outerjoin(
+            items_subquery,
+            sale_subquery.c.sale_id == items_subquery.c.venta_id
+        ).group_by(
+            sale_subquery.c.business_date
+        ).order_by(
+            sale_subquery.c.business_date
+        )
         
         result = await self.uow.session.execute(query)
         rows = result.fetchall()
@@ -286,39 +330,14 @@ class DashboardService:
             for row in rows
         ]
 
-    async def _get_weekly_revenue(self, limit: int) -> List[dict]:
-        """Agregación semanal de las últimas 12 semanas."""
-        # Obtener fecha hace (limit * 7) días
-        start_date = datetime.now() - timedelta(days=limit * 7)
-        
-        query = select(
-            func.year(Sale.fecha_creacion).label("year"),
-            extract('week', Sale.fecha_creacion).label("week"),
-            func.sum(Sale.total).label("revenue"),
-            func.count(distinct(Sale.id)).label("pedidos"),
-            func.sum(SaleItem.cantidad).label("cantidad"),
-        ).select_from(Sale).join(
-            SaleItem, Sale.id == SaleItem.venta_id
-        ).where(Sale.fecha_creacion >= start_date).group_by(
-            func.year(Sale.fecha_creacion),
-            extract('week', Sale.fecha_creacion)
-        ).order_by("year", "week").limit(limit)
-        
-        result = await self.uow.session.execute(query)
-        rows = result.fetchall()
-        
-        return [
-            {
-                "semana": f"W{int(row.week):02d} {int(row.year)}",
-                "ingresos": float(row.revenue or 0),
-                "pedidos": int(row.pedidos or 0),
-                "cantidad": int(row.cantidad or 0),
-            }
-            for row in rows
-        ]
-
     async def _get_monthly_revenue(self, limit: int) -> List[dict]:
-        """Agregación mensual de los últimos N meses."""
+        """Agregación mensual optimizada de los últimos N meses.
+        
+        Optimizaciones aplicadas:
+        - Subconsultas para evitar GROUP BY con funciones complejas
+        - Pre-filtrado de ventas antes del JOIN
+        - Aprovecha índices en fecha_creacion y venta_id
+        """
         now = datetime.now()
 
         # Start at the first day of the month, N-1 months ago
@@ -335,23 +354,50 @@ class DashboardService:
         else:
             end_date = datetime(now.year, now.month + 1, 1)
         
-        query = select(
+        # PASO 1: Subconsulta de ventas (pre-filtrado por rango de fechas)
+        sale_subquery = select(
+            Sale.id.label("sale_id"),
             func.year(Sale.fecha_creacion).label("year"),
             func.month(Sale.fecha_creacion).label("month"),
-            func.sum(Sale.total).label("revenue"),
-            func.count(distinct(Sale.id)).label("pedidos"),
-            func.sum(SaleItem.cantidad).label("cantidad"),
-        ).select_from(Sale).join(
-            SaleItem, Sale.id == SaleItem.venta_id
+            Sale.total.label("sale_total")
         ).where(
             and_(
                 Sale.fecha_creacion >= start_date,
                 Sale.fecha_creacion < end_date,
             )
+        ).subquery()
+        
+        # PASO 2: Agregar items por venta
+        items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("total_items")
+        ).where(
+            SaleItem.venta_id.in_(
+                select(sale_subquery.c.sale_id)
+            )
         ).group_by(
-            func.year(Sale.fecha_creacion),
-            func.month(Sale.fecha_creacion)
-        ).order_by("year", "month").limit(limit)
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 3: Agregación final por mes
+        query = select(
+            sale_subquery.c.year,
+            sale_subquery.c.month,
+            func.sum(sale_subquery.c.sale_total).label("revenue"),
+            func.count(sale_subquery.c.sale_id).label("pedidos"),
+            func.sum(items_subquery.c.total_items).label("cantidad")
+        ).select_from(
+            sale_subquery
+        ).outerjoin(
+            items_subquery,
+            sale_subquery.c.sale_id == items_subquery.c.venta_id
+        ).group_by(
+            sale_subquery.c.year,
+            sale_subquery.c.month
+        ).order_by(
+            sale_subquery.c.year,
+            sale_subquery.c.month
+        )
         
         result = await self.uow.session.execute(query)
         rows = result.fetchall()
@@ -389,19 +435,52 @@ class DashboardService:
         return results
 
     async def _get_yearly_revenue(self, limit: int) -> List[dict]:
-        """Agregación anual de los últimos 5 años."""
+        """Agregación anual optimizada de los últimos N años.
+        
+        Optimizaciones aplicadas:
+        - Subconsultas para evitar GROUP BY con funciones complejas
+        - Pre-filtrado de ventas antes del JOIN
+        - Aprovecha índices en fecha_creacion y venta_id
+        """
         start_date = datetime.now() - timedelta(days=limit * 365)
         
-        query = select(
+        # PASO 1: Subconsulta de ventas (pre-filtrado por fecha)
+        sale_subquery = select(
+            Sale.id.label("sale_id"),
             func.year(Sale.fecha_creacion).label("year"),
-            func.sum(Sale.total).label("revenue"),
-            func.count(distinct(Sale.id)).label("pedidos"),
-            func.sum(SaleItem.cantidad).label("cantidad"),
-        ).select_from(Sale).join(
-            SaleItem, Sale.id == SaleItem.venta_id
-        ).where(Sale.fecha_creacion >= start_date).group_by(
-            func.year(Sale.fecha_creacion)
-        ).order_by("year").limit(limit)
+            Sale.total.label("sale_total")
+        ).where(
+            Sale.fecha_creacion >= start_date
+        ).subquery()
+        
+        # PASO 2: Agregar items por venta
+        items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("total_items")
+        ).where(
+            SaleItem.venta_id.in_(
+                select(sale_subquery.c.sale_id)
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 3: Agregación final por año
+        query = select(
+            sale_subquery.c.year,
+            func.sum(sale_subquery.c.sale_total).label("revenue"),
+            func.count(sale_subquery.c.sale_id).label("pedidos"),
+            func.sum(items_subquery.c.total_items).label("cantidad")
+        ).select_from(
+            sale_subquery
+        ).outerjoin(
+            items_subquery,
+            sale_subquery.c.sale_id == items_subquery.c.venta_id
+        ).group_by(
+            sale_subquery.c.year
+        ).order_by(
+            sale_subquery.c.year
+        ).limit(limit)
         
         result = await self.uow.session.execute(query)
         rows = result.fetchall()
