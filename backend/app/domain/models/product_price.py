@@ -1,12 +1,16 @@
 from datetime import datetime
 
-from sqlalchemy import Column, ForeignKey, Integer, Numeric, DateTime
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, DateTime, Index
 from sqlalchemy.orm import relationship
 
 from app.domain.models.base import Base
 
 class ProductPrice(Base):
     __tablename__ = "ProductoPrecios"
+    __table_args__ = (
+        # Índice compuesto para optimizar búsquedas de precio por cantidad
+        Index('ix_productoprecio_producto_cantidad', 'producto_id', 'cantidad'),
+    )
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     producto_id = Column(Integer, ForeignKey("Productos.id"), nullable=False)
