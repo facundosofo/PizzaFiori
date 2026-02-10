@@ -12,7 +12,9 @@ class SaleItem(Base):
             "(producto_id IS NOT NULL AND oferta_id IS NULL) OR (producto_id IS NULL AND oferta_id IS NOT NULL)",
             name="check_producto_or_oferta"
         ),
-        # Índices compuestos para optimizar queries del dashboard
+        # Índices simples para optimizar operaciones IN/WHERE en dashboard
+        Index('ix_ventaitems_venta_id', 'venta_id'),
+        # Índices compuestos para optimizar queries específicas del dashboard
         Index('ix_ventaitems_venta_producto', 'venta_id', 'producto_id'),
         Index('ix_ventaitems_venta_oferta', 'venta_id', 'oferta_id'),
         Index('ix_ventaitems_item_categoria', 'item_categoria'),

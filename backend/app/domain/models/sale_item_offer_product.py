@@ -12,6 +12,8 @@ class SaleItemOfferProduct(Base):
     """
     __tablename__ = "VentaItemOfertaProductos"
     __table_args__ = (
+        # Índice simple para JOINs y operaciones WHERE en dashboard
+        Index('ix_ventaitemofertaproductos_venta_item_id', 'venta_item_id'),
         # Índices compuestos para optimizar queries del dashboard
         Index('ix_ventaitemofertaproductos_ventaitem_producto', 'venta_item_id', 'producto_id'),
         Index('ix_ventaitemofertaproductos_categoria_nombre', 'categoria_nombre'),

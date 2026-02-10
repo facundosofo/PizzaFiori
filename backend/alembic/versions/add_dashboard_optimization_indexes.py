@@ -25,11 +25,13 @@ def upgrade() -> None:
     op.create_index('ix_Ventas_fecha_creacion', 'Ventas', ['fecha_creacion'])
     
     # SaleItem: índices compuestos para JOINs y filtros
+    op.create_index('ix_ventaitems_venta_id', 'VentaItems', ['venta_id'])  # Simple para IN/WHERE queries
     op.create_index('ix_ventaitems_venta_producto', 'VentaItems', ['venta_id', 'producto_id'])
     op.create_index('ix_ventaitems_venta_oferta', 'VentaItems', ['venta_id', 'oferta_id'])
     op.create_index('ix_ventaitems_item_categoria', 'VentaItems', ['item_categoria'])
     
     # SaleItemOfferProduct: índices para agregaciones de productos en ofertas
+    op.create_index('ix_ventaitemofertaproductos_venta_item_id', 'VentaItemOfertaProductos', ['venta_item_id'])  # Simple para JOINs
     op.create_index('ix_ventaitemofertaproductos_ventaitem_producto', 'VentaItemOfertaProductos', ['venta_item_id', 'producto_id'])
     op.create_index('ix_ventaitemofertaproductos_categoria_nombre', 'VentaItemOfertaProductos', ['categoria_nombre'])
     op.create_index('ix_ventaitemofertaproductos_producto_nombre', 'VentaItemOfertaProductos', ['producto_nombre'])
@@ -50,7 +52,9 @@ def downgrade() -> None:
     op.drop_index('ix_ventaitemofertaproductos_producto_nombre', table_name='VentaItemOfertaProductos')
     op.drop_index('ix_ventaitemofertaproductos_categoria_nombre', table_name='VentaItemOfertaProductos')
     op.drop_index('ix_ventaitemofertaproductos_ventaitem_producto', table_name='VentaItemOfertaProductos')
+    op.drop_index('ix_ventaitemofertaproductos_venta_item_id', table_name='VentaItemOfertaProductos')
     op.drop_index('ix_ventaitems_item_categoria', table_name='VentaItems')
     op.drop_index('ix_ventaitems_venta_oferta', table_name='VentaItems')
     op.drop_index('ix_ventaitems_venta_producto', table_name='VentaItems')
+    op.drop_index('ix_ventaitems_venta_id', table_name='VentaItems')
     op.drop_index('ix_Ventas_fecha_creacion', table_name='Ventas')

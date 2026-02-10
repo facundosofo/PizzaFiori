@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import datetime, timedelta
 from decimal import Decimal
 import structlog
-from sqlalchemy import func, select, and_, or_, cast, Date, Float, literal_column, extract, Integer, case, distinct
+from sqlalchemy import func, select, and_, cast, Date, Numeric, distinct
 
 from app.domain.models.sale import Sale
 from app.domain.models.sale_item import SaleItem
@@ -190,20 +190,6 @@ class DashboardService:
             )
 
     # === Métodos privados para queries ===
-
-    def _get_start_date_for_period(self, period: TipoPeriodo) -> datetime:
-        self.logger.info(f"Calculating start date for period: {period} (type: {type(period)})")
-        if period == TipoPeriodo.DIARIO:
-            result = datetime.now() - timedelta(days=30)
-            self.logger.info(f"Period is DIARIO, start_date: {result}")
-            return result
-        if period == TipoPeriodo.MENSUAL:
-            result = datetime.now() - timedelta(days=12 * 30)
-            self.logger.info(f"Period is MENSUAL, start_date: {result}")
-            return result
-        result = datetime.now() - timedelta(days=5 * 365)
-        self.logger.info(f"Period is ANUAL (default), start_date: {result}")
-        return result
 
     def _get_start_date_for_time_filter(self, time_filter: FiltroTiempo) -> datetime | None:
         """
@@ -476,48 +462,6 @@ class DashboardService:
             for row in rows
         ]
 
-
-        """Distribución de revenue para cada mes (12 meses del año actual)."""
-        current_year = datetime.now().year
-        
-        query = select(
-            func.month(Sale.fecha_creacion).label("month"),
-            func.sum(Sale.total).label("revenue"),
-            func.count(distinct(Sale.id)).label("pedidos"),
-            func.sum(SaleItem.cantidad).label("cantidad"),
-        ).select_from(Sale).join(
-            SaleItem, Sale.id == SaleItem.venta_id
-        ).where(
-            func.year(Sale.fecha_creacion) == current_year
-        ).group_by(
-            func.month(Sale.fecha_creacion)
-        ).order_by("month")
-        
-        result = await self.uow.session.execute(query)
-        rows = result.fetchall()
-        
-        # Crear diccionario para acceso rápido
-        revenue_by_month = {row.month: row for row in rows}
-        
-        months = [
-            "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-            "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
-        ]
-        
-        # Retornar todos los 12 meses (con 0 si no hay datos)
-        return [
-            {
-                "mes": months[i],
-                "ingresos": float(revenue_by_month.get(i + 1, {}).revenue or 0)
-                    if i + 1 in revenue_by_month else 0,
-                "pedidos": int(revenue_by_month.get(i + 1, {}).pedidos or 0)
-                    if i + 1 in revenue_by_month else 0,
-                "cantidad": int(revenue_by_month.get(i + 1, {}).cantidad or 0)
-                    if i + 1 in revenue_by_month else 0,
-            }
-            for i in range(12)
-        ]
-
     async def _get_top_products_data(
         self,
         limit: int,
@@ -775,35 +719,68 @@ class DashboardService:
         category: str | None = None,
     ) -> List[dict]:
         """
-        Obtiene promedio de ingresos y cantidad por día de semana.
+        Obtiene promedio de ingresos y cantidad por día de semana (OPTIMIZADA).
+        
+        Optimizaciones principales:
+        - Pre-filtrado de ventas por fecha ANTES de grandes JOINs
+        - Separación de queries directas vs ofertas (en lugar de CASE complejo)
+        - Subconsultas simples y reutilizables
+        - Agregación en SQL completa, sin procesamiento en Python
         
         Ajusta las fechas restando 6 horas para reflejar el horario de negocio
         (16:00 a 06:00). Esto asegura que ventas entre 00:00-05:59 se asignen
         al día anterior.
-        
-        Args:
-            start_date: Fecha de inicio para filtrar (opcional)
-            category: Filtrar por categoría (opcional)
-        
-        Returns:
-            Lista de dicts con dia_semana, promedio_ingresos, promedio_pedidos, promedio_cantidad
         """
         from sqlalchemy import text
         
-        # Para MSSQL: calcular el día de semana ajustado (restando 6 horas)
-        # DATEPART(WEEKDAY, ...) retorna 1=Sunday, 2=Monday, ..., 7=Saturday
-        dow_expression = func.datepart(text('WEEKDAY'), func.dateadd(text('HOUR'), -6, Sale.fecha_creacion))
-        business_date_expression = cast(
-            func.dateadd(text('HOUR'), -6, Sale.fecha_creacion),
-            Date
+        # PASO 1: CTE para fecha+hora de negocio (reutilizable en la query)
+        # Resta 6 horas para convertir a horario de negocio (16:00 a 06:00)
+        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        
+        # PASO 2: Pre-filtrar ventas por fecha (índice en fecha_creacion)
+        sales_filter = select(Sale.id)
+        if start_date is not None:
+            sales_filter = sales_filter.where(Sale.fecha_creacion >= start_date)
+        if end_date is not None:
+            sales_filter = sales_filter.where(Sale.fecha_creacion < end_date)
+        
+        sales_subq = sales_filter.subquery()
+        
+        # PASO 3: Agregación de items DIRECTOS por venta (usando JOIN explícito en lugar de IN)
+        direct_items_query = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("direct_qty")
+        ).select_from(SaleItem).join(
+            sales_subq, SaleItem.venta_id == sales_subq.c.id
+        ).where(
+            SaleItem.producto_id.isnot(None)
         )
-
-        # Subconsulta para items de ofertas por SaleItem
+        
+        # Aplicar filtro de categoría para items directos
+        if category:
+            direct_items_query = direct_items_query.outerjoin(
+                Product, SaleItem.producto_id == Product.id
+            ).outerjoin(
+                Category, Product.categoria_id == Category.id
+            ).where(
+                func.coalesce(Category.nombre, SaleItem.item_categoria) == category
+            )
+        
+        direct_items_query = direct_items_query.group_by(SaleItem.venta_id).subquery()
+        
+        # PASO 4: Agregación de items en OFERTAS por venta (usando JOIN explícito en lugar de IN)
         offer_items_query = select(
-            SaleItemOfferProduct.venta_item_id,
-            func.sum(SaleItemOfferProduct.cantidad).label("offer_items_count")
-        ).select_from(SaleItemOfferProduct)
-
+            SaleItem.venta_id,
+            func.sum(SaleItemOfferProduct.cantidad).label("offer_qty")
+        ).select_from(SaleItem).join(
+            SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
+        ).join(
+            sales_subq, SaleItem.venta_id == sales_subq.c.id
+        ).where(
+            SaleItem.oferta_id.isnot(None)
+        )
+        
+        # Aplicar filtro de categoría para items en ofertas
         if category:
             offer_items_query = offer_items_query.outerjoin(
                 Product, SaleItemOfferProduct.producto_id == Product.id
@@ -812,98 +789,54 @@ class DashboardService:
             ).where(
                 func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre) == category
             )
-
-        offer_items_subq = offer_items_query.group_by(
-            SaleItemOfferProduct.venta_item_id
-        ).subquery()
-
-        # Subconsulta: agrupar por venta y calcular totales
-        # La cantidad total incluye:
-        # - Items directos (SaleItem.cantidad donde producto_id IS NOT NULL)
-        # - Items en ofertas (suma de SaleItemOfferProduct.cantidad)
-        sale_subquery = select(
+        
+        offer_items_query = offer_items_query.group_by(SaleItem.venta_id).subquery()
+        
+        # PASO 5: Unir ventas filtradas con items (directos + ofertas)
+        # Nota: adjusted_fecha se usa directamente (no calculado 2 veces)
+        sale_daily_data = select(
             Sale.id.label("sale_id"),
-            business_date_expression.label("business_date"),
-            dow_expression.label("dow"),
-            Sale.total.label("sale_total"),
-            func.sum(
-                case(
-                    (SaleItem.producto_id.isnot(None), SaleItem.cantidad),
-                    else_=0
-                ) + func.coalesce(offer_items_subq.c.offer_items_count, 0)
-            ).label("items_total"),
+            cast(adjusted_fecha, Date).label("business_date"),
+            func.datepart(text('WEEKDAY'), adjusted_fecha).label("dow"),
+            Sale.total.label("revenue"),
+            (func.coalesce(direct_items_query.c.direct_qty, 0) + 
+             func.coalesce(offer_items_query.c.offer_qty, 0)).label("total_items")
         ).select_from(Sale).join(
-            SaleItem, Sale.id == SaleItem.venta_id
+            sales_subq, Sale.id == sales_subq.c.id
         ).outerjoin(
-            offer_items_subq,
-            SaleItem.id == offer_items_subq.c.venta_item_id
-        )
-
-        # Filtro de período
-        if start_date is not None:
-            sale_subquery = sale_subquery.where(Sale.fecha_creacion >= start_date)
-        if end_date is not None:
-            sale_subquery = sale_subquery.where(Sale.fecha_creacion < end_date)
-
-        # Filtro de categoría si se proporciona
-        if category:
-            sale_subquery = sale_subquery.outerjoin(
-                Product, SaleItem.producto_id == Product.id
-            ).outerjoin(
-                Category, Product.categoria_id == Category.id
-            )
-
-            direct_match = and_(
-                SaleItem.producto_id.isnot(None),
-                func.coalesce(Category.nombre, SaleItem.item_categoria) == category
-            )
-            offer_match = and_(
-                SaleItem.oferta_id.isnot(None),
-                offer_items_subq.c.offer_items_count.isnot(None)
-            )
-
-            sale_subquery = sale_subquery.where(or_(direct_match, offer_match))
-
-        # GROUP BY: id, total, fecha_creacion y expresiones derivadas
-        sale_subquery = sale_subquery.group_by(
-            Sale.id,
-            Sale.total,
-            Sale.fecha_creacion,
-            business_date_expression,
-            dow_expression
+            direct_items_query, Sale.id == direct_items_query.c.venta_id
+        ).outerjoin(
+            offer_items_query, Sale.id == offer_items_query.c.venta_id
         ).subquery()
-
-        # Agrupar por fecha de negocio
-        day_subquery = select(
-            sale_subquery.c.business_date,
-            sale_subquery.c.dow,
-            func.count(sale_subquery.c.sale_id).label("orders_total"),
-            func.sum(sale_subquery.c.sale_total).label("ingresos_total"),
-            func.sum(sale_subquery.c.items_total).label("items_total"),
+        
+        # PASO 6: Agrupar por fecha de negocio (para promedios)
+        daily_summary = select(
+            sale_daily_data.c.business_date,
+            sale_daily_data.c.dow,
+            func.count(sale_daily_data.c.sale_id).label("orders_count"),
+            func.sum(sale_daily_data.c.revenue).label("daily_revenue"),
+            func.sum(sale_daily_data.c.total_items).label("daily_items")
         ).group_by(
-            sale_subquery.c.business_date,
-            sale_subquery.c.dow
+            sale_daily_data.c.business_date,
+            sale_daily_data.c.dow
         ).subquery()
-
-        # Query principal: agrupar por día de semana y calcular promedios
-        # Promedio = SUM(total) / COUNT(días distintos)
-        # IMPORTANTE: Cast a Float para evitar división entera en MSSQL
+        
+        # PASO 7: Agregación final: promedios por día de semana
         query = select(
-            day_subquery.c.dow,
-            (func.sum(day_subquery.c.ingresos_total) / cast(func.count(day_subquery.c.business_date), Float)).label("promedio_ingresos"),
-            (func.sum(day_subquery.c.orders_total) / cast(func.count(day_subquery.c.business_date), Float)).label("promedio_pedidos"),
-            (func.sum(day_subquery.c.items_total) / cast(func.count(day_subquery.c.business_date), Float)).label("promedio_cantidad"),
+            daily_summary.c.dow,
+            (func.sum(daily_summary.c.daily_revenue) / cast(func.count(daily_summary.c.business_date), Numeric)).label("promedio_ingresos"),
+            (func.sum(daily_summary.c.orders_count) / cast(func.count(daily_summary.c.business_date), Numeric)).label("promedio_pedidos"),
+            (func.sum(daily_summary.c.daily_items) / cast(func.count(daily_summary.c.business_date), Numeric)).label("promedio_cantidad"),
         ).group_by(
-            day_subquery.c.dow
+            daily_summary.c.dow
         ).order_by(
-            day_subquery.c.dow
+            daily_summary.c.dow
         )
         
         result = await self.uow.session.execute(query)
         rows = result.fetchall()
         
-        # Mapear números a nombres de días en español
-        # MSSQL DATEPART(WEEKDAY): 1=Sunday, 2=Monday, 3=Tuesday, ..., 7=Saturday
+        # PASO 8: Mapear resultados a días de la semana
         dias_semana = {
             1: "Domingo",
             2: "Lunes",
@@ -914,7 +847,6 @@ class DashboardService:
             7: "Sábado"
         }
         
-        # Crear diccionario de resultados por día
         revenue_by_dow = {
             int(row.dow): {
                 "dia_semana": dias_semana[int(row.dow)],
@@ -926,7 +858,6 @@ class DashboardService:
         }
         
         # Retornar ordenado: Lunes (2) a Domingo (1)
-        # Orden: 2, 3, 4, 5, 6, 7, 1
         ordered_days = [2, 3, 4, 5, 6, 7, 1]
         return [
             revenue_by_dow.get(dow, {
