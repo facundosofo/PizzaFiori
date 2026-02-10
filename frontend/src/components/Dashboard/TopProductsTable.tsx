@@ -3,13 +3,14 @@
  * Componente reutilizable para mostrar ranking de productos con estado de stock
  */
 
+import { memo } from 'react';
 import type { TopProduct } from '../../services/dashboardService';
 
 interface TopProductsTableProps {
   products: TopProduct[];
 }
 
-const TopProductsTable = ({ products }: TopProductsTableProps) => {
+const TopProductsTable = memo(({ products }: TopProductsTableProps) => {
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
@@ -49,6 +50,8 @@ const TopProductsTable = ({ products }: TopProductsTableProps) => {
       </table>
     </div>
   );
-};
+});
+
+TopProductsTable.displayName = 'TopProductsTable';
 
 export default TopProductsTable;

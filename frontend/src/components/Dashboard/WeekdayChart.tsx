@@ -4,6 +4,7 @@
  * Ajustado al horario de negocio (16:00 a 06:00)
  */
 
+import { memo } from 'react';
 import ChartWrapper from '../shared/ChartWrapper';
 import type { WeekdayRevenue } from '../../services/dashboardService';
 
@@ -15,7 +16,7 @@ interface WeekdayChartProps {
   height?: number;
 }
 
-const WeekdayChart = ({ 
+const WeekdayChart = memo(({ 
   data, 
   selectedMetric,
   height = 300 
@@ -139,6 +140,8 @@ const WeekdayChart = ({
       />
     </div>
   );
-};
+});
+
+WeekdayChart.displayName = 'WeekdayChart';
 
 export default WeekdayChart;

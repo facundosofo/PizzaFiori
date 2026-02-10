@@ -2,6 +2,7 @@
  * SalesByCategoryChart - Grafico de torta para ventas por categoria
  */
 
+import { memo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import type { SalesByCategory } from '../../services/dashboardService';
 
@@ -10,7 +11,7 @@ interface SalesByCategoryChartProps {
   height?: number;
 }
 
-const SalesByCategoryChart = ({ data, height = 300 }: SalesByCategoryChartProps) => {
+const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartProps) => {
   if (!data || data.length === 0) {
     return <div className="chart-container">No hay datos disponibles</div>;
   }
@@ -157,6 +158,8 @@ const SalesByCategoryChart = ({ data, height = 300 }: SalesByCategoryChartProps)
       </div>
     </div>
   );
-};
+});
+
+SalesByCategoryChart.displayName = 'SalesByCategoryChart';
 
 export default SalesByCategoryChart;

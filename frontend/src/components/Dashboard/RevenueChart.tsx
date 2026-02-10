@@ -5,6 +5,7 @@
  * Soporta métricas: Ingresos, Pedidos, Items
  */
 
+import { memo } from 'react';
 import ChartWrapper from '../shared/ChartWrapper';
 import { type Period } from '../shared/PeriodSelector';
 import { type Metric } from '../shared/MetricSelector';
@@ -19,7 +20,7 @@ interface RevenueChartProps {
   height?: number;
 }
 
-const RevenueChart = ({ 
+const RevenueChart = memo(({ 
   dailyData, 
   monthlyData, 
   yearlyData,
@@ -201,6 +202,8 @@ const RevenueChart = ({
       />
     </div>
   );
-};
+});
+
+RevenueChart.displayName = 'RevenueChart';
 
 export default RevenueChart;
