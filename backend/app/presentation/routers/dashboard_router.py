@@ -21,7 +21,7 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 @router.get(
     "/revenue",
-    response_model=List[dict],
+    response_model=List[RevenuePorPeriodoResponse],
     summary="Obtener revenue por período",
     description="Devuelve el revenue agrupado por período (daily, monthly, yearly).",
     responses={
@@ -55,36 +55,6 @@ async def get_revenue(
         )
     
     return result.value
-
-
-@router.get(
-    "/revenue/monthly",
-    response_model=List[RevenueEn12MesesResponse],
-    summary="Obtener distribución mensuales (12 meses)",
-    description="Devuelve el revenue para cada mes del año actual.",
-    responses={
-        500: {"description": "Error interno del servidor"},
-    },
-)
-@inject
-async def get_monthly_revenue(
-    service: DashboardService = Depends(Provide[Container.dashboard_service]),
-):
-    """
-    Obtiene datos de revenue distribuidos para cada mes del año actual.
-    
-    Retorna exactamente 12 registros (Ene a Dic) incluidos los meses con 0 órdenes.
-    """
-    result = await service.get_monthly_revenue()
-    
-    if result.error:
-        raise HTTPException(
-            status_code=result.status_code,
-            detail=result.error
-        )
-    
-    return result.value
-
 
 @router.get(
     "/revenue/weekday",

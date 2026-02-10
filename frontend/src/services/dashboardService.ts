@@ -70,7 +70,7 @@ export interface Category {
   descripcion: string | null;
 }
 
-export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type Period = 'daily' | 'monthly' | 'yearly';
 export type TimeFilter = 'today' | 'last_7_days' | 'last_month' | 'last_year' | 'all_time';
 export type ProductSort = 'top' | 'bottom';
 
@@ -78,7 +78,6 @@ export interface DashboardData {
   dailyRevenue: DailyRevenue[];
   monthlyRevenue: MonthlyRevenue[];
   yearlyRevenue: YearlyRevenue[];
-  monthlyRevenueByMonth: MonthlyRevenue[];
   topProducts: TopProduct[];
   salesByCategory: SalesByCategory[];
   metrics: DashboardMetrics;
@@ -103,7 +102,6 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     dailyRevenue,
     monthlyRevenue,
     yearlyRevenue,
-    monthlyRevenueByMonth,
     topProducts,
     salesByCategory,
     metrics,
@@ -111,7 +109,6 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     getRevenueByPeriod('daily', 30) as Promise<DailyRevenue[]>,
     getRevenueByPeriod('monthly', 12) as Promise<MonthlyRevenue[]>,
     getRevenueByPeriod('yearly', 5) as Promise<YearlyRevenue[]>,
-    getMonthlyRevenue(),
     getTopProducts(5, 'all_time'),
     getSalesByCategory(8, 'all_time'),
     getDashboardMetrics(),
@@ -121,7 +118,6 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     dailyRevenue,
     monthlyRevenue,
     yearlyRevenue,
-    monthlyRevenueByMonth,
     topProducts,
     salesByCategory,
     metrics,
@@ -136,7 +132,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
 export const getRevenueByPeriod = async (
   period: Period,
   limit?: number
-): Promise<DailyRevenue[] | WeeklyRevenue[] | MonthlyRevenue[] | YearlyRevenue[]> => {
+): Promise<DailyRevenue[] | MonthlyRevenue[] | YearlyRevenue[]> => {
   const params = new URLSearchParams({ period });
   if (limit) {
     params.set('limit', String(limit));
@@ -185,9 +181,6 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
   return fetchJson('/dashboard/metrics');
 };
 
-export const getMonthlyRevenue = async (): Promise<MonthlyRevenue[]> => {
-  return fetchJson('/dashboard/revenue/monthly');
-};
 
 export const getSalesByCategory = async (
   limit?: number,

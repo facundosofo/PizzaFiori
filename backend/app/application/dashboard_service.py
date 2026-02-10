@@ -73,25 +73,6 @@ class DashboardService:
                 status_code=500
             )
 
-    async def get_monthly_revenue(self) -> ServiceResult:
-        """
-        Obtiene el revenue para cada mes del año (12 registros).
-        
-        Returns:
-            ServiceResult con lista de 12 MonthlyRevenueResponse
-        """
-        try:
-            async with self.uow:
-                result = await self._get_monthly_revenue_distribution()
-                return ServiceResult(value=result)
-                
-        except Exception as e:
-            self.logger.error(f"Error obteniendo monthly revenue: {str(e)}")
-            return ServiceResult(
-                error=f"Error al obtener datos mensuales: {str(e)}",
-                status_code=500
-            )
-
     async def get_top_products(
         self,
         limit: int = 10,
@@ -495,7 +476,7 @@ class DashboardService:
             for row in rows
         ]
 
-    async def _get_monthly_revenue_distribution(self) -> List[dict]:
+
         """Distribución de revenue para cada mes (12 meses del año actual)."""
         current_year = datetime.now().year
         
