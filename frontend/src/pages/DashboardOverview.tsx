@@ -31,6 +31,7 @@ import TimeFilterSelector from '../components/shared/TimeFilterSelector';
 import MetricSelector, { type Metric } from '../components/shared/MetricSelector';
 import WeekdayMetricSelector, { type WeekdayMetric } from '../components/shared/WeekdayMetricSelector';
 import CategorySelector from '../components/shared/CategorySelector';
+import * as Icons from '../components/shared/Icons';
 import '../styles/dashboard.css';
 import '../styles/shared/page-header.css';
 
@@ -193,6 +194,18 @@ const DashboardOverview = () => {
     <div className="dashboard-container">
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
+        <div className="dashboard-header-info">
+          <div className="info-tooltip">
+            <Icons.InfoIcon className="info-icon" />
+            <div className="tooltip-content">
+              ¿Por qué algunas ventas después de medianoche aparecen en el día anterior?
+              <br />
+              El sistema agrupa las ventas según el horario de trabajo del local (16:00 a 06:00).
+              <br />
+              Las ventas entre 00:00 y 05:59 se asignan al día anterior.
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="dashboard-content">
