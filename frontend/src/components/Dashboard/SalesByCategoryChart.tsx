@@ -36,6 +36,10 @@ const SalesByCategoryChart = ({ data, height = 300 }: SalesByCategoryChartProps)
 
     const entry = payload[0];
     const percentage = ((entry.value / total) * 100).toFixed(1);
+    
+    // Obtener el índice de la categoría para usar el color correcto
+    const categoryIndex = data.findIndex(item => item.categoria === entry.name);
+    const color = COLORS[categoryIndex % COLORS.length];
 
     return (
       <div
@@ -47,10 +51,19 @@ const SalesByCategoryChart = ({ data, height = 300 }: SalesByCategoryChartProps)
           fontSize: '13px',
         }}
       >
-        <div style={{ color: '#f5f5f5' }}>
+        <div style={{ color: color, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+          <span
+            style={{
+              width: '12px',
+              height: '12px',
+              backgroundColor: color,
+              borderRadius: '2px',
+              display: 'inline-block',
+            }}
+          />
           <strong>{entry.name}</strong>
         </div>
-        <div style={{ color: entry.fill }}>
+        <div style={{ color: color, marginLeft: '18px' }}>
           {entry.value} ({percentage}%)
         </div>
       </div>
@@ -66,17 +79,22 @@ const SalesByCategoryChart = ({ data, height = 300 }: SalesByCategoryChartProps)
               data={data}
               cx="50%"
               cy="50%"
-              labelLine={true}
+              labelLine={false}
               label={({ payload }) => {
                 if (!payload) return '';
                 const { categoria, cantidad } = payload as SalesByCategory;
-                const percentage = ((cantidad / total) * 100).toFixed(0);
-                return `${categoria} (${percentage}%)`;
+                const percentage = ((cantidad / total) * 100);
+                
+                // Ocultar etiquetas de categorías muy pequeñas para evitar amontonamiento
+                if (percentage < 3) return '';
+                
+                return `${categoria} (${percentage.toFixed(1)}%)`;
               }}
               outerRadius={90}
               fill="#8884d8"
               dataKey="cantidad"
-              style={{ fontWeight: 700 }}
+              nameKey="categoria"
+              style={{ fontWeight: 700, fontSize: '12px' }}
               animationBegin={0}
               animationDuration={800}
               animationEasing="ease-out"
