@@ -1,11 +1,11 @@
 /**
  * MetricSelector - Componente reutilizable para seleccionar métricas en gráficos
- * Permite cambiar entre diferentes métricas: ingresos, cantidad, etc.
+ * Permite cambiar entre diferentes métricas: ingresos, pedidos, cantidad
  */
 
 import '../../styles/shared/metric-selector.css';
 
-export type Metric = 'ingresos' | 'cantidad';
+export type Metric = 'ingresos' | 'pedidos' | 'items';
 
 interface MetricSelectorProps {
   selectedMetric: Metric;
@@ -15,7 +15,8 @@ interface MetricSelectorProps {
 const MetricSelector = ({ selectedMetric, onMetricChange }: MetricSelectorProps) => {
   const metrics: { value: Metric; label: string }[] = [
     { value: 'ingresos', label: 'Ingresos' },
-    { value: 'cantidad', label: 'Cantidad' },
+    { value: 'pedidos', label: 'Pedidos' },
+    { value: 'items', label: 'Items' },
   ];
 
   return (

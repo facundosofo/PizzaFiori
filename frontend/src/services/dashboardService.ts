@@ -13,24 +13,28 @@ import env from '../config/env';
 export interface DailyRevenue {
   fecha: string;
   ingresos: number;
+  pedidos: number;
   cantidad: number;
 }
 
 export interface WeeklyRevenue {
   semana: string;
   ingresos: number;
+  pedidos: number;
   cantidad: number;
 }
 
 export interface MonthlyRevenue {
   mes: string;
   ingresos: number;
+  pedidos: number;
   cantidad: number;
 }
 
 export interface YearlyRevenue {
   año: string;
   ingresos: number;
+  pedidos: number;
   cantidad: number;
 }
 
@@ -53,12 +57,25 @@ export interface SalesByCategory {
   cantidad: number;
 }
 
+export interface WeekdayRevenue {
+  dia_semana: string;
+  promedio_ingresos: number;
+  promedio_pedidos: number;
+  promedio_cantidad: number;
+}
+
+export interface Category {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+}
+
 export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type TimeFilter = 'today' | 'last_7_days' | 'last_month' | 'last_year' | 'all_time';
 export type ProductSort = 'top' | 'bottom';
 
 export interface DashboardData {
   dailyRevenue: DailyRevenue[];
-  weeklyRevenue: WeeklyRevenue[];
   monthlyRevenue: MonthlyRevenue[];
   yearlyRevenue: YearlyRevenue[];
   monthlyRevenueByMonth: MonthlyRevenue[];
@@ -84,7 +101,6 @@ const fetchJson = async <T>(path: string): Promise<T> => {
 export const getDashboardData = async (): Promise<DashboardData> => {
   const [
     dailyRevenue,
-    weeklyRevenue,
     monthlyRevenue,
     yearlyRevenue,
     monthlyRevenueByMonth,
@@ -93,18 +109,16 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     metrics,
   ] = await Promise.all([
     getRevenueByPeriod('daily', 30) as Promise<DailyRevenue[]>,
-    getRevenueByPeriod('weekly', 12) as Promise<WeeklyRevenue[]>,
     getRevenueByPeriod('monthly', 12) as Promise<MonthlyRevenue[]>,
     getRevenueByPeriod('yearly', 5) as Promise<YearlyRevenue[]>,
     getMonthlyRevenue(),
-    getTopProducts(5, 'monthly'),
-    getSalesByCategory(8, 'monthly'),
+    getTopProducts(5, 'all_time'),
+    getSalesByCategory(8, 'all_time'),
     getDashboardMetrics(),
   ]);
 
   return {
     dailyRevenue,
-    weeklyRevenue,
     monthlyRevenue,
     yearlyRevenue,
     monthlyRevenueByMonth,
@@ -146,13 +160,13 @@ export const getDailyRevenue = async (days: number = 30): Promise<DailyRevenue[]
  */
 export const getTopProducts = async (
   limit: number = 10,
-  period?: Period,
+  timeFilter?: TimeFilter,
   sort: ProductSort = 'top',
   category?: string
 ): Promise<TopProduct[]> => {
   const params = new URLSearchParams({ limit: String(limit), sort });
-  if (period) {
-    params.set('period', period);
+  if (timeFilter) {
+    params.set('time_filter', timeFilter);
   }
   if (category) {
     params.set('category', category);
@@ -177,17 +191,46 @@ export const getMonthlyRevenue = async (): Promise<MonthlyRevenue[]> => {
 
 export const getSalesByCategory = async (
   limit?: number,
-  period?: Period
+  timeFilter?: TimeFilter
 ): Promise<SalesByCategory[]> => {
   const params = new URLSearchParams();
   if (limit) {
     params.set('limit', String(limit));
   }
-  if (period) {
-    params.set('period', period);
+  if (timeFilter) {
+    params.set('time_filter', timeFilter);
   }
   const query = params.toString();
   const url = `/dashboard/sales-by-category${query ? `?${query}` : ''}`;
   console.log('[Service] Fetching sales by category:', url);
+  return fetchJson(url);
+};
+
+/**
+ * Obtener promedio de ventas por día de semana (datos históricos)
+ * 
+ * GET /api/dashboard/revenue/weekday?category={category}
+ */
+export const getWeekdayRevenue = async (
+  category?: string
+): Promise<WeekdayRevenue[]> => {
+  const params = new URLSearchParams();
+  if (category) {
+    params.set('category', category);
+  }
+  const query = params.toString();
+  const url = `/dashboard/revenue/weekday${query ? `?${query}` : ''}`;
+  console.log('[Service] Fetching weekday revenue:', url);
+  return fetchJson(url);
+};
+
+/**
+ * Obtener todas las categorías
+ * 
+ * GET /api/categorias
+ */
+export const getCategories = async (): Promise<Category[]> => {
+  const url = '/categorias';
+  console.log('[Service] Fetching categories:', url);
   return fetchJson(url);
 };

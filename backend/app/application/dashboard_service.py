@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import datetime, timedelta
 from decimal import Decimal
 import structlog
-from sqlalchemy import func, select, and_, cast, Date, literal_column, extract, Integer
+from sqlalchemy import func, select, and_, or_, cast, Date, Float, literal_column, extract, Integer, case, distinct
 
 from app.domain.models.sale import Sale
 from app.domain.models.sale_item import SaleItem
@@ -18,6 +18,7 @@ from app.presentation.schemas.dashboard_schemas import (
     ProductoDestacadoResponse,
     MetricasDashboardResponse,
     TipoPeriodo,
+    FiltroTiempo,
 )
 
 
@@ -43,10 +44,10 @@ class DashboardService:
         limit: int = 30,
     ) -> ServiceResult:
         """
-        Obtiene el revenue agrupado por período (daily, weekly, monthly, yearly).
+        Obtiene el revenue agrupado por período (daily, monthly, yearly).
         
         Args:
-            period: Tipo de período (daily|weekly|monthly|yearly)
+            period: Tipo de período (daily|monthly|yearly)
             limit: Cantidad máxima de registros a devolver
             
         Returns:
@@ -58,8 +59,6 @@ class DashboardService:
                 
                 if period == TipoPeriodo.DIARIO:
                     result = await self._get_daily_revenue(limit)
-                elif period == TipoPeriodo.SEMANAL:
-                    result = await self._get_weekly_revenue(limit)
                 elif period == TipoPeriodo.MENSUAL:
                     result = await self._get_monthly_revenue(limit)
                 elif period == TipoPeriodo.ANUAL:
@@ -96,7 +95,7 @@ class DashboardService:
     async def get_top_products(
         self,
         limit: int = 10,
-        period: TipoPeriodo = TipoPeriodo.ANUAL,
+        time_filter: FiltroTiempo = FiltroTiempo.HISTORICO,
         sort: str = "top",
         category: str | None = None,
     ) -> ServiceResult:
@@ -105,7 +104,7 @@ class DashboardService:
         
         Args:
             limit: Cantidad máxima de productos a devolver
-            period: Tipo de período
+            time_filter: Filtro de tiempo (hoy, últimos 7 días, último mes, último año, histórico)
             sort: 'top' para más vendidos, 'bottom' para menos vendidos
             category: Filtrar por categoría (opcional)
             
@@ -114,8 +113,8 @@ class DashboardService:
         """
         try:
             async with self.uow:
-                self.logger.info(f"Getting products with period: {period}, limit: {limit}, sort: {sort}, category: {category}")
-                start_date = self._get_start_date_for_period(period)
+                self.logger.info(f"Getting products with time_filter: {time_filter}, limit: {limit}, sort: {sort}, category: {category}")
+                start_date = self._get_start_date_for_time_filter(time_filter)
                 self.logger.info(f"Start date calculated: {start_date}")
                 result = await self._get_top_products_data(limit, start_date, sort=sort, category=category)
                 self.logger.info(f"Products result count: {len(result)}")
@@ -150,21 +149,22 @@ class DashboardService:
     async def get_sales_by_category(
         self,
         limit: int | None = None,
-        period: TipoPeriodo = TipoPeriodo.ANUAL,
+        time_filter: FiltroTiempo = FiltroTiempo.HISTORICO,
     ) -> ServiceResult:
         """
         Obtiene ventas agrupadas por categoria.
 
         Args:
             limit: Cantidad maxima de categorias a devolver (opcional)
+            time_filter: Filtro de tiempo (hoy, últimos 7 días, último mes, último año, histórico)
 
         Returns:
             ServiceResult con lista de categorias y cantidades
         """
         try:
             async with self.uow:
-                self.logger.info(f"Getting sales by category with period: {period}, limit: {limit}")
-                start_date = self._get_start_date_for_period(period)
+                self.logger.info(f"Getting sales by category with time_filter: {time_filter}, limit: {limit}")
+                start_date = self._get_start_date_for_time_filter(time_filter)
                 self.logger.info(f"Start date calculated: {start_date}")
                 result = await self._get_sales_by_category_data(limit, start_date)
                 self.logger.info(f"Sales by category result count: {len(result)}")
@@ -177,6 +177,37 @@ class DashboardService:
                 status_code=500
             )
 
+    async def get_weekday_revenue(
+        self,
+        category: str | None = None,
+    ) -> ServiceResult:
+        """
+        Obtiene el promedio de ventas por día de semana (con ajuste de horario de negocio).
+        
+        El horario de negocio es de 16:00 a 06:00, por lo que las ventas entre
+        00:00 y 05:59 se asignan al día anterior (día de negocio que abrió a las 16:00).
+        
+        Args:
+            category: Filtrar por categoría específica (opcional)
+            
+        Returns:
+            ServiceResult con lista de WeekdayRevenueResponse ordenado Lunes a Domingo
+        """
+        try:
+            async with self.uow:
+                self.logger.info(f"Getting weekday revenue with category: {category}")
+                # Siempre usar 'historic' (sin filtro de fechas)
+                result = await self._get_weekday_revenue_data(None, None, category)
+                self.logger.info(f"Weekday revenue result count: {len(result)}")
+                return ServiceResult(value=result)
+                
+        except Exception as e:
+            self.logger.error(f"Error obteniendo weekday revenue: {str(e)}")
+            return ServiceResult(
+                error=f"Error al obtener promedio por día de semana: {str(e)}",
+                status_code=500
+            )
+
     # === Métodos privados para queries ===
 
     def _get_start_date_for_period(self, period: TipoPeriodo) -> datetime:
@@ -184,10 +215,6 @@ class DashboardService:
         if period == TipoPeriodo.DIARIO:
             result = datetime.now() - timedelta(days=30)
             self.logger.info(f"Period is DIARIO, start_date: {result}")
-            return result
-        if period == TipoPeriodo.SEMANAL:
-            result = datetime.now() - timedelta(days=12 * 7)
-            self.logger.info(f"Period is SEMANAL, start_date: {result}")
             return result
         if period == TipoPeriodo.MENSUAL:
             result = datetime.now() - timedelta(days=12 * 30)
@@ -197,6 +224,39 @@ class DashboardService:
         self.logger.info(f"Period is ANUAL (default), start_date: {result}")
         return result
 
+    def _get_start_date_for_time_filter(self, time_filter: FiltroTiempo) -> datetime | None:
+        """
+        Calcula la fecha de inicio según el filtro de tiempo.
+        
+        Returns:
+            datetime | None: Fecha de inicio, None para histórico (sin filtro)
+        """
+        self.logger.info(f"Calculating start date for time filter: {time_filter}")
+        now = datetime.now()
+        
+        if time_filter == FiltroTiempo.HOY:
+            # Hoy desde las 00:00:00
+            result = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            self.logger.info(f"Filter is HOY, start_date: {result}")
+            return result
+        elif time_filter == FiltroTiempo.ULTIMOS_7_DIAS:
+            result = now - timedelta(days=7)
+            self.logger.info(f"Filter is ULTIMOS_7_DIAS, start_date: {result}")
+            return result
+        elif time_filter == FiltroTiempo.ULTIMO_MES:
+            result = now - timedelta(days=30)
+            self.logger.info(f"Filter is ULTIMO_MES, start_date: {result}")
+            return result
+        elif time_filter == FiltroTiempo.ULTIMO_ANO:
+            result = now - timedelta(days=365)
+            self.logger.info(f"Filter is ULTIMO_ANO, start_date: {result}")
+            return result
+        else:  # HISTORICO
+            self.logger.info(f"Filter is HISTORICO, no start_date (all time)")
+            return None
+
+
+
     async def _get_daily_revenue(self, limit: int) -> List[dict]:
         """Agregación diaria del último mes."""
         # Obtener fecha hace 'limit' días
@@ -205,6 +265,7 @@ class DashboardService:
         query = select(
             cast(Sale.fecha_creacion, Date).label("date"),
             func.sum(Sale.total).label("revenue"),
+            func.count(distinct(Sale.id)).label("pedidos"),
             func.sum(SaleItem.cantidad).label("cantidad"),
         ).select_from(Sale).join(
             SaleItem, Sale.id == SaleItem.venta_id
@@ -219,6 +280,7 @@ class DashboardService:
             {
                 "fecha": row.date.strftime("%Y-%m-%d"),
                 "ingresos": float(row.revenue or 0),
+                "pedidos": int(row.pedidos or 0),
                 "cantidad": int(row.cantidad or 0),
             }
             for row in rows
@@ -233,6 +295,7 @@ class DashboardService:
             func.year(Sale.fecha_creacion).label("year"),
             extract('week', Sale.fecha_creacion).label("week"),
             func.sum(Sale.total).label("revenue"),
+            func.count(distinct(Sale.id)).label("pedidos"),
             func.sum(SaleItem.cantidad).label("cantidad"),
         ).select_from(Sale).join(
             SaleItem, Sale.id == SaleItem.venta_id
@@ -246,8 +309,9 @@ class DashboardService:
         
         return [
             {
-                "semana": f"W{row.week:02d} {datetime.now().strftime('%b')}",
+                "semana": f"W{int(row.week):02d} {int(row.year)}",
                 "ingresos": float(row.revenue or 0),
+                "pedidos": int(row.pedidos or 0),
                 "cantidad": int(row.cantidad or 0),
             }
             for row in rows
@@ -275,6 +339,7 @@ class DashboardService:
             func.year(Sale.fecha_creacion).label("year"),
             func.month(Sale.fecha_creacion).label("month"),
             func.sum(Sale.total).label("revenue"),
+            func.count(distinct(Sale.id)).label("pedidos"),
             func.sum(SaleItem.cantidad).label("cantidad"),
         ).select_from(Sale).join(
             SaleItem, Sale.id == SaleItem.venta_id
@@ -310,6 +375,7 @@ class DashboardService:
                 {
                     "mes": f"{months[current_month - 1]} {current_year}",
                     "ingresos": float(row.revenue or 0) if row else 0,
+                    "pedidos": int(row.pedidos or 0) if row else 0,
                     "cantidad": int(row.cantidad or 0) if row else 0,
                 }
             )
@@ -329,6 +395,7 @@ class DashboardService:
         query = select(
             func.year(Sale.fecha_creacion).label("year"),
             func.sum(Sale.total).label("revenue"),
+            func.count(distinct(Sale.id)).label("pedidos"),
             func.sum(SaleItem.cantidad).label("cantidad"),
         ).select_from(Sale).join(
             SaleItem, Sale.id == SaleItem.venta_id
@@ -343,6 +410,7 @@ class DashboardService:
             {
                 "año": str(row.year),
                 "ingresos": float(row.revenue or 0),
+                "pedidos": int(row.pedidos or 0),
                 "cantidad": int(row.cantidad or 0),
             }
             for row in rows
@@ -355,6 +423,7 @@ class DashboardService:
         query = select(
             func.month(Sale.fecha_creacion).label("month"),
             func.sum(Sale.total).label("revenue"),
+            func.count(distinct(Sale.id)).label("pedidos"),
             func.sum(SaleItem.cantidad).label("cantidad"),
         ).select_from(Sale).join(
             SaleItem, Sale.id == SaleItem.venta_id
@@ -380,6 +449,8 @@ class DashboardService:
             {
                 "mes": months[i],
                 "ingresos": float(revenue_by_month.get(i + 1, {}).revenue or 0)
+                    if i + 1 in revenue_by_month else 0,
+                "pedidos": int(revenue_by_month.get(i + 1, {}).pedidos or 0)
                     if i + 1 in revenue_by_month else 0,
                 "cantidad": int(revenue_by_month.get(i + 1, {}).cantidad or 0)
                     if i + 1 in revenue_by_month else 0,
@@ -632,3 +703,174 @@ class DashboardService:
             return ordered
 
         return ordered[:limit]
+
+    async def _get_weekday_revenue_data(
+        self,
+        start_date: datetime | None,
+        end_date: datetime | None,
+        category: str | None = None,
+    ) -> List[dict]:
+        """
+        Obtiene promedio de ingresos y cantidad por día de semana.
+        
+        Ajusta las fechas restando 6 horas para reflejar el horario de negocio
+        (16:00 a 06:00). Esto asegura que ventas entre 00:00-05:59 se asignen
+        al día anterior.
+        
+        Args:
+            start_date: Fecha de inicio para filtrar (opcional)
+            category: Filtrar por categoría (opcional)
+        
+        Returns:
+            Lista de dicts con dia_semana, promedio_ingresos, promedio_pedidos, promedio_cantidad
+        """
+        from sqlalchemy import text
+        
+        # Para MSSQL: calcular el día de semana ajustado (restando 6 horas)
+        # DATEPART(WEEKDAY, ...) retorna 1=Sunday, 2=Monday, ..., 7=Saturday
+        dow_expression = func.datepart(text('WEEKDAY'), func.dateadd(text('HOUR'), -6, Sale.fecha_creacion))
+        business_date_expression = cast(
+            func.dateadd(text('HOUR'), -6, Sale.fecha_creacion),
+            Date
+        )
+
+        # Subconsulta para items de ofertas por SaleItem
+        offer_items_query = select(
+            SaleItemOfferProduct.venta_item_id,
+            func.sum(SaleItemOfferProduct.cantidad).label("offer_items_count")
+        ).select_from(SaleItemOfferProduct)
+
+        if category:
+            offer_items_query = offer_items_query.outerjoin(
+                Product, SaleItemOfferProduct.producto_id == Product.id
+            ).outerjoin(
+                Category, Product.categoria_id == Category.id
+            ).where(
+                func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre) == category
+            )
+
+        offer_items_subq = offer_items_query.group_by(
+            SaleItemOfferProduct.venta_item_id
+        ).subquery()
+
+        # Subconsulta: agrupar por venta y calcular totales
+        # La cantidad total incluye:
+        # - Items directos (SaleItem.cantidad donde producto_id IS NOT NULL)
+        # - Items en ofertas (suma de SaleItemOfferProduct.cantidad)
+        sale_subquery = select(
+            Sale.id.label("sale_id"),
+            business_date_expression.label("business_date"),
+            dow_expression.label("dow"),
+            Sale.total.label("sale_total"),
+            func.sum(
+                case(
+                    (SaleItem.producto_id.isnot(None), SaleItem.cantidad),
+                    else_=0
+                ) + func.coalesce(offer_items_subq.c.offer_items_count, 0)
+            ).label("items_total"),
+        ).select_from(Sale).join(
+            SaleItem, Sale.id == SaleItem.venta_id
+        ).outerjoin(
+            offer_items_subq,
+            SaleItem.id == offer_items_subq.c.venta_item_id
+        )
+
+        # Filtro de período
+        if start_date is not None:
+            sale_subquery = sale_subquery.where(Sale.fecha_creacion >= start_date)
+        if end_date is not None:
+            sale_subquery = sale_subquery.where(Sale.fecha_creacion < end_date)
+
+        # Filtro de categoría si se proporciona
+        if category:
+            sale_subquery = sale_subquery.outerjoin(
+                Product, SaleItem.producto_id == Product.id
+            ).outerjoin(
+                Category, Product.categoria_id == Category.id
+            )
+
+            direct_match = and_(
+                SaleItem.producto_id.isnot(None),
+                func.coalesce(Category.nombre, SaleItem.item_categoria) == category
+            )
+            offer_match = and_(
+                SaleItem.oferta_id.isnot(None),
+                offer_items_subq.c.offer_items_count.isnot(None)
+            )
+
+            sale_subquery = sale_subquery.where(or_(direct_match, offer_match))
+
+        # GROUP BY: id, total, fecha_creacion y expresiones derivadas
+        sale_subquery = sale_subquery.group_by(
+            Sale.id,
+            Sale.total,
+            Sale.fecha_creacion,
+            business_date_expression,
+            dow_expression
+        ).subquery()
+
+        # Agrupar por fecha de negocio
+        day_subquery = select(
+            sale_subquery.c.business_date,
+            sale_subquery.c.dow,
+            func.count(sale_subquery.c.sale_id).label("orders_total"),
+            func.sum(sale_subquery.c.sale_total).label("ingresos_total"),
+            func.sum(sale_subquery.c.items_total).label("items_total"),
+        ).group_by(
+            sale_subquery.c.business_date,
+            sale_subquery.c.dow
+        ).subquery()
+
+        # Query principal: agrupar por día de semana y calcular promedios
+        # Promedio = SUM(total) / COUNT(días distintos)
+        # IMPORTANTE: Cast a Float para evitar división entera en MSSQL
+        query = select(
+            day_subquery.c.dow,
+            (func.sum(day_subquery.c.ingresos_total) / cast(func.count(day_subquery.c.business_date), Float)).label("promedio_ingresos"),
+            (func.sum(day_subquery.c.orders_total) / cast(func.count(day_subquery.c.business_date), Float)).label("promedio_pedidos"),
+            (func.sum(day_subquery.c.items_total) / cast(func.count(day_subquery.c.business_date), Float)).label("promedio_cantidad"),
+        ).group_by(
+            day_subquery.c.dow
+        ).order_by(
+            day_subquery.c.dow
+        )
+        
+        result = await self.uow.session.execute(query)
+        rows = result.fetchall()
+        
+        # Mapear números a nombres de días en español
+        # MSSQL DATEPART(WEEKDAY): 1=Sunday, 2=Monday, 3=Tuesday, ..., 7=Saturday
+        dias_semana = {
+            1: "Domingo",
+            2: "Lunes",
+            3: "Martes",
+            4: "Miércoles",
+            5: "Jueves",
+            6: "Viernes",
+            7: "Sábado"
+        }
+        
+        # Crear diccionario de resultados por día
+        revenue_by_dow = {
+            int(row.dow): {
+                "dia_semana": dias_semana[int(row.dow)],
+                "promedio_ingresos": float(row.promedio_ingresos or 0),
+                "promedio_pedidos": float(row.promedio_pedidos or 0),
+                "promedio_cantidad": float(row.promedio_cantidad or 0),
+            }
+            for row in rows
+        }
+        
+        # Retornar ordenado: Lunes (2) a Domingo (1)
+        # Orden: 2, 3, 4, 5, 6, 7, 1
+        ordered_days = [2, 3, 4, 5, 6, 7, 1]
+        return [
+            revenue_by_dow.get(dow, {
+                "dia_semana": dias_semana[dow],
+                "promedio_ingresos": 0.0,
+                "promedio_pedidos": 0.0,
+                "promedio_cantidad": 0.0,
+            })
+            for dow in ordered_days
+        ]
+

@@ -14,15 +14,22 @@ import {
   getDashboardData,
   getSalesByCategory,
   getTopProducts,
+  getWeekdayRevenue,
+  getCategories,
   type DashboardData,
   type ProductSort,
+  type WeekdayRevenue,
+  type TimeFilter,
 } from '../services/dashboardService';
 import RevenueChart from '../components/Dashboard/RevenueChart';
 import SalesByCategoryChart from '../components/Dashboard/SalesByCategoryChart';
 import TopProductsTable from '../components/Dashboard/TopProductsTable';
+import WeekdayChart from '../components/Dashboard/WeekdayChart';
 import ErrorAlert from '../components/shared/ErrorAlert';
 import PeriodSelector, { type Period } from '../components/shared/PeriodSelector';
+import TimeFilterSelector from '../components/shared/TimeFilterSelector';
 import MetricSelector, { type Metric } from '../components/shared/MetricSelector';
+import WeekdayMetricSelector, { type WeekdayMetric } from '../components/shared/WeekdayMetricSelector';
 import CategorySelector from '../components/shared/CategorySelector';
 import '../styles/dashboard.css';
 import '../styles/shared/page-header.css';
@@ -34,10 +41,16 @@ const DashboardOverview = () => {
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>('monthly');
   const [revenueMetric, setRevenueMetric] = useState<Metric>('ingresos');
-  const [salesByCategoryPeriod, setSalesByCategoryPeriod] = useState<Period>('monthly');
-  const [topProductsPeriod, setTopProductsPeriod] = useState<Period>('monthly');
+  const [salesByCategoryTimeFilter, setSalesByCategoryTimeFilter] = useState<TimeFilter>('all_time');
+  const [topProductsTimeFilter, setTopProductsTimeFilter] = useState<TimeFilter>('all_time');
   const [topProductsSort, setTopProductsSort] = useState<ProductSort>('top');
   const [topProductsCategory, setTopProductsCategory] = useState<string>('');
+  
+  // Estados para el gráfico de weekday revenue
+  const [weekdayMetric, setWeekdayMetric] = useState<WeekdayMetric>('items');
+  const [weekdayCategory, setWeekdayCategory] = useState<string>('');
+  const [weekdayData, setWeekdayData] = useState<WeekdayRevenue[]>([]);
+  const [weekdayLoading, setWeekdayLoading] = useState(false);
 
   const handleCloseError = () => {
     setError(null);
@@ -49,12 +62,19 @@ const DashboardOverview = () => {
         console.log('[Dashboard] Iniciando carga de datos...');
         setError(null);
         setLoading(true);
-        const dashboardData = await getDashboardData();
+        
+        // Cargar datos del dashboard y categorías en paralelo
+        const [dashboardData, categoriesData] = await Promise.all([
+          getDashboardData(),
+          getCategories(),
+        ]);
+        
         console.log('[Dashboard] Datos recibidos:', dashboardData);
+        console.log('[Dashboard] Categorías recibidas:', categoriesData);
         setData(dashboardData);
         
-        // Calcular categorías disponibles una sola vez
-        const categories = [...new Set(dashboardData.topProducts.map(p => p.categoria))].sort();
+        // Usar las categorías del endpoint de categorías
+        const categories = categoriesData.map(c => c.nombre).sort();
         setAvailableCategories(categories);
         
         console.log('[Dashboard] Estado actualizado correctamente');
@@ -74,8 +94,8 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchSalesByCategory = async () => {
       try {
-        console.log('[Dashboard] Fetching sales by category for period:', salesByCategoryPeriod);
-        const salesByCategory = await getSalesByCategory(8, salesByCategoryPeriod);
+        console.log('[Dashboard] Fetching sales by category for time filter:', salesByCategoryTimeFilter);
+        const salesByCategory = await getSalesByCategory(8, salesByCategoryTimeFilter);
         console.log('[Dashboard] Sales by category received:', salesByCategory);
         setData((prev) => (prev ? { ...prev, salesByCategory } : prev));
       } catch (err) {
@@ -89,13 +109,13 @@ const DashboardOverview = () => {
       fetchSalesByCategory();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [salesByCategoryPeriod]);
+  }, [salesByCategoryTimeFilter]);
 
   useEffect(() => {
     const fetchTopProducts = async () => {
       try {
-        console.log('[Dashboard] Fetching top products for period:', topProductsPeriod, 'sort:', topProductsSort, 'category:', topProductsCategory);
-        const topProducts = await getTopProducts(10, topProductsPeriod, topProductsSort, topProductsCategory || undefined);
+        console.log('[Dashboard] Fetching top products for time filter:', topProductsTimeFilter, 'sort:', topProductsSort, 'category:', topProductsCategory);
+        const topProducts = await getTopProducts(5, topProductsTimeFilter, topProductsSort, topProductsCategory || undefined);
         console.log('[Dashboard] Top products received:', topProducts);
         setData((prev) => (prev ? { ...prev, topProducts } : prev));
       } catch (err) {
@@ -109,7 +129,28 @@ const DashboardOverview = () => {
       fetchTopProducts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topProductsPeriod, topProductsSort, topProductsCategory]);
+  }, [topProductsTimeFilter, topProductsSort, topProductsCategory]);
+
+  useEffect(() => {
+    const fetchWeekdayRevenue = async () => {
+      try {
+        console.log('[Dashboard] Fetching weekday revenue for category:', weekdayCategory);
+        setWeekdayLoading(true);
+        const weekdayRevenue = await getWeekdayRevenue(weekdayCategory || undefined);
+        console.log('[Dashboard] Weekday revenue received:', weekdayRevenue);
+        setWeekdayData(weekdayRevenue);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar promedio por día de semana';
+        console.error('[Dashboard] Error weekday revenue:', err);
+        setError(`Error al cargar promedio por día de semana: ${errorMessage}`);
+      } finally {
+        setWeekdayLoading(false);
+      }
+    };
+
+    fetchWeekdayRevenue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekdayCategory]);
 
   if (loading) {
     return (
@@ -185,7 +226,6 @@ const DashboardOverview = () => {
               </div>
               <RevenueChart 
                 dailyData={data.dailyRevenue}
-                weeklyData={data.weeklyRevenue}
                 monthlyData={data.monthlyRevenue}
                 yearlyData={data.yearlyRevenue}
                 selectedPeriod={revenuePeriod}
@@ -194,15 +234,44 @@ const DashboardOverview = () => {
               />
             </div>
 
-            <div className="chart-section chart-secondary">
+            <div className="chart-section chart-secondary chart-span-rows chart-span-rows">
               <div className="section-header">
                 <h2 className="chart-title">Ventas por categoria</h2>
-                <PeriodSelector
-                  selectedPeriod={salesByCategoryPeriod}
-                  onPeriodChange={setSalesByCategoryPeriod}
+                <TimeFilterSelector
+                  value={salesByCategoryTimeFilter}
+                  onChange={setSalesByCategoryTimeFilter}
                 />
               </div>
               <SalesByCategoryChart data={data.salesByCategory} height={300} />
+            </div>
+
+            {/* Nuevo: Promedio de Ventas por Día de Semana */}
+            <div className="chart-section chart-main">
+              <div className="section-header">
+                <h2 className="chart-title">Promedio de Ventas por Día de Semana</h2>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <WeekdayMetricSelector 
+                    selectedMetric={weekdayMetric} 
+                    onMetricChange={setWeekdayMetric} 
+                  />
+                  <CategorySelector
+                    categories={availableCategories}
+                    selectedCategory={weekdayCategory}
+                    onCategoryChange={setWeekdayCategory}
+                  />
+                </div>
+              </div>
+              {weekdayLoading ? (
+                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888888' }}>
+                  Cargando...
+                </div>
+              ) : (
+                <WeekdayChart 
+                  data={weekdayData}
+                  selectedMetric={weekdayMetric}
+                  height={300} 
+                />
+              )}
             </div>
           </div>
 
@@ -254,9 +323,9 @@ const DashboardOverview = () => {
                   onCategoryChange={setTopProductsCategory}
                 />
 
-                <PeriodSelector
-                  selectedPeriod={topProductsPeriod}
-                  onPeriodChange={setTopProductsPeriod}
+                <TimeFilterSelector
+                  value={topProductsTimeFilter}
+                  onChange={setTopProductsTimeFilter}
                 />
               </div>
             </div>

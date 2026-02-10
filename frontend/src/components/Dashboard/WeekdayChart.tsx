@@ -1,32 +1,25 @@
 /**
- * RevenueChart - Gráfico de línea para ventas con selector de período y métrica
- * Componente reutilizable que muestra la evolución de ventas según período y métrica seleccionados
- * Soporta períodos: Daily, Weekly, Monthly, Yearly
- * Soporta métricas: Ingresos, Pedidos, Items
+ * WeekdayChart - Gráfico de barras para promedio de ventas por día de semana
+ * Muestra el promedio de ingresos o cantidad por día (Lunes a Domingo)
+ * Ajustado al horario de negocio (16:00 a 06:00)
  */
 
 import ChartWrapper from '../shared/ChartWrapper';
-import { type Period } from '../shared/PeriodSelector';
-import { type Metric } from '../shared/MetricSelector';
-import type { DailyRevenue, MonthlyRevenue, YearlyRevenue } from '../../services/dashboardService';
+import type { WeekdayRevenue } from '../../services/dashboardService';
 
-interface RevenueChartProps {
-  dailyData: DailyRevenue[];
-  monthlyData: MonthlyRevenue[];
-  yearlyData: YearlyRevenue[];
-  selectedPeriod: Period;
-  selectedMetric: Metric;
+export type WeekdayMetric = 'ingresos' | 'pedidos' | 'items';
+
+interface WeekdayChartProps {
+  data: WeekdayRevenue[];
+  selectedMetric: WeekdayMetric;
   height?: number;
 }
 
-const RevenueChart = ({ 
-  dailyData, 
-  monthlyData, 
-  yearlyData,
-  selectedPeriod,
+const WeekdayChart = ({ 
+  data, 
   selectedMetric,
-  height = 350 
-}: RevenueChartProps) => {
+  height = 300 
+}: WeekdayChartProps) => {
 
   // Formatear valores según métrica seleccionada
   const formatTooltip = (value: number): string => {
@@ -61,7 +54,7 @@ const RevenueChart = ({
   const calculateYTicks = (): number[] | undefined => {
     if (selectedMetric === 'ingresos') return undefined;
 
-    const currentData = getData();
+    const currentData = getChartData();
     if (!currentData || currentData.length === 0) return undefined;
 
     const seriesConfig = getSeriesConfig();
@@ -91,89 +84,35 @@ const RevenueChart = ({
     return [0, ticks[ticks.length - 1]];
   };
 
-  // Obtener datos según período seleccionado
-  const getData = () => {
-    if (!dailyData || !monthlyData || !yearlyData) {
-      return [];
-    }
-    
-    switch (selectedPeriod) {
-      case 'daily': {
-        // Crear un mapa de datos por fecha para búsqueda rápida
-        const dataMap = new Map<string, DailyRevenue>();
-        dailyData.forEach(item => {
-          dataMap.set(item.fecha, item);
-        });
-
-        // Generar todos los días desde hace 30 días hasta hoy
-        const today = new Date();
-        const dates: Array<{ fecha: string; data: DailyRevenue | undefined }> = [];
-        
-        for (let i = 29; i >= 0; i--) {
-          const date = new Date(today);
-          date.setDate(date.getDate() - i);
-          const fechaStr = date.toISOString().split('T')[0];
-          const data = dataMap.get(fechaStr);
-          dates.push({ fecha: fechaStr, data });
-        }
-
-        // Mapear a formato para el gráfico
-        return dates.map((item) => {
-          const date = new Date(item.fecha);
-          const day = date.getDate();
-          const month = date.getMonth() + 1;
-          
-          if (item.data) {
-            return {
-              ...item.data,
-              displayLabel: `${day}/${month}`,
-            };
-          } else {
-            // Día sin datos - mostrar 0s
-            return {
-              fecha: item.fecha,
-              ingresos: 0,
-              pedidos: 0,
-              cantidad: 0,
-              displayLabel: `${day}/${month}`,
-            };
-          }
-        });
-      }
-      case 'monthly':
-        return monthlyData.map((item) => ({
-          ...item,
-          displayLabel: item.mes,
-        }));
-      case 'yearly':
-        return yearlyData.map((item) => ({
-          ...item,
-          displayLabel: item.año,
-        }));
-      default:
-        return dailyData || [];
-    }
+  // Preparar datos para el chart
+  const getChartData = () => {
+    return data.map((item) => ({
+      diaSemana: item.dia_semana,
+      promedioIngresos: item.promedio_ingresos,
+      promedioPedidos: item.promedio_pedidos,
+      promedioCantidad: item.promedio_cantidad,
+    }));
   };
 
   // Obtener configuración de la serie según métrica
   const getSeriesConfig = () => {
     if (selectedMetric === 'ingresos') {
       return {
-        key: 'ingresos',
-        name: 'Ingresos',
+        key: 'promedioIngresos',
+        name: 'Promedio de Ingresos',
         color: '#22c55e',
       };
     }
     if (selectedMetric === 'pedidos') {
       return {
-        key: 'pedidos',
-        name: 'Pedidos',
+        key: 'promedioPedidos',
+        name: 'Promedio de Pedidos',
         color: '#22c55e',
       };
     }
     return {
-      key: 'cantidad',
-      name: 'Items',
+      key: 'promedioCantidad',
+      name: 'Promedio de Items Vendidos',
       color: '#22c55e',
     };
   };
@@ -181,9 +120,9 @@ const RevenueChart = ({
   return (
     <div className="chart-container">
       <ChartWrapper
-        type="area"
-        data={getData()}
-        xAxisKey="displayLabel"
+        type="bar"
+        data={getChartData()}
+        xAxisKey="diaSemana"
         series={[
           {
             ...getSeriesConfig(),
@@ -199,10 +138,9 @@ const RevenueChart = ({
         yAxisDomain={calculateYDomain()}
         allowDecimals={selectedMetric === 'ingresos'}
         gridOpacity={0.05}
-        curved={true}
       />
     </div>
   );
 };
 
-export default RevenueChart;
+export default WeekdayChart;

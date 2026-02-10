@@ -39,3 +39,30 @@
 .period-tab.active:hover {
   background: #16a34a;
 }
+
+/* Weekday period dropdown */
+.weekday-period-selector {
+  display: inline-block;
+}
+
+.weekday-period-select {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8e8e8;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.weekday-period-select:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.weekday-period-select:focus {
+  outline: none;
+  border-color: #22c55e;
+}

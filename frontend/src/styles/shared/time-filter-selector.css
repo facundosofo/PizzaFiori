@@ -1,0 +1,99 @@
+/**
+ * Time Filter Selector Styles
+ * Dropdown personalizado para seleccionar filtros de tiempo
+ */
+
+.time-filter-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.time-filter-button {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #888888;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.time-filter-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e8e8e8;
+}
+
+.time-filter-button .chevron {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.time-filter-button .chevron.open {
+  transform: rotate(180deg);
+}
+
+.time-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.time-filter-option {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: #888888;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-filter-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e8e8e8;
+}
+
+.time-filter-option.active {
+  background: #22c55e;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.time-filter-option.active:hover {
+  background: #16a34a;
+}
+
+.time-filter-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.time-filter-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.time-filter-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}

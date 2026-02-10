@@ -66,17 +66,28 @@ const SalesByCategoryChart = ({ data, height = 300 }: SalesByCategoryChartProps)
               data={data}
               cx="50%"
               cy="50%"
-              labelLine={false}
-              label={({ categoria, cantidad, index }) => {
+              labelLine={true}
+              label={({ payload }) => {
+                if (!payload) return '';
+                const { categoria, cantidad } = payload as SalesByCategory;
                 const percentage = ((cantidad / total) * 100).toFixed(0);
                 return `${categoria} (${percentage}%)`;
               }}
-              outerRadius={80}
+              outerRadius={90}
               fill="#8884d8"
               dataKey="cantidad"
+              style={{ fontWeight: 700 }}
+              animationBegin={0}
+              animationDuration={800}
+              animationEasing="ease-out"
             >
               {data.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[index % COLORS.length]} 
+                  stroke="rgba(255, 255, 255, 0.3)"
+                  strokeWidth={2}
+                />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />

@@ -6,25 +6,29 @@
 export interface DailyRevenue {
   fecha: string;
   ingresos: number;
-  ordenes: number;
+  pedidos: number;
+  cantidad: number;
 }
 
 export interface WeeklyRevenue {
   semana: string;
   ingresos: number;
-  ordenes: number;
+  pedidos: number;
+  cantidad: number;
 }
 
 export interface MonthlyRevenue {
   mes: string;
   ingresos: number;
-  ordenes: number;
+  pedidos: number;
+  cantidad: number;
 }
 
 export interface YearlyRevenue {
   año: string;
   ingresos: number;
-  ordenes: number;
+  pedidos: number;
+  cantidad: number;
 }
 
 export interface TopProduct {
@@ -56,10 +60,12 @@ const generateDailyRevenue = (): DailyRevenue[] => {
     const baseRevenue = isWeekend ? 15000 : 8000;
     const variance = Math.random() * 0.3 - 0.15; // ±15%
     
+    const revenue = Math.round(baseRevenue * (1 + variance));
     data.push({
       fecha: date.toISOString().split('T')[0],
-      ingresos: Math.round(baseRevenue * (1 + variance)),
-      ordenes: Math.round((baseRevenue * (1 + variance)) / 450), // ~450 pesos por orden promedio
+      ingresos: revenue,
+      pedidos: Math.round(revenue / 450), // ~450 pesos por orden promedio
+      cantidad: Math.round(revenue / 180), // ~180 pesos por item promedio
     });
   }
   
@@ -81,10 +87,12 @@ const generateWeeklyRevenue = (): WeeklyRevenue[] => {
     const baseRevenue = 65000;
     const variance = Math.random() * 0.25 - 0.125; // ±12.5%
     
+    const revenue = Math.round(baseRevenue * (1 + variance));
     data.push({
       semana: `W${weekNum} ${month}`,
-      ingresos: Math.round(baseRevenue * (1 + variance)),
-      ordenes: Math.round((baseRevenue * (1 + variance)) / 450),
+      ingresos: revenue,
+      pedidos: Math.round(revenue / 450),
+      cantidad: Math.round(revenue / 180),
     });
   }
   
@@ -103,10 +111,12 @@ const generateMonthlyRevenue = (): MonthlyRevenue[] => {
     const baseRevenue = 280000;
     const variance = Math.random() * 0.2 - 0.1; // ±10%
     
+    const revenue = Math.round(baseRevenue * (1 + variance));
     data.push({
       mes: month.charAt(0).toUpperCase() + month.slice(1),
-      ingresos: Math.round(baseRevenue * (1 + variance)),
-      ordenes: Math.round((baseRevenue * (1 + variance)) / 450),
+      ingresos: revenue,
+      pedidos: Math.round(revenue / 450),
+      cantidad: Math.round(revenue / 180),
     });
   }
   
@@ -123,10 +133,12 @@ const generateYearlyRevenue = (): YearlyRevenue[] => {
     const baseRevenue = 3200000;
     const growth = i === 0 ? 1.15 : 1 - (i * 0.08); // Crecimiento año actual
     
+    const revenue = Math.round(baseRevenue * growth);
     data.push({
       año: year.toString(),
-      ingresos: Math.round(baseRevenue * growth),
-      ordenes: Math.round((baseRevenue * growth) / 450),
+      ingresos: revenue,
+      pedidos: Math.round(revenue / 450),
+      cantidad: Math.round(revenue / 180),
     });
   }
   
@@ -135,18 +147,18 @@ const generateYearlyRevenue = (): YearlyRevenue[] => {
 
 // Datos por mes del año actual (para gráfico de barras mensual)
 export const mockMonthlyRevenueByMonth: MonthlyRevenue[] = [
-  { mes: 'Ene', ingresos: 245000, ordenes: 544 },
-  { mes: 'Feb', ingresos: 268000, ordenes: 596 },
-  { mes: 'Mar', ingresos: 292000, ordenes: 649 },
-  { mes: 'Abr', ingresos: 278000, ordenes: 618 },
-  { mes: 'May', ingresos: 310000, ordenes: 689 },
-  { mes: 'Jun', ingresos: 295000, ordenes: 656 },
-  { mes: 'Jul', ingresos: 325000, ordenes: 722 },
-  { mes: 'Ago', ingresos: 318000, ordenes: 707 },
-  { mes: 'Sep', ingresos: 288000, ordenes: 640 },
-  { mes: 'Oct', ingresos: 305000, ordenes: 678 },
-  { mes: 'Nov', ingresos: 298000, ordenes: 662 },
-  { mes: 'Dic', ingresos: 342000, ordenes: 760 },
+  { mes: 'Ene', ingresos: 245000, pedidos: 544, cantidad: 1361 },
+  { mes: 'Feb', ingresos: 268000, pedidos: 596, cantidad: 1489 },
+  { mes: 'Mar', ingresos: 292000, pedidos: 649, cantidad: 1622 },
+  { mes: 'Abr', ingresos: 278000, pedidos: 618, cantidad: 1544 },
+  { mes: 'May', ingresos: 310000, pedidos: 689, cantidad: 1722 },
+  { mes: 'Jun', ingresos: 295000, pedidos: 656, cantidad: 1639 },
+  { mes: 'Jul', ingresos: 325000, pedidos: 722, cantidad: 1806 },
+  { mes: 'Ago', ingresos: 318000, pedidos: 707, cantidad: 1767 },
+  { mes: 'Sep', ingresos: 288000, pedidos: 640, cantidad: 1600 },
+  { mes: 'Oct', ingresos: 305000, pedidos: 678, cantidad: 1694 },
+  { mes: 'Nov', ingresos: 298000, pedidos: 662, cantidad: 1656 },
+  { mes: 'Dic', ingresos: 342000, pedidos: 760, cantidad: 1900 },
 ];
 
 // Productos más vendidos
