@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Numeric, CheckConstraint, String, Text
+from sqlalchemy import Column, Integer, ForeignKey, Numeric, CheckConstraint, String, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -12,6 +12,12 @@ class SaleItem(Base):
             "(producto_id IS NOT NULL AND oferta_id IS NULL) OR (producto_id IS NULL AND oferta_id IS NOT NULL)",
             name="check_producto_or_oferta"
         ),
+        # Índices simples para optimizar operaciones IN/WHERE en dashboard
+        Index('ix_ventaitems_venta_id', 'venta_id'),
+        # Índices compuestos para optimizar queries específicas del dashboard
+        Index('ix_ventaitems_venta_producto', 'venta_id', 'producto_id'),
+        Index('ix_ventaitems_venta_oferta', 'venta_id', 'oferta_id'),
+        Index('ix_ventaitems_item_categoria', 'item_categoria'),
     )
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -29,13 +35,6 @@ class SaleItem(Base):
     item_nombre = Column(String(255), nullable=False)  # Nombre del producto/oferta al momento de la venta
     item_categoria = Column(String(100), nullable=False)  # Categoría al momento de la venta
     item_descripcion = Column(Text, nullable=True)  # Descripción de la oferta (si aplica)
-
-    __table_args__ = (
-        CheckConstraint(
-            "(producto_id IS NOT NULL AND oferta_id IS NULL) OR (producto_id IS NULL AND oferta_id IS NOT NULL)",
-            name="check_producto_or_oferta"
-        ),
-    )
 
     venta = relationship(
         "Sale",

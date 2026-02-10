@@ -1,12 +1,16 @@
 from datetime import datetime
 
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, DateTime, Index
 from sqlalchemy.orm import relationship
 
 from app.domain.models.base import Base
 
 class Product(Base):
     __tablename__ = "Productos"
+    __table_args__ = (
+        # Índice en categoria_id para optimizar JOINs con Category (además del FK)
+        Index('ix_productos_categoria', 'categoria_id'),
+    )
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     sku = Column(String(50), unique=True, nullable=False, index=True)
