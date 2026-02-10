@@ -670,15 +670,36 @@ class DashboardService:
         limit: int | None,
         start_date: datetime | None,
     ) -> List[dict]:
-        """Agrega cantidad vendida por categoria (productos directos y en ofertas)."""
+        """
+        Agrega cantidad vendida por categoría (OPTIMIZADA).
+        
+        Optimizaciones:
+        - UNION ALL en lugar de 2 queries + merge en Python
+        - Pre-filtrado de ventas por fecha antes de grandes JOINs
+        - Agregación y ordenamiento en SQL
+        - Índices en columnas clave (venta_id, categoria_id)
+        """
+        from sqlalchemy import union_all
+        
+        # ==== SUBCONSULTA: Pre-filtrar ventas por fecha ====
+        # Esto reduce drásticamente el tamaño de los JOINs posteriores
+        sales_filtered = select(Sale.id)
+        if start_date is not None:
+            sales_filtered = sales_filtered.where(Sale.fecha_creacion >= start_date)
+        
+        sales_subq = sales_filtered.subquery()
+        
+        # ==== QUERY 1: Productos directos ====
         direct_query = select(
             func.coalesce(
                 Category.nombre,
                 SaleItem.item_categoria
             ).label("category"),
             func.sum(SaleItem.cantidad).label("total_quantity"),
+        ).select_from(
+            SaleItem
         ).join(
-            Sale, SaleItem.venta_id == Sale.id
+            sales_subq, SaleItem.venta_id == sales_subq.c.id
         ).outerjoin(
             Product, SaleItem.producto_id == Product.id
         ).outerjoin(
@@ -691,21 +712,21 @@ class DashboardService:
                 SaleItem.item_categoria
             )
         )
-
-        if start_date is not None:
-            direct_query = direct_query.where(Sale.fecha_creacion >= start_date)
-
+        
+        # ==== QUERY 2: Productos en ofertas ====
         offer_query = select(
             func.coalesce(
                 Category.nombre,
                 SaleItemOfferProduct.categoria_nombre
             ).label("category"),
             func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
+        ).select_from(
+            SaleItemOfferProduct
         ).join(
             SaleItem,
             SaleItemOfferProduct.venta_item_id == SaleItem.id
         ).join(
-            Sale, SaleItem.venta_id == Sale.id
+            sales_subq, SaleItem.venta_id == sales_subq.c.id
         ).outerjoin(
             Product, SaleItemOfferProduct.producto_id == Product.id
         ).outerjoin(
@@ -718,39 +739,34 @@ class DashboardService:
                 SaleItemOfferProduct.categoria_nombre
             )
         )
-
-        if start_date is not None:
-            offer_query = offer_query.where(Sale.fecha_creacion >= start_date)
-
-        direct_result = await self.uow.session.execute(direct_query)
-        offer_result = await self.uow.session.execute(offer_query)
-
-        totals: dict[str, int] = {}
-
-        for row in direct_result.fetchall():
-            category = row.category or "Sin categoria"
-            totals[category] = totals.get(category, 0) + int(row.total_quantity or 0)
-
-        for row in offer_result.fetchall():
-            category = row.category or "Sin categoria"
-            totals[category] = totals.get(category, 0) + int(row.total_quantity or 0)
-
-        ordered = sorted(
-            [
-                {
-                    "categoria": category,
-                    "cantidad": total,
-                }
-                for category, total in totals.items()
-            ],
-            key=lambda item: item["cantidad"],
-            reverse=True
+        
+        # ==== UNION ALL: Combinar ambas queries ====
+        combined_query = union_all(direct_query, offer_query).alias("combined")
+        
+        # ==== AGREGACIÓN FINAL: Agrupar por categoría ====
+        final_query = select(
+            combined_query.c.category,
+            func.sum(combined_query.c.total_quantity).label("total_quantity"),
+        ).group_by(
+            combined_query.c.category
+        ).order_by(
+            func.sum(combined_query.c.total_quantity).desc()
         )
-
-        if limit is None:
-            return ordered
-
-        return ordered[:limit]
+        
+        if limit is not None:
+            final_query = final_query.limit(limit)
+        
+        # ==== EJECUTAR ====
+        result = await self.uow.session.execute(final_query)
+        rows = result.fetchall()
+        
+        return [
+            {
+                "categoria": row.category or "Sin categoria",
+                "cantidad": int(row.total_quantity or 0),
+            }
+            for row in rows
+        ]
 
     async def _get_weekday_revenue_data(
         self,
