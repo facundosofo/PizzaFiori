@@ -57,10 +57,8 @@ const RevenueChart = ({
     return value.toFixed(0);
   };
 
-  // Calcular ticks del eje Y en múltiplos de 5 (exactamente 5 valores) para pedidos e items
+  // Calcular ticks del eje Y (exactamente 5 valores)
   const calculateYTicks = (): number[] | undefined => {
-    if (selectedMetric === 'ingresos') return undefined;
-
     const currentData = getData();
     if (!currentData || currentData.length === 0) return undefined;
 
@@ -68,13 +66,15 @@ const RevenueChart = ({
     const values = currentData.map(item => (item as any)[seriesConfig.key] || 0);
     const maxValue = Math.max(...values);
 
-    if (maxValue === 0) return [0, 5, 10, 15, 20];
+    if (maxValue === 0) {
+      if (selectedMetric === 'ingresos') {
+        return [0, 1000, 2000, 3000, 4000];
+      }
+      return [0, 5, 10, 15, 20];
+    }
 
-    // Calcular intervalo tentativo para 5 ticks (4 intervalos)
-    const rawInterval = maxValue / 4;
-    
-    // Redondear al múltiplo de 5 más cercano hacia arriba
-    const interval = Math.ceil(rawInterval / 5) * 5;
+    // Calcular intervalo: dividir máximo entre 4 (para generar 5 ticks)
+    const interval = (maxValue / 4)*1.2;
 
     // Generar exactamente 5 ticks
     return [0, interval, interval * 2, interval * 3, interval * 4];
@@ -82,8 +82,6 @@ const RevenueChart = ({
 
   // Calcular dominio del eje Y
   const calculateYDomain = (): [number, number] | undefined => {
-    if (selectedMetric === 'ingresos') return undefined;
-
     const ticks = calculateYTicks();
     if (!ticks || ticks.length === 0) return undefined;
 
@@ -197,7 +195,7 @@ const RevenueChart = ({
         yAxisFormatter={formatYAxis}
         yAxisTicks={calculateYTicks()}
         yAxisDomain={calculateYDomain()}
-        allowDecimals={selectedMetric === 'ingresos'}
+        allowDecimals={false}
         gridOpacity={0.05}
         curved={true}
       />
