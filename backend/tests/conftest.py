@@ -218,12 +218,31 @@ def mock_sale_service():
     return service
 
 
+@pytest.fixture
+def mock_dashboard_service():
+    """Mock DashboardService for router tests."""
+    service = MagicMock()
+    
+    # ServiceResult mock with default values
+    result = MagicMock()
+    result.error = None
+    result.status_code = 200
+    result.value = []
+    
+    service.get_revenue_by_period = AsyncMock(return_value=result)
+    service.get_weekday_revenue = AsyncMock(return_value=result)
+    service.get_top_products = AsyncMock(return_value=result)
+    service.get_sales_by_category = AsyncMock(return_value=result)
+    
+    return service
+
+
 # ==================== FastAPI Test Client Fixtures ====================
 
 # ==================== HTTP Client Fixture ====================
 
 @pytest.fixture
-async def async_client(mock_category_service, mock_product_service, mock_offer_service, mock_sale_service):
+async def async_client(mock_category_service, mock_product_service, mock_offer_service, mock_sale_service, mock_dashboard_service):
     """
     Async HTTP client for testing API endpoints.
     Uses container overrides to inject mocked services.
@@ -233,6 +252,7 @@ async def async_client(mock_category_service, mock_product_service, mock_offer_s
     container.product_service.override(mock_product_service)
     container.offer_service.override(mock_offer_service)
     container.sale_service.override(mock_sale_service)
+    container.dashboard_service.override(mock_dashboard_service)
     
     try:
         transport = ASGITransport(app=application, raise_app_exceptions=False)
@@ -244,6 +264,7 @@ async def async_client(mock_category_service, mock_product_service, mock_offer_s
         container.product_service.reset_override()
         container.offer_service.reset_override()
         container.sale_service.reset_override()
+        container.dashboard_service.reset_override()
 
 
 # ==================== Reusable Model Fixtures ====================
