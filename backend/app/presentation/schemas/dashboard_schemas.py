@@ -94,21 +94,6 @@ class VentasPorCategoriaResponse(BaseModel):
     )
 
 
-class MetricasDashboardResponse(BaseModel):
-    """Respuesta con métricas generales del dashboard."""
-    ingresoTotal: float = Field(..., description="Revenue total de todos los tiempos")
-    ordenesTotal: int = Field(..., description="Cantidad total de órdenes")
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "ingresoTotal": 250000.0,
-                "ordenesTotal": 85
-            }
-        }
-    )
-
-
 class WeekdayRevenueResponse(BaseModel):
     """Respuesta para promedio de revenue por día de semana (con ajuste de horario de negocio)."""
     dia_semana: str = Field(..., description="Nombre del día (Lunes, Martes, etc)")

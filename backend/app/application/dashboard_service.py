@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
 from datetime import datetime, timedelta
-from decimal import Decimal
 import structlog
 from sqlalchemy import func, select, and_, cast, Date, Numeric, distinct
 
@@ -12,14 +11,7 @@ from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
 from app.domain.models.category import Category
 from app.domain.unit_of_work import AbstractUnitOfWork
-from app.presentation.schemas.dashboard_schemas import (
-    RevenuePorPeriodoResponse,
-    RevenueEn12MesesResponse,
-    ProductoDestacadoResponse,
-    MetricasDashboardResponse,
-    TipoPeriodo,
-    FiltroTiempo,
-)
+from app.presentation.schemas.dashboard_schemas import TipoPeriodo, FiltroTiempo
 
 
 @dataclass
@@ -108,24 +100,6 @@ class DashboardService:
                 status_code=500
             )
 
-    async def get_metrics(self) -> ServiceResult:
-        """
-        Obtiene las métricas generales del dashboard.
-        
-        Returns:
-            ServiceResult con DashboardMetricsResponse
-        """
-        try:
-            async with self.uow:
-                metrics = await self._get_dashboard_metrics()
-                return ServiceResult(value=metrics)
-                
-        except Exception as e:
-            self.logger.error(f"Error obteniendo metrics: {str(e)}")
-            return ServiceResult(
-                error=f"Error al obtener métricas: {str(e)}",
-                status_code=500
-            )
 
     async def get_sales_by_category(
         self,
@@ -592,22 +566,6 @@ class DashboardService:
             for row in rows
         ]
 
-    async def _get_dashboard_metrics(self) -> dict:
-        """Obtiene las métricas generales: total revenue y total orders."""
-        # Total revenue
-        revenue_query = select(func.sum(Sale.total)).select_from(Sale)
-        revenue_result = await self.uow.session.execute(revenue_query)
-        total_revenue = revenue_result.scalar() or Decimal("0")
-        
-        # Total orders
-        orders_query = select(func.count(Sale.id)).select_from(Sale)
-        orders_result = await self.uow.session.execute(orders_query)
-        total_orders = orders_result.scalar() or 0
-        
-        return {
-            "ingresoTotal": float(total_revenue),
-            "ordenesTotal": int(total_orders),
-        }
 
     async def _get_sales_by_category_data(
         self,

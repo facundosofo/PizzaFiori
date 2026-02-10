@@ -5,7 +5,6 @@
  * - GET /dashboard/revenue?period={period}&limit={limit}
  * - GET /dashboard/revenue/monthly
  * - GET /dashboard/products/top?limit={limit}
- * - GET /dashboard/metrics
  */
 
 import env from '../config/env';
@@ -47,11 +46,6 @@ export interface TopProduct {
   enStock: boolean;
 }
 
-export interface DashboardMetrics {
-  ingresoTotal: number;
-  ordenesTotal: number;
-}
-
 export interface SalesByCategory {
   categoria: string;
   cantidad: number;
@@ -80,7 +74,6 @@ export interface DashboardData {
   yearlyRevenue: YearlyRevenue[];
   topProducts: TopProduct[];
   salesByCategory: SalesByCategory[];
-  metrics: DashboardMetrics;
 }
 
 const fetchJson = async <T>(path: string): Promise<T> => {
@@ -104,14 +97,12 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     yearlyRevenue,
     topProducts,
     salesByCategory,
-    metrics,
   ] = await Promise.all([
     getRevenueByPeriod('daily', 30) as Promise<DailyRevenue[]>,
     getRevenueByPeriod('monthly', 12) as Promise<MonthlyRevenue[]>,
     getRevenueByPeriod('yearly', 5) as Promise<YearlyRevenue[]>,
     getTopProducts(5, 'all_time'),
     getSalesByCategory(8, 'all_time'),
-    getDashboardMetrics(),
   ]);
 
   return {
@@ -120,7 +111,6 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     yearlyRevenue,
     topProducts,
     salesByCategory,
-    metrics,
   };
 };
 
@@ -171,16 +161,6 @@ export const getTopProducts = async (
   console.log('[Service] Fetching products:', url);
   return fetchJson(url);
 };
-
-/**
- * Obtener métricas generales
- * 
- * TODO: Conectar con GET /api/dashboard/metrics
- */
-export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
-  return fetchJson('/dashboard/metrics');
-};
-
 
 export const getSalesByCategory = async (
   limit?: number,

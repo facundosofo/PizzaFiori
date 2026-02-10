@@ -196,18 +196,6 @@ const DashboardOverview = () => {
       </div>
 
       <div className="dashboard-content">
-          {/* Sección de métricas clave (opcional - puede agregarse luego) */}
-          {/* <div className="metrics-row">
-            <div className="metric-card">
-              <span className="metric-label">Ingresos Totales</span>
-              <span className="metric-value">${data.metrics.ingresoTotal.toLocaleString()}</span>
-            </div>
-            <div className="metric-card">
-              <span className="metric-label">Órdenes</span>
-              <span className="metric-value">{data.metrics.ordenesTotal}</span>
-            </div>
-          </div> */}
-
           {/* Gráficos principales */}
           <div className="charts-grid">
             <div className="chart-section chart-main">

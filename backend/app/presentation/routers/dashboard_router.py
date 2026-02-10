@@ -6,10 +6,8 @@ from app.application.dashboard_service import DashboardService
 from app.containers import Container
 from app.presentation.schemas.dashboard_schemas import (
     RevenuePorPeriodoResponse,
-    RevenueEn12MesesResponse,
     ProductoDestacadoResponse,
     VentasPorCategoriaResponse,
-    MetricasDashboardResponse,
     WeekdayRevenueResponse,
     TipoPeriodo,
     FiltroTiempo,
@@ -115,35 +113,6 @@ async def get_top_products(
     Los datos se basan en el historial completo de ventas o según el filtro de tiempo seleccionado.
     """
     result = await service.get_top_products(limit=limit, time_filter=time_filter, sort=sort, category=category)
-    
-    if result.error:
-        raise HTTPException(
-            status_code=result.status_code,
-            detail=result.error
-        )
-    
-    return result.value
-
-
-@router.get(
-    "/metrics",
-    response_model=MetricasDashboardResponse,
-    summary="Obtener métricas generales",
-    description="Devuelve métricas consolidadas del dashboard.",
-    responses={
-        500: {"description": "Error interno del servidor"},
-    },
-)
-@inject
-async def get_metrics(
-    service: DashboardService = Depends(Provide[Container.dashboard_service]),
-):
-    """
-    Obtiene métricas generales del dashboard:
-    - Revenue total de todos los tiempos
-    - Cantidad total de órdenes realizadas
-    """
-    result = await service.get_metrics()
     
     if result.error:
         raise HTTPException(
