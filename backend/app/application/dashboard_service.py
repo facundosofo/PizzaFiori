@@ -92,7 +92,6 @@ class DashboardService:
                 result = await self._get_top_products_data(
                     limit,
                     start_date,
-                    time_filter=time_filter,
                     sort=sort,
                     category=category,
                 )
@@ -127,7 +126,7 @@ class DashboardService:
                 self.logger.info(f"Getting sales by category with time_filter: {time_filter}, limit: {limit}")
                 start_date = self._get_start_date_for_time_filter(time_filter)
                 self.logger.info(f"Start date calculated: {start_date}")
-                result = await self._get_sales_by_category_data(limit, start_date, time_filter=time_filter)
+                result = await self._get_sales_by_category_data(limit, start_date)
                 self.logger.info(f"Sales by category result count: {len(result)}")
                 return ServiceResult(value=result)
 
@@ -175,6 +174,9 @@ class DashboardService:
         """
         Calcula la fecha de inicio según el filtro de tiempo.
         
+        Nota: El "shift" real de -6h (ajuste de horario de negocio) lo hace SQL con dateadd().
+        Este método define el rango calendario del filtro. El ajuste temporal se aplica en la query.
+        
         Returns:
             datetime | None: Fecha de inicio, None para histórico (sin filtro)
         """
@@ -182,7 +184,8 @@ class DashboardService:
         now = datetime.now()
         
         if time_filter == FiltroTiempo.HOY:
-            # Hoy desde las 00:00:00
+            # Inicio del rango: hoy desde las 00:00:00
+            # El ajuste de -6h lo hace SQL (dateadd), no Python
             result = now.replace(hour=0, minute=0, second=0, microsecond=0)
             self.logger.info(f"Filter is HOY, start_date: {result}")
             return result
@@ -232,7 +235,7 @@ class DashboardService:
             business_date_expr.label("business_date"),
             Sale.total.label("sale_total")
         ).where(
-            Sale.fecha_creacion >= start_date
+            business_date_expr >= start_date
         ).subquery()
         
         # PASO 2: Agregar items por venta
@@ -285,6 +288,8 @@ class DashboardService:
         - Pre-filtrado de ventas antes del JOIN
         - Aprovecha índices en fecha_creacion y venta_id
         """
+        from sqlalchemy import text
+
         now = datetime.now()
 
         # Start at the first day of the month, N-1 months ago
@@ -302,15 +307,16 @@ class DashboardService:
             end_date = datetime(now.year, now.month + 1, 1)
         
         # PASO 1: Subconsulta de ventas (pre-filtrado por rango de fechas)
+        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
         sale_subquery = select(
             Sale.id.label("sale_id"),
-            func.year(Sale.fecha_creacion).label("year"),
-            func.month(Sale.fecha_creacion).label("month"),
+            func.year(adjusted_fecha).label("year"),
+            func.month(adjusted_fecha).label("month"),
             Sale.total.label("sale_total")
         ).where(
             and_(
-                Sale.fecha_creacion >= start_date,
-                Sale.fecha_creacion < end_date,
+                adjusted_fecha >= start_date,
+                adjusted_fecha < end_date,
             )
         ).subquery()
         
@@ -389,15 +395,18 @@ class DashboardService:
         - Pre-filtrado de ventas antes del JOIN
         - Aprovecha índices en fecha_creacion y venta_id
         """
+        from sqlalchemy import text
+
         start_date = datetime.now() - timedelta(days=limit * 365)
         
         # PASO 1: Subconsulta de ventas (pre-filtrado por fecha)
+        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
         sale_subquery = select(
             Sale.id.label("sale_id"),
-            func.year(Sale.fecha_creacion).label("year"),
+            func.year(adjusted_fecha).label("year"),
             Sale.total.label("sale_total")
         ).where(
-            Sale.fecha_creacion >= start_date
+            adjusted_fecha >= start_date
         ).subquery()
         
         # PASO 2: Agregar items por venta
@@ -446,7 +455,6 @@ class DashboardService:
         self,
         limit: int,
         start_date: datetime | None,
-        time_filter: FiltroTiempo,
         sort: str = "top",
         category: str | None = None,
     ) -> List[dict]:
@@ -458,20 +466,20 @@ class DashboardService:
         - Pre-filtrado de ventas por fecha antes de grandes JOINs
         - Agregación y ordenamiento en SQL para mejor rendimiento
         - Índices en columnas clave (venta_id, categoria_id)
+        - COHERENCIA: Todos los filtros usan adjusted_fecha (horario de negocio 16:00-06:00)
         """
         from sqlalchemy import union_all, text
         
-        # ==== SUBCONSULTA: Pre-filtrar ventas por fecha ====
+        # ==== SUBCONSULTA: Pre-filtrar ventas por fecha (ajustada a día de negocio) ====
         # Esto reduce drásticamente el tamaño de los JOINs posteriores
+        #  COHERENCIA: Todos los filtros (HOY, ULTIMOS_7_DIAS, etc) usan adjusted_fecha
+        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        business_date_expr = cast(adjusted_fecha, Date)
         sales_filtered = select(Sale.id)
-        if time_filter == FiltroTiempo.HOY:
-            business_date_expr = cast(
-                func.dateadd(text('HOUR'), -6, Sale.fecha_creacion),
-                Date
-            )
-            sales_filtered = sales_filtered.where(business_date_expr == datetime.now().date())
-        elif start_date is not None:
-            sales_filtered = sales_filtered.where(Sale.fecha_creacion >= start_date)
+        
+        if start_date is not None:
+            # Misma lógica para todos: comparar fechas de negocio como Date
+            sales_filtered = sales_filtered.where(business_date_expr >= cast(start_date, Date))
         
         sales_subq = sales_filtered.subquery()
         
@@ -584,7 +592,6 @@ class DashboardService:
         self,
         limit: int | None,
         start_date: datetime | None,
-        time_filter: FiltroTiempo,
     ) -> List[dict]:
         """
         Agrega cantidad vendida por categoría (OPTIMIZADA).
@@ -594,20 +601,20 @@ class DashboardService:
         - Pre-filtrado de ventas por fecha antes de grandes JOINs
         - Agregación y ordenamiento en SQL
         - Índices en columnas clave (venta_id, categoria_id)
+        - ✅ COHERENCIA: Todos los filtros usan adjusted_fecha (horario de negocio 16:00-06:00)
         """
         from sqlalchemy import union_all, text
         
-        # ==== SUBCONSULTA: Pre-filtrar ventas por fecha ====
+        # ==== SUBCONSULTA: Pre-filtrar ventas por fecha (ajustada a día de negocio) ====
         # Esto reduce drásticamente el tamaño de los JOINs posteriores
+        # COHERENCIA: Todos los filtros (HOY, ULTIMOS_7_DIAS, etc) usan adjusted_fecha
+        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        business_date_expr = cast(adjusted_fecha, Date)
         sales_filtered = select(Sale.id)
-        if time_filter == FiltroTiempo.HOY:
-            business_date_expr = cast(
-                func.dateadd(text('HOUR'), -6, Sale.fecha_creacion),
-                Date
-            )
-            sales_filtered = sales_filtered.where(business_date_expr == datetime.now().date())
-        elif start_date is not None:
-            sales_filtered = sales_filtered.where(Sale.fecha_creacion >= start_date)
+        
+        if start_date is not None:
+            # Misma lógica para todos: comparar fechas de negocio como Date
+            sales_filtered = sales_filtered.where(business_date_expr >= cast(start_date, Date))
         
         sales_subq = sales_filtered.subquery()
         
