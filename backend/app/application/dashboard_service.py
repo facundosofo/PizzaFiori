@@ -526,28 +526,34 @@ class DashboardService:
         category: str | None = None,
     ) -> List[dict]:
         """
-        Obtiene los productos más/menos vendidos con cantidad total vendida.
+        Obtiene los productos más/menos vendidos (OPTIMIZADA).
         
-        Nota: Los datos se obtienen de la tabla SaleItem (snapshots históricos).
-        Resuelve nombres de categorías por FK del producto, fallback a item_categoria raw.
-        
-        Args:
-            limit: Cantidad máxima de productos a devolver
-            start_date: Fecha de inicio para filtrar (opcional)
-            sort: 'top' para descendente (más vendidos), 'bottom' para ascendente (menos vendidos)
-            category: Filtrar por categoría (opcional)
+        Optimizaciones:
+        - UNION ALL en lugar de 2 queries + merge en Python
+        - Pre-filtrado de ventas por fecha antes de grandes JOINs
+        - Agregación y ordenamiento en SQL para mejor rendimiento
+        - Índices en columnas clave (venta_id, categoria_id)
         """
-        # Query para productos directos con JOIN a categoría por producto
+        from sqlalchemy import union_all
+        
+        # ==== SUBCONSULTA: Pre-filtrar ventas por fecha ====
+        # Esto reduce drásticamente el tamaño de los JOINs posteriores
+        sales_filtered = select(Sale.id)
+        if start_date is not None:
+            sales_filtered = sales_filtered.where(Sale.fecha_creacion >= start_date)
+        
+        sales_subq = sales_filtered.subquery()
+        
+        # ==== QUERY 1: Productos directos ====
         direct_query = select(
             SaleItem.item_nombre.label("name"),
-            func.coalesce(
-                Category.nombre,  # Primera opción: nombre de categoría por FK del producto
-                SaleItem.item_categoria  # Fallback: valor raw o ID
-            ).label("category"),
+            func.coalesce(Category.nombre, SaleItem.item_categoria).label("category"),
             func.sum(SaleItem.cantidad).label("total_quantity"),
             func.max(ProductPrice.precio).label("price"),
+        ).select_from(
+            SaleItem
         ).join(
-            Sale, SaleItem.venta_id == Sale.id
+            sales_subq, SaleItem.venta_id == sales_subq.c.id  # JOIN con ventas pre-filtradas
         ).outerjoin(
             Product, SaleItem.producto_id == Product.id
         ).outerjoin(
@@ -559,38 +565,32 @@ class DashboardService:
                 ProductPrice.cantidad == 1,
             )
         ).where(
-            SaleItem.producto_id.isnot(None)  # Solo productos directos
-        ).group_by(
-            SaleItem.item_nombre,
-            func.coalesce(
-                Category.nombre,
-                SaleItem.item_categoria
-            )
+            SaleItem.producto_id.isnot(None)
         )
-
-        if start_date is not None:
-            direct_query = direct_query.where(Sale.fecha_creacion >= start_date)
         
-        # Aplicar filtro de categoría si se proporciona
+        # Filtro de categoría
         if category:
             direct_query = direct_query.where(
                 func.coalesce(Category.nombre, SaleItem.item_categoria) == category
             )
-
-        # Query para productos en ofertas
+        
+        direct_query = direct_query.group_by(
+            SaleItem.item_nombre,
+            func.coalesce(Category.nombre, SaleItem.item_categoria)
+        )
+        
+        # ==== QUERY 2: Productos en ofertas ====
         offer_query = select(
             SaleItemOfferProduct.producto_nombre.label("name"),
-            func.coalesce(
-                Category.nombre,  # Primera opción: nombre de categoría por FK del producto
-                SaleItemOfferProduct.categoria_nombre  # Fallback: valor raw
-            ).label("category"),
+            func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre).label("category"),
             func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
             func.max(ProductPrice.precio).label("price"),
+        ).select_from(
+            SaleItemOfferProduct
         ).join(
-            SaleItem,
-            SaleItemOfferProduct.venta_item_id == SaleItem.id
+            SaleItem, SaleItemOfferProduct.venta_item_id == SaleItem.id
         ).join(
-            Sale, SaleItem.venta_id == Sale.id
+            sales_subq, SaleItem.venta_id == sales_subq.c.id  # JOIN con ventas pre-filtradas
         ).outerjoin(
             Product, SaleItemOfferProduct.producto_id == Product.id
         ).outerjoin(
@@ -603,62 +603,50 @@ class DashboardService:
             )
         ).where(
             SaleItem.oferta_id.isnot(None)
-        ).group_by(
-            SaleItemOfferProduct.producto_nombre,
-            func.coalesce(
-                Category.nombre,
-                SaleItemOfferProduct.categoria_nombre
-            )
         )
-
-        if start_date is not None:
-            offer_query = offer_query.where(Sale.fecha_creacion >= start_date)
         
-        # Aplicar filtro de categoría si se proporciona
+        # Filtro de categoría
         if category:
             offer_query = offer_query.where(
                 func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre) == category
             )
-
-        direct_result = await self.uow.session.execute(direct_query)
-        offer_result = await self.uow.session.execute(offer_query)
-
-        totals: dict[tuple[str | None, str | None], dict] = {}
-
-        # Procesar productos directos
-        for row in direct_result.fetchall():
-            categoria = row.category or "Sin categoría"
-            key = (row.name, categoria)
-            totals[key] = {
+        
+        offer_query = offer_query.group_by(
+            SaleItemOfferProduct.producto_nombre,
+            func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre)
+        )
+        
+        # ==== UNION ALL: Combinar ambas queries ====
+        combined_query = union_all(direct_query, offer_query).alias("combined")
+        
+        # ==== AGREGACIÓN FINAL: Agrupar por nombre+categoría ====
+        final_query = select(
+            combined_query.c.name,
+            combined_query.c.category,
+            func.sum(combined_query.c.total_quantity).label("total_quantity"),
+            func.max(combined_query.c.price).label("price"),
+        ).group_by(
+            combined_query.c.name,
+            combined_query.c.category
+        ).order_by(
+            func.sum(combined_query.c.total_quantity).desc() if sort == "top" 
+            else func.sum(combined_query.c.total_quantity).asc()
+        ).limit(limit)
+        
+        # ==== EJECUTAR ====
+        result = await self.uow.session.execute(final_query)
+        rows = result.fetchall()
+        
+        return [
+            {
                 "nombre": row.name,
-                "categoria": categoria,
+                "categoria": row.category or "Sin categoría",
                 "cantidad": int(row.total_quantity or 0),
                 "precio": float(row.price or 0),
                 "enStock": True,
             }
-
-        # Procesar ofertas
-        for row in offer_result.fetchall():
-            category = row.category or "Otras"
-            key = (row.name, category)
-            if key in totals:
-                totals[key]["cantidad"] += int(row.total_quantity or 0)
-            else:
-                totals[key] = {
-                    "nombre": row.name,
-                    "categoria": category,
-                    "cantidad": int(row.total_quantity or 0),
-                    "precio": float(row.price or 0),
-                    "enStock": True,
-                }
-
-        ordered = sorted(
-            totals.values(),
-            key=lambda item: item["cantidad"],
-            reverse=(sort == "top")  # reverse=True para 'top', reverse=False para 'bottom'
-        )
-
-        return ordered[:limit]
+            for row in rows
+        ]
 
     async def _get_dashboard_metrics(self) -> dict:
         """Obtiene las métricas generales: total revenue y total orders."""
