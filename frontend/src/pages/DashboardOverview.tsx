@@ -27,7 +27,7 @@ import TopProductsTable from '../components/Dashboard/TopProductsTable';
 import WeekdayChart from '../components/Dashboard/WeekdayChart';
 import ErrorAlert from '../components/shared/ErrorAlert';
 import PeriodSelector, { type Period } from '../components/shared/PeriodSelector';
-import TimeFilterSelector from '../components/shared/TimeFilterSelector';
+import TimeFilterSelector, { type TimeFilterOption } from '../components/shared/TimeFilterSelector';
 import MetricSelector, { type Metric } from '../components/shared/MetricSelector';
 import WeekdayMetricSelector, { type WeekdayMetric } from '../components/shared/WeekdayMetricSelector';
 import CategorySelector from '../components/shared/CategorySelector';
@@ -42,8 +42,8 @@ const DashboardOverview = () => {
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>('monthly');
   const [revenueMetric, setRevenueMetric] = useState<Metric>('ingresos');
-  const [salesByCategoryTimeFilter, setSalesByCategoryTimeFilter] = useState<TimeFilter>('all_time');
-  const [topProductsTimeFilter, setTopProductsTimeFilter] = useState<TimeFilter>('all_time');
+  const [salesByCategoryTimeFilter, setSalesByCategoryTimeFilter] = useState<TimeFilter>('last_year');
+  const [topProductsTimeFilter, setTopProductsTimeFilter] = useState<TimeFilter>('last_year');
   const [topProductsSort, setTopProductsSort] = useState<ProductSort>('top');
   const [topProductsCategory, setTopProductsCategory] = useState<string>('');
   
@@ -52,6 +52,13 @@ const DashboardOverview = () => {
   const [weekdayCategory, setWeekdayCategory] = useState<string>('');
   const [weekdayData, setWeekdayData] = useState<WeekdayRevenue[]>([]);
   const [weekdayLoading, setWeekdayLoading] = useState(false);
+  const [weekdayTimeFilter, setWeekdayTimeFilter] = useState<TimeFilter>('last_year');
+
+  const weekdayTimeFilterOptions: TimeFilterOption[] = [
+    { value: 'last_month', label: 'Último mes', description: 'Últimos 30 días' },
+    { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+    { value: 'all_time', label: 'Histórico', description: 'Todos los datos' },
+  ];
 
   const handleCloseError = () => {
     setError(null);
@@ -137,7 +144,7 @@ const DashboardOverview = () => {
       try {
         console.log('[Dashboard] Fetching weekday revenue for category:', weekdayCategory);
         setWeekdayLoading(true);
-        const weekdayRevenue = await getWeekdayRevenue(weekdayCategory || undefined);
+        const weekdayRevenue = await getWeekdayRevenue(weekdayCategory || undefined, weekdayTimeFilter);
         console.log('[Dashboard] Weekday revenue received:', weekdayRevenue);
         setWeekdayData(weekdayRevenue);
       } catch (err) {
@@ -151,7 +158,7 @@ const DashboardOverview = () => {
 
     fetchWeekdayRevenue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekdayCategory]);
+  }, [weekdayCategory, weekdayTimeFilter]);
 
   if (loading) {
     return (
@@ -259,6 +266,11 @@ const DashboardOverview = () => {
                     categories={availableCategories}
                     selectedCategory={weekdayCategory}
                     onCategoryChange={setWeekdayCategory}
+                  />
+                  <TimeFilterSelector
+                    value={weekdayTimeFilter}
+                    onChange={setWeekdayTimeFilter}
+                    options={weekdayTimeFilterOptions}
                   />
                 </div>
               </div>

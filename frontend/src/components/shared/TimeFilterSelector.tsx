@@ -27,9 +27,10 @@ interface TimeFilterSelectorProps {
   value: TimeFilter;
   onChange: (filter: TimeFilter) => void;
   className?: string;
+  options?: TimeFilterOption[];
 }
 
-const TimeFilterSelector = ({ value, onChange, className = '' }: TimeFilterSelectorProps) => {
+const TimeFilterSelector = ({ value, onChange, className = '', options = TIME_FILTER_OPTIONS }: TimeFilterSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +46,7 @@ const TimeFilterSelector = ({ value, onChange, className = '' }: TimeFilterSelec
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedOption = TIME_FILTER_OPTIONS.find(opt => opt.value === value);
+  const selectedOption = options.find(opt => opt.value === value);
 
   return (
     <div className={`time-filter-selector ${className}`} ref={dropdownRef}>
@@ -59,7 +60,7 @@ const TimeFilterSelector = ({ value, onChange, className = '' }: TimeFilterSelec
 
       {isOpen && (
         <div className="time-filter-dropdown">
-          {TIME_FILTER_OPTIONS.map((option) => (
+          {options.map((option) => (
             <button
               key={option.value}
               className={`time-filter-option ${value === option.value ? 'active' : ''}`}
