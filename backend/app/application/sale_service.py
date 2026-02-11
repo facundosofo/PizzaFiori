@@ -190,7 +190,6 @@ class SaleService:
         try:
             self.logger.debug(
                 "Creando venta",
-                numero_orden=sale_create.numero_orden,
                 items_count=len(sale_create.items),
             )
 
@@ -198,32 +197,30 @@ class SaleService:
             total = Decimal("0.00")
 
             async with self.uow as uow:
-                # Generar `numero_orden` si no fue provisto en el request
-                numero_orden_val = sale_create.numero_orden
-                if not numero_orden_val:
-                    now = datetime.now()
-                    # Ajuste de fecha de negocio (-6 horas) para que las ventas
-                    # entre 00:00-05:59 se asignen al día anterior
-                    business_dt = now - timedelta(hours=6)
-                    business_date = business_dt.date()
+                # Siempre generar `numero_orden` - ahora es obligatorio y auto-generado
+                now = datetime.now()
+                # Ajuste de fecha de negocio (-6 horas) para que las ventas
+                # entre 00:00-05:59 se asignen al día anterior
+                business_dt = now - timedelta(hours=6)
+                business_date = business_dt.date()
 
-                    # Generación atómica usando tabla de secuencia diaria
-                    sequence = await uow.sequence_repo.get_for_update(business_date)
-                    if not sequence:
-                        seq = 1
-                        await uow.sequence_repo.create(business_date, seq)
-                    else:
-                        sequence.last_value += 1
-                        seq = sequence.last_value
-                        await uow.sequence_repo.update(sequence)
+                # Generación atómica usando tabla de secuencia diaria
+                sequence = await uow.sequence_repo.get_for_update(business_date)
+                if not sequence:
+                    seq = 1
+                    await uow.sequence_repo.create(business_date, seq)
+                else:
+                    sequence.last_value += 1
+                    seq = sequence.last_value
+                    await uow.sequence_repo.update(sequence)
 
-                    if seq > 99999:
-                        return ServiceResult(
-                            error="Secuencia diaria de números de orden excedida",
-                            status_code=500,
-                        )
+                if seq > 99999:
+                    return ServiceResult(
+                        error="Secuencia diaria de números de orden excedida",
+                        status_code=500,
+                    )
 
-                    numero_orden_val = f"#ORD-{business_date.strftime('%y%m%d')}-{seq:05d}"
+                numero_orden_val = f"#ORD-{business_date.strftime('%y%m%d')}-{seq:05d}"
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
                     precio_unitario = None
@@ -489,12 +486,14 @@ class SaleService:
             return 0
 
     async def update(self, sale_id: int, sale_update) -> ServiceResult:
-        """Actualiza una venta existente."""
+        """Actualiza una venta existente.
+        
+        Nota: El número de orden (numero_orden) no puede ser editado.
+        """
         try:
             self.logger.debug(
                 "Actualizando venta",
                 sale_id=sale_id,
-                numero_orden=sale_update.numero_orden,
                 items_count=len(sale_update.items),
             )
 

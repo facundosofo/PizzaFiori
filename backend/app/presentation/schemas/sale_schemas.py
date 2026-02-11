@@ -84,8 +84,10 @@ class SaleItemOfferProductResponse(BaseModel):
 
 
 class SaleUpdateRequest(BaseModel):
-    """Request para actualizar una venta existente."""
-    numero_orden: Optional[str] = Field(None, max_length=50)
+    """Request para actualizar una venta existente.
+    
+    Nota: El número de orden es generado automáticamente y no puede ser editado.
+    """
     items: List[SaleItemRequest] = Field(..., min_length=1)
 
     @model_validator(mode="after")
@@ -100,7 +102,6 @@ class SaleUpdateRequest(BaseModel):
 # ======================================================
 
 class SaleCreateRequest(BaseModel):
-    numero_orden: Optional[str] = Field(None, max_length=50)
     items: List[SaleItemRequest] = Field(..., min_length=1)
 
     @model_validator(mode="after")
@@ -116,7 +117,7 @@ class SaleCreateRequest(BaseModel):
 
 class SaleResponse(BaseModel):
     id: int
-    numero_orden: Optional[str]
+    numero_orden: str
     total: Decimal
     total_items: int = Field(0, description="Total de items (incluye productos dentro de ofertas)")
     fecha_creacion: datetime
