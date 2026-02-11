@@ -115,17 +115,17 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
           <div className="quick-filters">
             <button
               className="quick-filter-btn"
-              onClick={() => applyQuickFilter("today")}
-              title="Filtrar ventas de hoy"
-            >
-              Hoy
-            </button>
-            <button
-              className="quick-filter-btn"
               onClick={() => applyQuickFilter("yesterday")}
               title="Filtrar ventas de ayer"
             >
               Ayer
+            </button>
+            <button
+              className="quick-filter-btn"
+              onClick={() => applyQuickFilter("today")}
+              title="Filtrar ventas de hoy"
+            >
+              Hoy
             </button>
             <button
               className="quick-filter-btn"
