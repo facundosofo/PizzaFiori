@@ -83,41 +83,6 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
 
   return (
     <div className="sales-filters">
-      {/* Quick filters */}
-      <div className="quick-filters">
-        <span className="quick-filters-label">Filtros rápidos:</span>
-        <div className="quick-filters-buttons">
-          <button
-            className="quick-filter-btn"
-            onClick={() => applyQuickFilter("today")}
-            title="Filtrar ventas de hoy"
-          >
-            Hoy
-          </button>
-          <button
-            className="quick-filter-btn"
-            onClick={() => applyQuickFilter("yesterday")}
-            title="Filtrar ventas de ayer"
-          >
-            Ayer
-          </button>
-          <button
-            className="quick-filter-btn"
-            onClick={() => applyQuickFilter("week")}
-            title="Filtrar últimos 7 días"
-          >
-            Última semana
-          </button>
-          <button
-            className="quick-filter-btn"
-            onClick={() => applyQuickFilter("month")}
-            title="Filtrar últimos 30 días"
-          >
-            Último mes
-          </button>
-        </div>
-      </div>
-
       <div className="sales-filters-row">
         <div className="filter-group filter-group-range">
           <label htmlFor="date-range">Seleccionar rango de fechas</label>
@@ -143,6 +108,40 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
             locale="es"
             formatWeekDay={(day) => day.charAt(0).toUpperCase()}
           />
+        </div>
+
+        <div className="filter-group quick-filters-group">
+          <label>Filtros rápidos</label>
+          <div className="quick-filters">
+            <button
+              className="quick-filter-btn"
+              onClick={() => applyQuickFilter("yesterday")}
+              title="Filtrar ventas de ayer"
+            >
+              Ayer
+            </button>
+            <button
+              className="quick-filter-btn"
+              onClick={() => applyQuickFilter("today")}
+              title="Filtrar ventas de hoy"
+            >
+              Hoy
+            </button>
+            <button
+              className="quick-filter-btn"
+              onClick={() => applyQuickFilter("week")}
+              title="Filtrar últimos 7 días"
+            >
+              Última semana
+            </button>
+            <button
+              className="quick-filter-btn"
+              onClick={() => applyQuickFilter("month")}
+              title="Filtrar últimos 30 días"
+            >
+              Último mes
+            </button>
+          </div>
         </div>
 
         <div className="filter-actions">

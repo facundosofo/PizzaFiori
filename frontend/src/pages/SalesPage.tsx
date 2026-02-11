@@ -14,7 +14,7 @@ import * as Icons from "../components/shared/Icons";
 import type { Sale } from "../types/sale";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
-import { formatCurrency, formatDateDisplay } from "../utils/formatters";
+import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sales.css";
 
 const SalesPage = () => {
@@ -176,9 +176,6 @@ const SalesPage = () => {
     const skip = (currentPage - 1) * limit;
     const data = await getSales(skip, limit);
     setSales(data.items || []);
-    
-    setSuccessMessage("Venta actualizada exitosamente");
-    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const handleDeleteClick = (saleId: number) => {
@@ -198,8 +195,6 @@ const SalesPage = () => {
       setSales(data.items || []);
       setTotalPages(Math.ceil((data.total || 0) / limit));
       
-      setSuccessMessage("Venta eliminada exitosamente");
-      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Error desconocido";
       setError(`Error al eliminar venta: ${errorMessage}`);
@@ -215,7 +210,7 @@ const SalesPage = () => {
   };
 
   const getTotalItems = (sale: Sale): number => {
-    return sale.items.reduce((sum, item) => sum + item.cantidad, 0);
+    return typeof (sale as any).total_items === 'number' ? (sale as any).total_items : 0;
   };
 
   return (
@@ -269,7 +264,7 @@ const SalesPage = () => {
             {sales.map((sale) => (
               <div key={sale.id} className="sales-table-row">
                 <div className="sales-col-date">
-                  {formatDateDisplay(sale.fecha_creacion)}
+                  {formatDateTimeDisplay(sale.fecha_creacion)}
                 </div>
                 <div className="sales-col-order">
                   {sale.numero_orden || `#${sale.id}`}

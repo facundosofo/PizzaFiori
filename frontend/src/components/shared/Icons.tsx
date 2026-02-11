@@ -14,6 +14,7 @@ import {
   Loader,
   Minus,
   Percent,
+  BadgePercent,
   Pencil,
   Pizza,
   Plus,
@@ -93,6 +94,6 @@ export const CheckIcon = ({ size = 40, color = "#22c55e", className = "" }: Icon
     className: `drop-shadow-[0_0_12px_rgba(34,197,94,0.35)] ${className}`,
   });
 
-export const DiscountIcon = (props: IconProps) => renderLucideIcon(Percent, props);
+export const DiscountIcon = (props: IconProps) => renderLucideIcon(BadgePercent, props);
 
 export const PesoIcon = (props: IconProps) => renderLucideIcon(DollarSign, props);

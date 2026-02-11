@@ -15,6 +15,7 @@ interface SearchableSelectProps {
   onChange: (value: number) => void;
   placeholder?: string;
   searchPlaceholder?: string;
+  searchable?: boolean;
   id?: string;
   disabled?: boolean;
   className?: string;
@@ -26,6 +27,7 @@ const SearchableSelect = ({
   onChange,
   placeholder = "Seleccionar...",
   searchPlaceholder = "Buscar...",
+  searchable = true,
   id,
   disabled = false,
   className = "",
@@ -41,11 +43,11 @@ const SearchableSelect = ({
   }, [options, value]);
 
   const filteredOptions = useMemo(() => {
-    if (!searchTerm) return options;
+    if (!searchable || !searchTerm) return options;
     return options.filter((option) =>
       option.label.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [options, searchTerm]);
+  }, [options, searchTerm, searchable]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -72,7 +74,9 @@ const SearchableSelect = ({
       window.addEventListener("resize", updatePosition);
       updatePosition();
       // Focus en el input cuando se abre
-      setTimeout(() => searchInputRef.current?.focus(), 0);
+      if (searchable) {
+        setTimeout(() => searchInputRef.current?.focus(), 0);
+      }
     }
 
     return () => {
@@ -120,17 +124,19 @@ const SearchableSelect = ({
           }}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="searchable-select-search">
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="searchable-select-input"
-              onMouseDown={(e) => e.stopPropagation()}
-            />
-          </div>
+          {searchable && (
+            <div className="searchable-select-search">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="searchable-select-input"
+                onMouseDown={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
 
           <div className="searchable-select-options">
             {filteredOptions.length === 0 ? (

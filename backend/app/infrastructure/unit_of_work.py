@@ -16,6 +16,9 @@ from app.infrastructure.repositories.offer_repository import (
 from app.infrastructure.repositories.sale_repository import (
     SqlAlchemySaleRepository,
 )
+from app.infrastructure.repositories.sequence_repository import (
+    SqlAlchemySequenceRepository,
+)
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
@@ -26,6 +29,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.category_repo = None
         self.offer_repo = None
         self.sale_repo = None
+        self.sequence_repo = None
 
     async def __aenter__(self):
         self.session = self.session_factory()
@@ -33,6 +37,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.category_repo = SqlAlchemyCategoryRepository(self.session)
         self.offer_repo = SqlAlchemyOfferRepository(self.session)
         self.sale_repo = SqlAlchemySaleRepository(self.session)
+        self.sequence_repo = SqlAlchemySequenceRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):

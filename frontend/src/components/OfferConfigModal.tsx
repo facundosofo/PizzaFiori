@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Offer, OfferItem } from '../types/offer';
 import type { Product } from '../types/product';
 import type { ProductoOpcion } from '../types/offer_item';
+import '../styles/shared/quantity-controls.css';
 import '../styles/offer-config-modal.css';
 import * as Icons from './shared/Icons';
 

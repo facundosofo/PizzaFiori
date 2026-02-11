@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 from datetime import datetime
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text, cast, Date
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -56,11 +56,16 @@ class SqlAlchemySaleRepository(
             )
         )
         
-        # Aplicar filtros de fecha
+        # Aplicar ajuste de horario de negocio (-6 horas)
+        # Las ventas entre 00:00-05:59 se asignan al día anterior
+        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        business_date = cast(adjusted_fecha, Date)
+        
+        # Aplicar filtros de fecha (comparando con fecha de negocio)
         if fecha_desde is not None:
-            query = query.where(Sale.fecha_creacion >= fecha_desde)
+            query = query.where(business_date >= cast(fecha_desde, Date))
         if fecha_hasta is not None:
-            query = query.where(Sale.fecha_creacion <= fecha_hasta)
+            query = query.where(business_date <= cast(fecha_hasta, Date))
         
         query = (
             query
@@ -79,11 +84,16 @@ class SqlAlchemySaleRepository(
         """Cuenta el total de ventas con filtros opcionales de fecha."""
         query = select(func.count()).select_from(Sale)
         
-        # Aplicar filtros de fecha
+        # Aplicar ajuste de horario de negocio (-6 horas)
+        # Las ventas entre 00:00-05:59 se asignan al día anterior
+        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        business_date = cast(adjusted_fecha, Date)
+        
+        # Aplicar filtros de fecha (comparando con fecha de negocio)
         if fecha_desde is not None:
-            query = query.where(Sale.fecha_creacion >= fecha_desde)
+            query = query.where(business_date >= cast(fecha_desde, Date))
         if fecha_hasta is not None:
-            query = query.where(Sale.fecha_creacion <= fecha_hasta)
+            query = query.where(business_date <= cast(fecha_hasta, Date))
         
         result = await self.session.execute(query)
         return result.scalar() or 0

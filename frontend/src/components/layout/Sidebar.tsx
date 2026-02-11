@@ -1,10 +1,9 @@
 import { NavLink } from "react-router-dom";
 import {
+  ChartLine,
   Home,
-  LayoutDashboard,
-  Menu,
-  Package,
   PanelRight,
+  Pizza,
   PlusCircle,
   Receipt,
   Tag,
@@ -20,9 +19,9 @@ const navItems = [
   { label: "Home", to: "/", icon: Home },
   { label: "Ventas", to: "/ventas", icon: Receipt },
   { label: "Registrar venta", to: "/registrar-venta", icon: PlusCircle },
-  { label: "Productos", to: "/productos", icon: Package },
+  { label: "Productos", to: "/productos", icon: Pizza },
   { label: "Ofertas", to: "/ofertas", icon: Tag },
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { label: "Dashboard", to: "/dashboard", icon: ChartLine },
 ];
 
 const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {

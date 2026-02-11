@@ -250,7 +250,7 @@ const ProductModal = ({
                             <div className="quantity-control">
                               <button
                                 type="button"
-                                className="qty-btn"
+                                className="qty-btn qty-btn-minus"
                                 aria-label="Disminuir cantidad"
                                 onClick={() => {
                                   const newPrecios = [...precios];
@@ -278,7 +278,7 @@ const ProductModal = ({
                               />
                               <button
                                 type="button"
-                                className="qty-btn"
+                                className="qty-btn qty-btn-plus"
                                 aria-label="Aumentar cantidad"
                                 onClick={() => {
                                   const newPrecios = [...precios];
@@ -339,7 +339,7 @@ const ProductModal = ({
 
                           <button
                             type="button"
-                            className="price-remove-btn price-remove-btn--gradient"
+                            className="item-remove-btn"
                             onClick={() => {
                               // Advertir si se intenta eliminar el precio unitario
                               if (precio_item.cantidad === 1 && precios.length > 1) {
@@ -355,7 +355,7 @@ const ProductModal = ({
                               ? "No se puede eliminar el único precio unitario" 
                               : "Eliminar precio"}
                           >
-                            <Icons.XIcon size={16} />
+                            <Icons.TrashIcon size={16} />
                           </button>
                         </div>
                       ))

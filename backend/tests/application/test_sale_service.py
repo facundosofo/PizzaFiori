@@ -231,7 +231,6 @@ async def test_create_sale_with_products(mock_uow, mock_logger):
     service = SaleService(uow=mock_uow, logger=mock_logger)
     
     request = SaleCreateRequest(
-        numero_orden="ORD-001",
         items=[
             SaleItemRequest(producto_id=1, cantidad=6)
         ]
@@ -288,7 +287,6 @@ async def test_create_sale_with_offers(mock_uow, mock_logger):
     )
     
     request = SaleCreateRequest(
-        numero_orden="ORD-002",
         items=[
             SaleItemRequest(
                 oferta_id=1,
@@ -535,7 +533,6 @@ async def test_update_sale_with_products(mock_uow, mock_logger, sample_sale):
     from app.presentation.schemas.sale_schemas import SaleUpdateRequest
     
     request = SaleUpdateRequest(
-        numero_orden="ORD-UPDATED",
         items=[
             SaleItemRequest(producto_id=1, cantidad=12, precio_unitario=Decimal("900.00"))
         ]
@@ -569,7 +566,8 @@ async def test_update_sale_with_products(mock_uow, mock_logger, sample_sale):
     
     # Verify product snapshot was captured
     updated_sale = sample_sale
-    assert updated_sale.numero_orden == "ORD-UPDATED"
+    # numero_orden no puede ser editado - debe mantenerse igual
+    assert updated_sale.numero_orden == "ORD-001"
     assert len(updated_sale.items) == 1
     assert updated_sale.items[0].item_nombre == "Empanada Actualizada"
     assert updated_sale.items[0].producto_sku == "EMPA-ACT-001"
@@ -590,7 +588,6 @@ async def test_update_sale_with_offers_no_validation(mock_uow, mock_logger, samp
     from app.presentation.schemas.sale_schemas import SaleUpdateRequest, SelectedProduct
     
     request = SaleUpdateRequest(
-        numero_orden="ORD-HISTORICAL",
         items=[
             SaleItemRequest(
                 oferta_id=1,
@@ -651,7 +648,6 @@ async def test_update_sale_missing_precio_unitario(mock_uow, mock_logger, sample
     from app.presentation.schemas.sale_schemas import SaleUpdateRequest
     
     request = SaleUpdateRequest(
-        numero_orden="ORD-001",
         items=[
             SaleItemRequest(producto_id=1, cantidad=6)  # Missing precio_unitario
         ]
@@ -677,7 +673,6 @@ async def test_update_sale_not_found(mock_uow, mock_logger):
     from app.presentation.schemas.sale_schemas import SaleUpdateRequest
     
     request = SaleUpdateRequest(
-        numero_orden="ORD-001",
         items=[
             SaleItemRequest(producto_id=1, cantidad=6, precio_unitario=Decimal("1000.00"))
         ]
@@ -703,7 +698,6 @@ async def test_update_sale_product_not_found(mock_uow, mock_logger, sample_sale)
     from app.presentation.schemas.sale_schemas import SaleUpdateRequest
     
     request = SaleUpdateRequest(
-        numero_orden="ORD-001",
         items=[
             SaleItemRequest(producto_id=999, cantidad=6, precio_unitario=Decimal("1000.00"))
         ]
@@ -730,7 +724,6 @@ async def test_update_sale_offer_not_found(mock_uow, mock_logger, sample_sale):
     from app.presentation.schemas.sale_schemas import SaleUpdateRequest, SelectedProduct
     
     request = SaleUpdateRequest(
-        numero_orden="ORD-001",
         items=[
             SaleItemRequest(
                 oferta_id=999,

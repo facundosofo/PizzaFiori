@@ -80,10 +80,23 @@ def mock_sale_repo():
     return repo
 
 
+@pytest.fixture
+def mock_sequence_repo():
+    """Mock sequence repository for order number generation."""
+    repo = AsyncMock()
+    
+    # Default behaviors
+    repo.get_for_update = AsyncMock(return_value=None)
+    repo.create = AsyncMock(return_value=None)
+    repo.update = AsyncMock(return_value=None)
+    
+    return repo
+
+
 # ==================== Mock Unit of Work Fixture ====================
 
 @pytest.fixture
-def mock_uow(mock_category_repo, mock_product_repo, mock_offer_repo, mock_sale_repo):
+def mock_uow(mock_category_repo, mock_product_repo, mock_offer_repo, mock_sale_repo, mock_sequence_repo):
     """
     Mock Unit of Work with all repositories.
     Configured as async context manager.
@@ -95,6 +108,7 @@ def mock_uow(mock_category_repo, mock_product_repo, mock_offer_repo, mock_sale_r
     uow.product_repo = mock_product_repo
     uow.offer_repo = mock_offer_repo
     uow.sale_repo = mock_sale_repo
+    uow.sequence_repo = mock_sequence_repo
     
     # Configure async context manager
     uow.__aenter__ = AsyncMock(return_value=uow)

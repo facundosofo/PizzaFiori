@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from decimal import Decimal
 import structlog
 
@@ -190,7 +190,6 @@ class SaleService:
         try:
             self.logger.debug(
                 "Creando venta",
-                numero_orden=sale_create.numero_orden,
                 items_count=len(sale_create.items),
             )
 
@@ -198,6 +197,30 @@ class SaleService:
             total = Decimal("0.00")
 
             async with self.uow as uow:
+                # Siempre generar `numero_orden` - ahora es obligatorio y auto-generado
+                now = datetime.now()
+                # Ajuste de fecha de negocio (-6 horas) para que las ventas
+                # entre 00:00-05:59 se asignen al día anterior
+                business_dt = now - timedelta(hours=6)
+                business_date = business_dt.date()
+
+                # Generación atómica usando tabla de secuencia diaria
+                sequence = await uow.sequence_repo.get_for_update(business_date)
+                if not sequence:
+                    seq = 1
+                    await uow.sequence_repo.create(business_date, seq)
+                else:
+                    sequence.last_value += 1
+                    seq = sequence.last_value
+                    await uow.sequence_repo.update(sequence)
+
+                if seq > 99999:
+                    return ServiceResult(
+                        error="Secuencia diaria de números de orden excedida",
+                        status_code=500,
+                    )
+
+                numero_orden_val = f"#ORD-{business_date.strftime('%y%m%d')}-{seq:05d}"
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
                     precio_unitario = None
@@ -300,7 +323,7 @@ class SaleService:
                     sale_items.append(sale_item)
 
                 sale = Sale(
-                    numero_orden=sale_create.numero_orden,
+                    numero_orden=numero_orden_val,
                     total=total,
                     fecha_creacion=datetime.now(),
                     fecha_actualizacion=datetime.now(),
@@ -311,11 +334,24 @@ class SaleService:
                 await uow.commit()
                 await uow.sale_repo.refresh(sale, attribute_names=["items"])
 
+                # Compute and attach total_items for consistency with API responses
+                try:
+                    total_items = 0
+                    for it in sale.items:
+                        if getattr(it, 'oferta_productos_snapshot', None):
+                            for p in it.oferta_productos_snapshot:
+                                total_items += (p.cantidad or 0) * (it.cantidad or 1)
+                        else:
+                            total_items += it.cantidad or 0
+                    setattr(sale, 'total_items', total_items)
+                except Exception:
+                    setattr(sale, 'total_items', 0)
+
             self.logger.info(
                 "Venta creada exitosamente",
                 sale_id=sale.id,
                 total=float(sale.total),
-                items_count=len(sale.items),
+                items_count=getattr(sale, 'total_items', len(sale.items)),
             )
 
             return ServiceResult(value=sale, status_code=201)
@@ -340,6 +376,19 @@ class SaleService:
                     status_code=404,
                 )
 
+            # Compute total_items before returning
+            try:
+                total_items = 0
+                for it in sale.items:
+                    if getattr(it, 'oferta_productos_snapshot', None):
+                        for p in it.oferta_productos_snapshot:
+                            total_items += (p.cantidad or 0) * (it.cantidad or 1)
+                    else:
+                        total_items += it.cantidad or 0
+                setattr(sale, 'total_items', total_items)
+            except Exception:
+                setattr(sale, 'total_items', 0)
+
             return ServiceResult(value=sale)
 
         except Exception as e:
@@ -363,13 +412,47 @@ class SaleService:
             fecha_desde_dt = datetime.combine(fecha_desde, time.min) if fecha_desde else None
             fecha_hasta_dt = datetime.combine(fecha_hasta, time.max) if fecha_hasta else None
             
+            # Loguear parámetros para diagnóstico desde el frontend
+            self.logger.debug(
+                "Listando ventas - parámetros",
+                skip=skip,
+                limit=limit,
+                fecha_desde=fecha_desde_dt,
+                fecha_hasta=fecha_hasta_dt,
+            )
+
             async with self.uow as uow:
-                return await uow.sale_repo.list(
+                sales = await uow.sale_repo.list(
                     skip=skip,
                     limit=limit,
                     fecha_desde=fecha_desde_dt,
-                    fecha_hasta=fecha_hasta_dt
+                    fecha_hasta=fecha_hasta_dt,
                 )
+
+            # Compute total_items for each sale to provide consistent API responses
+            try:
+                for sale in sales:
+                    total_items = 0
+                    for it in sale.items:
+                        if getattr(it, 'oferta_productos_snapshot', None):
+                            for p in it.oferta_productos_snapshot:
+                                total_items += (p.cantidad or 0) * (it.cantidad or 1)
+                        else:
+                            total_items += it.cantidad or 0
+                    setattr(sale, 'total_items', total_items)
+            except Exception:
+                # If something fails, ensure attribute exists with zero
+                for sale in sales:
+                    if not hasattr(sale, 'total_items'):
+                        setattr(sale, 'total_items', 0)
+
+            # Registrar cantidad obtenida (útil para depuración cuando FE recibe lista vacía)
+            try:
+                self.logger.debug("Ventas obtenidas", count=len(sales))
+            except Exception:
+                self.logger.debug("Ventas obtenidas - no se pudo calcular len(sales)")
+
+            return sales
         except Exception as e:
             self.logger.error(
                 "Error al listar ventas",
@@ -403,12 +486,14 @@ class SaleService:
             return 0
 
     async def update(self, sale_id: int, sale_update) -> ServiceResult:
-        """Actualiza una venta existente."""
+        """Actualiza una venta existente.
+        
+        Nota: El número de orden (numero_orden) no puede ser editado.
+        """
         try:
             self.logger.debug(
                 "Actualizando venta",
                 sale_id=sale_id,
-                numero_orden=sale_update.numero_orden,
                 items_count=len(sale_update.items),
             )
 
@@ -510,7 +595,6 @@ class SaleService:
                     sale_items.append(sale_item)
 
                 # Actualizar venta
-                existing_sale.numero_orden = sale_update.numero_orden
                 existing_sale.total = total
                 existing_sale.fecha_actualizacion = datetime.now()
                 existing_sale.items = sale_items
