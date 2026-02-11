@@ -203,6 +203,33 @@
   letter-spacing: 1.2px;
 }
 
+/* ===== SUCCESS ALERT ===== */
+
+.success-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 8px;
+  color: #22c55e;
+  font-weight: 600;
+  margin-bottom: 15px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ===== SALE ITEMS TABLE ===== */
 
 .sale-items-table {
@@ -407,7 +434,7 @@
 /* ===== EDIT MODAL SPECIFIC ===== */
 
 .sale-edit-modal {
-  max-width: 1000px;
+  max-width: 1100px;
 }
 
 .sale-item-col-actions {
@@ -460,32 +487,87 @@
 
 /* ===== ADD ITEM SECTION ===== */
 
-.add-item-section {
+.add-item-section-wrapper {
   margin-top: 30px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
 }
 
-.add-item-section h3 {
+.add-item-section-wrapper h3 {
   margin: 0 0 15px 0;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #f5f5f5;
   text-transform: uppercase;
   letter-spacing: 1.2px;
 }
 
+.add-item-section {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
 .add-item-form {
   margin-top: 15px;
 }
 
-.form-row {
+.add-item-type-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.add-item-type-section .radio-group-options {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
+.add-item-type-section .radio-option {
+  flex: 1;
+  max-width: 180px;
+}
+
+.add-item-fields-section {
   display: grid;
-  grid-template-columns: 0.8fr 2fr 0.8fr 1fr;
+  grid-template-columns: minmax(320px, 1fr) auto auto;
   gap: 15px;
-  align-items: end;
+  align-items: center;
+}
+
+.add-item-fields-section.offer-fields {
+  grid-template-columns: minmax(360px, 1fr) auto;
+}
+
+.add-item-fields-section .form-group label {
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+}
+
+.add-item-fields-section .quantity-control {
+  margin-top: 0;
+  justify-content: flex-start;
+}
+
+.add-item-fields-section .form-group {
+  min-width: 0;
+}
+
+.add-item-fields-section .form-select,
+.add-item-fields-section .searchable-select {
+  width: 100%;
+}
+
+.add-item-action-group {
+  align-self: end;
+}
+
+.btn-add-item {
+  min-width: 180px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .form-group {
@@ -565,9 +647,17 @@
     font-size: 1.5rem;
   }
 
-  .form-row {
+  .add-item-type-section .radio-group-options {
+    flex-direction: column;
+  }
+
+  .add-item-fields-section,
+  .add-item-fields-section.offer-fields {
     grid-template-columns: 1fr;
-    gap: 12px;
+  }
+
+  .btn-add-item {
+    width: 100%;
   }
 
   .add-item-section {

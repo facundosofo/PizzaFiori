@@ -250,7 +250,7 @@ const ProductModal = ({
                             <div className="quantity-control">
                               <button
                                 type="button"
-                                className="qty-btn"
+                                className="qty-btn qty-btn-minus"
                                 aria-label="Disminuir cantidad"
                                 onClick={() => {
                                   const newPrecios = [...precios];
@@ -278,7 +278,7 @@ const ProductModal = ({
                               />
                               <button
                                 type="button"
-                                className="qty-btn"
+                                className="qty-btn qty-btn-plus"
                                 aria-label="Aumentar cantidad"
                                 onClick={() => {
                                   const newPrecios = [...precios];

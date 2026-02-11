@@ -176,9 +176,6 @@ const SalesPage = () => {
     const skip = (currentPage - 1) * limit;
     const data = await getSales(skip, limit);
     setSales(data.items || []);
-    
-    setSuccessMessage("Venta actualizada exitosamente");
-    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const handleDeleteClick = (saleId: number) => {

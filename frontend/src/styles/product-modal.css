@@ -11,13 +11,6 @@
   - Botones de edición y eliminación
   ================================================================ */
 
-/* Valor numérico centrado que muestra la cantidad actual */
-.qty-value {
-  min-width: 40px;
-  text-align: center;
-  font-weight: 600;
-  color: #fff;
-}
 /* ===== MODAL OVERLAY ===== */
 
 /* Capa de fondo oscuro semi-transparente que cubre toda la pantalla y contiene el modal */

@@ -18,7 +18,7 @@
   transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.qty-btn:hover {
+.qty-btn:hover:not(:disabled) {
   background: linear-gradient(180deg, rgba(50,50,50,0.95), rgba(35,35,35,0.95));
   box-shadow: 0 0 0 3px rgba(255,255,255,0.06) inset;
 }

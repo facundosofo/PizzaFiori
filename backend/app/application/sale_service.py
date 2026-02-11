@@ -596,7 +596,6 @@ class SaleService:
                     sale_items.append(sale_item)
 
                 # Actualizar venta
-                existing_sale.numero_orden = sale_update.numero_orden
                 existing_sale.total = total
                 existing_sale.fecha_actualizacion = datetime.now()
                 existing_sale.items = sale_items
