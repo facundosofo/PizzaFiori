@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Menu,
   Package,
+  PanelRight,
   PlusCircle,
   Receipt,
   Tag,
@@ -30,7 +31,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
       <div className="sidebar-inner">
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <span className="sidebar-brand-text">PizzaFiori</span>
+            <span className="sidebar-brand-text">Pizza Fiori</span>
           </div>
           <div className="sidebar-actions">
             <button
@@ -39,7 +40,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
               onClick={onToggleCollapse}
               aria-label={collapsed ? "Expandir menu" : "Colapsar menu"}
             >
-              <Menu size={18} />
+              <PanelRight size={18} />
             </button>
           </div>
         </div>
