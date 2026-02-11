@@ -6,8 +6,9 @@
   min-height: 100vh;
   /* inherit global background */
   background: transparent;
+  box-sizing: border-box;
   padding: 24px;
-  padding-right: 320px; /* Space for cart drawer (reducido) */
+  padding-right: calc(300px + 24px); /* Space for cart drawer + page padding */
 }
 
 .sales-create-container {
@@ -16,6 +17,7 @@
   margin: 0;
   padding-left: 24px;
   padding-right: 24px;
+  box-sizing: border-box;
 }
 
 /* Tabs */
