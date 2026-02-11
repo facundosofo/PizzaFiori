@@ -2,9 +2,6 @@ import { NavLink } from "react-router-dom";
 import {
   ChartLine,
   Home,
-  LayoutDashboard,
-  Menu,
-  Package,
   PanelRight,
   Pizza,
   PlusCircle,
