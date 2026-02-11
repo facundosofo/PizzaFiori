@@ -5,3 +5,5 @@ from .models.offer import Offer
 from .models.offer_item import OfferItem
 from .models.sale import Sale
 from .models.sale_item import SaleItem
+from .models.order_daily_sequence import OrderDailySequence
+from .models.sale_item_offer_product import SaleItemOfferProduct

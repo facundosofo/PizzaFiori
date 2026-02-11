@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from decimal import Decimal
 import structlog
 
@@ -198,6 +198,32 @@ class SaleService:
             total = Decimal("0.00")
 
             async with self.uow as uow:
+                # Generar `numero_orden` si no fue provisto en el request
+                numero_orden_val = sale_create.numero_orden
+                if not numero_orden_val:
+                    now = datetime.now()
+                    # Ajuste de fecha de negocio (-6 horas) para que las ventas
+                    # entre 00:00-05:59 se asignen al día anterior
+                    business_dt = now - timedelta(hours=6)
+                    business_date = business_dt.date()
+
+                    # Generación atómica usando tabla de secuencia diaria
+                    sequence = await uow.sequence_repo.get_for_update(business_date)
+                    if not sequence:
+                        seq = 1
+                        await uow.sequence_repo.create(business_date, seq)
+                    else:
+                        sequence.last_value += 1
+                        seq = sequence.last_value
+                        await uow.sequence_repo.update(sequence)
+
+                    if seq > 99999:
+                        return ServiceResult(
+                            error="Secuencia diaria de números de orden excedida",
+                            status_code=500,
+                        )
+
+                    numero_orden_val = f"#ORD-{business_date.strftime('%y%m%d')}-{seq:05d}"
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
                     precio_unitario = None
@@ -300,7 +326,7 @@ class SaleService:
                     sale_items.append(sale_item)
 
                 sale = Sale(
-                    numero_orden=sale_create.numero_orden,
+                    numero_orden=numero_orden_val,
                     total=total,
                     fecha_creacion=datetime.now(),
                     fecha_actualizacion=datetime.now(),
@@ -363,13 +389,30 @@ class SaleService:
             fecha_desde_dt = datetime.combine(fecha_desde, time.min) if fecha_desde else None
             fecha_hasta_dt = datetime.combine(fecha_hasta, time.max) if fecha_hasta else None
             
+            # Loguear parámetros para diagnóstico desde el frontend
+            self.logger.debug(
+                "Listando ventas - parámetros",
+                skip=skip,
+                limit=limit,
+                fecha_desde=fecha_desde_dt,
+                fecha_hasta=fecha_hasta_dt,
+            )
+
             async with self.uow as uow:
-                return await uow.sale_repo.list(
+                sales = await uow.sale_repo.list(
                     skip=skip,
                     limit=limit,
                     fecha_desde=fecha_desde_dt,
-                    fecha_hasta=fecha_hasta_dt
+                    fecha_hasta=fecha_hasta_dt,
                 )
+
+            # Registrar cantidad obtenida (útil para depuración cuando FE recibe lista vacía)
+            try:
+                self.logger.debug("Ventas obtenidas", count=len(sales))
+            except Exception:
+                self.logger.debug("Ventas obtenidas - no se pudo calcular len(sales)")
+
+            return sales
         except Exception as e:
             self.logger.error(
                 "Error al listar ventas",
