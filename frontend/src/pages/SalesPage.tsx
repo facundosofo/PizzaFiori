@@ -14,7 +14,7 @@ import * as Icons from "../components/shared/Icons";
 import type { Sale } from "../types/sale";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
-import { formatCurrency, formatDateDisplay } from "../utils/formatters";
+import { formatCurrency, formatDateDisplay, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sales.css";
 
 const SalesPage = () => {
@@ -269,7 +269,7 @@ const SalesPage = () => {
             {sales.map((sale) => (
               <div key={sale.id} className="sales-table-row">
                 <div className="sales-col-date">
-                  {formatDateDisplay(sale.fecha_creacion)}
+                  {formatDateTimeDisplay(sale.fecha_creacion)}
                 </div>
                 <div className="sales-col-order">
                   {sale.numero_orden || `#${sale.id}`}
