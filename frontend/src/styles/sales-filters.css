@@ -17,24 +17,6 @@
 
 .quick-filters {
   display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.quick-filters-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #a0a0a0;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  white-space: nowrap;
-}
-
-.quick-filters-buttons {
-  display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -67,8 +49,9 @@
 
 .sales-filters-row {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 20px;
+  grid-template-columns: auto auto 1fr;
+  column-gap: 0;
+  row-gap: 12px;
   align-items: end;
 }
 
@@ -175,6 +158,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .filter-btn {
@@ -250,15 +234,10 @@
 /* ===== RESPONSIVE DESIGN ===== */
 
 @media (max-width: 1024px) {
-  .quick-filters {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
   .sales-filters-row {
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    grid-template-columns: auto auto;
+    column-gap: 0;
+    row-gap: 10px;
   }
 
   .filter-actions {
@@ -276,12 +255,6 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-  }
-
-  .quick-filters-buttons {
-    width: 100%;
   }
 
   .quick-filter-btn {

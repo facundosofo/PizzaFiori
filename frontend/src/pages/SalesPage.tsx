@@ -14,7 +14,7 @@ import * as Icons from "../components/shared/Icons";
 import type { Sale } from "../types/sale";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
-import { formatCurrency, formatDateDisplay, formatDateTimeDisplay } from "../utils/formatters";
+import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sales.css";
 
 const SalesPage = () => {
