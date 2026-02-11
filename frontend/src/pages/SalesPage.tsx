@@ -15,7 +15,6 @@ import type { Sale } from "../types/sale";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
-import "../styles/sales.css";
 
 const SalesPage = () => {
   const navigate = useNavigate();
@@ -198,8 +197,6 @@ const SalesPage = () => {
       setSales(data.items || []);
       setTotalPages(Math.ceil((data.total || 0) / limit));
       
-      setSuccessMessage("Venta eliminada exitosamente");
-      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Error desconocido";
       setError(`Error al eliminar venta: ${errorMessage}`);
