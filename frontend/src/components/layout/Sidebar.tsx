@@ -27,43 +27,45 @@ const navItems = [
 const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
   return (
     <aside className={`sidebar ${collapsed ? "is-collapsed" : "is-expanded"}`}>
-      <div className="sidebar-header">
-        <div className="sidebar-brand">
-          <span className="sidebar-brand-text">PizzaFiori</span>
-        </div>
-        <div className="sidebar-actions">
-          <button
-            type="button"
-            className="sidebar-action"
-            onClick={onToggleCollapse}
-            aria-label={collapsed ? "Expandir menu" : "Colapsar menu"}
-          >
-            <Menu size={18} />
-          </button>
-        </div>
-      </div>
-
-      <nav className="sidebar-nav" aria-label="Navegacion principal">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                `sidebar-link ${isActive ? "is-active" : ""}`
-              }
+      <div className="sidebar-inner">
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <span className="sidebar-brand-text">PizzaFiori</span>
+          </div>
+          <div className="sidebar-actions">
+            <button
+              type="button"
+              className="sidebar-action"
+              onClick={onToggleCollapse}
+              aria-label={collapsed ? "Expandir menu" : "Colapsar menu"}
             >
-              <span className="sidebar-icon">
-                <Icon size={20} />
-              </span>
-              <span className="sidebar-label">{item.label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
+              <Menu size={18} />
+            </button>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav" aria-label="Navegacion principal">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  `sidebar-link ${isActive ? "is-active" : ""}`
+                }
+              >
+                <span className="sidebar-icon">
+                  <Icon size={20} />
+                </span>
+                <span className="sidebar-label">{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+      </div>
     </aside>
   );
 };

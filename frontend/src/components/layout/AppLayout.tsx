@@ -22,7 +22,7 @@ const AppLayout = () => {
   };
 
   const handleNavigate = () => {
-    setCollapsed(false);
+    return;
   };
 
   const showOverlay = !collapsed && isMobile;
