@@ -390,11 +390,11 @@ const SaleEditModal = ({
                           </div>
                           <div className="sale-item-col-actions">
                             <button
-                              className="price-remove-btn price-remove-btn--gradient"
+                              className="item-remove-btn"
                               onClick={() => handleRemoveItem(item.id)}
                               title="Eliminar item"
                             >
-                              <Icons.XIcon size={16} />
+                              <Icons.TrashIcon size={16} />
                             </button>
                           </div>
                         </div>

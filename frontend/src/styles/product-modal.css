@@ -415,3 +415,12 @@
   font-weight: 700;
 }
 
+/* Alinea verticalmente el botón de eliminar dentro de la fila de precios
+   y lo hace ligeramente más grande para mantener consistencia visual */
+.price-edit-row .item-remove-btn {
+  align-self: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
