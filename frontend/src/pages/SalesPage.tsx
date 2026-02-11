@@ -213,7 +213,7 @@ const SalesPage = () => {
   };
 
   const getTotalItems = (sale: Sale): number => {
-    return sale.items.reduce((sum, item) => sum + item.cantidad, 0);
+    return typeof (sale as any).total_items === 'number' ? (sale as any).total_items : 0;
   };
 
   return (

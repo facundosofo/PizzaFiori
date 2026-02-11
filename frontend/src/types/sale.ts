@@ -3,6 +3,7 @@ import type { SaleItem, SaleItemRequest } from './sale_item';
 export interface Sale {
   id: number;
   numero_orden?: string | null;
+  total_items?: number;
   total: number;
   fecha_creacion: string;
   fecha_actualizacion: string;

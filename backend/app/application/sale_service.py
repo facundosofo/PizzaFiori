@@ -337,11 +337,24 @@ class SaleService:
                 await uow.commit()
                 await uow.sale_repo.refresh(sale, attribute_names=["items"])
 
+                # Compute and attach total_items for consistency with API responses
+                try:
+                    total_items = 0
+                    for it in sale.items:
+                        if getattr(it, 'oferta_productos_snapshot', None):
+                            for p in it.oferta_productos_snapshot:
+                                total_items += (p.cantidad or 0) * (it.cantidad or 1)
+                        else:
+                            total_items += it.cantidad or 0
+                    setattr(sale, 'total_items', total_items)
+                except Exception:
+                    setattr(sale, 'total_items', 0)
+
             self.logger.info(
                 "Venta creada exitosamente",
                 sale_id=sale.id,
                 total=float(sale.total),
-                items_count=len(sale.items),
+                items_count=getattr(sale, 'total_items', len(sale.items)),
             )
 
             return ServiceResult(value=sale, status_code=201)
@@ -365,6 +378,19 @@ class SaleService:
                     error=f"Venta {sale_id} no encontrada",
                     status_code=404,
                 )
+
+            # Compute total_items before returning
+            try:
+                total_items = 0
+                for it in sale.items:
+                    if getattr(it, 'oferta_productos_snapshot', None):
+                        for p in it.oferta_productos_snapshot:
+                            total_items += (p.cantidad or 0) * (it.cantidad or 1)
+                    else:
+                        total_items += it.cantidad or 0
+                setattr(sale, 'total_items', total_items)
+            except Exception:
+                setattr(sale, 'total_items', 0)
 
             return ServiceResult(value=sale)
 
@@ -405,6 +431,23 @@ class SaleService:
                     fecha_desde=fecha_desde_dt,
                     fecha_hasta=fecha_hasta_dt,
                 )
+
+            # Compute total_items for each sale to provide consistent API responses
+            try:
+                for sale in sales:
+                    total_items = 0
+                    for it in sale.items:
+                        if getattr(it, 'oferta_productos_snapshot', None):
+                            for p in it.oferta_productos_snapshot:
+                                total_items += (p.cantidad or 0) * (it.cantidad or 1)
+                        else:
+                            total_items += it.cantidad or 0
+                    setattr(sale, 'total_items', total_items)
+            except Exception:
+                # If something fails, ensure attribute exists with zero
+                for sale in sales:
+                    if not hasattr(sale, 'total_items'):
+                        setattr(sale, 'total_items', 0)
 
             # Registrar cantidad obtenida (útil para depuración cuando FE recibe lista vacía)
             try:

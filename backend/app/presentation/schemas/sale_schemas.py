@@ -118,6 +118,7 @@ class SaleResponse(BaseModel):
     id: int
     numero_orden: Optional[str]
     total: Decimal
+    total_items: int = Field(0, description="Total de items (incluye productos dentro de ofertas)")
     fecha_creacion: datetime
     fecha_actualizacion: datetime
     items: List[SaleItemResponse]

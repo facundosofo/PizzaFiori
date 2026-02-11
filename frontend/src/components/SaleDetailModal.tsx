@@ -116,7 +116,7 @@ const SaleDetailModal = ({
                     <div className="sale-info-row">
                       <span className="sale-info-label">Total Items:</span>
                       <span className="sale-info-value">
-                        {sale.items.reduce((sum, item) => sum + item.cantidad, 0)}
+                        {(sale.total_items ?? 0)}
                       </span>
                     </div>
                   </div>
