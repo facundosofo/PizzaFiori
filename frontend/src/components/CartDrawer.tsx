@@ -56,7 +56,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <Icons.ShoppingCartIcon size={48} color="rgba(255, 255, 255, 0.3)" />
             </div>
             <p className="cart-empty-text">
-              Agrega productos o ofertas para comenzar
+              Agrega productos u ofertas para comenzar
             </p>
           </div>
         ) : (
