@@ -569,7 +569,7 @@ export const SalesCreatePage: React.FC = () => {
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 50, x: '-50%' }}
           >
-            <Icons.CheckIcon size={16} className="toast-icon" />
+            <Icons.CheckIcon size={16} color="currentColor" className="toast-icon" />
             <span className="toast-text">{addedItemToast}</span>
             <span className="toast-label">agregado al carrito</span>
           </motion.div>

@@ -169,7 +169,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </>
             ) : (
                 <>
-                <Icons.CheckIcon size={18} /> Confirmar
+                <Icons.CheckIcon size={18} color="currentColor" /> Confirmar
               </>
             )}
           </button>
