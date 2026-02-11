@@ -23,6 +23,7 @@
 .app-content {
   min-height: 100vh;
   padding: 32px 40px 48px;
+  min-width: 0;
 }
 
 .sidebar {
