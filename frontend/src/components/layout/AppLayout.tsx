@@ -6,7 +6,6 @@ import "../../styles/sidebar.css";
 
 const AppLayout = () => {
   const [collapsed, setCollapsed] = usePersistentState("sidebar-collapsed", true);
-  const [pinned, setPinned] = usePersistentState("sidebar-pinned", false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -18,47 +17,21 @@ const AppLayout = () => {
     return () => media.removeEventListener("change", handleChange);
   }, []);
 
-  useEffect(() => {
-    if (pinned && collapsed) {
-      setCollapsed(false);
-    }
-  }, [pinned, collapsed, setCollapsed]);
-
   const handleToggleCollapse = () => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      if (next) {
-        setPinned(false);
-      }
-      return next;
-    });
-  };
-
-  const handleTogglePin = () => {
-    setPinned((prev) => {
-      const next = !prev;
-      if (next) {
-        setCollapsed(false);
-      }
-      return next;
-    });
+    setCollapsed((prev) => !prev);
   };
 
   const handleNavigate = () => {
-    if (!pinned && isMobile) {
-      setCollapsed(true);
-    }
+    setCollapsed(false);
   };
 
-  const showOverlay = !pinned && !collapsed && isMobile;
+  const showOverlay = !collapsed && isMobile;
 
   return (
     <div className={`app-layout ${collapsed ? "is-collapsed" : "is-expanded"}`}>
       <Sidebar
         collapsed={collapsed}
-        pinned={pinned}
         onToggleCollapse={handleToggleCollapse}
-        onTogglePin={handleTogglePin}
         onNavigate={handleNavigate}
       />
       <main className="app-content">

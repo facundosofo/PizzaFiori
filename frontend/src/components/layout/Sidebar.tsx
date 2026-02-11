@@ -4,8 +4,6 @@ import {
   LayoutDashboard,
   Menu,
   Package,
-  Pin,
-  PinOff,
   PlusCircle,
   Receipt,
   Tag,
@@ -13,9 +11,7 @@ import {
 
 export type SidebarProps = {
   collapsed: boolean;
-  pinned: boolean;
   onToggleCollapse: () => void;
-  onTogglePin: () => void;
   onNavigate: () => void;
 };
 
@@ -28,7 +24,7 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
 ];
 
-const Sidebar = ({ collapsed, pinned, onToggleCollapse, onTogglePin, onNavigate }: SidebarProps) => {
+const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
   return (
     <aside className={`sidebar ${collapsed ? "is-collapsed" : "is-expanded"}`}>
       <div className="sidebar-header">
@@ -36,16 +32,6 @@ const Sidebar = ({ collapsed, pinned, onToggleCollapse, onTogglePin, onNavigate 
           <span className="sidebar-brand-text">PizzaFiori</span>
         </div>
         <div className="sidebar-actions">
-          {!collapsed && (
-            <button
-              type="button"
-              className="sidebar-action"
-              onClick={onTogglePin}
-              aria-label={pinned ? "Desfijar menu" : "Fijar menu"}
-            >
-              {pinned ? <PinOff size={18} /> : <Pin size={18} />}
-            </button>
-          )}
           <button
             type="button"
             className="sidebar-action"
