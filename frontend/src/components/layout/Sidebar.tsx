@@ -124,6 +124,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
             <span className="sidebar-icon">
               <div className="user-avatar">
                 {user?.first_name?.charAt(0).toUpperCase() || "U"}
+                {user?.last_name?.charAt(0).toUpperCase() || "S"}
               </div>
             </span>
             <span className="sidebar-label">

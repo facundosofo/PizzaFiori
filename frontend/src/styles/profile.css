@@ -112,6 +112,33 @@
   justify-content: center;
 }
 
+.btn-primary {
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  border: 2px solid #4ade80;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .profile-actions .btn-primary {
   max-width: 280px;
 }
