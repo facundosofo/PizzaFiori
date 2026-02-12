@@ -42,7 +42,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
       await logout();
       navigate("/login", { replace: true });
     } catch (error) {
-      console.error("Error during logout:", error);
+      // Ignore logout errors
     }
   };
 

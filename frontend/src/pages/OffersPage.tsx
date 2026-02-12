@@ -40,7 +40,6 @@ const OffersPage = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Error desconocido al cargar los datos";
       setError(`Error al cargar: ${errorMessage}`);
-      console.error("Error fetching data:", err);
     } finally {
       setLoading(false);
     }

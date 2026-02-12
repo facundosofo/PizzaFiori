@@ -24,7 +24,6 @@ api.interceptors.request.use(
     // Check if token is expired BEFORE sending request (proactive check)
     const expiresAt = localStorage.getItem('token_expires_at');
     if (expiresAt && Date.now() > parseInt(expiresAt)) {
-      console.warn('Token expired, clearing auth');
       clearAuth();
       window.location.href = '/login';
       return Promise.reject(new Error('Token expired'));
@@ -81,12 +80,10 @@ api.interceptors.response.use(
     // Handle authentication errors
     if (error.response?.status === 401) {
       // Unauthorized - token invalid or expired
-      console.warn('401 Unauthorized, redirecting to login');
       clearAuth();
       window.location.href = '/login';
     } else if (error.response?.status === 403) {
       // Forbidden - insufficient permissions
-      console.error('403 Forbidden - Insufficient permissions');
     }
 
     return Promise.reject(error);

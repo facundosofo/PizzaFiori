@@ -52,7 +52,7 @@ class UserService {
    */
   async changePassword(oldPassword: string, newPassword: string): Promise<void> {
     try {
-      const response = await api.post<{ message: string }>(
+      await api.post<{ message: string }>(
         '/users/me/change-password',
         {
           old_password: oldPassword,

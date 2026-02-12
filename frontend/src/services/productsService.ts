@@ -24,7 +24,6 @@ export const createProducto = async (
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error creating producto:", err);
     throw new Error(errorMessage);
   }
 };
@@ -37,7 +36,6 @@ export const getProductos = async (): Promise<Product[]> => {
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error fetching productos:", err);
     throw new Error(errorMessage);
   }
 };
@@ -70,7 +68,6 @@ export const updateProducto = async (
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error updating producto:", err);
     throw new Error(errorMessage);
   }
 };
@@ -80,7 +77,6 @@ export const deactivateProducto = async (id: number): Promise<void> => {
     await api.patch(`/productos/${id}/desactivar`);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error deactivating producto:", err);
     throw new Error(errorMessage);
   }
 };

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { createPortal } from 'react-dom';
-import { useNavigate } from "react-router-dom";
 import { getSales, deleteSale } from "../services/salesService";
 import { getProductos } from "../services/productsService";
 import { getOfertas } from "../services/ofertasService";
@@ -18,7 +17,6 @@ import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sales.css";
 
 const SalesPage = () => {
-  const navigate = useNavigate();
   const [sales, setSales] = useState<Sale[]>([]);
   // Cache products and offers for use in detail/edit modals (Phase 2+)
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -55,7 +53,6 @@ const SalesPage = () => {
         setAllOffers(offers || []);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-        console.error("Error fetching catalog:", err);
         setError(`Error al cargar catálogo: ${errorMessage}`);
       }
     };
@@ -78,7 +75,6 @@ const SalesPage = () => {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido";
         setError(`Error al cargar ventas: ${errorMessage}`);
-        console.error("Error fetching sales:", err);
       } finally {
         setLoading(false);
       }

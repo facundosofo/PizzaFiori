@@ -154,7 +154,6 @@ export const getTopProducts = async (
     params.set('category', category);
   }
   const url = `/dashboard/products/top?${params.toString()}`;
-  console.log('[Service] Fetching products:', url);
   return fetchJson(url);
 };
 
@@ -171,7 +170,6 @@ export const getSalesByCategory = async (
   }
   const query = params.toString();
   const url = `/dashboard/sales-by-category${query ? `?${query}` : ''}`;
-  console.log('[Service] Fetching sales by category:', url);
   return fetchJson(url);
 };
 
@@ -193,7 +191,6 @@ export const getWeekdayRevenue = async (
   }
   const query = params.toString();
   const url = `/dashboard/revenue/weekday${query ? `?${query}` : ''}`;
-  console.log('[Service] Fetching weekday revenue:', url);
   return fetchJson(url);
 };
 
@@ -204,6 +201,5 @@ export const getWeekdayRevenue = async (
  */
 export const getCategories = async (): Promise<Category[]> => {
   const url = '/categorias';
-  console.log('[Service] Fetching categories:', url);
   return fetchJson(url);
 };

@@ -67,7 +67,6 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        console.log('[Dashboard] Iniciando carga de datos...');
         setError(null);
         setLoading(true);
         
@@ -77,22 +76,16 @@ const DashboardOverview = () => {
           getCategories(),
         ]);
         
-        console.log('[Dashboard] Datos recibidos:', dashboardData);
-        console.log('[Dashboard] Categorías recibidas:', categoriesData);
         setData(dashboardData);
         
         // Usar las categorías del endpoint de categorías
         const categories = categoriesData.map(c => c.nombre).sort();
         setAvailableCategories(categories);
-        
-        console.log('[Dashboard] Estado actualizado correctamente');
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar el dashboard';
-        console.error('[Dashboard] Error:', err);
         setError(`Error al cargar dashboard: ${errorMessage}`);
       } finally {
         setLoading(false);
-        console.log('[Dashboard] Loading finalizado');
       }
     };
 
@@ -102,13 +95,10 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchSalesByCategory = async () => {
       try {
-        console.log('[Dashboard] Fetching sales by category for time filter:', salesByCategoryTimeFilter);
         const salesByCategory = await getSalesByCategory(8, salesByCategoryTimeFilter);
-        console.log('[Dashboard] Sales by category received:', salesByCategory);
         setData((prev) => (prev ? { ...prev, salesByCategory } : prev));
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar ventas por categoria';
-        console.error('[Dashboard] Error ventas por categoria:', err);
         setError(`Error al cargar ventas por categoria: ${errorMessage}`);
       }
     };
@@ -122,13 +112,10 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchTopProducts = async () => {
       try {
-        console.log('[Dashboard] Fetching top products for time filter:', topProductsTimeFilter, 'sort:', topProductsSort, 'category:', topProductsCategory);
         const topProducts = await getTopProducts(5, topProductsTimeFilter, topProductsSort, topProductsCategory || undefined);
-        console.log('[Dashboard] Top products received:', topProducts);
         setData((prev) => (prev ? { ...prev, topProducts } : prev));
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar productos mas vendidos';
-        console.error('[Dashboard] Error productos mas vendidos:', err);
         setError(`Error al cargar productos mas vendidos: ${errorMessage}`);
       }
     };
@@ -142,14 +129,11 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchWeekdayRevenue = async () => {
       try {
-        console.log('[Dashboard] Fetching weekday revenue for category:', weekdayCategory);
         setWeekdayLoading(true);
         const weekdayRevenue = await getWeekdayRevenue(weekdayCategory || undefined, weekdayTimeFilter);
-        console.log('[Dashboard] Weekday revenue received:', weekdayRevenue);
         setWeekdayData(weekdayRevenue);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar promedio por día de semana';
-        console.error('[Dashboard] Error weekday revenue:', err);
         setError(`Error al cargar promedio por día de semana: ${errorMessage}`);
       } finally {
         setWeekdayLoading(false);

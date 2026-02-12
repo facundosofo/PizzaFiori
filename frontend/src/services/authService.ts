@@ -49,8 +49,6 @@ class AuthService {
       localStorage.setItem('token_expires_in', expires_in.toString());
       localStorage.setItem('token_expires_at', expires_at.toString());
 
-      console.log('Login successful:', user.username);
-
       return user;
     } catch (error: any) {
       // Translate error messages from backend
@@ -68,7 +66,7 @@ class AuthService {
       // Call server logout endpoint to invalidate token
       await api.post('/auth/logout');
     } catch (error) {
-      console.warn('Logout request failed, clearing local storage anyway');
+      // Ignore logout errors
     } finally {
       // Always clear local auth data
       this.clearAuth();

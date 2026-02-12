@@ -7,7 +7,6 @@ export const getCategorias = async (): Promise<Category[]> => {
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error fetching categorías:", err);
     throw new Error(errorMessage);
   }
 };

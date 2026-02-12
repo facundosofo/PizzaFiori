@@ -17,7 +17,6 @@ export const getOfertas = async (active?: boolean): Promise<Offer[]> => {
     }));
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error fetching ofertas:", err);
     throw new Error(errorMessage);
   }
 };
@@ -28,7 +27,6 @@ export const getOfertaById = async (id: number): Promise<Offer> => {
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error fetching oferta by ID:", err);
     throw new Error(errorMessage);
   }
 };
@@ -39,7 +37,6 @@ export const createOffer = async (data: CreateOfferRequest): Promise<Offer> => {
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error creating oferta:", err);
     throw new Error(errorMessage);
   }
 };
@@ -50,7 +47,6 @@ export const updateOffer = async (id: number, data: UpdateOfferRequest): Promise
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error updating oferta:", err);
     throw new Error(errorMessage);
   }
 };
@@ -60,7 +56,6 @@ export const deactivateOffer = async (id: number): Promise<void> => {
     await api.patch(`/ofertas/${id}/desactivar`);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error deactivating oferta:", err);
     throw new Error(errorMessage);
   }
 };

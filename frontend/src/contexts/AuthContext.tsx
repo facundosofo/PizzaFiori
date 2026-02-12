@@ -38,7 +38,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(storedUser);
         }
       } catch (error) {
-        console.error('Failed to initialize auth:', error);
         authService.clearAuth();
       } finally {
         setIsLoading(false);
@@ -62,7 +61,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await authService.logout();
     } catch (error) {
-      console.error('Logout request failed:', error);
       // Continue with local logout even if server request fails
     } finally {
       setUser(null);

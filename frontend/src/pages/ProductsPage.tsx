@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProductos, createProducto } from "../services/productsService";
+import { getProductos } from "../services/productsService";
 import { getCategorias } from "../services/categoriasService";
 import ProductCard from "../components/ProductCard";
 import ProductModal from "../components/ProductModal";
@@ -40,7 +40,6 @@ const ProductosPage = () => {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido al cargar los datos";
         setError(`Error al cargar: ${errorMessage}`);
-        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
@@ -50,19 +49,15 @@ const ProductosPage = () => {
   }, []);
 
   const handleProductUpdate = (updatedProducto: Product) => {
-    console.log('Actualizando producto:', updatedProducto);
     setProductos((prevProductos) => {
       const updated = prevProductos.map((p) => (p.id === updatedProducto.id ? updatedProducto : p));
-      console.log('Productos después de actualizar:', updated);
       return updated;
     });
   };
 
   const handleProductDelete = (productoId: number) => {
-    console.log('Eliminando producto ID:', productoId);
     setProductos((prevProductos) => {
       const filtered = prevProductos.filter((p) => p.id !== productoId);
-      console.log('Productos después de eliminar:', filtered);
       return filtered;
     });
   };
@@ -83,11 +78,8 @@ const ProductosPage = () => {
   };
 
   const handleCreateProduct = async (producto: Product) => {
-    console.log('Producto creado recibido:', producto);
-    
     setProductos((prev) => {
       const updated = [...prev, producto];
-      console.log('Productos después de agregar:', updated);
       return updated;
     });
     
