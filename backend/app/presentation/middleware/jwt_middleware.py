@@ -19,8 +19,7 @@ PUBLIC_ROUTES = {
     "/redoc",
     "/health",
     "/auth/login",
-    "/auth/register",
-    "/auth/reset-password",
+    "/auth/reset-password", #TODO: Implementar endpoint
 }
 
 

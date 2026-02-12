@@ -5,6 +5,7 @@ from typing import List
 from app.application.category_service import CategoryService, ServiceResult
 from app.containers import Container
 from app.presentation.schemas.category_schemas import CategoriaCreateRequest, CategoriaUpdateRequest, CategoriaResponse
+from app.presentation.routers.dependencies import require_admin
 
 router = APIRouter(prefix="/categorias", tags=["Categorías"])
 
@@ -15,11 +16,12 @@ router = APIRouter(prefix="/categorias", tags=["Categorías"])
     status_code=status.HTTP_201_CREATED,
     summary="Crear una categoría",
     description="Crea una nueva categoría de productos.",
-    responses={400: {"description": "Datos inválidos de la categoría"}}
+    responses={400: {"description": "Datos inválidos de la categoría"}, 403: {"description": "Admin access required"}}
 )
 @inject
 async def create_categoria(
     categoria: CategoriaCreateRequest = Body(..., description="Datos de la categoría a crear"),
+    admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
     result: ServiceResult = await service.create(categoria)
@@ -64,12 +66,13 @@ async def get_categoria(
     response_model=CategoriaResponse,
     summary="Actualizar una categoría",
     description="Actualiza los campos de una categoría existente.",
-    responses={404: {"description": "Categoría no encontrada"}}
+    responses={404: {"description": "Categoría no encontrada"}, 403: {"description": "Admin access required"}}
 )
 @inject
 async def update_categoria(
     categoria_id: int = Path(..., ge=1, description="ID de la categoría a actualizar"),
     categoria: CategoriaUpdateRequest = Body(..., description="Campos a actualizar"),
+    admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
     result: ServiceResult = await service.update(categoria_id, categoria)
@@ -84,12 +87,14 @@ async def update_categoria(
     description="Elimina una categoría existente.",
     responses={
         404: {"description": "Categoría no encontrada"},
-        200: {"description": "Categoría eliminada correctamente"}
+        200: {"description": "Categoría eliminada correctamente"},
+        403: {"description": "Admin access required"}
     }
 )
 @inject
 async def delete_categoria(
     categoria_id: int = Path(..., ge=1, description="ID de la categoría a eliminar"),
+    admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
     result: ServiceResult = await service.delete(categoria_id)

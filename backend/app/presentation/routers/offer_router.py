@@ -9,6 +9,7 @@ from app.presentation.schemas.offer_schemas import (
     OfferUpdateRequest,
     OfferResponse,
 )
+from app.presentation.routers.dependencies import require_admin
 
 
 router = APIRouter(prefix="/ofertas", tags=["Ofertas"])
@@ -23,11 +24,13 @@ router = APIRouter(prefix="/ofertas", tags=["Ofertas"])
     responses={
         400: {"description": "Datos inválidos de la oferta"},
         404: {"description": "Uno o más productos no encontrados"},
+        403: {"description": "Admin access required"},
     },
 )
 @inject
 async def create_offer(
     offer: OfferCreateRequest,
+    admin_user: dict = Depends(require_admin),
     service: OfferService = Depends(Provide[Container.offer_service]),
 ):
     result: ServiceResult = await service.create(offer)
@@ -88,12 +91,14 @@ async def get_offer(
     responses={
         404: {"description": "Oferta o producto no encontrado"},
         400: {"description": "Datos inválidos"},
+        403: {"description": "Admin access required"},
     },
 )
 @inject
 async def update_offer(
     offer_id: int,
     offer_update: OfferUpdateRequest,
+    admin_user: dict = Depends(require_admin),
     service: OfferService = Depends(Provide[Container.offer_service]),
 ):
     result: ServiceResult = await service.update(offer_id, offer_update)
@@ -112,11 +117,15 @@ async def update_offer(
     response_model=OfferResponse,
     summary="Desactivar una oferta",
     description="Cambia el estado activo de una oferta.",
-    responses={404: {"description": "Oferta no encontrada"}},
+    responses={
+        404: {"description": "Oferta no encontrada"},
+        403: {"description": "Admin access required"},
+    },
 )
 @inject
 async def deactivate_offer(
     offer_id: int = Path(..., ge=1, description="ID único de la oferta"),
+    admin_user: dict = Depends(require_admin),
     service: OfferService = Depends(Provide[Container.offer_service]),
 ):
     result = await service.update(offer_id, active=False)
