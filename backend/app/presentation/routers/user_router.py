@@ -50,6 +50,7 @@ async def register(
         password=request.password,
         first_name=request.first_name,
         last_name=request.last_name,
+        role=request.role,
     )
 
     if result.error:

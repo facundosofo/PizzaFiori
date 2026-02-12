@@ -22,6 +22,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, description="Password (8+ chars, 1 uppercase, 1 number)")
     first_name: str = Field(..., min_length=1, max_length=50)
     last_name: str = Field(..., min_length=1, max_length=50)
+    role: str = Field(default="USER", min_length=1, max_length=20, description="User role (ADMIN or USER)")
 
     @field_validator('username')
     @classmethod
