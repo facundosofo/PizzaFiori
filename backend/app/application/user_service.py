@@ -333,7 +333,7 @@ class UserService:
                         user_id=user_id,
                     )
                     return ServiceResult(
-                        error="Invalid old password", status_code=401
+                        error="Invalid old password", status_code=400
                     )
 
                 # Update password

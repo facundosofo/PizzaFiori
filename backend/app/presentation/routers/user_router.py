@@ -110,7 +110,7 @@ async def get_me(
     summary="Change Password",
     description="Change password for authenticated user",
     responses={
-        401: {"description": "Invalid old password"},
+        400: {"description": "Invalid old password"},
         422: {"description": "Invalid new password"},
     },
 )
