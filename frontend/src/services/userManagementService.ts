@@ -3,7 +3,7 @@
  */
 
 import api from './http';
-import type { User } from './authService';
+import type { User } from './userService';
 
 export interface CreateUserRequest {
   username: string;
@@ -19,7 +19,6 @@ export interface UpdateUserRequest {
   last_name?: string;
   email?: string;
   role?: string;
-  is_active?: boolean;
 }
 
 class UserManagementService {
@@ -28,10 +27,22 @@ class UserManagementService {
    */
   async getAllUsers(): Promise<User[]> {
     try {
-      const response = await api.get<User[]>('/users');
-      return response.data;
+      const response = await api.get<{ users: User[]; total: number; skip: number; limit: number }>('/users');
+      return response.data.users;
     } catch (error: any) {
       throw new Error(error.response?.data?.detail || 'Failed to fetch users');
+    }
+  }
+
+  /**
+   * Get a specific user (Admin only)
+   */
+  async getUserById(userId: number): Promise<User> {
+    try {
+      const response = await api.get<User>(`/users/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Error al obtener usuario');
     }
   }
 

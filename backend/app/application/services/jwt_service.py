@@ -24,7 +24,7 @@ class JWTService:
         Args:
             user_id: ID of the user
             username: Username of the user
-            role: Role of the user (ADMIN, USER, MODERATOR, etc.)
+            role: Role of the user (ADMIN, USER)
             custom_expires_minutes: Override duration (for testing)
 
         Returns:
@@ -42,16 +42,20 @@ class JWTService:
                 role, settings.jwt_access_token_expire_minutes
             )
 
-        now = datetime.utcnow()
+        now = datetime.now()
         expires_at = now + timedelta(minutes=duration_minutes)
+        
+        # Convert to Unix timestamps for JWT
+        issued_at_ts = int(now.timestamp())
+        expires_at_ts = int(expires_at.timestamp())
 
-        # Create JWT payload
+        # Create JWT payload with epoch timestamps
         payload = {
             "sub": str(user_id),  # Subject (user ID)
             "username": username,
             "role": role,
-            "exp": expires_at,  # Expiration time
-            "iat": now,  # Issued at time
+            "exp": expires_at_ts,  # Expiration time (epoch seconds)
+            "iat": issued_at_ts,  # Issued at time (epoch seconds)
             "type": "access",  # Token type
         }
 
@@ -65,7 +69,7 @@ class JWTService:
         return {
             "token": token,
             "expires_in": int(duration_minutes * 60),  # In seconds for frontend
-            "expires_at": int(expires_at.timestamp() * 1000),  # Timestamp in ms
+            "expires_at": int(expires_at_ts * 1000),  # Timestamp in ms for frontend
         }
 
     @staticmethod

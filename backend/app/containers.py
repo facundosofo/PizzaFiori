@@ -20,6 +20,7 @@ class Container(containers.DeclarativeContainer):
             "app.presentation.routers.sale_router",
             "app.presentation.routers.dashboard_router",
             "app.presentation.routers.auth_router",
+            "app.presentation.routers.user_router",
         ]
     )
     

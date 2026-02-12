@@ -129,7 +129,6 @@ class UserService:
                     first_name=first_name,
                     last_name=last_name,
                     role=role,
-                    is_active=True,
                 )
 
                 await uow.users.add(user)
@@ -177,17 +176,10 @@ class UserService:
                         error="Invalid credentials", status_code=401
                     )
 
-                if not user.is_active:
-                    self.logger.warning(
-                        "Login attempt with inactive account",
-                        username=username,
-                    )
-                    return ServiceResult(error="Account is inactive", status_code=403)
-
                 # Check account lockout
-                if user.locked_until and datetime.utcnow() < user.locked_until:
+                if user.locked_until and datetime.now() < user.locked_until:
                     remaining_minutes = (
-                        user.locked_until - datetime.utcnow()
+                        user.locked_until - datetime.now()
                     ).total_seconds() / 60
                     self.logger.warning(
                         "Login attempt on locked account",
@@ -208,7 +200,7 @@ class UserService:
 
                     # Check if should lock account
                     if user.failed_login_attempts >= self.settings.max_login_attempts:
-                        user.locked_until = datetime.utcnow() + timedelta(
+                        user.locked_until = datetime.now() + timedelta(
                             minutes=self.settings.lockout_duration_minutes
                         )
                         self.logger.warning(

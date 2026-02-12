@@ -30,7 +30,7 @@ class SqlAlchemyUserRepository(BaseRepository[User], AbstractUserRepository):
 
     async def list(self, skip: int = 0, limit: int = 100) -> List[User]:
         """List all users with pagination."""
-        query = select(self.model).offset(skip).limit(limit)
+        query = select(self.model).order_by(self.model.id).offset(skip).limit(limit)
         result = await self.session.execute(query)
         return result.scalars().all()
 
@@ -39,6 +39,7 @@ class SqlAlchemyUserRepository(BaseRepository[User], AbstractUserRepository):
         query = (
             select(self.model)
             .where(self.model.role == role)
+            .order_by(self.model.id)
             .offset(skip)
             .limit(limit)
         )

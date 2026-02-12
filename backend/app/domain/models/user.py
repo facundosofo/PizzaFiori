@@ -13,13 +13,11 @@ class User(Base):
     password_hash = Column(Text, nullable=False)
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False)
-    role = Column(String(20), default="USER", nullable=False)  # ADMIN, USER, MODERATOR
-    is_active = Column(Boolean, default=True, nullable=False)
+    role = Column(String(20), default="USER", nullable=False)  # ADMIN, USER
     failed_login_attempts = Column(Integer, default=0, nullable=False)
     locked_until = Column(DateTime, nullable=True)
-    last_logout_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
     def __repr__(self):
         return f"<User(id={self.id}, username={self.username}, role={self.role})>"

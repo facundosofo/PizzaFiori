@@ -48,6 +48,14 @@ class ResetPasswordConfirmRequest(BaseModel):
     new_password: str = Field(..., min_length=8, description="New password")
 
 
+class UpdateUserRequest(BaseModel):
+    """Update user request model"""
+    first_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    email: Optional[EmailStr] = None
+    role: Optional[str] = None
+
+
 # ---------------------------
 # Response Models - Auth
 # ---------------------------
@@ -95,7 +103,6 @@ class UserResponse(BaseModel):
     first_name: str
     last_name: str
     role: str
-    is_active: bool
     created_at: datetime
     updated_at: datetime
 
@@ -104,7 +111,6 @@ class UserDetailResponse(UserResponse):
     """Detailed user response with additional fields"""
     failed_login_attempts: int
     locked_until: Optional[datetime] = None
-    last_logout_at: Optional[datetime] = None
 
 
 class UserListResponse(BaseModel):

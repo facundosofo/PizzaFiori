@@ -8,6 +8,7 @@ from .presentation.routers.offer_router import router as offer_router
 from .presentation.routers.sale_router import router as sale_router
 from .presentation.routers.dashboard_router import router as dashboard_router
 from .presentation.routers.auth_router import router as auth_router
+from .presentation.routers.user_router import router as user_router
 from app.domain import *
 from app.containers import Container
 from app.infrastructure.middleware.http_logging_middleware import HttpLoggingMiddleware
@@ -48,6 +49,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Agregar los routers
 app.include_router(auth_router)
+app.include_router(user_router)
 app.include_router(product_router)
 app.include_router(category_router)
 app.include_router(offer_router)

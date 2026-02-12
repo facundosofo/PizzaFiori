@@ -35,7 +35,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
 
   const handleLogout = async () => {
     try {

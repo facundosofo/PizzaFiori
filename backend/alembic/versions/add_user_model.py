@@ -1,7 +1,7 @@
 """Add User model for authentication
 
 Revision ID: add_user_model
-Revises: add_dashboard_indexes
+Revises: 3cdc1c792e6b
 Create Date: 2026-02-11 00:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'add_user_model'
-down_revision: Union[str, Sequence[str], None] = 'add_dashboard_indexes'
+down_revision: Union[str, Sequence[str], None] = '3cdc1c792e6b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

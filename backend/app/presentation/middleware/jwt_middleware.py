@@ -37,7 +37,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
         """
 
         # Skip JWT validation for public routes
-        if self._is_public_route(request.url.path):
+        if self._is_public_route(request.url.path, request.method):
             return await call_next(request)
 
         # Extract and validate token
@@ -61,7 +61,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
             payload = JWTService.decode_token(token)
             user_id = int(payload.get("sub", 0))
 
-            # Verify user still exists and is active
+            # Verify user still exists
             async with SqlAlchemyUnitOfWork() as uow:
                 user = await uow.users.get_by_id(user_id)
 
@@ -75,31 +75,6 @@ class JWTMiddleware(BaseHTTPMiddleware):
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="User not found",
                     )
-
-                if not user.is_active:
-                    self.logger.warning(
-                        "Token validation failed: user inactive",
-                        user_id=user_id,
-                        path=request.url.path,
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="User account is inactive",
-                    )
-
-                # Validate token hasn't been invalidated by logout
-                if user.last_logout_at:
-                    token_issued_at = datetime.fromtimestamp(payload["iat"])
-                    if token_issued_at < user.last_logout_at:
-                        self.logger.warning(
-                            "Token validation failed: token invalidated by logout",
-                            user_id=user_id,
-                            path=request.url.path,
-                        )
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Token has been invalidated by logout",
-                        )
 
             # Populate request state with current user
             request.state.current_user = {
@@ -130,10 +105,14 @@ class JWTMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     @staticmethod
-    def _is_public_route(path: str) -> bool:
+    def _is_public_route(path: str, method: str = "GET") -> bool:
         """Check if the route is public (doesn't require authentication)."""
         # Exact matches
         if path in PUBLIC_ROUTES:
+            return True
+
+        # POST /users is registration (public)
+        if path == "/users" and method == "POST":
             return True
 
         # Prefix matches

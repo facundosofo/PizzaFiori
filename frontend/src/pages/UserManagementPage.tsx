@@ -5,13 +5,13 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import type { User } from '../services/authService';
+import type { User } from '../services/userService';
 import userManagementService from '../services/userManagementService';
 import type { CreateUserRequest } from '../services/userManagementService';
 import '../styles/user-management.css';
 
 const UserManagementPage = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isLoading: authLoading } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,7 +27,7 @@ const UserManagementPage = () => {
   });
 
   // Check if current user is admin
-  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   useEffect(() => {
     if (isAdmin) {
@@ -93,18 +93,6 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleToggleActive = async (userId: number, currentStatus: boolean) => {
-    setError('');
-    setSuccess('');
-    try {
-      await userManagementService.updateUser(userId, { is_active: !currentStatus });
-      setSuccess(`Usuario ${!currentStatus ? 'activado' : 'desactivado'} exitosamente`);
-      loadUsers();
-    } catch (err: any) {
-      setError(err.message || 'Error al cambiar estado del usuario');
-    }
-  };
-
   const handleUnlockUser = async (userId: number) => {
     setError('');
     setSuccess('');
@@ -132,6 +120,16 @@ const UserManagementPage = () => {
       setError(err.message || 'Error al eliminar usuario');
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="user-management-container">
+        <div className="access-denied">
+          <p>Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
@@ -228,11 +226,7 @@ const UserManagementPage = () => {
                   onChange={(e) => handleChange('role', e.target.value)}
                 >
                   <option value="USER">Usuario</option>
-                  <option value="MODERATOR">Moderador</option>
                   <option value="ADMIN">Administrador</option>
-                  {currentUser?.role === 'SUPER_ADMIN' && (
-                    <option value="SUPER_ADMIN">Super Admin</option>
-                  )}
                 </select>
               </div>
             </div>
@@ -256,7 +250,6 @@ const UserManagementPage = () => {
                 <th>Usuario</th>
                 <th>Email</th>
                 <th>Rol</th>
-                <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -275,20 +268,7 @@ const UserManagementPage = () => {
                     </span>
                   </td>
                   <td>
-                    <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
-                      {user.is_active ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td>
                     <div className="action-buttons">
-                      <button
-                        className="btn-action btn-toggle"
-                        onClick={() => handleToggleActive(user.id, user.is_active)}
-                        disabled={user.id === currentUser?.id}
-                        title={user.is_active ? 'Desactivar' : 'Activar'}
-                      >
-                        {user.is_active ? '🔒' : '🔓'}
-                      </button>
                       <button
                         className="btn-action btn-unlock"
                         onClick={() => handleUnlockUser(user.id)}

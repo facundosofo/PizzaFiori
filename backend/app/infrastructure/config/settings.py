@@ -30,9 +30,7 @@ class Settings(BaseSettings):
     # Duraciones dinámicas por rol (minutos)
     jwt_token_durations: Dict[str, int] = Field(
         default={
-            "SUPER_ADMIN": 2 * 60,      # 2 horas
-            "ADMIN": 4 * 60,            # 4 horas
-            "MODERATOR": 8 * 60,        # 8 horas
+            "ADMIN": 1 * 60,            # 1 horas
             "USER": 24 * 60,            # 24 horas
         }
     )

@@ -5,7 +5,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import authService from '../services/authService';
-import type { User } from '../services/authService';
+import userService from '../services/userService';
+import type { User } from '../services/userService';
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initAuth = () => {
       try {
         if (authService.isAuthenticated()) {
-          const storedUser = authService.getUser();
+          const storedUser = authService.getUser() as User | null;
           setUser(storedUser);
         }
       } catch (error) {
@@ -50,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (username: string, password: string) => {
     try {
       const loggedInUser = await authService.login(username, password);
-      setUser(loggedInUser);
+      setUser(loggedInUser as User);
     } catch (error) {
       // Re-throw to allow component to handle error display
       throw error;
@@ -76,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     first_name: string;
     last_name: string;
   }) => {
-    const newUser = await authService.register(data);
+    const newUser = await userService.register(data);
     return newUser;
   };
 

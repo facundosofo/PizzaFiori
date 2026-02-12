@@ -7,14 +7,8 @@ import env from '../config/env';
 import api from './http';
 
 export interface User {
-  id: number;
   username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  is_active: boolean;
-  created_at: string;
+  [key: string]: any;
 }
 
 export interface LoginResponse {
@@ -23,19 +17,6 @@ export interface LoginResponse {
   expires_at: number; // timestamp ms
   user: User;
   message: string;
-}
-
-export interface RegisterRequest {
-  username: string;
-  email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-}
-
-export interface ChangePasswordRequest {
-  old_password: string;
-  new_password: string;
 }
 
 class AuthService {
@@ -75,35 +56,8 @@ class AuthService {
         throw new Error('Account locked due to too many failed attempts. Try again later.');
       } else if (error.response?.status === 401) {
         throw new Error('Invalid credentials. Please try again.');
-      } else if (error.response?.status === 403) {
-        throw new Error('Account is inactive. Contact support.');
       }
-
       throw new Error(error.response?.data?.detail || 'Login failed');
-    }
-  }
-
-  /**
-   * Register a new user
-   */
-  async register(data: RegisterRequest): Promise<User> {
-    try {
-      const response = await axios.post<{ user: User; message: string }>(
-        `${env.API_BASE_URL}/auth/register`,
-        data
-      );
-
-      console.log('Registration successful:', response.data.message);
-
-      return response.data.user;
-    } catch (error: any) {
-      if (error.response?.status === 409) {
-        throw new Error(error.response.data.detail || 'Username or email already exists');
-      } else if (error.response?.status === 422) {
-        throw new Error(error.response.data.detail || 'Invalid password or data');
-      }
-
-      throw new Error(error.response?.data?.detail || 'Registration failed');
     }
   }
 
@@ -120,43 +74,6 @@ class AuthService {
     } finally {
       // Always clear local auth data
       this.clearAuth();
-    }
-  }
-
-  /**
-   * Change password for authenticated user
-   */
-  async changePassword(oldPassword: string, newPassword: string): Promise<void> {
-    try {
-      const response = await api.post<{ message: string }>(
-        '/auth/change-password',
-        {
-          old_password: oldPassword,
-          new_password: newPassword,
-        }
-      );
-
-      console.log('Password changed successfully:', response.data.message);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error('Invalid old password');
-      } else if (error.response?.status === 422) {
-        throw new Error(error.response.data.detail || 'Invalid new password');
-      }
-
-      throw new Error(error.response?.data?.detail || 'Failed to change password');
-    }
-  }
-
-  /**
-   * Get current authenticated user info
-   */
-  async getCurrentUser(): Promise<User> {
-    try {
-      const response = await api.get<User>('/auth/me');
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Failed to fetch user');
     }
   }
 

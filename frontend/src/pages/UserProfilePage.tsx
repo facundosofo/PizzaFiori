@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import authService from '../services/authService';
+import userService from '../services/userService';
 import '../styles/profile.css';
 
 const UserProfilePage = () => {
@@ -56,7 +56,7 @@ const UserProfilePage = () => {
     setIsLoading(true);
 
     try {
-      await authService.changePassword(
+      await userService.changePassword(
         passwordForm.oldPassword,
         passwordForm.newPassword
       );
@@ -101,12 +101,6 @@ const UserProfilePage = () => {
           <div className="info-row">
             <span className="info-label">Email:</span>
             <span className="info-value">{user.email}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Estado:</span>
-            <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
-              {user.is_active ? 'Activo' : 'Inactivo'}
-            </span>
           </div>
           <div className="info-row">
             <span className="info-label">Cuenta creada:</span>
