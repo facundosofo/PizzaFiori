@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 import { getProductos } from "../services/productsService";
 import { getCategorias } from "../services/categoriasService";
 import ProductCard from "../components/ProductCard";
@@ -11,6 +12,8 @@ import type { Category } from "../types/category";
 import "../styles/product-card.css";
 
 const ProductosPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +109,18 @@ const ProductosPage = () => {
       return newSet;
     });
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="user-management-container">
+        <div className="access-denied">
+          <Icons.ShieldOffIcon size={64} color="#ef4444" />
+          <h1>Acceso Denegado</h1>
+          <p>Solo los administradores pueden acceder a esta página.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="productos-container">
