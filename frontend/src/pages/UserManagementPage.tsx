@@ -13,6 +13,7 @@ import '../styles/shared/page-header.css';
 import { validateUserCreationForm } from '../utils/validation';
 import { VALIDATION_MESSAGES } from '../constants/validationMessages';
 import * as Icons from '../components/shared/Icons';
+import ConfirmDialog from '../components/shared/ConfirmDialog';
 
 const UserManagementPage = () => {
   const { user: currentUser, isLoading: authLoading } = useAuth();
@@ -29,6 +30,9 @@ const UserManagementPage = () => {
     last_name: '',
     role: 'USER',
   });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: number; username: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Check if current user is admin
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -117,20 +121,34 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: number, username: string) => {
-    if (!window.confirm(`¿Estás seguro de eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) {
-      return;
-    }
+  const handleDeleteUser = (userId: number, username: string) => {
+    setUserToDelete({ id: userId, username });
+    setShowDeleteConfirm(true);
+  };
 
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
     setError('');
     setSuccess('');
+    
     try {
-      await userManagementService.deleteUser(userId);
-      setSuccess(`${VALIDATION_MESSAGES.SUCCESS_USER_DELETED}: ${username}`);
+      await userManagementService.deleteUser(userToDelete.id);
+      setSuccess(`${VALIDATION_MESSAGES.SUCCESS_USER_DELETED}: ${userToDelete.username}`);
+      setShowDeleteConfirm(false);
+      setUserToDelete(null);
       loadUsers();
     } catch (err: any) {
       setError(err.message || VALIDATION_MESSAGES.ERROR_DELETING);
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const cancelDeleteUser = () => {
+    setShowDeleteConfirm(false);
+    setUserToDelete(null);
   };
 
   if (authLoading) {
@@ -318,6 +336,24 @@ const UserManagementPage = () => {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title={<><Icons.WarningIcon size={18} /> Eliminar Usuario</>}
+        message={
+          <>
+            ¿Está seguro que desea eliminar al usuario <strong style={{ color: "#ffffff" }}>{userToDelete?.username}</strong>?
+          </>
+        }
+        warning="Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        onConfirm={confirmDeleteUser}
+        onCancel={cancelDeleteUser}
+        confirmDanger={true}
+        confirmDisabled={isDeleting}
+        cancelDisabled={isDeleting}
+      />
     </div>
   );
 };
