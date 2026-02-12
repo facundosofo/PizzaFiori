@@ -127,6 +127,34 @@
   padding-left: 3rem !important;
 }
 
+.auth-container .password-toggle {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #888888;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.auth-container .password-toggle:hover {
+  color: #22c55e;
+}
+
+.auth-container .password-toggle:active {
+  transform: scale(0.95);
+}
+
+.auth-container .input-with-icon:has(input[type="password"]) input,
+.auth-container .input-with-icon:has(input[type="text"]) input {
+  padding-right: 3rem !important;
+}
+
 .auth-container .form-group input {
   padding: 0.875rem 1rem;
   border-radius: 8px;
