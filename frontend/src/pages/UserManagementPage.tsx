@@ -33,6 +33,9 @@ const UserManagementPage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: number; username: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
+  const [userToUnlock, setUserToUnlock] = useState<{ id: number; username: string } | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   // Check if current user is admin
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -109,16 +112,34 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleUnlockUser = async (userId: number) => {
+  const handleUnlockUser = (userId: number, username: string) => {
+    setUserToUnlock({ id: userId, username });
+    setShowUnlockConfirm(true);
+  };
+
+  const confirmUnlockUser = async () => {
+    if (!userToUnlock) return;
+
+    setIsUnlocking(true);
     setError('');
     setSuccess('');
+    
     try {
-      await userManagementService.unlockUser(userId);
+      await userManagementService.unlockUser(userToUnlock.id);
       setSuccess(VALIDATION_MESSAGES.SUCCESS_USER_UNLOCKED);
+      setShowUnlockConfirm(false);
+      setUserToUnlock(null);
       loadUsers();
     } catch (err: any) {
       setError(err.message || VALIDATION_MESSAGES.ERROR_SAVING);
+    } finally {
+      setIsUnlocking(false);
     }
+  };
+
+  const cancelUnlockUser = () => {
+    setShowUnlockConfirm(false);
+    setUserToUnlock(null);
   };
 
   const handleDeleteUser = (userId: number, username: string) => {
@@ -314,7 +335,7 @@ const UserManagementPage = () => {
                     <div className="action-buttons">
                       <button
                         className="btn-action btn-unlock"
-                        onClick={() => handleUnlockUser(user.id)}
+                        onClick={() => handleUnlockUser(user.id, user.username)}
                         disabled={!isLocked}
                         title={isLocked ? "Desbloquear cuenta" : "Usuario activo"}
                       >
@@ -336,6 +357,24 @@ const UserManagementPage = () => {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={showUnlockConfirm}
+        title={<><Icons.KeyIcon size={18} /> Desbloquear Usuario</>}
+        message={
+          <>
+            ¿Está seguro que desea desbloquear al usuario <strong style={{ color: "#ffffff" }}>{userToUnlock?.username}</strong>?
+          </>
+        }
+        warning="El usuario podrá volver a iniciar sesión inmediatamente."
+        confirmText="Desbloquear"
+        cancelText="Cancelar"
+        onConfirm={confirmUnlockUser}
+        onCancel={cancelUnlockUser}
+        confirmDanger={false}
+        confirmDisabled={isUnlocking}
+        cancelDisabled={isUnlocking}
+      />
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}
