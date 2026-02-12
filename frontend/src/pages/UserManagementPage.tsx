@@ -183,6 +183,7 @@ const UserManagementPage = () => {
                   value={formData.first_name}
                   onChange={(e) => handleChange('first_name', e.target.value)}
                   placeholder="Nombre"
+                  autoComplete="off"
                 />
               </div>
               <div className="form-group">
@@ -193,6 +194,7 @@ const UserManagementPage = () => {
                   value={formData.last_name}
                   onChange={(e) => handleChange('last_name', e.target.value)}
                   placeholder="Apellido"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -206,6 +208,7 @@ const UserManagementPage = () => {
                   value={formData.username}
                   onChange={(e) => handleChange('username', e.target.value)}
                   placeholder="Usuario"
+                  autoComplete="off"
                 />
               </div>
               <div className="form-group">
@@ -216,6 +219,7 @@ const UserManagementPage = () => {
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
                   placeholder="email@ejemplo.com"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -229,6 +233,7 @@ const UserManagementPage = () => {
                   value={formData.password}
                   onChange={(e) => handleChange('password', e.target.value)}
                   placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número"
+                  autoComplete="new-password"
                 />
               </div>
               <div className="form-group">
@@ -237,6 +242,7 @@ const UserManagementPage = () => {
                   id="role"
                   value={formData.role}
                   onChange={(e) => handleChange('role', e.target.value)}
+                  autoComplete="off"
                 >
                   <option value="USER">Usuario</option>
                   <option value="ADMIN">Administrador</option>
