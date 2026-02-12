@@ -84,6 +84,49 @@ export const validateEmail = (email: string): string | null => {
 };
 
 /**
+ * Validates username
+ * @returns null if valid, error message if invalid
+ */
+export const validateUsername = (username: string): string | null => {
+  if (!username || !username.trim()) {
+    return VALIDATION_MESSAGES.REQUIRED_USERNAME;
+  }
+  
+  if (username.length < 3) {
+    return 'El nombre de usuario debe tener al menos 3 caracteres';
+  }
+  
+  if (username.length > 50) {
+    return 'El nombre de usuario no puede exceder 50 caracteres';
+  }
+  
+  if (!/^[a-zA-Z0-9]+$/.test(username)) {
+    return 'El nombre de usuario solo puede contener letras y números';
+  }
+  
+  return null;
+};
+
+/**
+ * Validates first or last name
+ * @returns null if valid, error message if invalid
+ */
+export const validateName = (
+  value: string,
+  fieldName: string
+): string | null => {
+  if (!value || !value.trim()) {
+    return `${fieldName} es requerido`;
+  }
+  
+  if (value.length > 50) {
+    return `${fieldName} no puede exceder 50 caracteres`;
+  }
+  
+  return null;
+};
+
+/**
  * Validates required text field
  * @returns null if valid, error message if invalid
  */
@@ -125,14 +168,21 @@ export const validateRegistrationForm = (data: {
   password: string;
   confirmPassword: string;
 }): string | null => {
-  // Required fields
-  if (!data.username.trim()) return VALIDATION_MESSAGES.REQUIRED_USERNAME;
-  if (!data.first_name.trim()) return VALIDATION_MESSAGES.REQUIRED_FIRST_NAME;
-  if (!data.last_name.trim()) return VALIDATION_MESSAGES.REQUIRED_LAST_NAME;
+  // Username validation
+  const usernameError = validateUsername(data.username);
+  if (usernameError) return usernameError;
   
   // Email validation
   const emailError = validateEmail(data.email);
   if (emailError) return emailError;
+  
+  // First name validation
+  const firstNameError = validateName(data.first_name, 'Nombre');
+  if (firstNameError) return firstNameError;
+  
+  // Last name validation
+  const lastNameError = validateName(data.last_name, 'Apellido');
+  if (lastNameError) return lastNameError;
   
   // Password validation
   const passwordError = validatePassword(data.password);
@@ -156,14 +206,21 @@ export const validateUserCreationForm = (data: {
   last_name: string;
   password: string;
 }): string | null => {
-  // Required fields
-  if (!data.username.trim()) return VALIDATION_MESSAGES.REQUIRED_USERNAME;
-  if (!data.first_name.trim()) return VALIDATION_MESSAGES.REQUIRED_FIRST_NAME;
-  if (!data.last_name.trim()) return VALIDATION_MESSAGES.REQUIRED_LAST_NAME;
+  // Username validation
+  const usernameError = validateUsername(data.username);
+  if (usernameError) return usernameError;
   
   // Email validation
   const emailError = validateEmail(data.email);
   if (emailError) return emailError;
+  
+  // First name validation
+  const firstNameError = validateName(data.first_name, 'Nombre');
+  if (firstNameError) return firstNameError;
+  
+  // Last name validation
+  const lastNameError = validateName(data.last_name, 'Apellido');
+  if (lastNameError) return lastNameError;
   
   // Password validation
   const passwordError = validatePassword(data.password);
