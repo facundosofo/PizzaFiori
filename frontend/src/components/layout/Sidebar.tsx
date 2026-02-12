@@ -9,6 +9,7 @@ import {
   Receipt,
   Settings,
   Tag,
+  Users,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -28,7 +29,7 @@ const navItems = [
 ];
 
 const adminNavItems = [
-  { label: "Gestión Usuarios", to: "/admin/users", icon: Settings, adminOnly: true },
+  { label: "Gestión Usuarios", to: "/admin/users", icon: Users, adminOnly: true },
 ];
 
 const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
