@@ -9,8 +9,10 @@ import type { User } from '../services/userService';
 import userManagementService from '../services/userManagementService';
 import type { CreateUserRequest } from '../services/userManagementService';
 import '../styles/user-management.css';
+import '../styles/shared/page-header.css';
 import { validateUserCreationForm } from '../utils/validation';
 import { VALIDATION_MESSAGES } from '../constants/validationMessages';
+import * as Icons from '../components/shared/Icons';
 
 const UserManagementPage = () => {
   const { user: currentUser, isLoading: authLoading } = useAuth();
@@ -133,7 +135,8 @@ const UserManagementPage = () => {
     return (
       <div className="user-management-container">
         <div className="access-denied">
-          <h1>⛔ Acceso Denegado</h1>
+          <Icons.ShieldOffIcon size={64} color="#ef4444" />
+          <h1>Acceso Denegado</h1>
           <p>Solo los administradores pueden acceder a esta página.</p>
         </div>
       </div>
@@ -142,8 +145,8 @@ const UserManagementPage = () => {
 
   return (
     <div className="user-management-container">
-      <div className="user-management-header">
-        <h1>👥 Gestión de Usuarios</h1>
+      <div className="page-header">
+        <h1 className="page-title">Gestión de Usuarios</h1>
         <button
           className="btn-primary"
           onClick={() => setShowCreateForm(!showCreateForm)}
@@ -243,22 +246,23 @@ const UserManagementPage = () => {
           <table className="users-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nombre</th>
                 <th>Usuario</th>
+                <th>Nombre</th>
                 <th>Email</th>
                 <th>Rol</th>
+                <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {users.map((user) => {
+                const isLocked = user.locked_until && new Date(user.locked_until) > new Date();
+                return (
                 <tr key={user.id}>
-                  <td>{user.id}</td>
+                  <td>{user.username}</td>
                   <td>
                     {user.first_name} {user.last_name}
                   </td>
-                  <td>{user.username}</td>
                   <td>{user.email}</td>
                   <td>
                     <span className={`role-badge role-${user.role.toLowerCase()}`}>
@@ -266,13 +270,19 @@ const UserManagementPage = () => {
                     </span>
                   </td>
                   <td>
+                    <span className={`status-badge status-${isLocked ? 'locked' : 'active'}`}>
+                      {isLocked ? 'BLOQUEADO' : 'ACTIVO'}
+                    </span>
+                  </td>
+                  <td>
                     <div className="action-buttons">
                       <button
                         className="btn-action btn-unlock"
                         onClick={() => handleUnlockUser(user.id)}
-                        title="Desbloquear cuenta"
+                        disabled={!isLocked}
+                        title={isLocked ? "Desbloquear cuenta" : "Usuario activo"}
                       >
-                        🔑
+                        <Icons.KeyIcon size={16} color="#22c55e" />
                       </button>
                       <button
                         className="btn-action btn-delete"
@@ -280,12 +290,12 @@ const UserManagementPage = () => {
                         disabled={user.id === currentUser?.id}
                         title="Eliminar usuario"
                       >
-                        🗑️
+                        <Icons.TrashIcon size={16} color="#ef4444" />
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         )}

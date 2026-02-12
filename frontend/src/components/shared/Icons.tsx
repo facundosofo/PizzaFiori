@@ -11,6 +11,7 @@ import {
   DollarSign,
   Eye,
   Info,
+  KeyRound,
   Loader,
   Minus,
   Percent,
@@ -19,6 +20,7 @@ import {
   Pizza,
   Plus,
   Search,
+  ShieldOff,
   ShoppingCart,
   Trash2,
   X,
@@ -97,3 +99,11 @@ export const CheckIcon = ({ size = 40, color = "#22c55e", className = "" }: Icon
 export const DiscountIcon = (props: IconProps) => renderLucideIcon(BadgePercent, props);
 
 export const PesoIcon = (props: IconProps) => renderLucideIcon(DollarSign, props);
+
+export const ShieldOffIcon = (props: IconProps) =>
+  renderLucideIcon(ShieldOff, {
+    ...props,
+    className: `drop-shadow-[0_0_8px_rgba(239,68,68,0.35)] ${props.className ?? ""}`,
+  });
+
+export const KeyIcon = (props: IconProps) => renderLucideIcon(KeyRound, props);

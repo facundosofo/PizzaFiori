@@ -12,6 +12,7 @@ from app.presentation.schemas.auth_schemas import (
     RegisterRequest,
     RegisterResponse,
     UserResponse,
+    UserDetailResponse,
     UserListResponse,
     CurrentUserResponse,
     ChangePasswordRequest,
@@ -187,7 +188,7 @@ async def list_users(
     )
 
     return UserListResponse(
-        users=[UserResponse.model_validate(user) for user in users],
+        users=[UserDetailResponse.model_validate(user) for user in users],
         total=len(users),
         skip=skip,
         limit=limit,

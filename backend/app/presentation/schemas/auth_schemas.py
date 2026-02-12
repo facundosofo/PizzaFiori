@@ -115,7 +115,7 @@ class UserDetailResponse(UserResponse):
 
 class UserListResponse(BaseModel):
     """List of users response"""
-    users: list[UserResponse]
+    users: list[UserDetailResponse]
     total: int
     skip: int
     limit: int

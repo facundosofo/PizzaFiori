@@ -14,6 +14,8 @@ export interface User {
   last_name: string;
   role: string;
   created_at: string;
+  failed_login_attempts?: number;
+  locked_until?: string | null;
 }
 
 export interface RegisterRequest {
