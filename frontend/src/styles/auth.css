@@ -159,6 +159,30 @@
   color: #666;
 }
 
+/* Autofill styling to match dark theme */
+.auth-container .input-with-icon input:-webkit-autofill,
+.auth-container .input-with-icon input:-webkit-autofill:hover,
+.auth-container .input-with-icon input:-webkit-autofill:focus,
+.auth-container .input-with-icon input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f5f5f5 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0d0d0d inset !important;
+  box-shadow: 0 0 0px 1000px #0d0d0d inset !important;
+  border-color: #22c55e !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.auth-container .input-with-icon input:-webkit-autofill::first-line {
+  font-family: inherit;
+  font-size: inherit;
+  color: #f5f5f5;
+}
+
+.auth-container .input-with-icon input:-moz-autofill {
+  filter: none;
+  background-color: #0d0d0d !important;
+  color: #f5f5f5 !important;
+}
+
 .auth-container .btn-primary {
   padding: 1rem;
   border-radius: 8px;
