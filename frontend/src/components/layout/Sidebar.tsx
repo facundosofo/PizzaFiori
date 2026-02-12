@@ -133,7 +133,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
                 <div className="user-name">
                   {user?.first_name} {user?.last_name}
                 </div>
-                <div className="user-role">{user?.role}</div>
+                <div className="user-role">{user?.role === 'ADMIN' ? 'ADMINISTRADOR' : 'USUARIO'}</div>
               </div>
             </span>
           </NavLink>

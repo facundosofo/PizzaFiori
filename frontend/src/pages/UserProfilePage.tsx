@@ -9,6 +9,8 @@ import userService from '../services/userService';
 import '../styles/profile.css';
 import { validatePasswordChangeForm } from '../utils/validation';
 import { VALIDATION_MESSAGES } from '../constants/validationMessages';
+import { Eye, EyeOff } from 'lucide-react';
+import * as Icons from '../components/shared/Icons';
 
 const UserProfilePage = () => {
   const { user } = useAuth();
@@ -18,6 +20,9 @@ const UserProfilePage = () => {
     newPassword: '',
     confirmPassword: '',
   });
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -82,7 +87,7 @@ const UserProfilePage = () => {
           <h1>
             {user.first_name} {user.last_name}
           </h1>
-          <p className="profile-role">{user.role}</p>
+          <p className="profile-role">{user.role === 'ADMIN' ? 'ADMINISTRADOR' : 'USUARIO'}</p>
         </div>
 
         <div className="profile-info">
@@ -124,47 +129,88 @@ const UserProfilePage = () => {
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label htmlFor="oldPassword">Contraseña Actual</label>
-                  <input
-                    id="oldPassword"
-                    type="password"
-                    value={passwordForm.oldPassword}
-                    onChange={(e) => handlePasswordChange('oldPassword', e.target.value)}
-                    placeholder="Ingresa tu contraseña actual"
-                    autoComplete="current-password"
-                    disabled={isLoading}
-                  />
+                  <div className="input-with-icon">
+                    <input
+                      id="oldPassword"
+                      type={showOldPassword ? 'text' : 'password'}
+                      value={passwordForm.oldPassword}
+                      onChange={(e) => handlePasswordChange('oldPassword', e.target.value)}
+                      placeholder="Ingresa tu contraseña actual"
+                      autoComplete="current-password"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                      aria-label={showOldPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      tabIndex={-1}
+                    >
+                      {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="newPassword">Nueva Contraseña</label>
-                  <input
-                    id="newPassword"
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
-                    placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número"
-                    autoComplete="new-password"
-                    disabled={isLoading}
-                  />
+                  <div className="label-with-tooltip">
+                    <label htmlFor="newPassword">Nueva Contraseña</label>
+                    <div className="info-tooltip">
+                      <Icons.InfoIcon className="info-icon" />
+                      <div className="tooltip-content">
+                        Minimo 8 caracteres, 1 mayuscula, 1 numero
+                      </div>
+                    </div>
+                  </div>
+                  <div className="input-with-icon">
+                    <input
+                      id="newPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                      placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número"
+                      autoComplete="new-password"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      aria-label={showNewPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      tabIndex={-1}
+                    >
+                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group">
                   <label htmlFor="confirmPassword">Confirmar Nueva Contraseña</label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-                    placeholder="Repite tu nueva contraseña"
-                    autoComplete="new-password"
-                    disabled={isLoading}
-                  />
+                  <div className="input-with-icon">
+                    <input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                      placeholder="Repite tu nueva contraseña"
+                      autoComplete="new-password"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-buttons">
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="form-cancel-btn"
                     onClick={() => {
                       setIsChangingPassword(false);
                       setPasswordForm({

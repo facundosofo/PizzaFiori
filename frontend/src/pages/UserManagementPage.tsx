@@ -278,7 +278,7 @@ const UserManagementPage = () => {
                   <td>{user.email}</td>
                   <td>
                     <span className={`role-badge role-${user.role.toLowerCase()}`}>
-                      {user.role}
+                      {user.role === 'ADMIN' ? 'ADMINISTRADOR' : 'USUARIO'}
                     </span>
                   </td>
                   <td>
