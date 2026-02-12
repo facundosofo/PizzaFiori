@@ -34,6 +34,18 @@ const UserManagementPage = () => {
   const isAdmin = currentUser?.role === 'ADMIN';
 
   useEffect(() => {
+    if (!success) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccess('');
+    }, 1500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [success]);
+
+  useEffect(() => {
     if (isAdmin) {
       loadUsers();
     }
