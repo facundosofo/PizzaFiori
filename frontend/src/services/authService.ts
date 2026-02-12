@@ -5,6 +5,7 @@
 import axios from 'axios';
 import env from '../config/env';
 import api from './http';
+import { translateErrorMessage } from '../constants/validationMessages';
 
 export interface User {
   username: string;
@@ -52,12 +53,9 @@ class AuthService {
 
       return user;
     } catch (error: any) {
-      if (error.response?.status === 423) {
-        throw new Error('Account locked due to too many failed attempts. Try again later.');
-      } else if (error.response?.status === 401) {
-        throw new Error('Invalid credentials. Please try again.');
-      }
-      throw new Error(error.response?.data?.detail || 'Login failed');
+      // Translate error messages from backend
+      const errorMessage = error.response?.data?.detail || 'Login failed';
+      throw new Error(translateErrorMessage(errorMessage));
     }
   }
 

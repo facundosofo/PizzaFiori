@@ -7,6 +7,8 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/auth.css';
+import { validateRegistrationForm } from '../utils/validation';
+import { VALIDATION_MESSAGES } from '../constants/validationMessages';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -26,28 +28,20 @@ const RegisterPage = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const validateForm = (): string | null => {
-    if (!formData.username.trim()) return 'El usuario es requerido';
-    if (!formData.email.trim()) return 'El email es requerido';
-    if (!formData.first_name.trim()) return 'El nombre es requerido';
-    if (!formData.last_name.trim()) return 'El apellido es requerido';
-    if (!formData.password) return 'La contraseña es requerida';
-    if (formData.password.length < 8)
-      return 'La contraseña debe tener al menos 8 caracteres';
-    if (!/[A-Z]/.test(formData.password))
-      return 'La contraseña debe contener al menos una mayúscula';
-    if (!/[0-9]/.test(formData.password))
-      return 'La contraseña debe contener al menos un número';
-    if (formData.password !== formData.confirmPassword)
-      return 'Las contraseñas no coinciden';
-    return null;
-  };
+
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const validationError = validateForm();
+    const validationError = validateRegistrationForm({
+      username: formData.username,
+      email: formData.email,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword,
+    });
     if (validationError) {
       setError(validationError);
       return;
@@ -69,7 +63,7 @@ const RegisterPage = () => {
         state: { message: 'Registro exitoso. Por favor inicia sesión.' },
       });
     } catch (err: any) {
-      setError(err.message || 'Error al registrar usuario');
+      setError(err.message || VALIDATION_MESSAGES.ERROR_REGISTER);
     } finally {
       setIsLoading(false);
     }

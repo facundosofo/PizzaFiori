@@ -7,6 +7,8 @@ import type { FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import userService from '../services/userService';
 import '../styles/profile.css';
+import { validatePasswordChangeForm } from '../utils/validation';
+import { VALIDATION_MESSAGES } from '../constants/validationMessages';
 
 const UserProfilePage = () => {
   const { user } = useAuth();
@@ -26,28 +28,18 @@ const UserProfilePage = () => {
     setSuccess('');
   };
 
-  const validatePasswordForm = (): string | null => {
-    if (!passwordForm.oldPassword) return 'La contraseña actual es requerida';
-    if (!passwordForm.newPassword) return 'La nueva contraseña es requerida';
-    if (passwordForm.newPassword.length < 8)
-      return 'La contraseña debe tener al menos 8 caracteres';
-    if (!/[A-Z]/.test(passwordForm.newPassword))
-      return 'La contraseña debe contener al menos una mayúscula';
-    if (!/[0-9]/.test(passwordForm.newPassword))
-      return 'La contraseña debe contener al menos un número';
-    if (passwordForm.newPassword !== passwordForm.confirmPassword)
-      return 'Las contraseñas no coinciden';
-    if (passwordForm.oldPassword === passwordForm.newPassword)
-      return 'La nueva contraseña debe ser diferente a la actual';
-    return null;
-  };
+
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    const validationError = validatePasswordForm();
+    const validationError = validatePasswordChangeForm({
+      oldPassword: passwordForm.oldPassword,
+      newPassword: passwordForm.newPassword,
+      confirmPassword: passwordForm.confirmPassword,
+    });
     if (validationError) {
       setError(validationError);
       return;
@@ -61,11 +53,11 @@ const UserProfilePage = () => {
         passwordForm.newPassword
       );
 
-      setSuccess('Contraseña actualizada exitosamente');
+      setSuccess(VALIDATION_MESSAGES.SUCCESS_PASSWORD_CHANGED);
       setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
       setIsChangingPassword(false);
     } catch (err: any) {
-      setError(err.message || 'Error al cambiar la contraseña');
+      setError(err.message || VALIDATION_MESSAGES.ERROR_CHANGE_PASSWORD);
     } finally {
       setIsLoading(false);
     }

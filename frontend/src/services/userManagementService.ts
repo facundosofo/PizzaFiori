@@ -30,7 +30,7 @@ class UserManagementService {
       const response = await api.get<{ users: User[]; total: number; skip: number; limit: number }>('/users');
       return response.data.users;
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Failed to fetch users');
+      throw new Error(error.response?.data?.detail || 'Error al cargar usuarios');
     }
   }
 

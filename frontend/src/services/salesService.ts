@@ -39,7 +39,6 @@ export const getSales = async (
     return data as SalesResponse;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error fetching sales:", err);
     throw new Error(errorMessage);
   }
 };
@@ -56,7 +55,6 @@ export const getSaleById = async (
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error fetching sale by ID:", err);
     throw new Error(errorMessage);
   }
 };
@@ -70,7 +68,6 @@ export const createSale = async (data: SaleCreateRequest): Promise<Sale> => {
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error creating sale:", err);
     throw new Error(errorMessage);
   }
 };
@@ -87,7 +84,6 @@ export const updateSale = async (
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error updating sale:", err);
     throw new Error(errorMessage);
   }
 };
@@ -100,7 +96,6 @@ export const deleteSale = async (id: number): Promise<void> => {
     await api.delete(`/ventas/${id}`);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error deleting sale:", err);
     throw new Error(errorMessage);
   }
 };

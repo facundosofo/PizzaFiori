@@ -9,6 +9,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import logo from '../assets/PizzaFioriLogo.png';
 import '../styles/auth.css';
+import { validateLoginForm } from '../utils/validation';
+import { VALIDATION_MESSAGES } from '../constants/validationMessages';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -35,8 +37,9 @@ const LoginPage = () => {
     setError('');
     setSuccess('');
 
-    if (!username.trim() || !password.trim()) {
-      setError('Por favor ingresa usuario y contraseña');
+    const validationError = validateLoginForm(username, password);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -46,7 +49,7 @@ const LoginPage = () => {
       await login(username, password);
       navigate('/', { replace: true });
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+      setError(err.message || VALIDATION_MESSAGES.ERROR_LOGIN);
     } finally {
       setIsLoading(false);
     }

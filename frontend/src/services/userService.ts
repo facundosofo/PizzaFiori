@@ -40,17 +40,10 @@ class UserService {
         data
       );
 
-      console.log('Registration successful:', response.data.message);
-
       return response.data.user;
     } catch (error: any) {
-      if (error.response?.status === 409) {
-        throw new Error(error.response.data.detail || 'Username or email already exists');
-      } else if (error.response?.status === 422) {
-        throw new Error(error.response.data.detail || 'Invalid password or data');
-      }
-
-      throw new Error(error.response?.data?.detail || 'Registration failed');
+      // Error messages are already translated by the axios interceptor
+      throw new Error(error.response?.data?.detail || 'Error al registrar usuario');
     }
   }
 
@@ -66,16 +59,9 @@ class UserService {
           new_password: newPassword,
         }
       );
-
-      console.log('Password changed successfully:', response.data.message);
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error('Invalid old password');
-      } else if (error.response?.status === 422) {
-        throw new Error(error.response.data.detail || 'Invalid new password');
-      }
-
-      throw new Error(error.response?.data?.detail || 'Failed to change password');
+      // Error messages are already translated by the axios interceptor
+      throw new Error(error.response?.data?.detail || 'Error al cambiar la contraseña');
     }
   }
 
@@ -87,7 +73,8 @@ class UserService {
       const response = await api.get<User>('/users/me');
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Failed to fetch user');
+      // Error messages are already translated by the axios interceptor
+      throw new Error(error.response?.data?.detail || 'Error al cargar usuario');
     }
   }
 }

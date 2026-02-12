@@ -9,6 +9,8 @@ import type { User } from '../services/userService';
 import userManagementService from '../services/userManagementService';
 import type { CreateUserRequest } from '../services/userManagementService';
 import '../styles/user-management.css';
+import { validateUserCreationForm } from '../utils/validation';
+import { VALIDATION_MESSAGES } from '../constants/validationMessages';
 
 const UserManagementPage = () => {
   const { user: currentUser, isLoading: authLoading } = useAuth();
@@ -42,7 +44,7 @@ const UserManagementPage = () => {
       const data = await userManagementService.getAllUsers();
       setUsers(data);
     } catch (err: any) {
-      setError(err.message || 'Error al cargar usuarios');
+      setError(err.message || VALIDATION_MESSAGES.ERROR_LOADING);
     } finally {
       setIsLoading(false);
     }
@@ -52,24 +54,20 @@ const UserManagementPage = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const validateForm = (): string | null => {
-    if (!formData.username.trim()) return 'El usuario es requerido';
-    if (!formData.email.trim()) return 'El email es requerido';
-    if (!formData.first_name.trim()) return 'El nombre es requerido';
-    if (!formData.last_name.trim()) return 'El apellido es requerido';
-    if (!formData.password) return 'La contraseña es requerida';
-    if (formData.password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
-    if (!/[A-Z]/.test(formData.password)) return 'La contraseña debe contener al menos una mayúscula';
-    if (!/[0-9]/.test(formData.password)) return 'La contraseña debe contener al menos un número';
-    return null;
-  };
+
 
   const handleCreateUser = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    const validationError = validateForm();
+    const validationError = validateUserCreationForm({
+      username: formData.username,
+      email: formData.email,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      password: formData.password,
+    });
     if (validationError) {
       setError(validationError);
       return;
@@ -77,7 +75,7 @@ const UserManagementPage = () => {
 
     try {
       await userManagementService.createUser(formData);
-      setSuccess(`Usuario ${formData.username} creado exitosamente`);
+      setSuccess(`${VALIDATION_MESSAGES.SUCCESS_USER_CREATED}: ${formData.username}`);
       setFormData({
         username: '',
         email: '',
@@ -89,7 +87,7 @@ const UserManagementPage = () => {
       setShowCreateForm(false);
       loadUsers();
     } catch (err: any) {
-      setError(err.message || 'Error al crear usuario');
+      setError(err.message || VALIDATION_MESSAGES.ERROR_CREATING);
     }
   };
 
@@ -98,10 +96,10 @@ const UserManagementPage = () => {
     setSuccess('');
     try {
       await userManagementService.unlockUser(userId);
-      setSuccess('Usuario desbloqueado exitosamente');
+      setSuccess(VALIDATION_MESSAGES.SUCCESS_USER_UNLOCKED);
       loadUsers();
     } catch (err: any) {
-      setError(err.message || 'Error al desbloquear usuario');
+      setError(err.message || VALIDATION_MESSAGES.ERROR_SAVING);
     }
   };
 
@@ -114,10 +112,10 @@ const UserManagementPage = () => {
     setSuccess('');
     try {
       await userManagementService.deleteUser(userId);
-      setSuccess(`Usuario ${username} eliminado exitosamente`);
+      setSuccess(`${VALIDATION_MESSAGES.SUCCESS_USER_DELETED}: ${username}`);
       loadUsers();
     } catch (err: any) {
-      setError(err.message || 'Error al eliminar usuario');
+      setError(err.message || VALIDATION_MESSAGES.ERROR_DELETING);
     }
   };
 
