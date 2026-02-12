@@ -5,6 +5,9 @@ from urllib.parse import quote_plus
 from app.domain.models.base import Base
 from app.infrastructure.config.settings import settings
 
+# Import all models to ensure SQLAlchemy can resolve relationships
+import app.domain.models  # noqa: F401
+
 params = quote_plus(
     f"DRIVER={settings.db_driver};SERVER={settings.db_host};DATABASE={settings.db_name};Trusted_Connection=yes;Encrypt=yes;TrustServerCertificate=yes"
 )

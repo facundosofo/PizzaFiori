@@ -7,7 +7,7 @@
  * - GET /dashboard/products/top?limit={limit}
  */
 
-import env from '../config/env';
+import api from './http';
 
 export interface DailyRevenue {
   fecha: string;
@@ -77,11 +77,8 @@ export interface DashboardData {
 }
 
 const fetchJson = async <T>(path: string): Promise<T> => {
-  const res = await fetch(`${env.API_BASE_URL}${path}`);
-  if (!res.ok) {
-    throw new Error(`Error ${res.status} al consultar ${path}`);
-  }
-  return res.json() as Promise<T>;
+  const response = await api.get<T>(path);
+  return response.data;
 };
 
 /**

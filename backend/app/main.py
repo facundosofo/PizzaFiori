@@ -7,9 +7,11 @@ from .presentation.routers.category_router import router as category_router
 from .presentation.routers.offer_router import router as offer_router
 from .presentation.routers.sale_router import router as sale_router
 from .presentation.routers.dashboard_router import router as dashboard_router
+from .presentation.routers.auth_router import router as auth_router
 from app.domain import *
 from app.containers import Container
 from app.infrastructure.middleware.http_logging_middleware import HttpLoggingMiddleware
+from app.presentation.middleware.jwt_middleware import JWTMiddleware
 from app.infrastructure.config.settings import settings
 from app.infrastructure.logging import get_logger
 
@@ -21,6 +23,9 @@ logger = container.logging()
 logger.debug("Inicializando PizzaFiori API")
 
 app = FastAPI(title="PizzaFiori API")
+
+# Middleware de JWT (antes de los routers para validar tokens)
+app.add_middleware(JWTMiddleware, logger=get_logger("auth.jwt"))
 
 # Middleware de logging de requests
 app.add_middleware(
@@ -42,6 +47,7 @@ os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Agregar los routers
+app.include_router(auth_router)
 app.include_router(product_router)
 app.include_router(category_router)
 app.include_router(offer_router)
@@ -52,3 +58,4 @@ app.include_router(dashboard_router)
 @app.get("/")
 def root():
     return {"mensaje": "API PizzaFiori funcionando"}
+

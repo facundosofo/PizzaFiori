@@ -1,13 +1,16 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   ChartLine,
   Home,
+  LogOut,
   PanelRight,
   Pizza,
   PlusCircle,
   Receipt,
+  Settings,
   Tag,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 export type SidebarProps = {
   collapsed: boolean;
@@ -24,7 +27,25 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: ChartLine },
 ];
 
+const adminNavItems = [
+  { label: "Gestión Usuarios", to: "/admin/users", icon: Settings, adminOnly: true },
+];
+
 const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
   return (
     <aside className={`sidebar ${collapsed ? "is-collapsed" : "is-expanded"}`}>
       <div className="sidebar-inner">
@@ -64,7 +85,69 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
               </NavLink>
             );
           })}
+
+          {/* Admin-only navigation items */}
+          {isAdmin && (
+            <>
+              <div className="sidebar-divider" />
+              {adminNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      `sidebar-link ${isActive ? "is-active" : ""}`
+                    }
+                  >
+                    <span className="sidebar-icon">
+                      <Icon size={20} />
+                    </span>
+                    <span className="sidebar-label">{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </>
+          )}
         </nav>
+
+        {/* User profile section */}
+        <div className="sidebar-footer">
+          <NavLink
+            to="/profile"
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              `sidebar-link sidebar-user ${isActive ? "is-active" : ""}`
+            }
+          >
+            <span className="sidebar-icon">
+              <div className="user-avatar">
+                {user?.first_name?.charAt(0).toUpperCase() || "U"}
+              </div>
+            </span>
+            <span className="sidebar-label">
+              <div className="user-info">
+                <div className="user-name">
+                  {user?.first_name} {user?.last_name}
+                </div>
+                <div className="user-role">{user?.role}</div>
+              </div>
+            </span>
+          </NavLink>
+
+          <button
+            type="button"
+            className="sidebar-link sidebar-logout"
+            onClick={handleLogout}
+            aria-label="Cerrar sesión"
+          >
+            <span className="sidebar-icon">
+              <LogOut size={20} />
+            </span>
+            <span className="sidebar-label">Cerrar sesión</span>
+          </button>
+        </div>
       </div>
     </aside>
   );
