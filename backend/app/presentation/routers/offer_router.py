@@ -9,10 +9,14 @@ from app.presentation.schemas.offer_schemas import (
     OfferUpdateRequest,
     OfferResponse,
 )
-from app.presentation.routers.dependencies import require_admin
+from app.presentation.routers.dependencies import get_current_user, require_admin
 
 
-router = APIRouter(prefix="/ofertas", tags=["Ofertas"])
+router = APIRouter(
+    prefix="/ofertas",
+    tags=["Ofertas"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post(

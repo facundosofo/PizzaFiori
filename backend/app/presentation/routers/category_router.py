@@ -5,9 +5,13 @@ from typing import List
 from app.application.category_service import CategoryService, ServiceResult
 from app.containers import Container
 from app.presentation.schemas.category_schemas import CategoriaCreateRequest, CategoriaUpdateRequest, CategoriaResponse
-from app.presentation.routers.dependencies import require_admin
+from app.presentation.routers.dependencies import get_current_user, require_admin
 
-router = APIRouter(prefix="/categorias", tags=["Categorías"])
+router = APIRouter(
+    prefix="/categorias",
+    tags=["Categorías"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post(

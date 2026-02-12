@@ -2,11 +2,18 @@
 Shared dependencies for all routers.
 """
 
-from fastapi import HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+bearer_scheme = HTTPBearer()
 
 
-def get_current_user(request: Request) -> dict:
+def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> dict:
     """Dependency to get current authenticated user from request state."""
+    _ = credentials
     if not hasattr(request.state, "current_user"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -4,7 +4,7 @@ Authentication Router - Handles login, logout, and password reset
 
 import base64
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from dependency_injector.wiring import inject, Provide
 import structlog
 
@@ -12,6 +12,7 @@ from app.application.user_service import UserService
 from app.application.services.jwt_service import JWTService
 from app.containers import Container
 from app.presentation.schemas.auth_schemas import (
+    LoginRequest,
     LoginResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
@@ -40,34 +41,43 @@ logger = get_logger(__name__)
 @inject
 async def login(
     request: Request,
+    login_data: LoginRequest | None = Body(default=None),
     service: UserService = Depends(Provide[Container.user_service]),
 ):
     """
-    Login endpoint that accepts Basic Authentication credentials.
+    Login endpoint that accepts credentials either in the body or via Basic Auth.
 
-    Expected header: Authorization: Basic <base64(username:password)>
+    Body:
+      - username
+      - password
+
+    Header (fallback): Authorization: Basic <base64(username:password)>
     """
-    # Extract Basic Auth header
-    auth_header = request.headers.get("Authorization", "")
+    if login_data:
+        username = login_data.username
+        password = login_data.password
+    else:
+        # Extract Basic Auth header
+        auth_header = request.headers.get("Authorization", "")
 
-    if not auth_header.startswith("Basic "):
-        logger.warning("Login attempt without Basic Auth header")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid Authorization header",
-        )
+        if not auth_header.startswith("Basic "):
+            logger.warning("Login attempt without credentials")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing credentials in body or Authorization header",
+            )
 
-    try:
-        # Decode Base64 credentials
-        base64_credentials = auth_header.split(" ", 1)[1]
-        credentials = base64.b64decode(base64_credentials).decode("utf-8")
-        username, password = credentials.split(":", 1)
-    except (ValueError, IndexError, Exception) as e:
-        logger.warning("Invalid Basic Auth format", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Authorization header format",
-        )
+        try:
+            # Decode Base64 credentials
+            base64_credentials = auth_header.split(" ", 1)[1]
+            credentials = base64.b64decode(base64_credentials).decode("utf-8")
+            username, password = credentials.split(":", 1)
+        except (ValueError, IndexError, Exception) as e:
+            logger.warning("Invalid Basic Auth format", error=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Authorization header format",
+            )
 
     # Authenticate user
     result = await service.authenticate_user(username, password)

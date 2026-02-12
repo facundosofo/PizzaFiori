@@ -12,9 +12,14 @@ from app.presentation.schemas.dashboard_schemas import (
     TipoPeriodo,
     FiltroTiempo,
 )
+from app.presentation.routers.dependencies import get_current_user
 
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+router = APIRouter(
+    prefix="/dashboard",
+    tags=["Dashboard"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get(

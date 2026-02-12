@@ -11,8 +11,9 @@ from app.presentation.schemas.user_schemas import UserResponse
 # Request Models - Auth
 # ---------------------------
 class LoginRequest(BaseModel):
-    """Login request model (credentials passed in Authorization header)"""
-    pass  # Credentials are in the Authorization: Basic header
+    """Login request model (credentials in body or Authorization header)"""
+    username: str = Field(..., description="Username for login")
+    password: str = Field(..., min_length=1, description="Password for login")
 
 
 class ResetPasswordRequest(BaseModel):

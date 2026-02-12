@@ -11,9 +11,13 @@ from app.presentation.schemas.sale_schemas import (
     SaleFilterParams,
     SaleListResponse,
 )
-from app.presentation.routers.dependencies import require_admin
+from app.presentation.routers.dependencies import get_current_user, require_admin
 
-router = APIRouter(prefix="/ventas", tags=["Ventas"])
+router = APIRouter(
+    prefix="/ventas",
+    tags=["Ventas"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post(

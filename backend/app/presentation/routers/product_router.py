@@ -7,9 +7,13 @@ from app.application.product_service import ProductService, ServiceResult
 from app.application.offer_service import OfferService
 from app.containers import Container
 from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest, ProductoResponse
-from app.presentation.routers.dependencies import require_admin
+from app.presentation.routers.dependencies import get_current_user, require_admin
 
-router = APIRouter(prefix="/productos", tags=["Productos"])
+router = APIRouter(
+    prefix="/productos",
+    tags=["Productos"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post(
