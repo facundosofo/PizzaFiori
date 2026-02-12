@@ -16,8 +16,8 @@ from app.presentation.schemas.auth_schemas import (
     ResetPasswordRequest,
     ResetPasswordResponse,
     LogoutResponse,
-    UserResponse,
 )
+from app.presentation.schemas.user_schemas import UserResponse
 from app.infrastructure.logging import get_logger
 from app.presentation.routers.dependencies import get_current_user
 

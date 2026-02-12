@@ -8,7 +8,7 @@ import structlog
 
 from app.application.user_service import UserService
 from app.containers import Container
-from app.presentation.schemas.auth_schemas import (
+from app.presentation.schemas.user_schemas import (
     RegisterRequest,
     RegisterResponse,
     UserResponse,
