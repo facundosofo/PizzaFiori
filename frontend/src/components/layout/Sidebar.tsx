@@ -1,14 +1,16 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   ChartLine,
+  FileText,
+  FolderTree,
   Home,
   LogOut,
   PanelRight,
   Pizza,
-  PlusCircle,
+  ShoppingBasket,
   Receipt,
-  Settings,
-  Tag,
+  FileSearch,
+  Tags,
   Users,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -21,14 +23,17 @@ export type SidebarProps = {
 
 const navItems = [
   { label: "Home", to: "/", icon: Home },
+  { label: "Registrar venta", to: "/registrar-venta", icon: ShoppingBasket },
   { label: "Ventas", to: "/ventas", icon: Receipt },
-  { label: "Registrar venta", to: "/registrar-venta", icon: PlusCircle },
-  { label: "Productos", to: "/productos", icon: Pizza },
-  { label: "Ofertas", to: "/ofertas", icon: Tag },
   { label: "Dashboard", to: "/dashboard", icon: ChartLine },
+  { label: "Reportes", to: "/reportes", icon: FileText },
 ];
 
 const adminNavItems = [
+  { label: "Productos", to: "/productos", icon: Pizza, adminOnly: true },
+  { label: "Categorías", to: "/categorias", icon: FolderTree, adminOnly: true },
+  { label: "Ofertas", to: "/ofertas", icon: Tags, adminOnly: true },
+  { label: "Auditoría", to: "/auditoria", icon: FileSearch, adminOnly: true },
   { label: "Gestión Usuarios", to: "/admin/users", icon: Users, adminOnly: true },
 ];
 
