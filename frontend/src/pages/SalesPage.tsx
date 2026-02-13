@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from 'react-dom';
+import { useAuth } from "../contexts/AuthContext";
 import { getSales, deleteSale } from "../services/salesService";
 import { getProductos } from "../services/productsService";
 import { getOfertas } from "../services/ofertasService";
@@ -17,6 +18,8 @@ import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sales.css";
 
 const SalesPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [sales, setSales] = useState<Sale[]>([]);
   // Cache products and offers for use in detail/edit modals (Phase 2+)
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -279,20 +282,24 @@ const SalesPage = () => {
                   >
                     <Icons.EyeIcon size={18} />
                   </button>
-                  <button
-                    className="sales-action-btn edit"
-                    onClick={() => handleEdit(sale.id)}
-                    title="Editar venta"
-                  >
-                    <Icons.EditIcon size={18} />
-                  </button>
-                  <button
-                    className="sales-action-btn delete"
-                    onClick={() => handleDeleteClick(sale.id)}
-                    title="Eliminar venta"
-                  >
-                    <Icons.TrashIcon size={18} />
-                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        className="sales-action-btn edit"
+                        onClick={() => handleEdit(sale.id)}
+                        title="Editar venta"
+                      >
+                        <Icons.EditIcon size={18} />
+                      </button>
+                      <button
+                        className="sales-action-btn delete"
+                        onClick={() => handleDeleteClick(sale.id)}
+                        title="Eliminar venta"
+                      >
+                        <Icons.TrashIcon size={18} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
