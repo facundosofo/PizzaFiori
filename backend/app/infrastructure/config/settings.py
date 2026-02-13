@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     rate_limit_requests: int = 5
     rate_limit_window_seconds: int = 60
+    
+    # SSL/TLS Configuration
+    ssl_key_file: Optional[str] = Field(env="SSL_KEY_FILE")
+    ssl_cert_file: Optional[str] = Field(env="SSL_CERT_FILE")
 
 
 settings = Settings()

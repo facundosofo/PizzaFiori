@@ -119,7 +119,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
             return True
 
         # Prefix matches
-        for public_prefix in ["/docs", "/openapi", "/redoc", "/health"]:
+        for public_prefix in ["/docs", "/openapi", "/redoc", "/health", "/uploads"]:
             if path.startswith(public_prefix):
                 return True
 
