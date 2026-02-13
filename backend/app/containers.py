@@ -5,6 +5,7 @@ from app.application.product_service import ProductService
 from app.application.offer_service import OfferService
 from app.application.sale_service import SaleService
 from app.application.dashboard_service import DashboardService
+from app.application.user_service import UserService
 from app.infrastructure.file_service import FileService
 from app.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 from app.infrastructure.logging import configure_logging
@@ -18,6 +19,8 @@ class Container(containers.DeclarativeContainer):
             "app.presentation.routers.offer_router",
             "app.presentation.routers.sale_router",
             "app.presentation.routers.dashboard_router",
+            "app.presentation.routers.auth_router",
+            "app.presentation.routers.user_router",
         ]
     )
     
@@ -56,3 +59,10 @@ class Container(containers.DeclarativeContainer):
         uow=unit_of_work,
         logger=logging,
     )
+
+    user_service = providers.Factory(
+        UserService,
+        uow=unit_of_work,
+        logger=logging,
+    )
+

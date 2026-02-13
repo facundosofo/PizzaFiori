@@ -11,8 +11,13 @@ from app.presentation.schemas.sale_schemas import (
     SaleFilterParams,
     SaleListResponse,
 )
+from app.presentation.routers.dependencies import get_current_user, require_admin
 
-router = APIRouter(prefix="/ventas", tags=["Ventas"])
+router = APIRouter(
+    prefix="/ventas",
+    tags=["Ventas"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post(
@@ -103,13 +108,15 @@ async def get_sale(
     description="Actualiza una venta existente. Requiere precio_unitario para cada item.",
     responses={
         404: {"description": "Venta no encontrada"},
-        400: {"description": "Datos inválidos - falta precio_unitario en los items"}
+        400: {"description": "Datos inválidos - falta precio_unitario en los items"},
+        403: {"description": "Admin access required"},
     },
 )
 @inject
 async def update_sale(
     sale_update: SaleUpdateRequest,
     sale_id: int = Path(..., ge=1, description="ID único de la venta"),
+    admin_user: dict = Depends(require_admin),
     service: SaleService = Depends(Provide[Container.sale_service]),
 ):
     result: ServiceResult = await service.update(sale_id, sale_update)
@@ -128,11 +135,15 @@ async def update_sale(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Eliminar una venta",
     description="Elimina una venta existente.",
-    responses={404: {"description": "Venta no encontrada"}},
+    responses={
+        404: {"description": "Venta no encontrada"},
+        403: {"description": "Admin access required"},
+    },
 )
 @inject
 async def delete_sale(
     sale_id: int = Path(..., ge=1, description="ID único de la venta"),
+    admin_user: dict = Depends(require_admin),
     service: SaleService = Depends(Provide[Container.sale_service]),
 ):
     result: ServiceResult = await service.delete(sale_id)

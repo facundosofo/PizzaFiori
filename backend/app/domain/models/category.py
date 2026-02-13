@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
 from app.domain.models.base import Base
@@ -8,7 +8,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True)
     nombre = Column(String(50), unique=True, index=True, nullable=False)
-    descripcion = Column(String(255), nullable=True)
+    activo = Column(Boolean, nullable=False, default=True)
 
     productos = relationship(
         "Product",

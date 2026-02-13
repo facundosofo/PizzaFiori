@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getProductos, createProducto } from "../services/productsService";
+import { useAuth } from "../contexts/AuthContext";
+import { getProductos } from "../services/productsService";
 import { getCategorias } from "../services/categoriasService";
 import ProductCard from "../components/ProductCard";
 import ProductModal from "../components/ProductModal";
@@ -11,6 +12,8 @@ import type { Category } from "../types/category";
 import "../styles/product-card.css";
 
 const ProductosPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +28,7 @@ const ProductosPage = () => {
         setError(null);
         const [prods, cats] = await Promise.all([
           getProductos(),
-          getCategorias(),
+          getCategorias(true),
         ]);
 
         if (!prods || prods.length === 0) {
@@ -40,7 +43,6 @@ const ProductosPage = () => {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido al cargar los datos";
         setError(`Error al cargar: ${errorMessage}`);
-        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
@@ -50,19 +52,15 @@ const ProductosPage = () => {
   }, []);
 
   const handleProductUpdate = (updatedProducto: Product) => {
-    console.log('Actualizando producto:', updatedProducto);
     setProductos((prevProductos) => {
       const updated = prevProductos.map((p) => (p.id === updatedProducto.id ? updatedProducto : p));
-      console.log('Productos después de actualizar:', updated);
       return updated;
     });
   };
 
   const handleProductDelete = (productoId: number) => {
-    console.log('Eliminando producto ID:', productoId);
     setProductos((prevProductos) => {
       const filtered = prevProductos.filter((p) => p.id !== productoId);
-      console.log('Productos después de eliminar:', filtered);
       return filtered;
     });
   };
@@ -83,11 +81,8 @@ const ProductosPage = () => {
   };
 
   const handleCreateProduct = async (producto: Product) => {
-    console.log('Producto creado recibido:', producto);
-    
     setProductos((prev) => {
       const updated = [...prev, producto];
-      console.log('Productos después de agregar:', updated);
       return updated;
     });
     
@@ -114,6 +109,18 @@ const ProductosPage = () => {
       return newSet;
     });
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="user-management-container">
+        <div className="access-denied">
+          <Icons.ShieldOffIcon size={64} color="#ef4444" />
+          <h1>Acceso Denegado</h1>
+          <p>Solo los administradores pueden acceder a esta página.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="productos-container">

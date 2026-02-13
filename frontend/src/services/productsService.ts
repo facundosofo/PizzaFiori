@@ -1,4 +1,4 @@
-import env from "../config/env";
+import api from "./http";
 import type { Product } from "../types/product";
 
 export const createProducto = async (
@@ -17,47 +17,27 @@ export const createProducto = async (
     if (data.precios) formData.append("precios", JSON.stringify(data.precios));
     if (data.imagen) formData.append("imagen", data.imagen);
 
-    const res = await fetch(`${env.API_BASE_URL}/productos`, {
-      method: "POST",
-      body: formData,
+    const response = await api.post<Product>("/productos", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
-    if (!res.ok) {
-      const errorMsg = res.status === 400
-        ? "Datos inválidos. Verifica que todos los campos sean correctos."
-        : res.status === 500
-        ? "Error al crear el producto. El administrador ha sido notificado."
-        : res.status === 503
-        ? "El servidor no está disponible. Intenta más tarde."
-        : "No se pudo crear el producto";
-      throw new Error(errorMsg);
-    }
-    return (await res.json()) as Product;
+    return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error creating producto:", err);
     throw new Error(errorMessage);
   }
 };
 
-export const getProductos = async (): Promise<Product[]> => {
+export const getProductos = async (categoriaId?: number): Promise<Product[]> => {
   try {
-    const res = await fetch(`${env.API_BASE_URL}/productos?active=true`);
-    if (!res.ok) {
-      const errorMsg = res.status === 404 
-        ? "No se encontraron productos" 
-        : res.status === 500 
-        ? "Error del servidor. El administrador ha sido notificado."
-        : res.status === 503
-        ? "El servidor no está disponible. Intenta más tarde."
-        : "No se pudieron obtener los productos";
-      throw new Error(errorMsg);
+    const params: Record<string, any> = { active: true };
+    if (categoriaId !== undefined) {
+      params.categoria = categoriaId;
     }
-    const data = await res.json();
-    return data as Product[];
+    const response = await api.get<Product[]>("/productos", { params });
+    return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error fetching productos:", err);
     throw new Error(errorMessage);
   }
 };
@@ -83,53 +63,22 @@ export const updateProducto = async (
     if (data.precios) formData.append("precios", JSON.stringify(data.precios));
     if (data.imagen) formData.append("imagen", data.imagen);
 
-    const res = await fetch(`${env.API_BASE_URL}/productos/${id}`, {
-      method: "PUT",
-      body: formData,
+    const response = await api.put<Product>(`/productos/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
-    if (!res.ok) {
-      const errorMsg = res.status === 404 
-        ? "Producto no encontrado"
-        : res.status === 400
-        ? "Datos inválidos. Verifica que todos los campos sean correctos."
-        : res.status === 500
-        ? "Error al guardar los cambios. El administrador ha sido notificado."
-        : res.status === 503
-        ? "El servidor no está disponible. Intenta más tarde."
-        : "No se pudo actualizar el producto";
-      throw new Error(errorMsg);
-    }
-    return (await res.json()) as Product;
+    return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error updating producto:", err);
     throw new Error(errorMessage);
   }
 };
 
 export const deactivateProducto = async (id: number): Promise<void> => {
   try {
-    const res = await fetch(`${env.API_BASE_URL}/productos/${id}/desactivar`, {
-      method: "PATCH",
-      headers: {
-        accept: "application/json",
-      },
-    });
-
-    if (!res.ok) {
-      const errorMsg = res.status === 404
-        ? "Producto no encontrado"
-        : res.status === 500
-        ? "Error al desactivar el producto. El administrador ha sido notificado."
-        : res.status === 503
-        ? "El servidor no está disponible. Intenta más tarde."
-        : "No se pudo desactivar el producto";
-      throw new Error(errorMsg);
-    }
+    await api.patch(`/productos/${id}/desactivar`);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    console.error("Error deactivating producto:", err);
     throw new Error(errorMessage);
   }
 };

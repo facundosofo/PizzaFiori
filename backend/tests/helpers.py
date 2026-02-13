@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import Dict, List, Any, Optional
 from unittest.mock import MagicMock
 
-
+#TODO: Actualiza test Unitarios
 # ==================== Category Builders ====================
 
 def build_category_data(

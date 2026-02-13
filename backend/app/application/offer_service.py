@@ -38,7 +38,6 @@ class OfferService:
                 productos_count=len(offer_create.productos),
             )
             
-            #TODO: Analizar performance si es mejor dejar que falle la BD por FK
             async with self.uow as uow:
                 # Validar que productos/categorías/opciones existan
                 for item in offer_create.productos:
@@ -177,7 +176,6 @@ class OfferService:
                 if active is not None:
                     offer.activo = active
                     
-                #TODO: Analizar performance si es mejor dejar que falle la BD por FK
                 if offer_update is not None and offer_update.productos is not None:
                     # Validar que productos/categorías/opciones existan
                     for item in offer_update.productos:

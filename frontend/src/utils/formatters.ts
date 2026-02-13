@@ -21,7 +21,6 @@ export const formatDateDisplay = (isoString: string): string => {
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   } catch (err) {
-    console.error("Error formatting date:", err);
     return isoString;
   }
 };
@@ -39,7 +38,6 @@ export const formatDateTimeDisplay = (isoString: string): string => {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   } catch (err) {
-    console.error("Error formatting date time:", err);
     return isoString;
   }
 };
@@ -57,7 +55,6 @@ export const formatDateAPI = (date: Date): string => {
     const seconds = String(date.getSeconds()).padStart(2, '0');
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   } catch (err) {
-    console.error("Error formatting date for API:", err);
     return date.toISOString();
   }
 };
@@ -72,7 +69,6 @@ export const formatDateYMD = (date: Date): string => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch (err) {
-    console.error("Error formatting date (YMD):", err);
     return date.toISOString().split('T')[0];
   }
 };
@@ -106,7 +102,6 @@ export const parseDate = (ddmmyyyy: string): Date | null => {
     
     return new Date(year, month, day);
   } catch (err) {
-    console.error("Error parsing date:", err);
     return null;
   }
 };

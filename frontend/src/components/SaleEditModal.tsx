@@ -227,7 +227,6 @@ const SaleEditModal = ({
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : "Error desconocido";
           setError(errorMessage);
-          console.error("Error fetching sale details:", err);
         } finally {
           setLoading(false);
         }

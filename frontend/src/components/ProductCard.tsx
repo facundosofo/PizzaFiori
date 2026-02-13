@@ -79,7 +79,6 @@ const ProductCard = ({
       
       setAffectedOffers(affected);
     } catch (error) {
-      console.error("Error cargando ofertas afectadas:", error);
       setAffectedOffers([]);
     } finally {
       setLoadingOffers(false);
@@ -98,7 +97,6 @@ const ProductCard = ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Error desconocido al desactivar producto";
       setDeleteError(`No se pudo desactivar: ${errorMessage}`);
-      console.error("Error desactivando producto:", error);
     } finally {
       setIsDeleting(false);
     }

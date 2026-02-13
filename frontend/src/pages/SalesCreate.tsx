@@ -53,7 +53,7 @@ export const SalesCreatePage: React.FC = () => {
 
       const [productsData, categoriesData, offersData] = await Promise.all([
         getProductos(),
-        getCategorias(),
+        getCategorias(true),
         getOfertas(),
       ]);
 

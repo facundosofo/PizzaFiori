@@ -7,8 +7,13 @@ from app.application.product_service import ProductService, ServiceResult
 from app.application.offer_service import OfferService
 from app.containers import Container
 from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest, ProductoResponse
+from app.presentation.routers.dependencies import get_current_user, require_admin
 
-router = APIRouter(prefix="/productos", tags=["Productos"])
+router = APIRouter(
+    prefix="/productos",
+    tags=["Productos"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post(
@@ -17,7 +22,10 @@ router = APIRouter(prefix="/productos", tags=["Productos"])
     status_code=status.HTTP_201_CREATED,
     summary="Crear un producto",
     description="Crea un producto nuevo con precios escalonados.",
-    responses={400: {"description": "Datos inválidos del producto"}}
+    responses={
+        400: {"description": "Datos inválidos del producto"},
+        403: {"description": "Admin access required"},
+    }
 )
 @inject
 async def create_producto(
@@ -25,6 +33,7 @@ async def create_producto(
     categoria_id: int = Form(...),
     precios: str = Form(..., description='Ej: [{"cantidad":1,"precio":1200}]'),
     imagen: Optional[UploadFile] = File(None),
+    admin_user: dict = Depends(require_admin),
     service: ProductService = Depends(Provide[Container.product_service]),
 ):
 
@@ -99,7 +108,10 @@ async def get_producto(
     "/{producto_id}",
     response_model=ProductoResponse,
     summary="Actualizar un producto",
-    responses={404: {"description": "Producto no encontrado"}}
+    responses={
+        404: {"description": "Producto no encontrado"},
+        403: {"description": "Admin access required"},
+    }
 )
 @inject
 async def update_producto(
@@ -112,6 +124,7 @@ async def update_producto(
     ),
 
     imagen: Optional[UploadFile] = File(None),
+    admin_user: dict = Depends(require_admin),
     service: ProductService = Depends(Provide[Container.product_service]),
 ):
     precios_list = None
@@ -151,12 +164,14 @@ async def update_producto(
         404: {"description": "Producto no encontrado"},
         200: {
             "description": "Producto desactivado exitosamente. El campo 'ofertas_desactivadas' contiene los IDs de las ofertas que fueron desactivadas."
-        }
+        },
+        403: {"description": "Admin access required"},
     },
 )
 @inject
 async def deactivate_producto(
     producto_id: int = Path(..., ge=1, description="ID único del producto"),
+    admin_user: dict = Depends(require_admin),
     product_service: ProductService = Depends(Provide[Container.product_service]),
     offer_service: OfferService = Depends(Provide[Container.offer_service]),
 ):

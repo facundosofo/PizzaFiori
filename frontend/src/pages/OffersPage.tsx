@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useAuth } from "../contexts/AuthContext";
 import { getOfertas } from "../services/ofertasService";
 import { getProductos } from "../services/productsService";
 import { getCategorias } from "../services/categoriasService";
@@ -14,6 +15,8 @@ import type { Category } from "../types/category";
 import "../styles/offers-page.css";
 
 const OffersPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [ofertas, setOfertas] = useState<Offer[]>([]);
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
@@ -31,7 +34,7 @@ const OffersPage = () => {
       const [offersData, productsData, categoriasData] = await Promise.all([
         getOfertas(true),
         getProductos(),
-        getCategorias(),
+        getCategorias(true),
       ]);
 
       setOfertas(offersData || []);
@@ -40,7 +43,6 @@ const OffersPage = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Error desconocido al cargar los datos";
       setError(`Error al cargar: ${errorMessage}`);
-      console.error("Error fetching data:", err);
     } finally {
       setLoading(false);
     }
@@ -110,6 +112,18 @@ const OffersPage = () => {
     setIsModalOpen(false);
     setSelectedOferta(null);
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="user-management-container">
+        <div className="access-denied">
+          <Icons.ShieldOffIcon size={64} color="#ef4444" />
+          <h1>Acceso Denegado</h1>
+          <p>Solo los administradores pueden acceder a esta página.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="offers-container">
