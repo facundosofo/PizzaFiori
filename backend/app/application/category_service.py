@@ -34,7 +34,6 @@ class CategoryService:
             async with self.uow as uow:
                 categoria = Category(
                     nombre=categoria_create.nombre,
-                    descripcion=categoria_create.descripcion,
                 )
 
                 await uow.category_repo.add(categoria)
@@ -89,15 +88,16 @@ class CategoryService:
         except Exception as e:
             return ServiceResult(error=str(e), status_code=400)
 
-    async def delete(self, categoria_id: int) -> ServiceResult:
+    async def deactivate(self, categoria_id: int) -> ServiceResult:
         try:
             async with self.uow as uow:
                 categoria = await uow.category_repo.get_by_id(categoria_id)
                 if not categoria:
                     return ServiceResult(error="Categoría no encontrada", status_code=404)
 
-                await uow.category_repo.delete(categoria)
+                categoria.activo = False
                 await uow.commit()
+                await uow.category_repo.refresh(categoria)
                 return ServiceResult(value=categoria)
         except Exception as e:
             return ServiceResult(error=str(e), status_code=400)
