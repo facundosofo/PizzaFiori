@@ -42,3 +42,9 @@ Thumbs.db
 # Archivos subidos por usuarios
 uploads/
 uploads/productos/
+
+# Certificados SSL (development)
+backend/certs/
+*.pem
+*.crt
+*.key

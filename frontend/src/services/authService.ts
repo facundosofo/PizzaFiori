@@ -22,21 +22,15 @@ export interface LoginResponse {
 
 class AuthService {
   /**
-   * Login user with username and password (sent as Basic Auth header)
+   * Login user with username and password (sent in request body)
    * Stores JWT token and user data in localStorage
    */
   async login(username: string, password: string): Promise<User> {
     try {
-      // Encode credentials in Base64 ONLY for this request (not stored)
-      const credentials = btoa(`${username}:${password}`);
-
       const response = await axios.post<LoginResponse>(
         `${env.API_BASE_URL}/auth/login`,
-        null, // No body
+        { username, password },
         {
-          headers: {
-            Authorization: `Basic ${credentials}`,
-          },
           withCredentials: true,
         }
       );

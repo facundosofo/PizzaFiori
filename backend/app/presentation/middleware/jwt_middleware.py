@@ -35,6 +35,10 @@ class JWTMiddleware(BaseHTTPMiddleware):
         Validate JWT token on protected routes and populate request.state.current_user
         """
 
+        # Allow CORS preflight requests through
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         # Skip JWT validation for public routes
         if self._is_public_route(request.url.path, request.method):
             return await call_next(request)
