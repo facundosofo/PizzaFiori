@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Query
 from dependency_injector.wiring import inject, Provide
-from typing import List
+from typing import List, Optional
 
 from app.application.category_service import CategoryService, ServiceResult
 from app.containers import Container
@@ -38,13 +38,14 @@ async def create_categoria(
     "/",
     response_model=List[CategoriaResponse],
     summary="Obtener todas las categorías",
-    description="Devuelve la lista de todas las categorías.",
+    description="Devuelve la lista de todas las categorías con filtro opcional por estado activo.",
 )
 @inject
 async def get_categorias(
+    activo: Optional[bool] = Query(None, description="Filtrar por estado activo (true/false). Si no se especifica, devuelve todas."),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    return await service.get_all()
+    return await service.get_all(activo=activo)
 
 
 @router.get(

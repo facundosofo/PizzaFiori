@@ -30,9 +30,9 @@ const navItems = [
 ];
 
 const adminNavItems = [
+  { label: "Ofertas", to: "/ofertas", icon: Tags, adminOnly: true },
   { label: "Productos", to: "/productos", icon: Pizza, adminOnly: true },
   { label: "Categorías", to: "/categorias", icon: FolderTree, adminOnly: true },
-  { label: "Ofertas", to: "/ofertas", icon: Tags, adminOnly: true },
   { label: "Auditoría", to: "/auditoria", icon: FileSearch, adminOnly: true },
   { label: "Gestión Usuarios", to: "/admin/users", icon: Users, adminOnly: true },
 ];

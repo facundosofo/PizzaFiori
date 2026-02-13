@@ -56,8 +56,11 @@ class CategoryService:
             )
             return ServiceResult(error=str(e), status_code=400)
 
-    async def get_all(self) -> List[Category]:
+    async def get_all(self, activo: Optional[bool] = None) -> List[Category]:
+        """Obtiene todas las categorías con filtro opcional por estado activo."""
         async with self.uow as uow:
+            if activo is not None:
+                return await uow.category_repo.list_by_active(activo)
             return await uow.category_repo.list()
 
     async def get_by_id(self, categoria_id: int) -> ServiceResult:
@@ -95,9 +98,29 @@ class CategoryService:
                 if not categoria:
                     return ServiceResult(error="Categoría no encontrada", status_code=404)
 
+                # Obtener productos activos de la categoría
+                productos = await uow.product_repo.list(categoria_id=categoria_id, active=True)
+                producto_ids = [p.id for p in productos]
+                
+                # Desactivar ofertas que contengan estos productos
+                if producto_ids:
+                    await uow.offer_repo.deactivate_by_products(producto_ids)
+                    
+                    # Desactivar productos
+                    for producto in productos:
+                        producto.activo = False
+                
+                # Desactivar la categoría
                 categoria.activo = False
                 await uow.commit()
                 await uow.category_repo.refresh(categoria)
+                
+                self.logger.info(
+                    "Categoría desactivada en cascada",
+                    categoria_id=categoria_id,
+                    productos_desactivados=len(producto_ids)
+                )
+                
                 return ServiceResult(value=categoria)
         except Exception as e:
             return ServiceResult(error=str(e), status_code=400)

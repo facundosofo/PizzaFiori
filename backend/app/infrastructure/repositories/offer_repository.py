@@ -99,3 +99,41 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
             await self.session.execute(stmt)
         
         return offer_ids
+
+    async def deactivate_by_products(self, producto_ids: List[int]) -> List[int]:
+        """
+        Desactiva todas las ofertas activas que contienen cualquiera de los productos especificados.
+        
+        Args:
+            producto_ids: Lista de IDs de productos
+            
+        Returns:
+            List[int]: IDs de las ofertas desactivadas
+        """
+        if not producto_ids:
+            return []
+        
+        subquery = (
+            select(OfferItem.oferta_id)
+            .join(oferta_item_productos, OfferItem.id == oferta_item_productos.c.oferta_item_id)
+            .where(oferta_item_productos.c.producto_id.in_(producto_ids))
+            .distinct()
+        )
+        
+        ofertas_query = (
+            select(Offer.id)
+            .where(Offer.id.in_(subquery))
+            .where(Offer.activo == True)
+        )
+        result = await self.session.execute(ofertas_query)
+        offer_ids = list(result.scalars().all())
+        
+        if offer_ids:
+            stmt = (
+                update(Offer)
+                .where(Offer.id.in_(offer_ids))
+                .values(activo=False)
+            )
+            await self.session.execute(stmt)
+        
+        return offer_ids

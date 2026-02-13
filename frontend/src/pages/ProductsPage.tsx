@@ -28,7 +28,7 @@ const ProductosPage = () => {
         setError(null);
         const [prods, cats] = await Promise.all([
           getProductos(),
-          getCategorias(),
+          getCategorias(true),
         ]);
 
         if (!prods || prods.length === 0) {

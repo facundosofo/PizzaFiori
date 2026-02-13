@@ -12,13 +12,14 @@ import {
   Eye,
   Info,
   KeyRound,
+  Layers,
   Loader,
   Minus,
-  Percent,
   BadgePercent,
   Pencil,
   Pizza,
   Plus,
+  Save,
   Search,
   ShieldOff,
   ShoppingCart,
@@ -107,3 +108,11 @@ export const ShieldOffIcon = (props: IconProps) =>
   });
 
 export const KeyIcon = (props: IconProps) => renderLucideIcon(KeyRound, props);
+
+export const AlertCircleIcon = (props: IconProps) => renderLucideIcon(AlertCircle, props);
+
+export const LoaderIcon = (props: IconProps) => renderLucideIcon(Loader, props);
+
+export const SaveIcon = (props: IconProps) => renderLucideIcon(Save, props);
+
+export const LayersIcon = (props: IconProps) => renderLucideIcon(Layers, props);

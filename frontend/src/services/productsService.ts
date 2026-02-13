@@ -28,11 +28,13 @@ export const createProducto = async (
   }
 };
 
-export const getProductos = async (): Promise<Product[]> => {
+export const getProductos = async (categoriaId?: number): Promise<Product[]> => {
   try {
-    const response = await api.get<Product[]>("/productos", {
-      params: { active: true },
-    });
+    const params: Record<string, any> = { active: true };
+    if (categoriaId !== undefined) {
+      params.categoria = categoriaId;
+    }
+    const response = await api.get<Product[]>("/productos", { params });
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";

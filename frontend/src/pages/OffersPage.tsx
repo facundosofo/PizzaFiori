@@ -34,7 +34,7 @@ const OffersPage = () => {
       const [offersData, productsData, categoriasData] = await Promise.all([
         getOfertas(true),
         getProductos(),
-        getCategorias(),
+        getCategorias(true),
       ]);
 
       setOfertas(offersData || []);
