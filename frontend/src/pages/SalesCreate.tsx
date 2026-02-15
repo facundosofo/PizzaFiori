@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ProductQuickSelector } from '../components/ProductQuickSelector';
 import { OfferQuickSelector } from '../components/OfferQuickSelector';
 import { OfferConfigModal } from '../components/OfferConfigModal';
+import { PizzaMitadMitadModal } from '../components/PizzaMitadMitadModal';
 import { CartDrawer } from '../components/CartDrawer';
 import ErrorAlert from '../components/shared/ErrorAlert';
 import SkeletonLoader from '../components/shared/SkeletonLoader';
@@ -16,7 +17,7 @@ import { createSale } from '../services/salesService';
 import type { Product } from '../types/product';
 import type { Category } from '../types/category';
 import type { Offer } from '../types/offer';
-import type { CartItem, CartProductItem, CartOfferItem } from '../types/cart';
+import type { CartItem, CartProductItem, CartOfferItem, CartPizzaMitadMitadItem } from '../types/cart';
 import type { SaleItemRequest } from '../types/sale_item';
 import '../styles/sales-create.css';
 
@@ -44,6 +45,9 @@ export const SalesCreatePage: React.FC = () => {
   // Modal states for configurable offers
   const [selectedOfferForConfig, setSelectedOfferForConfig] = useState<Offer | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+  // Modal states for pizza mitad-mitad
+  const [isPizzaMitadMitadModalOpen, setIsPizzaMitadMitadModalOpen] = useState(false);
 
   // Load products and categories
   const fetchData = useCallback(async () => {
@@ -195,6 +199,30 @@ export const SalesCreatePage: React.FC = () => {
     setAddedItemToast(product.nombre);
     setTimeout(() => setAddedItemToast(null), 2000);
   }, [categories]);
+
+  // Add pizza mitad-mitad to cart
+  const handleAddPizzaMitadMitad = useCallback((pizzaMitadMitad: {
+    producto_id_izquierda: number;
+    producto_id_derecha: number;
+    cantidad: number;
+    nombre_completo: string;
+    precio_unitario: number;
+  }) => {
+    const newItem: CartPizzaMitadMitadItem = {
+      id: `pizza-mitad-${pizzaMitadMitad.producto_id_izquierda}-${pizzaMitadMitad.producto_id_derecha}-${Date.now()}`,
+      tipo: 'pizza_mitad_mitad',
+      producto_id_izquierda: pizzaMitadMitad.producto_id_izquierda,
+      producto_id_derecha: pizzaMitadMitad.producto_id_derecha,
+      nombre_completo: pizzaMitadMitad.nombre_completo,
+      cantidad: pizzaMitadMitad.cantidad,
+      precio_unitario: pizzaMitadMitad.precio_unitario,
+      subtotal: pizzaMitadMitad.precio_unitario * pizzaMitadMitad.cantidad,
+    };
+
+    setCartItems((prev) => [...prev, newItem]);
+    setAddedItemToast(pizzaMitadMitad.nombre_completo);
+    setTimeout(() => setAddedItemToast(null), 2000);
+  }, []);
 
   // Add offer to cart (for fixed offers only in Phase 2)
   const handleAddOffer = (offer: Offer) => {
@@ -372,7 +400,7 @@ export const SalesCreatePage: React.FC = () => {
             cantidad: item.cantidad,
             // precio_unitario is optional for create (backend calculates)
           };
-        } else {
+        } else if (item.tipo === 'oferta') {
           // Offer items (Fase 2+)
           return {
             oferta_id: item.oferta_id,
@@ -381,6 +409,16 @@ export const SalesCreatePage: React.FC = () => {
               producto_id: p.producto_id,
               cantidad: p.cantidad,
             })),
+          };
+        } else {
+          // Pizza mitad-mitad items
+          return {
+            pizza_mitad_mitad: {
+              producto_id_izquierda: item.producto_id_izquierda,
+              producto_id_derecha: item.producto_id_derecha,
+              cantidad: item.cantidad,
+            },
+            cantidad: item.cantidad,
           };
         }
       });
@@ -455,6 +493,7 @@ export const SalesCreatePage: React.FC = () => {
                 cartQuantities={cartQuantities}
                 onAddProduct={handleAddProduct}
                 onUpdateProductQuantity={handleUpdateProductQuantity}
+                onOpenPizzaMitadMitad={() => setIsPizzaMitadMitadModalOpen(true)}
               />
             ) : (
               <OfferQuickSelector
@@ -532,6 +571,15 @@ export const SalesCreatePage: React.FC = () => {
           }}
         />
       )}
+
+      {/* Pizza Mitad-Mitad Modal */}
+      <PizzaMitadMitadModal
+        isOpen={isPizzaMitadMitadModalOpen}
+        onClose={() => setIsPizzaMitadMitadModalOpen(false)}
+        products={products}
+        categories={categories}
+        onConfirm={handleAddPizzaMitadMitad}
+      />
 
       {/* Success Message (portal without AnimatePresence for reliability) */}
       {showSuccess && createPortal(

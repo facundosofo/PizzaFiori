@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import re
 from typing import Optional, List
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
@@ -26,6 +27,15 @@ class SaleService:
     ):
         self.uow = uow
         self.logger = logger or structlog.get_logger(__name__)
+
+    def limpiar_nombre_pizza(self,nombre: str) -> str:
+        """
+        Elimina 'pizza', 'pizza de' o 'pizza con' del inicio del nombre.
+        Case-insensitive.
+        """
+        if not nombre:
+            return ""
+        return re.sub(r"^pizza(\s+(de|con))?\s*", "", nombre, flags=re.IGNORECASE).strip()
 
     def _get_product_price(self, producto, cantidad: int) -> Optional[Decimal]:
         """
@@ -302,6 +312,33 @@ class SaleService:
                                 )
                                 oferta_productos_snapshot.append(snapshot)
                     
+                    elif item.pizza_mitad_mitad:
+                        # Validar y procesar pizza mitad-mitad
+                        validation_error = await self._validate_pizza_mitad_mitad(
+                            item.pizza_mitad_mitad, uow
+                        )
+                        if validation_error:
+                            return validation_error
+                        
+                        # Obtener productos y calcular precio
+                        producto_izq = await uow.product_repo.get_by_id(item.pizza_mitad_mitad.producto_id_izquierda)
+                        producto_der = await uow.product_repo.get_by_id(item.pizza_mitad_mitad.producto_id_derecha)
+                        
+                        # Calcular precio (el de la pizza más cara)
+                        precio_unitario = self._get_pizza_mitad_mitad_price(producto_izq, producto_der)
+                        if precio_unitario is None:
+                            return ServiceResult(
+                                error="No se pudo calcular el precio para la pizza mitad-mitad",
+                                status_code=400,
+                            )
+                        
+                        # Generar nombre completo y guardar snapshot
+                        nombre1 = self.limpiar_nombre_pizza(producto_izq.nombre)
+                        nombre2 = self.limpiar_nombre_pizza(producto_der.nombre)
+                        item_nombre = f"Pizza Mitad {nombre1}/{nombre2}"
+                        item_categoria = "Pizza"
+                        item_descripcion = f"Pizza Mitad {nombre1}/{nombre2}"
+                    
                     # Calcular subtotal
                     subtotal = Decimal(str(precio_unitario)) * Decimal(str(item.cantidad))
                     total += subtotal
@@ -318,6 +355,8 @@ class SaleService:
                         item_nombre=item_nombre,
                         item_categoria=item_categoria,
                         item_descripcion=item_descripcion,
+                        # Identificador de pizza mitad-mitad
+                        es_pizza_mitad_mitad=bool(item.pizza_mitad_mitad),
                         oferta_productos_snapshot=oferta_productos_snapshot
                     )
                     sale_items.append(sale_item)
@@ -575,6 +614,13 @@ class SaleService:
                                 )
                                 oferta_productos_snapshot.append(snapshot)
                     
+                    elif item.pizza_mitad_mitad:
+                        # Para pizzas mitad-mitad en actualizaciones, preservar el snapshot histórico
+                        # sin validar contra los requisitos actuales (como con las ofertas)
+                        item_nombre = f"Pizza Mitad Mitad"  # Nombre genérico para actualizaciones
+                        item_categoria = "Pizza"
+                        item_descripcion = None
+                    
                     subtotal = Decimal(str(precio_unitario)) * Decimal(str(item.cantidad))
                     total += subtotal
                     
@@ -590,6 +636,8 @@ class SaleService:
                         item_nombre=item_nombre,
                         item_categoria=item_categoria,
                         item_descripcion=item_descripcion,
+                        # Identificador de pizza mitad-mitad
+                        es_pizza_mitad_mitad=True if item.pizza_mitad_mitad else None,
                         oferta_productos_snapshot=oferta_productos_snapshot
                     )
                     sale_items.append(sale_item)
@@ -650,3 +698,69 @@ class SaleService:
                 exc_info=True,
             )
             return ServiceResult(error=str(e), status_code=400)
+
+    def _get_pizza_mitad_mitad_price(self, producto_izq, producto_der) -> Optional[Decimal]:
+        """Calcula el precio para pizza mitad-mitad (precio de la pizza más cara)."""
+        precio_izq = self._get_product_price(producto_izq, 1)
+        precio_der = self._get_product_price(producto_der, 1)
+        
+        if precio_izq is None or precio_der is None:
+            return None
+        
+        return max(precio_izq, precio_der)  # Precio de la pizza más cara
+
+    async def _validate_pizza_mitad_mitad(self, pizza_mitad_mitad, uow) -> Optional[ServiceResult]:
+        """Valida que la configuración de pizza mitad-mitad sea correcta."""
+        # Validar que ambos productos existan
+        producto_izq = await uow.product_repo.get_by_id(pizza_mitad_mitad.producto_id_izquierda)
+        producto_der = await uow.product_repo.get_by_id(pizza_mitad_mitad.producto_id_derecha)
+        
+        if not producto_izq:
+            return ServiceResult(
+                error=f"Producto {pizza_mitad_mitad.producto_id_izquierda} no encontrado",
+                status_code=404,
+            )
+        
+        if not producto_der:
+            return ServiceResult(
+                error=f"Producto {pizza_mitad_mitad.producto_id_derecha} no encontrado",
+                status_code=404,
+            )
+        
+        # Validar que ambos productos estén activos
+        if not producto_izq.activo or not producto_der.activo:
+            return ServiceResult(
+                error="Ambos productos deben estar activos",
+                status_code=400,
+            )
+        
+        # Validar que ambos sean pizzas
+        if not self._es_pizza(producto_izq) or not self._es_pizza(producto_der):
+            return ServiceResult(
+                error="Ambos productos deben ser pizzas",
+                status_code=400,
+            )
+        
+        # Validar que sean sabores diferentes (ya se valida en el schema, pero por si acaso)
+        if producto_izq.id == producto_der.id:
+            return ServiceResult(
+                error="Los sabores deben ser diferentes",
+                status_code=400,
+            )
+        
+        return None
+
+    def _es_pizza(self, producto) -> bool:
+        """Verifica si un producto es una pizza."""
+        # Opción 1: Por categoría (si existe categoría "Pizzas")
+        if producto.categoria and producto.categoria.nombre.lower() == "pizzas":
+            return True
+        
+        # Opción 2: Por nombre (contiene "pizza")
+        if "pizza" in producto.nombre.lower():
+            return True
+        
+        # Opción 3: Por ID de categoría (ajustar según tu base de datos)
+        # Aquí podrías agregar IDs específicos de categorías de pizzas
+        
+        return False
