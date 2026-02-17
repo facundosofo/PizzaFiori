@@ -5,6 +5,7 @@ import type { Category } from '../types/category';
 import { formatCurrency } from '../utils/formatters';
 import * as Icons from './shared/Icons';
 import env from '../config/env';
+import pizzaMitadImage from '../assets/PizzaMitad.png';
 import '../styles/product-quick-selector.css';
 import '../styles/shared/quantity-controls.css';
 
@@ -14,6 +15,7 @@ interface ProductQuickSelectorProps {
   cartQuantities: Map<number, number>; // producto_id -> quantity in cart
   onAddProduct: (product: Product) => void;
   onUpdateProductQuantity: (productId: number, newQuantity: number) => void;
+  onOpenPizzaMitadMitad?: () => void; // Nuevo prop para abrir modal de pizza mitad-mitad
 }
 
 export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
@@ -22,6 +24,7 @@ export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
   cartQuantities,
   onAddProduct,
   onUpdateProductQuantity,
+  onOpenPizzaMitadMitad,
 }) => {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<number>>(new Set());
   
@@ -104,6 +107,35 @@ export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
           </div>
           {!isCollapsed && (
           <div className="product-scroll-horizontal">
+            {/* Botón especial de Pizza Mitad-Mitad para categoría Pizzas */}
+            {category.nombre.toLowerCase() === 'pizzas' && onOpenPizzaMitadMitad && (
+              <motion.div
+                className="product-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: 0.12 }}
+              >
+                <div className="product-card-image">
+                  <img src={pizzaMitadImage} alt="Pizza mitad y mitad" />
+                </div>
+                <div className="product-card-content">
+                  <h4 className="product-card-name">Pizza Mitad-Mitad</h4>
+                  <div className="product-card-prices">
+                    <div className="price-item no-price">Precio de la pizza más cara</div>
+                  </div>
+                  <div className="product-qty-controls">
+                    <button
+                      className="product-qty-btn-add"
+                      onClick={onOpenPizzaMitadMitad}
+                      title="Crear pizza mitad-mitad"
+                    >
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            
             {products.map((product) => {
               const qtyInCart = cartQuantities.get(product.id) || 0;
               const imageUrl = product.imagen ? `${env.API_BASE_URL}/${product.imagen}` : "/placeholder.png";

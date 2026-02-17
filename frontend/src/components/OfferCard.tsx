@@ -90,7 +90,8 @@ const OfferCard = ({
             <h3 className="offer-card-title">{oferta.nombre}</h3>
           </div>
 
-          {oferta.descripcion && (
+          <div className="offer-description-container">
+          {oferta.descripcion ? (
             <>
               <p
                 className={
@@ -124,7 +125,10 @@ const OfferCard = ({
                 </button>
               )}
             </>
+          ) : (
+            <div className="offer-description-placeholder" />
           )}
+        </div>
 
           <div className="offer-card-separator" />
 

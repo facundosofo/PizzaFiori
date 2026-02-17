@@ -5,6 +5,7 @@ import "../../styles/shared/multi-select.css";
 export interface MultiSelectItem {
   id: number;
   label: string;
+  optionLabel?: string; // Label solo para las opciones del dropdown
   disabled?: boolean;
 }
 
@@ -120,7 +121,7 @@ const MultiSelect = ({
                   disabled={isDisabled}
                   className="multi-select-checkbox"
                 />
-                <span className="multi-select-option-label">{item.label}</span>
+                <span className="multi-select-option-label">{item.optionLabel || item.label}</span>
               </label>
             );
           })

@@ -343,3 +343,52 @@
     font-size: 16px;
   }
 }
+
+.pizza-mitad-mitad-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 12px;
+  height: 64px;
+}
+
+.pizza-mitad-mitad-divider {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.divider-line {
+  width: 2px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+}
+
+.pizza-mitad-mitad-content {
+  color: #ffffff;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.pizza-mitad-mitad-content h4 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.pizza-mitad-mitad-content p {
+  font-size: 12px;
+  margin: 0 0 8px 0;
+  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.3;
+}
+

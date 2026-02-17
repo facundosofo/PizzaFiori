@@ -25,6 +25,19 @@ class SelectedProduct(BaseModel):
     cantidad: int = Field(..., gt=0, description="Cantidad de este producto en la oferta")
 
 
+class PizzaMitadMitadRequest(BaseModel):
+    """Configuración para pizza mitad-mitad."""
+    producto_id_izquierda: int = Field(..., gt=0, description="ID del producto para el lado izquierdo")
+    producto_id_derecha: int = Field(..., gt=0, description="ID del producto para el lado derecho")
+    cantidad: int = Field(..., gt=0, le=100, description="Cantidad de pizzas mitad-mitad")
+
+    @model_validator(mode="after")
+    def validar_sabores_diferentes(self):
+        if self.producto_id_izquierda == self.producto_id_derecha:
+            raise ValueError("Los sabores deben ser diferentes")
+        return self
+
+
 class SaleItemRequest(BaseModel):
     producto_id: Optional[int] = Field(None, gt=0)
     oferta_id: Optional[int] = Field(None, gt=0)
@@ -34,22 +47,35 @@ class SaleItemRequest(BaseModel):
         None,
         description="Productos que el cliente eligió al comprar una oferta (solo si oferta_id está presente)"
     )
+    pizza_mitad_mitad: Optional[PizzaMitadMitadRequest] = Field(
+        None,
+        description="Configuración para pizza mitad-mitad (exclusivo con producto_id y oferta_id)"
+    )
 
     @model_validator(mode="after")
-    def validar_producto_or_oferta(self):
-        if self.producto_id is None and self.oferta_id is None:
-            raise ValueError("Debe especificar producto_id o oferta_id")
-        if self.producto_id is not None and self.oferta_id is not None:
-            raise ValueError("No se puede especificar producto_id y oferta_id al mismo tiempo")
+    def validar_tipos_mutuamente_exclusivos(self):
+        # Validar que solo se especifique un tipo: producto, oferta, o pizza mitad-mitad
+        tipos_especificados = sum([
+            self.producto_id is not None,
+            self.oferta_id is not None,
+            self.pizza_mitad_mitad is not None
+        ])
         
-        # Si es una oferta, debe tener productos seleccionados
+        if tipos_especificados == 0:
+            raise ValueError("Debe especificar producto_id, oferta_id o pizza_mitad_mitad")
+        if tipos_especificados > 1:
+            raise ValueError("Solo se puede especificar uno de: producto_id, oferta_id, o pizza_mitad_mitad")
+        
+        # Validaciones específicas para cada tipo
         if self.oferta_id is not None:
             if not self.productos_seleccionados or len(self.productos_seleccionados) == 0:
                 raise ValueError("Debe especificar productos_seleccionados al comprar una oferta")
         
-        # Si es un producto, no debe tener productos_seleccionados
         if self.producto_id is not None and self.productos_seleccionados:
             raise ValueError("No se puede especificar productos_seleccionados para un producto individual")
+        
+        if self.pizza_mitad_mitad is not None and self.productos_seleccionados:
+            raise ValueError("No se puede especificar productos_seleccionados para pizza mitad-mitad")
         
         return self
 

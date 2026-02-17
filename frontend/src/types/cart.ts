@@ -34,8 +34,17 @@ export interface CartOfferItem extends CartItemBase {
   }[];
 }
 
+// Pizza mitad-mitad item in cart
+export interface CartPizzaMitadMitadItem extends CartItemBase {
+  tipo: 'pizza_mitad_mitad';
+  producto_id_izquierda: number;
+  producto_id_derecha: number;
+  // Nombre completo para mostrar: "Pizza Mitad Muzzarella/Carne"
+  nombre_completo: string;
+}
+
 // Union type for any cart item
-export type CartItem = CartProductItem | CartOfferItem;
+export type CartItem = CartProductItem | CartOfferItem | CartPizzaMitadMitadItem;
 
 // Cart state
 export interface CartState {

@@ -28,6 +28,11 @@ export interface SaleItemRequest {
   cantidad: number;
   precio_unitario?: number; // Requerido para updates
   productos_seleccionados?: { producto_id: number; cantidad: number }[];
+  pizza_mitad_mitad?: {
+    producto_id_izquierda: number;
+    producto_id_derecha: number;
+    cantidad: number;
+  };
 }
 
 // Extended interface with product/offer names (populated by backend via snapshots)

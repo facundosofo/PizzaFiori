@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Numeric, CheckConstraint, String, Text, Index
+from sqlalchemy import Column, Integer, ForeignKey, Numeric, CheckConstraint, String, Text, Index, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -9,8 +9,12 @@ class SaleItem(Base):
     __tablename__ = "VentaItems"
     __table_args__ = (
         CheckConstraint(
-            "(producto_id IS NOT NULL AND oferta_id IS NULL) OR (producto_id IS NULL AND oferta_id IS NOT NULL)",
-            name="check_producto_or_oferta"
+            "("
+            "(producto_id IS NOT NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = 0) OR "
+            "(producto_id IS NULL AND oferta_id IS NOT NULL AND es_pizza_mitad_mitad = 0) OR "
+            "(producto_id IS NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = 1)"
+            ")",
+        name="check_producto_oferta_or_mitad_mitad"
         ),
         # Índices simples para optimizar operaciones IN/WHERE en dashboard
         Index('ix_ventaitems_venta_id', 'venta_id'),
@@ -35,6 +39,9 @@ class SaleItem(Base):
     item_nombre = Column(String(255), nullable=False)  # Nombre del producto/oferta al momento de la venta
     item_categoria = Column(String(100), nullable=False)  # Categoría al momento de la venta
     item_descripcion = Column(Text, nullable=True)  # Descripción de la oferta (si aplica)
+    
+    # Identificador para pizzas mitad-mitad
+    es_pizza_mitad_mitad = Column(Boolean, nullable=True, default=False, index=True)  # TRUE si es pizza mitad-mitad
 
     venta = relationship(
         "Sale",

@@ -1,8 +1,8 @@
-"""Initial schema
+"""Initial migration
 
-Revision ID: 644fd2ff4afb
+Revision ID: 948a1e8de376
 Revises: 
-Create Date: 2026-02-11 14:43:36.244116
+Create Date: 2026-02-13 18:27:01.899195
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '644fd2ff4afb'
+revision: str = '948a1e8de376'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table('Categorias',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nombre', sa.String(length=50), nullable=False),
-    sa.Column('descripcion', sa.String(length=255), nullable=True),
+    sa.Column('activo', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_Categorias_nombre'), 'Categorias', ['nombre'], unique=True)
@@ -39,9 +39,25 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_Ofertas_id'), 'Ofertas', ['id'], unique=False)
+    op.create_table('Usuarios',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('username', sa.String(length=50), nullable=False),
+    sa.Column('email', sa.String(length=100), nullable=False),
+    sa.Column('password_hash', sa.Text(), nullable=False),
+    sa.Column('first_name', sa.String(length=50), nullable=False),
+    sa.Column('last_name', sa.String(length=50), nullable=False),
+    sa.Column('role', sa.String(length=20), nullable=False),
+    sa.Column('failed_login_attempts', sa.Integer(), nullable=False),
+    sa.Column('locked_until', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_Usuarios_email'), 'Usuarios', ['email'], unique=True)
+    op.create_index(op.f('ix_Usuarios_username'), 'Usuarios', ['username'], unique=True)
     op.create_table('Ventas',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('numero_orden', sa.String(length=17), nullable=True),
+    sa.Column('numero_orden', sa.String(length=17), nullable=False),
     sa.Column('total', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('fecha_creacion', sa.DateTime(), nullable=True),
     sa.Column('fecha_actualizacion', sa.DateTime(), nullable=True),
@@ -111,12 +127,14 @@ def upgrade() -> None:
     sa.Column('item_nombre', sa.String(length=255), nullable=False),
     sa.Column('item_categoria', sa.String(length=100), nullable=False),
     sa.Column('item_descripcion', sa.Text(), nullable=True),
-    sa.CheckConstraint('(producto_id IS NOT NULL AND oferta_id IS NULL) OR (producto_id IS NULL AND oferta_id IS NOT NULL)', name='check_producto_or_oferta'),
+    sa.Column('es_pizza_mitad_mitad', sa.Boolean(), nullable=True),
+    sa.CheckConstraint('((producto_id IS NOT NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = 0) OR (producto_id IS NULL AND oferta_id IS NOT NULL AND es_pizza_mitad_mitad = 0) OR (producto_id IS NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = 1))', name='check_producto_oferta_or_mitad_mitad'),
     sa.ForeignKeyConstraint(['oferta_id'], ['Ofertas.id'], ),
     sa.ForeignKeyConstraint(['producto_id'], ['Productos.id'], ),
     sa.ForeignKeyConstraint(['venta_id'], ['Ventas.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_VentaItems_es_pizza_mitad_mitad'), 'VentaItems', ['es_pizza_mitad_mitad'], unique=False)
     op.create_index(op.f('ix_VentaItems_id'), 'VentaItems', ['id'], unique=False)
     op.create_index(op.f('ix_VentaItems_producto_sku'), 'VentaItems', ['producto_sku'], unique=False)
     op.create_index('ix_ventaitems_item_categoria', 'VentaItems', ['item_categoria'], unique=False)
@@ -157,6 +175,7 @@ def downgrade() -> None:
     op.drop_index('ix_ventaitems_item_categoria', table_name='VentaItems')
     op.drop_index(op.f('ix_VentaItems_producto_sku'), table_name='VentaItems')
     op.drop_index(op.f('ix_VentaItems_id'), table_name='VentaItems')
+    op.drop_index(op.f('ix_VentaItems_es_pizza_mitad_mitad'), table_name='VentaItems')
     op.drop_table('VentaItems')
     op.drop_index('ix_productoprecio_producto_cantidad', table_name='ProductoPrecios')
     op.drop_index(op.f('ix_ProductoPrecios_id'), table_name='ProductoPrecios')
@@ -172,6 +191,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_Ventas_id'), table_name='Ventas')
     op.drop_index(op.f('ix_Ventas_fecha_creacion'), table_name='Ventas')
     op.drop_table('Ventas')
+    op.drop_index(op.f('ix_Usuarios_username'), table_name='Usuarios')
+    op.drop_index(op.f('ix_Usuarios_email'), table_name='Usuarios')
+    op.drop_table('Usuarios')
     op.drop_index(op.f('ix_Ofertas_id'), table_name='Ofertas')
     op.drop_table('Ofertas')
     op.drop_index(op.f('ix_Categorias_nombre'), table_name='Categorias')

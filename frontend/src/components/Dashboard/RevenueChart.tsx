@@ -111,16 +111,20 @@ const RevenueChart = memo(({
         for (let i = 29; i >= 0; i--) {
           const date = new Date(today);
           date.setDate(date.getDate() - i);
-          const fechaStr = date.toISOString().split('T')[0];
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const fechaStr = `${year}-${month}-${day}`;
           const data = dataMap.get(fechaStr);
           dates.push({ fecha: fechaStr, data });
         }
 
         // Mapear a formato para el gráfico
         return dates.map((item) => {
-          const date = new Date(item.fecha);
-          const day = date.getDate();
-          const month = date.getMonth() + 1;
+          // Parsear fecha YYYY-MM-DD manualmente para evitar problemas de timezone
+          const [, monthStr, dayStr] = item.fecha.split('-');
+          const day = parseInt(dayStr, 10);
+          const month = parseInt(monthStr, 10);
           
           if (item.data) {
             return {

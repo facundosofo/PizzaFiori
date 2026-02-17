@@ -220,8 +220,8 @@ class DashboardService:
         """
         from sqlalchemy import text
         
-        # Fecha de inicio ajustada
-        start_date = datetime.now() - timedelta(days=limit)
+        # Fecha de inicio ajustada (incluye el día actual)
+        start_date = (datetime.now() - timedelta(days=limit - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
         
         # PASO 1: Subconsulta de ventas (pre-filtrado)
         # Calcula la fecha de negocio UNA VEZ por venta
@@ -238,29 +238,61 @@ class DashboardService:
             business_date_expr >= start_date
         ).subquery()
         
-        # PASO 2: Agregar items por venta
-        items_subquery = select(
+        # PASO 2: Agregar items DIRECTOS por venta (productos individuales)
+        direct_items_subquery = select(
             SaleItem.venta_id,
-            func.sum(SaleItem.cantidad).label("total_items")
+            func.sum(SaleItem.cantidad).label("direct_qty")
         ).where(
-            SaleItem.venta_id.in_(
-                select(sale_subquery.c.sale_id)
-            )
+            SaleItem.producto_id.isnot(None)  # Productos directos
         ).group_by(
             SaleItem.venta_id
         ).subquery()
         
-        # PASO 3: JOIN y agregación final
+        # PASO 3: Agregar items de OFERTAS por venta (cantidad de productos en oferta * cantidad de ofertas)
+        offer_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("offer_qty")
+        ).select_from(
+            SaleItem
+        ).join(
+            SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
+        ).where(
+            SaleItem.oferta_id.isnot(None)  # Items de ofertas
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 4: Agregar items MITAD-MITAD por venta
+        mitad_mitad_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("mitad_qty")
+        ).where(
+            SaleItem.es_pizza_mitad_mitad == True
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 5: JOIN y agregación final
         query = select(
             sale_subquery.c.business_date.label("date"),
             func.sum(sale_subquery.c.sale_total).label("revenue"),
             func.count(sale_subquery.c.sale_id).label("pedidos"),
-            func.sum(items_subquery.c.total_items).label("cantidad")
+            func.sum(
+                func.coalesce(direct_items_subquery.c.direct_qty, 0) +
+                func.coalesce(offer_items_subquery.c.offer_qty, 0) +
+                func.coalesce(mitad_mitad_items_subquery.c.mitad_qty, 0)
+            ).label("cantidad")
         ).select_from(
             sale_subquery
         ).outerjoin(
-            items_subquery,
-            sale_subquery.c.sale_id == items_subquery.c.venta_id
+            direct_items_subquery,
+            sale_subquery.c.sale_id == direct_items_subquery.c.venta_id
+        ).outerjoin(
+            offer_items_subquery,
+            sale_subquery.c.sale_id == offer_items_subquery.c.venta_id
+        ).outerjoin(
+            mitad_mitad_items_subquery,
+            sale_subquery.c.sale_id == mitad_mitad_items_subquery.c.venta_id
         ).group_by(
             sale_subquery.c.business_date
         ).order_by(
@@ -320,30 +352,71 @@ class DashboardService:
             )
         ).subquery()
         
-        # PASO 2: Agregar items por venta
-        items_subquery = select(
+        # PASO 2: Agregar items DIRECTOS por venta (productos individuales)
+        direct_items_subquery = select(
             SaleItem.venta_id,
-            func.sum(SaleItem.cantidad).label("total_items")
+            func.sum(SaleItem.cantidad).label("direct_qty")
         ).where(
-            SaleItem.venta_id.in_(
-                select(sale_subquery.c.sale_id)
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.producto_id.isnot(None)  # Productos directos
             )
         ).group_by(
             SaleItem.venta_id
         ).subquery()
         
-        # PASO 3: Agregación final por mes
+        # PASO 3: Agregar items de OFERTAS por venta (cantidad de productos en oferta * cantidad de ofertas)
+        offer_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("offer_qty")
+        ).select_from(
+            SaleItem
+        ).join(
+            SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
+        ).where(
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.oferta_id.isnot(None)  # Items de ofertas
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 4: Agregar items MITAD-MITAD por venta
+        mitad_mitad_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("mitad_qty")
+        ).where(
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.es_pizza_mitad_mitad == True
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 5: Agregación final por mes
         query = select(
             sale_subquery.c.year,
             sale_subquery.c.month,
             func.sum(sale_subquery.c.sale_total).label("revenue"),
             func.count(sale_subquery.c.sale_id).label("pedidos"),
-            func.sum(items_subquery.c.total_items).label("cantidad")
+            func.sum(
+                func.coalesce(direct_items_subquery.c.direct_qty, 0) +
+                func.coalesce(offer_items_subquery.c.offer_qty, 0) +
+                func.coalesce(mitad_mitad_items_subquery.c.mitad_qty, 0)
+            ).label("cantidad")
         ).select_from(
             sale_subquery
         ).outerjoin(
-            items_subquery,
-            sale_subquery.c.sale_id == items_subquery.c.venta_id
+            direct_items_subquery,
+            sale_subquery.c.sale_id == direct_items_subquery.c.venta_id
+        ).outerjoin(
+            offer_items_subquery,
+            sale_subquery.c.sale_id == offer_items_subquery.c.venta_id
+        ).outerjoin(
+            mitad_mitad_items_subquery,
+            sale_subquery.c.sale_id == mitad_mitad_items_subquery.c.venta_id
         ).group_by(
             sale_subquery.c.year,
             sale_subquery.c.month
@@ -409,29 +482,70 @@ class DashboardService:
             adjusted_fecha >= start_date
         ).subquery()
         
-        # PASO 2: Agregar items por venta
-        items_subquery = select(
+        # PASO 2: Agregar items DIRECTOS por venta (productos individuales)
+        direct_items_subquery = select(
             SaleItem.venta_id,
-            func.sum(SaleItem.cantidad).label("total_items")
+            func.sum(SaleItem.cantidad).label("direct_qty")
         ).where(
-            SaleItem.venta_id.in_(
-                select(sale_subquery.c.sale_id)
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.producto_id.isnot(None)  # Productos directos
             )
         ).group_by(
             SaleItem.venta_id
         ).subquery()
         
-        # PASO 3: Agregación final por año
+        # PASO 3: Agregar items de OFERTAS por venta (cantidad de productos en oferta * cantidad de ofertas)
+        offer_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("offer_qty")
+        ).select_from(
+            SaleItem
+        ).join(
+            SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
+        ).where(
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.oferta_id.isnot(None)  # Items de ofertas
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 4: Agregar items MITAD-MITAD por venta
+        mitad_mitad_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("mitad_qty")
+        ).where(
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.es_pizza_mitad_mitad == True
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+        
+        # PASO 5: Agregación final por año
         query = select(
             sale_subquery.c.year,
             func.sum(sale_subquery.c.sale_total).label("revenue"),
             func.count(sale_subquery.c.sale_id).label("pedidos"),
-            func.sum(items_subquery.c.total_items).label("cantidad")
+            func.sum(
+                func.coalesce(direct_items_subquery.c.direct_qty, 0) +
+                func.coalesce(offer_items_subquery.c.offer_qty, 0) +
+                func.coalesce(mitad_mitad_items_subquery.c.mitad_qty, 0)
+            ).label("cantidad")
         ).select_from(
             sale_subquery
         ).outerjoin(
-            items_subquery,
-            sale_subquery.c.sale_id == items_subquery.c.venta_id
+            direct_items_subquery,
+            sale_subquery.c.sale_id == direct_items_subquery.c.venta_id
+        ).outerjoin(
+            offer_items_subquery,
+            sale_subquery.c.sale_id == offer_items_subquery.c.venta_id
+        ).outerjoin(
+            mitad_mitad_items_subquery,
+            sale_subquery.c.sale_id == mitad_mitad_items_subquery.c.venta_id
         ).group_by(
             sale_subquery.c.year
         ).order_by(
@@ -462,10 +576,10 @@ class DashboardService:
         Obtiene los productos más/menos vendidos (OPTIMIZADA).
         
         Optimizaciones:
-        - UNION ALL en lugar de 2 queries + merge en Python
+        - UNION ALL en lugar de 3 queries + merge en Python (productos directos, ofertas, pizzas mitad/mitad)
         - Pre-filtrado de ventas por fecha antes de grandes JOINs
         - Agregación y ordenamiento en SQL para mejor rendimiento
-        - Índices en columnas clave (venta_id, categoria_id)
+        - Índices en columnas clave (venta_id, categoria_id, es_pizza_mitad_mitad)
         - COHERENCIA: Todos los filtros usan adjusted_fecha (horario de negocio 16:00-06:00)
         """
         from sqlalchemy import union_all, text
@@ -555,8 +669,38 @@ class DashboardService:
             func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre)
         )
         
-        # ==== UNION ALL: Combinar ambas queries ====
-        combined_query = union_all(direct_query, offer_query).alias("combined")
+        # ==== QUERY 3: Pizzas mitad/mitad ====
+        mitad_mitad_query = select(
+            SaleItem.item_nombre.label("name"),
+            SaleItem.item_categoria.label("category"),
+            func.sum(SaleItem.cantidad).label("total_quantity"),
+            SaleItem.precio_unitario.label("price"),
+        ).select_from(
+            SaleItem
+        ).join(
+            sales_subq, SaleItem.venta_id == sales_subq.c.id  # JOIN con ventas pre-filtradas
+        ).where(
+            and_(
+                SaleItem.es_pizza_mitad_mitad == True,
+                SaleItem.producto_id.is_(None),
+                SaleItem.oferta_id.is_(None)
+            )
+        )
+        
+        # Filtro de categoría
+        if category:
+            mitad_mitad_query = mitad_mitad_query.where(
+                SaleItem.item_categoria == category
+            )
+        
+        mitad_mitad_query = mitad_mitad_query.group_by(
+            SaleItem.item_nombre,
+            SaleItem.item_categoria,
+            SaleItem.precio_unitario
+        )
+        
+        # ==== UNION ALL: Combinar las tres queries ====
+        combined_query = union_all(direct_query, offer_query, mitad_mitad_query).alias("combined")
         
         # ==== AGREGACIÓN FINAL: Agrupar por nombre+categoría ====
         final_query = select(
@@ -597,11 +741,12 @@ class DashboardService:
         Agrega cantidad vendida por categoría (OPTIMIZADA).
         
         Optimizaciones:
-        - UNION ALL en lugar de 2 queries + merge en Python
+        - UNION ALL en lugar de 3 queries + merge en Python
         - Pre-filtrado de ventas por fecha antes de grandes JOINs
         - Agregación y ordenamiento en SQL
         - Índices en columnas clave (venta_id, categoria_id)
         - ✅ COHERENCIA: Todos los filtros usan adjusted_fecha (horario de negocio 16:00-06:00)
+        - ✅ PIZZAS MITAD-MITAD: Incluye query específica para pizzas mitad-mitad
         """
         from sqlalchemy import union_all, text
         
@@ -669,8 +814,22 @@ class DashboardService:
             )
         )
         
-        # ==== UNION ALL: Combinar ambas queries ====
-        combined_query = union_all(direct_query, offer_query).alias("combined")
+        # ==== QUERY 3: Pizzas Mitad-Mitad ====
+        pizza_mitad_query = select(
+            SaleItem.item_categoria.label("category"),
+            func.sum(SaleItem.cantidad).label("total_quantity"),
+        ).select_from(
+            SaleItem
+        ).join(
+            sales_subq, SaleItem.venta_id == sales_subq.c.id
+        ).where(
+            SaleItem.es_pizza_mitad_mitad == True
+        ).group_by(
+            SaleItem.item_categoria
+        )
+        
+        # ==== UNION ALL: Combinar las tres queries ====
+        combined_query = union_all(direct_query, offer_query, pizza_mitad_query).alias("combined")
         
         # ==== AGREGACIÓN FINAL: Agrupar por categoría ====
         final_query = select(
@@ -708,7 +867,7 @@ class DashboardService:
         
         Optimizaciones principales:
         - Pre-filtrado de ventas por fecha ANTES de grandes JOINs
-        - Separación de queries directas vs ofertas (en lugar de CASE complejo)
+        - Separación de queries directas vs ofertas vs pizzas mitad/mitad (en lugar de CASE complejo)
         - Subconsultas simples y reutilizables
         - Agregación en SQL completa, sin procesamiento en Python
         
@@ -777,7 +936,29 @@ class DashboardService:
         
         offer_items_query = offer_items_query.group_by(SaleItem.venta_id).subquery()
         
-        # PASO 5: Unir ventas filtradas con items (directos + ofertas)
+        # PASO 4.5: Agregación de items MITAD/MITAD por venta
+        mitad_mitad_items_query = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("mitad_mitad_qty")
+        ).select_from(SaleItem).join(
+            sales_subq, SaleItem.venta_id == sales_subq.c.id
+        ).where(
+            and_(
+                SaleItem.es_pizza_mitad_mitad == True,
+                SaleItem.producto_id.is_(None),
+                SaleItem.oferta_id.is_(None)
+            )
+        )
+        
+        # Aplicar filtro de categoría para items mitad/mitad
+        if category:
+            mitad_mitad_items_query = mitad_mitad_items_query.where(
+                SaleItem.item_categoria == category
+            )
+        
+        mitad_mitad_items_query = mitad_mitad_items_query.group_by(SaleItem.venta_id).subquery()
+        
+        # PASO 5: Unir ventas filtradas con items (directos + ofertas + mitad/mitad)
         # Nota: adjusted_fecha se usa directamente (no calculado 2 veces)
         sale_daily_data = select(
             Sale.id.label("sale_id"),
@@ -785,13 +966,16 @@ class DashboardService:
             func.datepart(text('WEEKDAY'), adjusted_fecha).label("dow"),
             Sale.total.label("revenue"),
             (func.coalesce(direct_items_query.c.direct_qty, 0) + 
-             func.coalesce(offer_items_query.c.offer_qty, 0)).label("total_items")
+             func.coalesce(offer_items_query.c.offer_qty, 0) + 
+             func.coalesce(mitad_mitad_items_query.c.mitad_mitad_qty, 0)).label("total_items")
         ).select_from(Sale).join(
             sales_subq, Sale.id == sales_subq.c.id
         ).outerjoin(
             direct_items_query, Sale.id == direct_items_query.c.venta_id
         ).outerjoin(
             offer_items_query, Sale.id == offer_items_query.c.venta_id
+        ).outerjoin(
+            mitad_mitad_items_query, Sale.id == mitad_mitad_items_query.c.venta_id
         ).subquery()
         
         # PASO 6: Agrupar por fecha de negocio (para promedios)

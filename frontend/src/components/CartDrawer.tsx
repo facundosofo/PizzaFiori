@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
 import type { CartItem } from '../types/cart';
 import { formatCurrency } from '../utils/formatters';
 import * as Icons from './shared/Icons';
@@ -63,11 +62,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           <AnimatePresence>
             {items.map((item) => {
               const isOffer = item.tipo === 'oferta';
+              const isPizzaMitadMitad = item.tipo === 'pizza_mitad_mitad';
 
               return (
                 <motion.div
                   key={item.id}
-                  className={`cart-item ${isOffer ? 'cart-item-offer' : ''}`}
+                  className={`cart-item ${isOffer ? 'cart-item-offer' : ''} ${isPizzaMitadMitad ? 'cart-item-pizza-mitad' : ''}`}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -77,10 +77,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <div className="cart-item-info">
                       <h3 className="cart-item-name">
                         {isOffer && <Icons.DiscountIcon size={16} />}{' '}
-                        {item.tipo === 'producto' ? item.producto_nombre : item.oferta_nombre}
+                        {item.tipo === 'producto' ? item.producto_nombre : 
+                         item.tipo === 'oferta' ? item.oferta_nombre :
+                         item.tipo === 'pizza_mitad_mitad' ? item.nombre_completo :
+                         'Item desconocido'}
                       </h3>
                       {item.tipo === 'producto' ? (
                         <p className="cart-item-category">{item.categoria_nombre}</p>
+                      ) : item.tipo === 'pizza_mitad_mitad' ? (
+                        <p className="cart-item-category">Pizzas</p>
                       ) : null}
                     </div>
                     <button
