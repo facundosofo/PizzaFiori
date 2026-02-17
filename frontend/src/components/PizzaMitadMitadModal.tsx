@@ -40,12 +40,16 @@ export const PizzaMitadMitadModal: React.FC<PizzaMitadMitadModalProps> = ({
            product.nombre.toLowerCase().includes('pizza');
   });
 
-  // Convert to MultiSelect format
-  const pizzaMultiSelect: MultiSelectItem[] = pizzaProducts.map(product => ({
-    id: product.id,
-    label: product.nombre,
-    disabled: false,
-  }));
+  // Convert to MultiSelect format: label sin precio (chips), optionLabel con precio (dropdown)
+  const pizzaMultiSelect: MultiSelectItem[] = pizzaProducts.map(product => {
+    const priceForOne = product.precios?.find(p => p.cantidad === 1)?.precio || 0;
+    return {
+      id: product.id,
+      label: product.nombre, // Solo nombre para los chips seleccionados
+      optionLabel: `${product.nombre} - ${formatCurrency(priceForOne)}`, // Nombre + precio para opciones
+      disabled: false,
+    };
+  });
 
   const handlePizzaSelection = (selectedIds: number[]) => {
     // Limitar a máximo 2 selecciones
