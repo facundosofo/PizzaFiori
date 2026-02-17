@@ -84,6 +84,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </h3>
                       {item.tipo === 'producto' ? (
                         <p className="cart-item-category">{item.categoria_nombre}</p>
+                      ) : item.tipo === 'pizza_mitad_mitad' ? (
+                        <p className="cart-item-category">Pizzas</p>
                       ) : null}
                     </div>
                     <button
