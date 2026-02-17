@@ -336,7 +336,7 @@ class SaleService:
                         nombre1 = self.limpiar_nombre_pizza(producto_izq.nombre)
                         nombre2 = self.limpiar_nombre_pizza(producto_der.nombre)
                         item_nombre = f"Pizza Mitad {nombre1}/{nombre2}"
-                        item_categoria = "Pizza"
+                        item_categoria = "Pizzas"
                         item_descripcion = f"Pizza Mitad {nombre1}/{nombre2}"
                     
                     # Calcular subtotal
