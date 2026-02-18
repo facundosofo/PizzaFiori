@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Path, Query
+from fastapi.responses import Response
 from dependency_injector.wiring import inject, Provide
 from typing import List
+from datetime import date
 
 from app.application.sale_service import SaleService, ServiceResult
+from app.application.report_service import ReportService
 from app.containers import Container
 from app.presentation.schemas.sale_schemas import (
     SaleCreateRequest,
@@ -155,3 +158,79 @@ async def delete_sale(
         )
 
     return None
+
+
+@router.get(
+    "/reporte/pdf",
+    summary="Generar reporte de ventas en PDF",
+    description="Genera un reporte PDF con el listado de ventas en el rango seleccionado.",
+    responses={
+        200: {
+            "description": "Reporte PDF generado exitosamente",
+            "content": {
+                "application/pdf": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
+            }
+        },
+        404: {"description": "No hay ventas en el período seleccionado"},
+        500: {"description": "Error al generar el reporte"},
+    },
+)
+@inject
+async def generate_sales_report(
+    fecha_desde: date | None = Query(None, description="Fecha inicial del rango (YYYY-MM-DD)"),
+    fecha_hasta: date | None = Query(None, description="Fecha final del rango (YYYY-MM-DD)"),
+    modo: str = Query("light", description="Modo de color del reporte: 'dark' o 'light'"),
+    mostrar_resumen_periodo: bool = Query(True, description="Incluir sección 'Resumen del Período'"),
+    mostrar_resumen_dia: bool = Query(True, description="Incluir sección 'Resumen por Día'"),
+    mostrar_resumen_categoria: bool = Query(True, description="Incluir sección 'Resumen por Categoría'"),
+    mostrar_resumen_productos: bool = Query(True, description="Incluir sección 'Resumen de Productos Vendidos'"),
+    mostrar_detalle_ventas: bool = Query(True, description="Incluir sección 'Detalle de Ventas'"),
+    report_service: ReportService = Depends(Provide[Container.report_service]),
+):
+    """
+    Genera un reporte PDF con:
+    - Resumen del período (total ventas, ingresos)
+    - Detalle de cada venta (fecha, orden, items, total)
+    """
+    if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="fecha_desde debe ser menor o igual a fecha_hasta",
+        )
+
+    result = await report_service.generate_sales_report(
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        modo=modo,
+        mostrar_resumen_periodo=mostrar_resumen_periodo,
+        mostrar_resumen_dia=mostrar_resumen_dia,
+        mostrar_resumen_categoria=mostrar_resumen_categoria,
+        mostrar_resumen_productos=mostrar_resumen_productos,
+        mostrar_detalle_ventas=mostrar_detalle_ventas,
+    )
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error,
+        )
+
+    # Generar nombre del archivo
+    if fecha_desde and fecha_hasta:
+        filename = f"reporte_ventas_{fecha_desde}_{fecha_hasta}.pdf"
+    elif fecha_desde:
+        filename = f"reporte_ventas_desde_{fecha_desde}.pdf"
+    elif fecha_hasta:
+        filename = f"reporte_ventas_hasta_{fecha_hasta}.pdf"
+    else:
+        filename = "reporte_ventas.pdf"
+
+    return Response(
+        content=result.pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
