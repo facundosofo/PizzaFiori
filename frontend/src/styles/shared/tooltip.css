@@ -14,12 +14,12 @@
   width: 20px;
   height: 20px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #4a4a4a, #2a2a2a);
-  color: #ffffff;
+  background: var(--gradient-card);
+  color: var(--color-text);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border-strong);
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -32,7 +32,7 @@
 
 .info-tooltip:hover .info-icon {
   transform: translateY(-1px) scale(1.08);
-  background: linear-gradient(135deg, #6a6a6a, #4a4a4a);
+  background: var(--gradient-card-hover);
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
@@ -48,8 +48,8 @@
   right: calc(100% + 12px);
   top: 50%;
   transform: translateY(-50%);
-  background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
-  color: #e5e7eb;
+  background: var(--color-surface-2);
+  color: var(--color-text);
   padding: 12px 16px;
   border-radius: 10px;
   font-size: 0.8rem;
@@ -60,7 +60,7 @@
   box-shadow:
     0 10px 30px rgba(0, 0, 0, 0.7),
     0 0 30px rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border: 1.5px solid var(--color-border-strong);
   opacity: 0;
   visibility: hidden;
   transition:
@@ -77,7 +77,7 @@
   top: 50%;
   transform: translateY(-50%);
   border: 7px solid transparent;
-  border-left-color: #1e1e1e;
+  border-left-color: var(--color-surface-2);
 }
 
 .tooltip-content::before {
@@ -88,7 +88,7 @@
   transform: translateY(-50%);
   margin-left: 1px;
   border: 8px solid transparent;
-  border-left-color: rgba(255, 255, 255, 0.15);
+  border-left-color: var(--color-border-strong);
 }
 
 .info-tooltip:hover .tooltip-content {

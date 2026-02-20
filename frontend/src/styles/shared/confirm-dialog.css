@@ -8,7 +8,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -17,21 +17,21 @@
 }
 
 .confirm-dialog {
-  background: linear-gradient(145deg, #1e1e1e, #121212);
+  background: var(--gradient-card);
   border-radius: 16px;
   padding: 32px 28px;
   max-width: 420px;
   width: 90%;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.95),
-    0 0 40px rgba(255, 59, 59, 0.3);
-  border: 2px solid rgba(255, 59, 59, 0.4);
+    0 0 40px rgba(239, 68, 68, 0.3);
+  border: 2px solid rgba(239, 68, 68, 0.4);
   text-align: center;
 }
 
 .confirm-title {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #ff3b3b;
+  color: var(--color-danger);
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin: 0 0 16px 0;
@@ -39,19 +39,19 @@
 
 .confirm-message {
   font-size: 1.1rem;
-  color: #f5f5f5;
+  color: var(--color-text);
   margin: 0 0 12px 0;
   line-height: 1.5;
 }
 
 .confirm-message strong {
-  color: #6dff7a;
+  color: var(--color-accent);
   font-weight: 700;
 }
 
 .confirm-warning {
   font-size: 0.9rem;
-  color: #ff9999;
+  color: var(--color-danger);
   margin: 0 0 24px 0;
   font-weight: 600;
 }
@@ -78,15 +78,15 @@
 }
 
 .confirm-cancel-btn {
-  background: rgba(255, 59, 59, 0.15);
-  color: #aaa;
-  border: 2px solid rgba(255, 59, 59, 0.2);
+  background: var(--color-danger-bg);
+  color: var(--color-text-muted);
+  border: 2px solid rgba(239, 68, 68, 0.2);
 }
 
 .confirm-cancel-btn:hover:not(:disabled) {
-  background: rgba(255, 59, 59, 0.1);
-  color: #f5f5f5;
-  border-color: rgba(255, 59, 59, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-text);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .confirm-cancel-btn:active:not(:disabled) {
@@ -94,12 +94,12 @@
 }
 
 .confirm-confirm-btn {
-  background: linear-gradient(135deg, #6dff7a, #4ade80);
+  background: var(--gradient-accent);
   color: #111;
 }
 
 .confirm-confirm-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  background: var(--gradient-accent);
   transform: scale(1.05);
   box-shadow: 0 8px 20px rgba(109, 255, 122, 0.35);
 }

@@ -190,7 +190,7 @@ const RevenueChart = memo(({
         series={[
           {
             ...getSeriesConfig(),
-            labelColor: '#f7f7f7',
+            labelColor: 'var(--color-text)',
           },
         ]}
         height={height}

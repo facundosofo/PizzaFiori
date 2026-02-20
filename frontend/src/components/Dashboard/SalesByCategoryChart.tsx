@@ -45,8 +45,8 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
     return (
       <div
         style={{
-          backgroundColor: '#1a1a1a',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'var(--color-surface-2)',
+          border: '1px solid var(--color-border-strong)',
           borderRadius: '6px',
           padding: '8px 12px',
           fontSize: '13px',
@@ -104,7 +104,7 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
                 <Cell 
                   key={`cell-${index}`} 
                   fill={COLORS[index % COLORS.length]} 
-                  stroke="rgba(255, 255, 255, 0.3)"
+                  stroke="var(--color-border-strong)"
                   strokeWidth={2}
                 />
               ))}
@@ -118,25 +118,25 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
       <div style={{ marginTop: '20px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}>
-              <th style={{ padding: '10px 8px', textAlign: 'left', color: '#e8e8e8', fontWeight: 500 }}>Categoría</th>
-              <th style={{ padding: '10px 8px', textAlign: 'right', color: '#e8e8e8', fontWeight: 500 }}>Cantidad</th>
-              <th style={{ padding: '10px 8px', textAlign: 'right', color: '#e8e8e8', fontWeight: 500 }}>Porcentaje</th>
+            <tr style={{ borderBottom: '1px solid var(--color-border-strong)' }}>
+              <th style={{ padding: '10px 8px', textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 500 }}>Categoría</th>
+              <th style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text-muted)', fontWeight: 500 }}>Cantidad</th>
+              <th style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text-muted)', fontWeight: 500 }}>Porcentaje</th>
             </tr>
           </thead>
           <tbody>
             {data.map((item, index) => {
               const percentage = ((item.cantidad / total) * 100).toFixed(1);
               return (
-                <tr key={item.categoria} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                  <td style={{ padding: '10px 8px', color: '#f5f5f5', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <tr key={item.categoria} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                  <td style={{ padding: '10px 8px', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: COLORS[index % COLORS.length] }} />
                     {item.categoria}
                   </td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right', color: '#f5f5f5', fontWeight: 500 }}>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text)', fontWeight: 500 }}>
                     {item.cantidad}
                   </td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right', color: '#e8e8e8' }}>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text-muted)' }}>
                     {percentage}%
                   </td>
                 </tr>
@@ -144,12 +144,12 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
             })}
           </tbody>
           <tfoot>
-            <tr style={{ borderTop: '1px solid rgba(255, 255, 255, 0.15)' }}>
-              <td style={{ padding: '10px 8px', color: '#ffffff', fontWeight: 600 }}>Total</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', color: '#ffffff', fontWeight: 600 }}>
+            <tr style={{ borderTop: '1px solid var(--color-border-strong)' }}>
+              <td style={{ padding: '10px 8px', color: 'var(--color-text)', fontWeight: 600 }}>Total</td>
+              <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text)', fontWeight: 600 }}>
                 {total}
               </td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', color: '#ffffff', fontWeight: 600 }}>
+              <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text)', fontWeight: 600 }}>
                 100%
               </td>
             </tr>

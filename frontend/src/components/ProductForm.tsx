@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Product } from "../types/product";
-import "../styles/shared.css";
+import "../styles/shared/forms.css";
 import "../styles/product-form.css";
 import env from "../config/env";
 

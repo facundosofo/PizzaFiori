@@ -8,10 +8,10 @@
 .searchable-select-trigger {
   width: 100%;
   padding: 0.875rem 1.125rem;
-  background: linear-gradient(145deg, #0a0a0a, #1a1a1a);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
   border-radius: 10px;
-  color: #ffffff;
+  color: var(--color-text);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -26,7 +26,7 @@
 }
 
 .searchable-select-trigger:hover {
-  border-color: rgba(255, 255, 255, 0.6);
+  border-color: var(--color-border-strong);
   box-shadow: 
     0 4px 12px rgba(0, 0, 0, 0.3),
     0 0 20px rgba(255, 255, 255, 0.15),
@@ -35,8 +35,8 @@
 }
 
 .searchable-select.open .searchable-select-trigger {
-  border-color: #ffffff;
-  background: linear-gradient(145deg, #121212, #1e1e1e);
+  border-color: var(--color-border-strong);
+  background: var(--gradient-card-hover);
   box-shadow: 
     0 0 30px rgba(255, 255, 255, 0.4),
     0 0 15px rgba(255, 255, 255, 0.2),
@@ -57,13 +57,13 @@
 }
 
 .searchable-select-value.placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
 .searchable-select-icon {
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-muted);
   transition: transform 0.3s ease;
 }
 
@@ -75,8 +75,8 @@
 .searchable-select-dropdown {
   position: fixed;
   z-index: 9999;
-  background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
   border-radius: 10px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.6),
@@ -100,17 +100,17 @@
 /* Search input */
 .searchable-select-search {
   padding: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
 }
 
 .searchable-select-input {
   width: 100%;
   padding: 0.625rem 0.875rem;
-  background: #0a0a0a;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--color-text);
   font-size: 0.9rem;
   font-family: inherit;
   transition: all 0.2s ease;
@@ -118,12 +118,12 @@
 
 .searchable-select-input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: var(--color-border-strong);
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 .searchable-select-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -139,22 +139,22 @@
 }
 
 .searchable-select-options::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover);
   border-radius: 4px;
 }
 
 .searchable-select-options::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--color-border-strong);
   border-radius: 4px;
 }
 
 .searchable-select-options::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--color-text-muted);
 }
 
 .searchable-select-option {
   padding: 0.75rem 1rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text);
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -162,16 +162,16 @@
 }
 
 .searchable-select-option:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--color-hover);
+  color: var(--color-text);
   transform: translateX(4px);
 }
 
 .searchable-select-option.selected {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1));
-  color: #ffffff;
+  background: var(--color-hover);
+  color: var(--color-text);
   font-weight: 600;
-  border-left: 3px solid #ffffff;
+  border-left: 3px solid var(--color-text);
   box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }
 
@@ -188,7 +188,7 @@
 .searchable-select-empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-muted);
   font-style: italic;
   font-size: 0.9rem;
 }

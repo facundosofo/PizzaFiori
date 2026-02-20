@@ -1,0 +1,74 @@
+import { useMemo, useState } from "react";
+import ReportConfigPanel from "../components/ReportConfigPanel";
+import ErrorAlert from "../components/shared/ErrorAlert";
+import { validateDateRange } from "../utils/formatters";
+import useGenerateReport from "../hooks/useGenerateReport";
+import type { ReportRequest } from "../services/reportService";
+import "../styles/reports.css";
+
+const buildDefaultConfig = (): ReportRequest => ({
+  dateFrom: null,
+  dateTo: null,
+  mode: "light",
+  sections: {
+    resumenPeriodo: true,
+    resumenDia: true,
+    resumenCategoria: true,
+    resumenProductos: true,
+    detalleVentas: true,
+  },
+});
+
+const ReportsPage = () => {
+  const [config, setConfig] = useState<ReportRequest>(buildDefaultConfig());
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { generateReport, loading, error, clearError } = useGenerateReport();
+
+  const validationMessage = useMemo(() => {
+    return validateDateRange(config.dateFrom, config.dateTo);
+  }, [config.dateFrom, config.dateTo]);
+
+  const handleGenerate = async () => {
+    if (validationMessage) return;
+
+    const ok = await generateReport(config);
+    if (ok) {
+      setSuccessMessage("Descarga iniciada. El reporte esta llegando a tu equipo.");
+      setTimeout(() => setSuccessMessage(null), 4000);
+    }
+  };
+
+  const handleReset = () => {
+    setConfig(buildDefaultConfig());
+  };
+
+  return (
+    <div className="reports-page">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Reportes</h1>
+        </div>
+      </div>
+
+      <ErrorAlert message={error} onClose={clearError} />
+
+      {successMessage && (
+        <div className="report-success">
+          <span className="report-success-dot" />
+          {successMessage}
+        </div>
+      )}
+
+      <ReportConfigPanel
+        config={config}
+        onChange={setConfig}
+        onSubmit={handleGenerate}
+        onReset={handleReset}
+        loading={loading}
+        validationMessage={validationMessage}
+      />
+    </div>
+  );
+};
+
+export default ReportsPage;

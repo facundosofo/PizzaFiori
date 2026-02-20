@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   ChartLine,
@@ -5,15 +6,18 @@ import {
   FolderTree,
   Home,
   LogOut,
+  Moon,
   PanelRight,
   Pizza,
   ShoppingBasket,
+  Sun,
   Receipt,
   FileSearch,
   Tags,
   Users,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePersistentState } from "../../utils/usePersistentState";
 
 export type SidebarProps = {
   collapsed: boolean;
@@ -40,6 +44,15 @@ const adminNavItems = [
 const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [themeMode, setThemeMode] = usePersistentState<"light" | "dark">(
+    "ui-theme",
+    "dark"
+  );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = themeMode;
+    document.documentElement.style.colorScheme = themeMode;
+  }, [themeMode]);
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -50,6 +63,10 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
     } catch (error) {
       // Ignore logout errors
     }
+  };
+
+  const handleThemeToggle = () => {
+    setThemeMode((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
   return (
@@ -120,6 +137,31 @@ const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
 
         {/* User profile section */}
         <div className="sidebar-footer">
+          <div className="sidebar-theme">
+            <span className="sidebar-theme-label">Tema</span>
+            <label
+              className={`sidebar-theme-toggle ${
+                themeMode === "dark" ? "is-dark" : "is-light"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={themeMode === "dark"}
+                onChange={handleThemeToggle}
+                aria-label="Cambiar tema"
+              />
+              <span className="sidebar-theme-track" aria-hidden="true">
+                <span title="Modo claro">
+                  <Sun size={14} className="sidebar-theme-icon sidebar-theme-icon-sun" />
+                </span>
+                <span title="Modo oscuro">
+                  <Moon size={14} className="sidebar-theme-icon sidebar-theme-icon-moon" />
+                </span>
+                <span className="sidebar-theme-thumb" />
+              </span>
+            </label>
+          </div>
+
           <NavLink
             to="/profile"
             onClick={onNavigate}

@@ -12,6 +12,7 @@ import OffersPage from "./pages/OffersPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import DashboardOverview from "./pages/DashboardOverview";
 import AppLayout from "./components/layout/AppLayout";
+import ReportsPage from "./pages/ReportsPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/ventas" element={<SalesPage />} />
             <Route path="/registrar-venta" element={<SalesCreatePage />} />
             <Route path="/dashboard" element={<DashboardOverview />} />
+            <Route path="/reportes" element={<ReportsPage />} />
             <Route path="/profile" element={<UserProfilePage />} />
             <Route path="/admin/users" element={<UserManagementPage />} />
           </Route>

@@ -111,8 +111,8 @@ const ChartWrapper = ({
     return (
       <div
         style={{
-          backgroundColor: '#1a1a1a',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'var(--color-surface-2)',
+          border: '1px solid var(--color-border-strong)',
           borderRadius: '6px',
           padding: '8px 12px',
           fontSize: '13px',
@@ -135,8 +135,8 @@ const ChartWrapper = ({
   };
 
   const commonAxisProps = {
-    stroke: '#888888',
-    style: { fontSize: '12px', fill: '#e8e8e8' },
+    stroke: 'var(--color-text-muted)',
+    style: { fontSize: '12px', fill: 'var(--color-text-muted)' },
   };
 
   const renderChart = () => {
@@ -144,7 +144,13 @@ const ChartWrapper = ({
       case 'line':
         return (
           <LineChart {...commonProps}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={`rgba(255, 255, 255, ${gridOpacity})`} />}
+            {showGrid && (
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--color-border-strong)"
+                strokeOpacity={gridOpacity}
+              />
+            )}
             <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
             <YAxis 
               {...commonAxisProps} 
@@ -154,7 +160,7 @@ const ChartWrapper = ({
               tickFormatter={yAxisFormatter}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
-            {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: '#e8e8e8' }} />}
+            {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: 'var(--color-text)' }} />}
             {series.map((s) => (
               <Line
                 key={s.key}
@@ -173,7 +179,13 @@ const ChartWrapper = ({
       case 'bar':
         return (
           <BarChart {...commonProps}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={`rgba(255, 255, 255, ${gridOpacity})`} />}
+            {showGrid && (
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--color-border-strong)"
+                strokeOpacity={gridOpacity}
+              />
+            )}
             <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
             <YAxis 
               {...commonAxisProps} 
@@ -184,7 +196,7 @@ const ChartWrapper = ({
               allowDecimals={allowDecimals}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
-            {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: '#e8e8e8' }} />}
+            {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: 'var(--color-text)' }} />}
             {series.map((s) => (
               <Bar
                 key={s.key}
@@ -218,7 +230,13 @@ const ChartWrapper = ({
                 </filter>
               ))}
             </defs>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={`rgba(255, 255, 255, ${gridOpacity})`} />}
+            {showGrid && (
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--color-border-strong)"
+                strokeOpacity={gridOpacity}
+              />
+            )}
             <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
             <YAxis 
               {...commonAxisProps} 
@@ -229,7 +247,7 @@ const ChartWrapper = ({
               tickFormatter={yAxisFormatter}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
-            {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: '#e8e8e8' }} />}
+            {showLegend && <Legend wrapperStyle={{ fontSize: '13px', color: 'var(--color-text)' }} />}
             {series.map((s) => (
               <Area
                 key={s.key}

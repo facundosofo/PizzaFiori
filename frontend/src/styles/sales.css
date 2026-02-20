@@ -28,8 +28,8 @@
 .sales-empty {
   text-align: center;
   padding: 80px 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  background: var(--color-hover);
+  border: 2px dashed var(--color-border-strong);
   border-radius: 12px;
   margin-top: 30px;
 }
@@ -42,10 +42,10 @@
   align-items: center;
   padding: 12px 16px;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, rgba(109, 255, 122, 0.1), rgba(109, 255, 122, 0.05));
-  border: 1px solid rgba(109, 255, 122, 0.3);
+  background: linear-gradient(135deg, var(--color-accent-soft), rgba(34, 197, 94, 0.05));
+  border: 1px solid rgba(34, 197, 94, 0.3);
   border-radius: 8px;
-  color: #6dff7a;
+  color: var(--color-accent);
 }
 
 .sales-success-alert p {
@@ -56,7 +56,7 @@
 .sales-success-alert .close-btn {
   background: none;
   border: none;
-  color: #6dff7a;
+  color: var(--color-accent);
   font-size: 24px;
   cursor: pointer;
   padding: 0;
@@ -75,7 +75,7 @@
 
 .sales-empty p {
   font-size: 1.3rem;
-  color: #e8e8e8;
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -86,7 +86,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.45);
+  background: var(--color-overlay);
   z-index: 11000;
   padding: 24px;
 }
@@ -116,7 +116,7 @@
 
 .sales-success-close {
   background: transparent;
-  border: 2px solid rgba(255,255,255,0.06);
+  border: 2px solid var(--color-border);
   color: #e8fce6;
   width: 40px;
   height: 40px;
@@ -128,19 +128,19 @@
 }
 
 .sales-success-close:hover {
-  background: rgba(255,255,255,0.03);
+  background: var(--color-hover);
   transform: scale(1.04);
 }
 
 /* ===== TABLE STYLES ===== */
 
 .sales-table {
-  background: rgba(13, 13, 13, 0.8);
-  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border-strong);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6),
-              0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-card),
+              0 0 0 1px var(--color-border);
 }
 
 .sales-table-header {
@@ -148,13 +148,13 @@
   grid-template-columns: 13% 18% 12% 22% 1fr;
   gap: 10px;
   padding: 18px 20px;
-  background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+  background: var(--gradient-card);
   font-weight: 700;
   font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: #22c55e;
-  border-bottom: 2px solid rgba(109, 255, 122, 0.6);
+  color: var(--color-accent);
+  border-bottom: 2px solid rgba(34, 197, 94, 0.6);
 }
 
 .sales-table-row {
@@ -162,16 +162,16 @@
   grid-template-columns: 13% 18% 12% 22% 1fr;
   gap: 10px;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--color-border);
   transition: all 0.3s ease;
-  background: rgba(26, 26, 26, 0.5);
+  background: var(--color-surface-2);
   border-left: 3px solid transparent;
 }
 
 .sales-table-row:hover {
-  background: rgba(74, 222, 128, 0.08);
+  background: var(--color-accent-soft);
   transform: translateX(5px);
-  border-left: 3px solid #22c55e;
+  border-left: 3px solid var(--color-accent);
 }
 
 .sales-table-row:last-child {
@@ -182,7 +182,7 @@
 .sales-col-date,
 .sales-col-order,
 .sales-col-items {
-  color: #e8e8e8;
+  color: var(--color-text);
   font-size: 1rem;
   display: flex;
   align-items: center;
@@ -190,7 +190,7 @@
 }
 
 .sales-col-total {
-  color: #22c55e;
+  color: var(--color-accent);
   font-size: 1rem;
   font-weight: 700;
   display: flex;
@@ -200,7 +200,7 @@
 }
 
 .sales-col-actions {
-  color: #e8e8e8;
+  color: var(--color-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -208,7 +208,7 @@
 }
 
 .sales-actions-placeholder {
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 1.2rem;
 }
 
@@ -231,42 +231,42 @@
 
 /* View button (eye icon) */
 .sales-action-btn.view {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+  background: var(--color-hover);
 }
 
 .sales-action-btn.view:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: #ffffff;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  background: var(--color-hover);
+  border-color: var(--color-text);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
 }
 
 /* Edit button (pencil icon) */
 .sales-action-btn.edit {
-  color: #22c55e;
+  color: var(--color-accent);
   border-color: rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.1);
+  background: var(--color-accent-soft);
 }
 
 .sales-action-btn.edit:hover {
   background: rgba(34, 197, 94, 0.2);
-  border-color: #22c55e;
+  border-color: var(--color-accent);
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
   transform: scale(1.1);
 }
 
 /* Delete button (trash icon) */
 .sales-action-btn.delete {
-  color: #ef4444;
+  color: var(--color-danger);
   border-color: rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--color-danger-bg);
 }
 
 .sales-action-btn.delete:hover {
   background: rgba(239, 68, 68, 0.2);
-  border-color: #ef4444;
+  border-color: var(--color-danger);
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
   transform: scale(1.1);
 }
@@ -291,9 +291,9 @@
 
 .sales-pagination-btn {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-  color: #f5f5f5;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: var(--gradient-card);
+  color: var(--color-text);
+  border: 2px solid var(--color-border-strong);
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
@@ -311,9 +311,9 @@
   min-width: 44px;
   height: 44px;
   padding: 8px 12px;
-  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-  color: #f5f5f5;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: var(--gradient-card);
+  color: var(--color-text);
+  border: 2px solid var(--color-border-strong);
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
@@ -325,43 +325,43 @@
 }
 
 .sales-pagination-number.active {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  border-color: #22c55e;
+  background: var(--gradient-accent);
+  border-color: var(--color-accent);
   color: #fff;
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
 }
 
 .sales-pagination-number:hover:not(.active) {
-  background: linear-gradient(135deg, #353535 0%, #252525 100%);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--gradient-card-hover);
+  border-color: var(--color-border-strong);
   transform: translateY(-2px);
 }
 
 .sales-pagination-ellipsis {
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: 600;
   padding: 0 8px;
   user-select: none;
 }
 
 .sales-pagination-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  border-color: #22c55e;
+  background: var(--gradient-accent);
+  border-color: var(--color-accent);
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
   transform: translateY(-2px);
 }
 
 .sales-pagination-btn:disabled {
-  background: #333;
-  border-color: #555;
-  color: #888;
+  background: var(--color-surface-3);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
   cursor: not-allowed;
   opacity: 0.5;
 }
 
 .sales-pagination-info {
   font-size: 1.1rem;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-weight: 600;
   min-width: 120px;
   text-align: center;

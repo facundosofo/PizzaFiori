@@ -6,6 +6,7 @@ from app.application.offer_service import OfferService
 from app.application.sale_service import SaleService
 from app.application.dashboard_service import DashboardService
 from app.application.user_service import UserService
+from app.application.report_service import ReportService
 from app.infrastructure.file_service import FileService
 from app.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 from app.infrastructure.logging import configure_logging
@@ -62,6 +63,12 @@ class Container(containers.DeclarativeContainer):
 
     user_service = providers.Factory(
         UserService,
+        uow=unit_of_work,
+        logger=logging,
+    )
+
+    report_service = providers.Factory(
+        ReportService,
         uow=unit_of_work,
         logger=logging,
     )

@@ -17,7 +17,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.92);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -29,8 +29,8 @@
 
 /* Contenedor principal del modal con gradiente oscuro y bordes redondeados */
 .sale-modal-content {
-  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
-  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
   border-radius: 18px;
   padding: 0;
   max-width: 800px;
@@ -38,8 +38,8 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8),
-              0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-card),
+              0 0 0 1px var(--color-border);
   position: relative;
 }
 
@@ -55,15 +55,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px 30px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+  border-bottom: 2px solid var(--color-border);
+  background: var(--color-hover);
 }
 
 .sale-modal-header h2 {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 1.5px;
   text-shadow: 0 0 18px rgba(255, 255, 255, 0.12);
@@ -72,7 +72,7 @@
 .sale-modal-close-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-muted);
   font-size: 2rem;
   cursor: pointer;
   padding: 0;
@@ -86,8 +86,8 @@
 }
 
 .sale-modal-close-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
   transform: rotate(90deg);
 }
 
@@ -105,17 +105,17 @@
 }
 
 .sale-modal-body::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-hover);
   border-radius: 4px;
 }
 
 .sale-modal-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--color-border-strong);
   border-radius: 4px;
 }
 
 .sale-modal-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--color-text-muted);
 }
 
 /* ===== LOADING STATE ===== */
@@ -131,11 +131,11 @@
 
 .loading-spinner {
   font-size: 3rem;
-  color: #22c55e;
+  color: var(--color-accent);
 }
 
 .sale-detail-loading p {
-  color: #e8e8e8;
+  color: var(--color-text-muted);
   font-size: 1.1rem;
 }
 
@@ -147,7 +147,7 @@
 }
 
 .sale-detail-error p {
-  color: #ff5252;
+  color: var(--color-danger);
   font-size: 1.1rem;
   margin: 0;
 }
@@ -155,8 +155,8 @@
 /* ===== SALE INFO ===== */
 
 .sale-info {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 30px;
@@ -167,7 +167,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .sale-info-row:last-child {
@@ -176,7 +176,7 @@
 
 .sale-info-label {
   font-weight: 600;
-  color: #e8e8e8;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 0.9rem;
@@ -184,7 +184,7 @@
 
 .sale-info-value {
   font-weight: 700;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-size: 1.1rem;
 }
 
@@ -198,7 +198,7 @@
   margin: 0 0 20px 0;
   font-size: 1.3rem;
   font-weight: 700;
-  color: #f5f5f5;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 1.2px;
 }
@@ -210,10 +210,10 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: rgba(34, 197, 94, 0.15);
+  background: var(--color-accent-soft);
   border: 1px solid rgba(34, 197, 94, 0.4);
   border-radius: 8px;
-  color: #22c55e;
+  color: var(--color-accent);
   font-weight: 600;
   margin-bottom: 15px;
   animation: slideDown 0.3s ease;
@@ -233,7 +233,7 @@
 /* ===== SALE ITEMS TABLE ===== */
 
 .sale-items-table {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -243,10 +243,10 @@
   grid-template-columns: 2fr 1fr 1.2fr 1.2fr;
   gap: 10px;
   padding: 15px 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-hover);
+  border-bottom: 2px solid var(--color-border);
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 0.85rem;
@@ -257,7 +257,7 @@
   grid-template-columns: 2fr 1fr 1.2fr 1.2fr;
   gap: 10px;
   padding: 15px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--color-border);
   transition: background 0.2s ease;
 }
 
@@ -267,7 +267,7 @@
 }
 
 .sale-items-row:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-hover);
 }
 
 .sale-items-row:last-child {
@@ -276,12 +276,12 @@
 
 /* Column styles */
 .sale-item-col-name {
-  color: #f5f5f5;
+  color: var(--color-text);
   font-weight: 500;
 }
 
 .sale-item-type {
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -290,7 +290,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e8e8e8;
+  color: var(--color-text);
   font-weight: 600;
   padding-top: 4px;
 }
@@ -299,7 +299,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e8e8e8;
+  color: var(--color-text);
   padding-top: 4px;
 }
 
@@ -307,7 +307,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #22c55e;
+  color: var(--color-accent);
   font-weight: 700;
   text-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
   padding-top: 4px;
@@ -316,7 +316,7 @@
 /* ===== SALE TOTAL SECTION ===== */
 
 .sale-total-section {
-  background: linear-gradient(180deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+  background: var(--color-accent-soft);
   border: 2px solid rgba(34, 197, 94, 0.6);
   border-radius: 12px;
   padding: 20px 30px;
@@ -332,7 +332,7 @@
 .sale-total-label {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f5f5f5;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 2px;
 }
@@ -340,7 +340,7 @@
 .sale-total-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #22c55e;
+  color: var(--color-accent);
   text-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
 }
 
@@ -351,16 +351,16 @@
   justify-content: flex-end;
   gap: 15px;
   padding: 20px 30px;
-  border-top: 2px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+  border-top: 2px solid var(--color-border);
+  background: var(--color-hover);
 }
 
 .sales-btn-close {
   padding: 12px 30px;
-  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
   border-radius: 8px;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -370,8 +370,8 @@
 }
 
 .sales-btn-close:hover {
-  background: linear-gradient(180deg, #353535 0%, #252525 100%);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--gradient-card-hover);
+  border-color: var(--color-border-strong);
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
 }
@@ -382,10 +382,10 @@
 
 .sales-btn-cancel {
   padding: 12px 30px;
-  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
   border-radius: 8px;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -395,8 +395,8 @@
 }
 
 .sales-btn-cancel:hover:not(:disabled) {
-  background: linear-gradient(180deg, #353535 0%, #252525 100%);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--gradient-card-hover);
+  border-color: var(--color-border-strong);
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
 }
@@ -408,8 +408,8 @@
 
 .sales-btn-save {
   padding: 12px 30px;
-  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
-  border: 2px solid #6dff7a;
+  background: var(--gradient-accent);
+  border: 2px solid var(--color-accent);
   border-radius: 8px;
   color: #fff;
   font-weight: 600;
@@ -570,35 +570,35 @@
   font-weight: 600;
 }
 
-.form-group {
+.sale-modal-content .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.form-group label {
+.sale-modal-content .form-group label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #e8e8e8;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.form-select,
-.form-input {
+.sale-modal-content .form-select,
+.sale-modal-content .form-input {
   padding: 10px 12px;
-  background: #0d0d0d;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
   border-radius: 8px;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-size: 0.95rem;
   transition: all 0.2s ease;
 }
 
-.form-select:focus,
-.form-input:focus {
+.sale-modal-content .form-select:focus,
+.sale-modal-content .form-input:focus {
   outline: none;
-  border-color: rgba(34, 197, 94, 0.7);
+  border-color: var(--color-accent);
   box-shadow: 0 0 15px rgba(34, 197, 94, 0.18);
 }
 

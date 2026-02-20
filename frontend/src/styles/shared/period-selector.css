@@ -6,7 +6,7 @@
 .period-selector {
   display: flex;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover);
   padding: 4px;
   border-radius: 8px;
   width: fit-content;
@@ -16,7 +16,7 @@
   padding: 8px 16px;
   background: transparent;
   border: none;
-  color: #888888;
+  color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 500;
   border-radius: 6px;
@@ -26,18 +26,18 @@
 }
 
 .period-tab:hover {
-  color: #e8e8e8;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+  background: var(--color-hover);
 }
 
 .period-tab.active {
-  background: #22c55e;
+  background: var(--color-accent);
   color: #ffffff;
   font-weight: 600;
 }
 
 .period-tab.active:hover {
-  background: #16a34a;
+  background: var(--color-accent-strong);
 }
 
 /* Weekday period dropdown */
@@ -47,9 +47,9 @@
 
 .weekday-period-select {
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #e8e8e8;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   font-size: 13px;
   font-weight: 500;
   border-radius: 6px;
@@ -58,11 +58,11 @@
 }
 
 .weekday-period-select:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--color-hover);
+  border-color: var(--color-border-strong);
 }
 
 .weekday-period-select:focus {
   outline: none;
-  border-color: #22c55e;
+  border-color: var(--color-accent);
 }
