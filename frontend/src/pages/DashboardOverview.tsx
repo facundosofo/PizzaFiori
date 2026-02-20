@@ -259,7 +259,7 @@ const DashboardOverview = () => {
                 </div>
               </div>
               {weekdayLoading ? (
-                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888888' }}>
+                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
                   Cargando...
                 </div>
               ) : (
@@ -278,13 +278,13 @@ const DashboardOverview = () => {
               <h2 className="section-title">Ranking de productos</h2>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 {/* Selector de ordenamiento */}
-                <div style={{ display: 'flex', gap: '4px', backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '4px', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px' }}>
                   <button
                     onClick={() => setTopProductsSort('top')}
                     style={{
                       padding: '8px 16px',
-                      background: topProductsSort === 'top' ? '#22c55e' : 'transparent',
-                      color: topProductsSort === 'top' ? '#ffffff' : '#888888',
+                      background: topProductsSort === 'top' ? 'var(--color-accent)' : 'transparent',
+                      color: topProductsSort === 'top' ? '#ffffff' : 'var(--color-text-muted)',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
@@ -299,8 +299,8 @@ const DashboardOverview = () => {
                     onClick={() => setTopProductsSort('bottom')}
                     style={{
                       padding: '8px 16px',
-                      background: topProductsSort === 'bottom' ? '#22c55e' : 'transparent',
-                      color: topProductsSort === 'bottom' ? '#ffffff' : '#888888',
+                      background: topProductsSort === 'bottom' ? 'var(--color-accent)' : 'transparent',
+                      color: topProductsSort === 'bottom' ? '#ffffff' : 'var(--color-text-muted)',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',

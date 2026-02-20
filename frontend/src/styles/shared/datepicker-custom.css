@@ -8,10 +8,10 @@
 .react-datepicker__year-dropdown-container--select .react-datepicker__year-select,
 .react-datepicker__month-select,
 .react-datepicker__year-select {
-  background: linear-gradient(180deg, #1f1f1f 0%, #0d0d0d 100%) !important;
-  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  background: var(--gradient-card) !important;
+  border: 2px solid var(--color-border-strong) !important;
   border-radius: 8px !important;
-  color: #e8e8e8 !important;
+  color: var(--color-text) !important;
   padding: 8px 12px !important;
   font-size: 0.95rem !important;
   font-weight: 600 !important;
@@ -32,39 +32,39 @@
 
 .react-datepicker__month-select:hover,
 .react-datepicker__year-select:hover {
-  border-color: rgba(255, 255, 255, 0.85) !important;
-  background: linear-gradient(180deg, #262626 0%, #121212 100%) !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25),
+  border-color: var(--color-border-strong) !important;
+  background: var(--gradient-card-hover) !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong),
               0 0 10px rgba(255, 255, 255, 0.14) !important;
 }
 
 .react-datepicker__month-select:focus,
 .react-datepicker__year-select:focus {
   outline: none !important;
-  border-color: rgba(255, 255, 255, 0.95) !important;
-  background: linear-gradient(180deg, #2a2a2a 0%, #141414 100%) !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35),
+  border-color: var(--color-border-strong) !important;
+  background: var(--gradient-card-hover) !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong),
               0 0 12px rgba(255, 255, 255, 0.18) !important;
 }
 
 /* Opciones dentro de los selects */
 .react-datepicker__month-select option,
 .react-datepicker__year-select option {
-  background: #1a1a1a !important;
-  color: #e8e8e8 !important;
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
   padding: 10px !important;
   font-weight: 500 !important;
 }
 
 .react-datepicker__month-select option:hover,
 .react-datepicker__year-select option:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+  background: var(--color-hover) !important;
+  color: var(--color-text) !important;
 }
 
 .react-datepicker__month-select option:checked,
 .react-datepicker__year-select option:checked {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.78) 100%) !important;
-  color: #0d0d0d !important;
+  background: var(--gradient-card) !important;
+  color: var(--color-text) !important;
   font-weight: 700 !important;
 }

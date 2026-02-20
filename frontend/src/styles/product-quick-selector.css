@@ -19,8 +19,8 @@
   font-size: 1.9rem;
   font-weight: 700;
   padding-left: 14px;
-  border-left: 5px solid #ff3b3b;
-  color: #f5f5f5;
+  border-left: 5px solid var(--color-danger);
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -76,7 +76,7 @@
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: #ffffff rgba(0, 0, 0, 0.3);
+  scrollbar-color: var(--color-border-strong) var(--color-hover);
 }
 
 /* Altura de la scrollbar en Chrome */
@@ -86,20 +86,20 @@
 
 /* Track de la scrollbar */
 .product-scroll-horizontal::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-hover);
   border-radius: 10px;
 }
 
 /* Thumb (barra deslizante) de la scrollbar */
 .product-scroll-horizontal::-webkit-scrollbar-thumb {
-  background: #ffffff;
+  background: var(--color-border-strong);
   border-radius: 10px;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 /* Hover del thumb de la scrollbar */
 .product-scroll-horizontal::-webkit-scrollbar-thumb:hover {
-  background: #ffffff;
+  background: var(--color-text-muted);
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
 }
 
@@ -112,10 +112,10 @@
 /* Product Card */
 .product-card {
   flex: 0 0 240px;
-  background: linear-gradient(145deg, #1e1e1e, #121212);
+  background: var(--gradient-card);
   border-radius: 18px;
   padding: 14px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
   transition: box-shadow 0.3s ease;
   display: flex;
@@ -134,7 +134,7 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: var(--gradient-accent);
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
@@ -162,7 +162,7 @@
   font-size: 1.1rem;
   font-weight: 700;
   text-align: center;
-  color: #ffffff;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0;
@@ -187,7 +187,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #171717, #111111);
+  background: var(--gradient-card);
   border: 1px solid rgba(34, 197, 94, 0.18);
   border-radius: 8px;
   padding: 8px 12px;
@@ -196,7 +196,7 @@
 
 /* Texto de la cantidad del precio (ej: "1/2 Docena") */
 .price-cantidad {
-  color: #e8e8e8;
+  color: var(--color-text);
   font-weight: 600;
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -206,7 +206,7 @@
 
 /* Monto del precio en dinero */
 .price-amount {
-  color: #22c55e;
+  color: var(--color-accent);
   font-weight: 700;
   font-size: 0.95rem;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
@@ -215,16 +215,16 @@
 /* Estilo cuando no hay precio disponible */
 .price-item.no-price {
   justify-content: center;
-  color: #888;
+  color: var(--color-text-muted);
   font-style: italic;
   background: none;
-  border: 1px dashed #666;
+  border: 1px dashed var(--color-border-strong);
 }
 
 .product-card-price {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #22c55e;
+  color: var(--color-accent);
   text-shadow: 0 0 10px rgba(34, 197, 94, 0.18);
   margin: 0;
   text-align: center;
@@ -232,7 +232,7 @@
 
 .product-card-prices-multiple {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   margin: -4px 0 0 0;
   text-align: center;
   font-style: italic;
@@ -247,7 +247,7 @@
 }
 
 .product-qty-btn-add {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: var(--gradient-accent);
   border: none;
   color: #1a1a1a;
   padding: 11px 16px;
@@ -262,7 +262,7 @@
 }
 
 .product-qty-btn-add:hover {
-  background: linear-gradient(135deg, #16a34a, #15803d);
+  background: var(--gradient-accent);
   transform: scale(1.05);
   box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
 }
@@ -276,7 +276,7 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: var(--gradient-accent);
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
@@ -293,14 +293,14 @@
   justify-content: center;
   align-items: center;
   padding: 64px 0;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
 }
 
 /* Empty state */
 .product-selector-empty {
   text-align: center;
   padding: 64px 32px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-muted);
 }
 
 .product-selector-empty-icon {
@@ -311,8 +311,8 @@
 
 /* Boxed/dashed variant to match offer empty-state */
 .product-selector-empty-box {
-  background: rgba(255, 255, 255, 0.02);
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  background: var(--color-hover);
+  border: 2px dashed var(--color-border-strong);
   border-radius: 12px;
 }
 
@@ -364,12 +364,12 @@
 .divider-line {
   width: 2px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--color-text);
   border-radius: 1px;
 }
 
 .pizza-mitad-mitad-content {
-  color: #ffffff;
+  color: var(--color-text);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -380,7 +380,7 @@
   font-size: 16px;
   font-weight: 700;
   margin: 0 0 4px 0;
-  color: #ffffff;
+  color: var(--color-text);
   line-height: 1.2;
 }
 
@@ -388,7 +388,7 @@
   font-size: 12px;
   margin: 0 0 8px 0;
   opacity: 0.9;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-muted);
   line-height: 1.3;
 }
 

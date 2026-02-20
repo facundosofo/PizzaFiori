@@ -14,8 +14,8 @@
 /* Botón crear oferta - Verde según guía UX */
 .btn-create-offer {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  border: 2px solid #4ade80;
+  background: var(--gradient-accent);
+  border: 2px solid var(--color-accent);
   border-radius: 8px;
   color: #ffffff;
   font-size: 1rem;
@@ -51,12 +51,12 @@
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-size: 1.2rem;
 }
 
 .empty-state-subtitle {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-muted);
   font-size: 0.95rem;
   margin-top: 0.5rem;
 }

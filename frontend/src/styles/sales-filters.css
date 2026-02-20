@@ -3,13 +3,13 @@
    ================================================================ */
 
 .sales-filters {
-  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: 20px 25px;
   margin-bottom: 25px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6),
-              0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-card),
+              0 0 0 1px var(--color-border);
 }
 
 /* ===== QUICK FILTERS ===== */
@@ -22,10 +22,10 @@
 
 .quick-filter-btn {
   padding: 8px 16px;
-  background: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.3);
+  background: var(--color-accent-soft);
+  border: 1px solid rgba(34, 197, 94, 0.3);
   border-radius: 20px;
-  color: #4ade80;
+  color: var(--color-accent);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -35,15 +35,15 @@
 }
 
 .quick-filter-btn:hover {
-  background: rgba(74, 222, 128, 0.2);
-  border-color: #4ade80;
+  background: rgba(34, 197, 94, 0.2);
+  border-color: var(--color-accent);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
 }
 
 .quick-filter-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.2);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
 }
 
 .sales-filters-row {
@@ -71,17 +71,17 @@
 .filter-group label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #e8e8e8;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .filter-date-input {
   padding: 14px 16px;
-  background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
   border-radius: 10px;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-size: 1rem;
   font-weight: 500;
   font-family: inherit;
@@ -99,7 +99,7 @@
 }
 
 .filter-date-icon {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
@@ -108,15 +108,15 @@
 }
 
 .filter-date-input:hover {
-  border-color: rgba(255, 255, 255, 0.6);
-  background: linear-gradient(135deg, #121212 0%, #1f1f1f 100%);
+  border-color: var(--color-border-strong);
+  background: var(--gradient-card-hover);
 }
 
 .filter-date-input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.85);
-  background: linear-gradient(135deg, #0f0f0f 0%, #1c1c1c 100%);
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08),
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-2);
+  box-shadow: 0 0 0 4px var(--color-hover),
               0 0 20px rgba(255, 255, 255, 0.12),
               inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
@@ -130,7 +130,7 @@
 }
 
 .filter-date-input::-webkit-calendar-picker-indicator:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--color-hover);
   transform: scale(1.1);
 }
 
@@ -144,25 +144,25 @@
 }
 
 .filter-date-input::-webkit-datetime-edit-text {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   padding: 0 2px;
 }
 
 .filter-date-input::-webkit-datetime-edit-month-field,
 .filter-date-input::-webkit-datetime-edit-day-field,
 .filter-date-input::-webkit-datetime-edit-year-field {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-hover);
   padding: 2px 4px;
   border-radius: 4px;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--color-text);
   font-weight: 600;
 }
 
 .filter-date-input::-webkit-datetime-edit-month-field:focus,
 .filter-date-input::-webkit-datetime-edit-day-field:focus,
 .filter-date-input::-webkit-datetime-edit-year-field:focus {
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.98);
+  background: var(--color-hover);
+  color: var(--color-text);
   outline: none;
 }
 
@@ -196,13 +196,13 @@
 
 /* Search button */
 .filter-btn.search {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  border-color: #4ade80;
+  background: var(--gradient-accent);
+  border-color: var(--color-accent);
   color: #fff;
 }
 
 .filter-btn.search:hover {
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  background: var(--gradient-accent);
   box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
   transform: translateY(-2px);
 }
@@ -215,12 +215,12 @@
 .filter-btn.clear {
   background: transparent;
   border-color: rgba(239, 68, 68, 0.4);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .filter-btn.clear:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
   transform: translateY(-2px);
 }
@@ -234,10 +234,10 @@
 .filter-error {
   margin-top: 15px;
   padding: 12px 16px;
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--color-danger-bg);
   border: 2px solid rgba(239, 68, 68, 0.4);
   border-radius: 8px;
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.95rem;
   font-weight: 600;
   display: flex;
@@ -302,19 +302,18 @@
 
 /* Contenedor principal del calendario */
 .react-datepicker {
-  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%) !important;
-  border: 2px solid rgba(255, 255, 255, 0.65) !important;
+  background: var(--gradient-card) !important;
+  border: 2px solid var(--color-border-strong) !important;
   border-radius: 12px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
-              0 0 0 1px rgba(255, 255, 255, 0.25),
-              0 0 18px rgba(255, 255, 255, 0.18) !important;
+  box-shadow: var(--shadow-card),
+              0 0 0 1px var(--color-border) !important;
   font-family: inherit !important;
 }
 
 /* Encabezado del calendario */
 .react-datepicker__header {
-  background: linear-gradient(135deg, #1f1f1f 0%, #121212 100%) !important;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.45) !important;
+  background: var(--gradient-card) !important;
+  border-bottom: 2px solid var(--color-border-strong) !important;
   border-top-left-radius: 10px !important;
   border-top-right-radius: 10px !important;
   padding-top: 12px !important;
@@ -322,7 +321,7 @@
 
 /* Mes y año actual */
 .react-datepicker__current-month {
-  color: rgba(255, 255, 255, 0.92) !important;
+  color: var(--color-text) !important;
   font-weight: 700 !important;
   font-size: 1.1rem !important;
   margin-bottom: 10px !important;
@@ -336,7 +335,7 @@
 }
 
 .react-datepicker__day-name {
-  color: #a0a0a0 !important;
+  color: var(--color-text-muted) !important;
   font-weight: 700 !important;
   font-size: 0.85rem !important;
   text-transform: uppercase !important;
@@ -348,7 +347,7 @@
 
 /* Días del mes */
 .react-datepicker__day {
-  color: #e8e8e8 !important;
+  color: var(--color-text) !important;
   font-weight: 600 !important;
   width: 2.2rem !important;
   line-height: 2.2rem !important;
@@ -358,67 +357,66 @@
 }
 
 .react-datepicker__day:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45),
-              0 0 16px rgba(255, 255, 255, 0.22) !important;
+  background: var(--color-hover) !important;
+  color: var(--color-text) !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong) !important;
   transform: scale(1.1);
 }
 
 /* Día seleccionado */
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 100%) !important;
-  color: #0d0d0d !important;
+  background: var(--gradient-accent) !important;
+  color: #ffffff !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.65),
-              0 0 22px rgba(255, 255, 255, 0.28) !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong),
+              var(--shadow-accent) !important;
 }
 
 .react-datepicker__day--selected:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.82) 100%) !important;
+  background: var(--gradient-accent) !important;
 }
 
 /* Día actual */
 .react-datepicker__day--today {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 2px solid rgba(255, 255, 255, 0.7) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+  background: var(--color-accent-soft) !important;
+  border: 2px solid var(--color-accent) !important;
+  color: var(--color-text) !important;
   font-weight: 700 !important;
 }
 
 /* Días en el rango seleccionado */
 .react-datepicker__day--in-range {
-  background-color: rgba(255, 255, 255, 0.14) !important;
-  color: #e5e7eb !important;
+  background-color: var(--color-accent-soft) !important;
+  color: var(--color-text) !important;
 }
 
 /* Inicio y fin del rango */
 .react-datepicker__day--range-start,
 .react-datepicker__day--range-end {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 100%) !important;
-  color: #0d0d0d !important;
+  background: var(--gradient-accent) !important;
+  color: #ffffff !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.65),
-              0 0 22px rgba(255, 255, 255, 0.28) !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong),
+              var(--shadow-accent) !important;
 }
 
 /* Hover al seleccionar el rango */
 .react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range) {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: var(--color-hover) !important;
 }
 
 /* Días fuera del mes actual */
 .react-datepicker__day--outside-month {
-  color: #555 !important;
+  color: var(--color-text-muted) !important;
   opacity: 0.5 !important;
 }
 
 /* Días deshabilitados */
 .react-datepicker__day--disabled {
-  color: #444 !important;
+  color: var(--color-text-muted) !important;
   cursor: not-allowed !important;
-  opacity: 0.3 !important;
+  opacity: 0.35 !important;
 }
 
 .react-datepicker__day--disabled:hover {
@@ -429,8 +427,8 @@
 /* Rango de fechas */
 .react-datepicker__day--in-range,
 .react-datepicker__day--in-selecting-range {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
+  background: var(--color-accent-soft) !important;
+  color: var(--color-text) !important;
 }
 
 /* Botones de navegación */
@@ -439,14 +437,14 @@
 }
 
 .react-datepicker__navigation-icon::before {
-  border-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: var(--color-text) !important;
   border-width: 2px 2px 0 0 !important;
   width: 8px !important;
   height: 8px !important;
 }
 
 .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
-  border-color: rgba(255, 255, 255, 1) !important;
+  border-color: var(--color-text) !important;
 }
 
 /* Triangle del dropdown */

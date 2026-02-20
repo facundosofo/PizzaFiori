@@ -21,22 +21,22 @@
   min-height: 100vh;
   /* Inherit global background */
   background: transparent;
-  color: white;
+  color: var(--color-text);
 }
 
 /* Mensaje cuando no hay productos */
 .product-empty-state {
   text-align: center;
   font-size: 1.2rem;
-  color: #aaa;
+  color: var(--color-text-muted);
   margin-top: 60px;
 }
 
 /* Botón para crear nuevo producto */
 .btn-create-product {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  border: 2px solid #4ade80;
+  background: var(--gradient-accent);
+  border: 2px solid var(--color-accent);
   border-radius: 8px;
   color: #ffffff;
   font-size: 1rem;
@@ -76,8 +76,8 @@
   font-size: 1.9rem;
   font-weight: 700;
   padding-left: 14px;
-  border-left: 5px solid #ff3b3b;
-  color: #f5f5f5;
+  border-left: 5px solid var(--color-danger);
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -135,7 +135,7 @@
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: #ffffff rgba(0, 0, 0, 0.3);
+  scrollbar-color: var(--color-border-strong) var(--color-hover);
 }
 
 /* Altura de la scrollbar en Chrome */
@@ -145,20 +145,20 @@
 
 /* Track de la scrollbar */
 .product-scroll-horizontal::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-hover);
   border-radius: 10px;
 }
 
 /* Thumb (barra deslizante) de la scrollbar */
 .product-scroll-horizontal::-webkit-scrollbar-thumb {
-  background: #ffffff;
+  background: var(--color-border-strong);
   border-radius: 10px;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 /* Hover del thumb de la scrollbar */
 .product-scroll-horizontal::-webkit-scrollbar-thumb:hover {
-  background: #ffffff;
+  background: var(--color-text-muted);
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
 }
 
@@ -167,10 +167,10 @@
 /* Tarjeta individual de producto */
 .product-card {
   flex: 0 0 240px;
-  background: linear-gradient(145deg, #1e1e1e, #121212);
+  background: var(--gradient-card);
   border-radius: 18px;
   padding: 14px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
   transition: box-shadow 0.3s ease;
   display: flex;
@@ -233,7 +233,7 @@
   height: 170px;
   border-radius: 14px;
   overflow: hidden;
-  background: #1a1a1a;
+  background: var(--color-surface-2);
   flex-shrink: 0;
 }
 
@@ -266,7 +266,7 @@
   font-size: 1.1rem;
   font-weight: 700;
   text-align: center;
-  color: #ffffff;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0;
@@ -291,8 +291,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #171717, #111111);
-  border: 1px solid rgba(255, 59, 59, 0.18);
+  background: var(--gradient-card);
+  border: 1px solid rgba(239, 68, 68, 0.18);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 0.85rem;
@@ -300,7 +300,7 @@
 
 /* Texto de la cantidad del precio (ej: "1/2 Molde") */
 .price-cantidad {
-  color: #e8e8e8;
+  color: var(--color-text);
   font-weight: 600;
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -310,7 +310,7 @@
 
 /* Monto del precio en dinero */
 .price-amount {
-  color: #ffffff;
+  color: var(--color-text);
   font-weight: 700;
   font-size: 0.95rem;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
@@ -319,15 +319,15 @@
 /* Estilo cuando no hay precio disponible */
 .price-item.no-price {
   justify-content: center;
-  color: #888;
+  color: var(--color-text-muted);
   font-style: italic;
   background: none;
-  border: 1px dashed #666;
+  border: 1px dashed var(--color-border-strong);
 }
 
 /* Botón de ver detalles del producto */
 .product-card-btn {
-  background: linear-gradient(135deg, #6dff7a, #4ade80);
+  background: var(--gradient-accent);
   border: none;
   color: #1a1a1a;
   padding: 11px 16px;
@@ -342,7 +342,7 @@
 
 /* Hover del botón con efecto verde brillante */
 .product-card-btn:hover {
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  background: var(--gradient-accent);
   transform: scale(1.05);
   box-shadow: 0 6px 20px rgba(109, 255, 122, 0.4);
 }

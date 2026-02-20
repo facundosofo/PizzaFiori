@@ -20,7 +20,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -32,7 +32,7 @@
 
 /* Contenedor principal del modal con gradiente oscuro y bordes redondeados */
 .product-modal-content {
-  background: linear-gradient(145deg, #1e1e1e, #121212);
+  background: var(--gradient-card);
   border-radius: 20px;
   max-width: 500px;
   width: 90%;
@@ -40,7 +40,7 @@
   overflow-y: auto;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9),
     0 0 40px rgba(255, 59, 59, 0.2);
-  border: 1px solid rgba(255, 59, 59, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   position: relative;
 }
 
@@ -49,7 +49,7 @@
   position: absolute;
   top: 16px;
   right: 16px;
-  background: rgba(255, 59, 59, 0.8);
+  background: rgba(239, 68, 68, 0.8);
   border: none;
   color: white;
   width: 36px;
@@ -66,7 +66,7 @@
 
 /* Efecto hover del botón cerrar con escala y rotación */
 .product-modal-close:hover {
-  background: #ff3b3b;
+  background: var(--color-danger);
   transform: scale(1.1) rotate(90deg);
 }
 
@@ -77,7 +77,7 @@
   width: 100%;
   height: 200px;
   overflow: hidden;
-  background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
+  background: var(--gradient-card);
   margin: 0;
   padding: 8px;
   display: flex;
@@ -117,7 +117,7 @@
 .product-modal-title {
   font-size: 1.8rem;
   font-weight: 800;
-  color: #f5f5f5;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 2px;
   margin: 0 0 16px 0;
@@ -151,10 +151,10 @@
   margin-top: 10px;
   width: 100%;
   padding: 10px 14px;
-  background: rgba(255, 59, 59, 0.15);
-  border: 1px solid rgba(255, 59, 59, 0.4);
+  background: var(--color-danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.4);
   border-radius: 8px;
-  color: #ff9999;
+  color: var(--color-danger);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -165,9 +165,9 @@
 
 /* Efecto hover del botón de limpiar archivo cuando no está deshabilitado */
 .file-clear-btn:hover:not(:disabled) {
-  background: rgba(255, 59, 59, 0.25);
-  border-color: rgba(255, 59, 59, 0.6);
-  color: #ffb3b3;
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: var(--color-danger);
   box-shadow: 0 0 15px rgba(255, 59, 59, 0.2);
 }
 
@@ -204,7 +204,7 @@
 .char-counter {
   font-size: 12px;
   text-align: right;
-  color: #aaa;
+  color: var(--color-text-muted);
 }
 
 /* Estado de advertencia del contador de caracteres en color naranja */
@@ -214,7 +214,7 @@
 
 /* Estado de error del contador de caracteres en color rojo */
 .char-counter.error {
-  color: #ff5252;
+  color: var(--color-danger);
 }
 
 /* ===== PRICES EDITOR ===== */
@@ -225,10 +225,10 @@
   flex-direction: column;
   gap: 8px;
   margin-top: 8px;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--color-surface-2);
   padding: 10px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 59, 59, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   max-height: 350px;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -264,19 +264,19 @@
   grid-template-columns: 1.3fr 1fr 40px;
   gap: 12px;
   align-items: flex-start; /* Align labels and fields to the same top line */
-  background: linear-gradient(145deg, rgba(30, 30, 30, 0.8), rgba(18, 18, 18, 0.6));
+  background: var(--gradient-card);
   padding: 14px 14px 10px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 59, 59, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   transition: all 0.3s ease;
   position: relative;
 }
 
 /* Efecto hover de la fila de precio con borde y sombra más intensos */
 .price-edit-row:hover {
-  border-color: rgba(255, 59, 59, 0.4);
-  background: linear-gradient(145deg, rgba(30, 30, 30, 0.9), rgba(18, 18, 18, 0.7));
-  box-shadow: 0 4px 12px rgba(255, 59, 59, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  background: var(--gradient-card-hover);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
 }
 
 /* Campo individual de edición de precio con disposición vertical centrada */
@@ -293,12 +293,12 @@
 .price-edit-row .form-input {
   padding: 6px 10px;
   font-size: 0.95rem;
-  background: #0d0d0d;
-  border: 2px solid #ff3b3b;
+  background: var(--color-bg);
+  border: 2px solid var(--color-danger);
   border-radius: 8px;
   text-align: center;
   width: 100%;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-weight: 600;
   transition: all 0.3s ease;
   box-sizing: border-box;
@@ -331,20 +331,20 @@
 /* Estado de foco del input de precio con borde y sombra destacados */
 .price-edit-row .form-input:focus {
   outline: none;
-  border-color: rgba(255, 59, 59, 0.7);
-  background: #121212;
-  box-shadow: 0 0 16px rgba(255, 59, 59, 0.3);
+  border-color: rgba(239, 68, 68, 0.7);
+  background: var(--color-bg-2);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
 }
 
 /* Efecto hover del input de precio cuando no está deshabilitado */
 .price-edit-row .form-input:hover:not(:disabled) {
-  border-color: rgba(255, 59, 59, 0.5);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 /* Etiqueta descriptiva para los campos de precio en mayúsculas */
 .price-edit-label {
   font-size: 0.7rem;
-  color: #aaa;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
@@ -361,9 +361,9 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: linear-gradient(135deg, rgba(109, 255, 122, 0.2), rgba(74, 222, 128, 0.2));
-  border: 1px solid rgba(109, 255, 122, 0.4);
-  color: #6dff7a;
+  background: var(--color-accent-soft);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: var(--color-accent);
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.62rem;
@@ -382,12 +382,12 @@
 .no-prices-editor {
   padding: 24px;
   text-align: center;
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   font-style: italic;
-  background: linear-gradient(145deg, rgba(255, 59, 59, 0.05), rgba(255, 59, 59, 0.08));
+  background: var(--color-danger-bg);
   border-radius: 8px;
-  border: 1.5px dashed rgba(255, 59, 59, 0.3);
+  border: 1.5px dashed rgba(239, 68, 68, 0.3);
 }
 
 /* Texto de ayuda informativo debajo del botón agregar precio */

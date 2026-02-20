@@ -6,7 +6,7 @@
 .metric-selector {
   display: flex;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover);
   padding: 4px;
   border-radius: 8px;
   width: fit-content;
@@ -16,7 +16,7 @@
   padding: 8px 16px;
   background: transparent;
   border: none;
-  color: #888888;
+  color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 500;
   border-radius: 6px;
@@ -26,16 +26,16 @@
 }
 
 .metric-tab:hover {
-  color: #e8e8e8;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+  background: var(--color-hover);
 }
 
 .metric-tab.active {
-  background: #22c55e;
+  background: var(--color-accent);
   color: #ffffff;
   font-weight: 600;
 }
 
 .metric-tab.active:hover {
-  background: #16a34a;
+  background: var(--color-accent-strong);
 }
