@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 948a1e8de376
+Revision ID: 94182d0f6b12
 Revises: 
-Create Date: 2026-02-13 18:27:01.899195
+Create Date: 2026-02-20 20:26:29.225065
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '948a1e8de376'
+revision: str = '94182d0f6b12'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,8 +30,8 @@ def upgrade() -> None:
     op.create_index(op.f('ix_Categorias_nombre'), 'Categorias', ['nombre'], unique=True)
     op.create_table('Ofertas',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('nombre', sa.String(length=255), nullable=False),
-    sa.Column('descripcion', sa.String(), nullable=True),
+    sa.Column('nombre', sa.String(length=50), nullable=False),
+    sa.Column('descripcion', sa.String(length=255), nullable=True),
     sa.Column('precio', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('activo', sa.Boolean(), nullable=False),
     sa.Column('fecha_creacion', sa.DateTime(), nullable=True),
@@ -42,7 +42,7 @@ def upgrade() -> None:
     op.create_table('Usuarios',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=50), nullable=False),
-    sa.Column('email', sa.String(length=100), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('password_hash', sa.Text(), nullable=False),
     sa.Column('first_name', sa.String(length=50), nullable=False),
     sa.Column('last_name', sa.String(length=50), nullable=False),
@@ -84,7 +84,7 @@ def upgrade() -> None:
     op.create_table('Productos',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('sku', sa.String(length=50), nullable=False),
-    sa.Column('nombre', sa.String(length=255), nullable=False),
+    sa.Column('nombre', sa.String(length=50), nullable=False),
     sa.Column('categoria_id', sa.Integer(), nullable=True),
     sa.Column('imagen', sa.String(length=255), nullable=True),
     sa.Column('activo', sa.Boolean(), nullable=False),
@@ -145,8 +145,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('venta_item_id', sa.Integer(), nullable=False),
     sa.Column('producto_id', sa.Integer(), nullable=True),
-    sa.Column('producto_nombre', sa.String(length=255), nullable=False),
-    sa.Column('categoria_nombre', sa.String(length=255), nullable=True),
+    sa.Column('producto_nombre', sa.String(length=50), nullable=False),
+    sa.Column('categoria_nombre', sa.String(length=50), nullable=True),
     sa.Column('cantidad', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['producto_id'], ['Productos.id'], ),
     sa.ForeignKeyConstraint(['venta_item_id'], ['VentaItems.id'], ondelete='CASCADE'),

@@ -99,11 +99,14 @@ const ProductModal = ({
     setError("");
 
     if (!nombre.trim()) return setError("El nombre es requerido");
-    if (nombre.trim().length > 100) return setError("El nombre no puede superar los 100 caracteres");
+    if (nombre.trim().length > 50) return setError("El nombre no puede superar los 50 caracteres");
     if (!categoriaId) return setError("Selecciona una categoría");
     if (precios.length === 0) return setError("Debes agregar al menos un precio");
     if (precios.some(p => p.cantidad <= 0 || p.precio <= 0)) {
       return setError("Cantidad y precio deben ser mayores a 0");
+    }
+    if (precios.some(p => p.precio > 99_999_999.99)) {
+      return setError("El precio no puede exceder 99.999.999,99");
     }
 
     // Validar que existe precio unitario
@@ -200,10 +203,10 @@ const ProductModal = ({
                     className="form-input"
                     disabled={loading}
                     placeholder="Ej. Hamburguesa Doble"
-                    maxLength={100}
+                    maxLength={50}
                   />
-                  <div className={`char-counter ${nombre.length > 80 ? "warning" : ""} ${nombre.length === 100 ? "error" : ""}`}>
-                    {nombre.length}/100
+                  <div className={`char-counter ${nombre.length > 40 ? "warning" : ""} ${nombre.length === 50 ? "error" : ""}`}>
+                    {nombre.length}/50
                   </div>
                 </div>
 
@@ -265,6 +268,7 @@ const ProductModal = ({
                               <input
                                 type="number"
                                 min="1"
+                                max="1000"
                                 className="qty-input"
                                 value={precio_item.cantidad}
                                 onFocus={(e) => e.target.select()}

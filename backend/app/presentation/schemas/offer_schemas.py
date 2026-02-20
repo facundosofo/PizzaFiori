@@ -68,9 +68,9 @@ class OfferItemResponse(BaseModel):
 # ======================================================
 
 class OfferCreateRequest(BaseModel):
-    nombre: str = Field(..., min_length=1, max_length=255, description="Nombre de la oferta")
-    descripcion: Optional[str] = Field(None, max_length=1000, description="Descripción de la oferta")
-    precio: Decimal = Field(..., gt=0, le=1_000_000, max_digits=10, decimal_places=2, description="Precio de la oferta")
+    nombre: str = Field(..., min_length=1, max_length=50, description="Nombre de la oferta")
+    descripcion: Optional[str] = Field(None, max_length=255, description="Descripción de la oferta")
+    precio: Decimal = Field(..., gt=0, le=99_999_999.99, max_digits=10, decimal_places=2, description="Precio de la oferta")
     productos: List[OfferItemRequest] = Field(..., min_length=1, description="Lista de productos incluidos en la oferta")
 
     @model_validator(mode="after")
@@ -102,9 +102,9 @@ class OfferCreateRequest(BaseModel):
 
 
 class OfferUpdateRequest(BaseModel):
-    nombre: Optional[str] = Field(None, min_length=1, max_length=255)
-    descripcion: Optional[str] = Field(None, max_length=1000)
-    precio: Optional[Decimal] = Field(None, gt=0, le=1_000_000, max_digits=10, decimal_places=2)
+    nombre: Optional[str] = Field(None, min_length=1, max_length=50)
+    descripcion: Optional[str] = Field(None, max_length=255)
+    precio: Optional[Decimal] = Field(None, gt=0, le=99_999_999.99, max_digits=10, decimal_places=2)
     productos: Optional[List[OfferItemRequest]] = Field(None, min_length=1)
 
     @model_validator(mode="after")

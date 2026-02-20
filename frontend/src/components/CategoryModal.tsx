@@ -41,6 +41,9 @@ const CategoryModal = ({
     if (!nombre.trim()) {
       return setError("El nombre es requerido");
     }
+    if (nombre.trim().length > 50) {
+      return setError("El nombre no puede superar los 50 caracteres");
+    }
 
     setLoading(true);
 
@@ -114,6 +117,7 @@ const CategoryModal = ({
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ej: Pizzas, Bebidas, Postres..."
+                  maxLength={50}
                   disabled={loading}
                   autoFocus
                 />

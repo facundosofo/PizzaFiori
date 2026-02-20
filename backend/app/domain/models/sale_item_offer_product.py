@@ -23,8 +23,8 @@ class SaleItemOfferProduct(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     venta_item_id = Column(Integer, ForeignKey("VentaItems.id", ondelete="CASCADE"), nullable=False)
     producto_id = Column(Integer, ForeignKey("Productos.id"), nullable=True)  # Referencia (puede ser null si se borra)
-    producto_nombre = Column(String(255), nullable=False)  # Nombre guardado al momento de la venta
-    categoria_nombre = Column(String(255), nullable=True)  # Categoría del producto en la oferta
+    producto_nombre = Column(String(50), nullable=False)  # Nombre guardado al momento de la venta
+    categoria_nombre = Column(String(50), nullable=True)  # Categoría del producto en la oferta
     cantidad = Column(Integer, nullable=False)  # Cantidad de este producto en la oferta
 
     venta_item = relationship(
