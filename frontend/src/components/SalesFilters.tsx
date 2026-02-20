@@ -85,7 +85,7 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
     <div className="sales-filters">
       <div className="sales-filters-row">
         <div className="filter-group filter-group-range">
-          <label htmlFor="date-range">Seleccionar rango de fechas</label>
+          <label htmlFor="date-range">Rango de fechas</label>
           <DatePicker
             id="date-range"
             selectsRange={true}
