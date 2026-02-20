@@ -55,6 +55,12 @@ const ReportConfigPanel = ({
     onChange({ ...config, dateFrom, dateTo });
   };
 
+  const handleCalendarClose = () => {
+    if (config.dateFrom && !config.dateTo) {
+      onChange({ ...config, dateTo: new Date() });
+    }
+  };
+
   const handleModeChange = (mode: ReportMode) => {
     onChange({ ...config, mode });
   };
@@ -114,6 +120,7 @@ const ReportConfigPanel = ({
             startDate={config.dateFrom}
             endDate={config.dateTo}
             onChange={(update) => handleRangeChange(update as [Date | null, Date | null])}
+            onCalendarClose={handleCalendarClose}
             dateFormat="dd/MM/yyyy"
             maxDate={new Date()}
             placeholderText="Seleccionar Desde - Hasta"

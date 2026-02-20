@@ -103,6 +103,14 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
     onClear();
   };
 
+  const handleCalendarClose = () => {
+    if (dateFrom && !dateTo) {
+      const today = new Date();
+      setDateRange([dateFrom, today]);
+      onFilter(dateFrom, today);
+    }
+  };
+
   // Get max date (today) for validation
   const today = new Date();
 
@@ -119,6 +127,7 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
             onChange={(update) => {
               setDateRange(update as [Date | null, Date | null]);
             }}
+            onCalendarClose={handleCalendarClose}
             dateFormat="dd/MM/yyyy"
             maxDate={today}
             placeholderText="Seleccionar Desde - Hasta"
