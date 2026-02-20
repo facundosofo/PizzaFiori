@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
+import { Calendar } from "lucide-react";
 import * as Icons from './shared/Icons';
 import { validateDateRange } from "../utils/formatters";
 import "react-datepicker/dist/react-datepicker.css";
@@ -13,6 +14,30 @@ interface SalesFiltersProps {
   onFilter: (dateFrom: Date | null, dateTo: Date | null) => void;
   onClear: () => void;
 }
+
+type DateRangeInputProps = {
+  value?: string;
+  onClick?: () => void;
+  placeholder?: string;
+};
+
+const DateRangeInput = forwardRef<HTMLButtonElement, DateRangeInputProps>(
+  ({ value, onClick, placeholder }, ref) => (
+    <button
+      type="button"
+      className="filter-date-input filter-date-input-icon"
+      onClick={onClick}
+      ref={ref}
+    >
+      <Calendar size={16} className="filter-date-icon" />
+      <span className="filter-date-label">
+        {value || placeholder}
+      </span>
+    </button>
+  )
+);
+
+DateRangeInput.displayName = "DateRangeInput";
 
 const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
@@ -97,7 +122,6 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
             dateFormat="dd/MM/yyyy"
             maxDate={today}
             placeholderText="Seleccionar Desde - Hasta"
-            className="filter-date-input"
             calendarClassName="custom-calendar"
             showMonthDropdown
             showYearDropdown
@@ -107,6 +131,9 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
             monthsShown={1}
             locale="es"
             formatWeekDay={(day) => day.charAt(0).toUpperCase()}
+            customInput={
+              <DateRangeInput placeholder="Seleccionar Desde - Hasta" />
+            }
           />
         </div>
 

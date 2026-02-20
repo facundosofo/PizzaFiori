@@ -92,6 +92,21 @@
   text-transform: capitalize;
 }
 
+.filter-date-input-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-date-icon {
+  color: rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+}
+
+.filter-date-label {
+  color: inherit;
+}
+
 .filter-date-input:hover {
   border-color: rgba(255, 255, 255, 0.6);
   background: linear-gradient(135deg, #121212 0%, #1f1f1f 100%);
