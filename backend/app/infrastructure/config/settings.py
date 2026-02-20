@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     log_file: str = "app.log"
     
     # JWT Configuration
-    jwt_secret: str = Field(..., env="JWT_SECRET")
+    jwt_secret: str = Field(..., alias="JWT_SECRET")
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 1440  # 24h default
     jwt_refresh_token_expire_days: Optional[int] = 7  # Futuro: refresh tokens
@@ -50,8 +50,8 @@ class Settings(BaseSettings):
     rate_limit_window_seconds: int = 60
     
     # SSL/TLS Configuration
-    ssl_key_file: Optional[str] = Field(env="SSL_KEY_FILE")
-    ssl_cert_file: Optional[str] = Field(env="SSL_CERT_FILE")
+    ssl_key_file: Optional[str] = Field(default=None, alias="SSL_KEY_FILE")
+    ssl_cert_file: Optional[str] = Field(default=None, alias="SSL_CERT_FILE")
 
 
 settings = Settings()

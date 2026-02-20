@@ -3,6 +3,7 @@ from dependency_injector.wiring import inject, Provide
 from typing import List, Optional
 
 from app.application.category_service import CategoryService, ServiceResult
+from app.infrastructure.cache.cache_service import CacheService
 from app.containers import Container
 from app.presentation.schemas.category_schemas import CategoriaCreateRequest, CategoriaUpdateRequest, CategoriaResponse
 from app.presentation.routers.dependencies import get_current_user, require_admin
@@ -43,9 +44,25 @@ async def create_categoria(
 @inject
 async def get_categorias(
     activo: Optional[bool] = Query(None, description="Filtrar por estado activo (true/false). Si no se especifica, devuelve todas."),
-    service: CategoryService = Depends(Provide[Container.category_service])
+    service: CategoryService = Depends(Provide[Container.category_service]),
+    cache_service: CacheService = Depends(Provide[Container.cache_service])
 ):
-    return await service.get_all(activo=activo)
+    # Generate cache key based on query parameters
+    cache_key = f"categoria_list_act_{activo}"
+    
+    # Try to get from cache
+    cached = cache_service.get(cache_key)
+    if cached is not None:
+        return cached.copy()
+    
+    # If not cached, fetch from database with parameters
+    categorias = await service.get_all(activo=activo)
+    
+    # Convert ORM objects to Pydantic schemas and cache
+    response_data = [CategoriaResponse.model_validate(c) for c in categorias]
+    cache_service.set(cache_key, response_data)
+    
+    return response_data
 
 
 @router.get(
@@ -58,12 +75,27 @@ async def get_categorias(
 @inject
 async def get_categoria(
     categoria_id: int = Path(..., ge=1, description="ID único de la categoría"),
-    service: CategoryService = Depends(Provide[Container.category_service])
+    service: CategoryService = Depends(Provide[Container.category_service]),
+    cache_service: CacheService = Depends(Provide[Container.cache_service])
 ):
+    # Generate cache key based on category ID
+    cache_key = f"categoria_{categoria_id}"
+    
+    # Try to get from cache
+    cached = cache_service.get(cache_key)
+    if cached is not None:
+        return cached.copy() if isinstance(cached, dict) else cached
+    
+    # If not cached, fetch from database
     result: ServiceResult = await service.get_by_id(categoria_id)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
-    return result.value
+    
+    # Convert ORM object to Pydantic schema and cache
+    response_data = CategoriaResponse.model_validate(result.value)
+    cache_service.set(cache_key, response_data)
+    
+    return response_data
 
 
 @router.put(

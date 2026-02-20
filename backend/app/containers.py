@@ -8,6 +8,7 @@ from app.application.dashboard_service import DashboardService
 from app.application.user_service import UserService
 from app.application.report_service import ReportService
 from app.infrastructure.file_service import FileService
+from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 from app.infrastructure.logging import configure_logging
 
@@ -28,24 +29,28 @@ class Container(containers.DeclarativeContainer):
     logging = providers.Singleton(configure_logging)
     
     file_service = providers.Singleton(FileService)
+    cache_service = providers.Singleton(CacheService)
     unit_of_work = providers.Factory(SqlAlchemyUnitOfWork)
 
     product_service = providers.Factory(
         ProductService,
         uow=unit_of_work,
         file_service=file_service,
+        cache_service=cache_service,
         logger=logging,
     )
 
     category_service = providers.Factory(
         CategoryService,
         uow=unit_of_work,
+        cache_service=cache_service,
         logger=logging,
     )
 
     offer_service = providers.Factory(
         OfferService,
         uow=unit_of_work,
+        cache_service=cache_service,
         logger=logging,
     )
 

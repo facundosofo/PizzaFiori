@@ -8,6 +8,7 @@ from app.domain.models.product_price import ProductPrice
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest
 from app.infrastructure.file_service import FileService
+from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.sku_generator import generar_sku_producto
 
 
@@ -23,10 +24,12 @@ class ProductService:
         self, 
         uow: AbstractUnitOfWork, 
         file_service: FileService,
+        cache_service: CacheService,
         logger: structlog.BoundLogger | None = None
     ):
         self.uow = uow
         self.file_service = file_service
+        self.cache_service = cache_service
         self.logger = logger or structlog.get_logger(__name__)
 
 
@@ -88,6 +91,9 @@ class ProductService:
                 producto_id=producto.id,
                 producto_nombre=producto.nombre
             )
+            
+            # Invalidate product cache on write (selective)
+            self.cache_service.invalidate('producto_*')
             
             return ServiceResult(value=producto, status_code=201)
 
@@ -183,6 +189,9 @@ class ProductService:
                 if image and ruta_imagen_vieja:
                     self.file_service.delete_file(ruta_imagen_vieja)
 
+                # Invalidate product cache on write (selective)
+                self.cache_service.invalidate('producto_*')
+                
                 return ServiceResult(value=producto)
 
         except Exception as e:
