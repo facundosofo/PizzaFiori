@@ -5,6 +5,7 @@ import json
 
 from app.application.product_service import ProductService, ServiceResult
 from app.application.offer_service import OfferService
+from app.infrastructure.cache.cache_service import CacheService
 from app.containers import Container
 from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest, ProductoResponse
 from app.presentation.routers.dependencies import get_current_user, require_admin
@@ -72,11 +73,27 @@ async def get_productos(
     categoria: Optional[int] = Query(None, description="ID de la categoría para filtrar"),
     active: Optional[bool] = Query(None, description="Filtrar por estado activo/inactivo"),
     service: ProductService = Depends(Provide[Container.product_service]),
+    cache_service: CacheService = Depends(Provide[Container.cache_service]),
 ):
-    return await service.get_all(
+    # Generate cache key based on query parameters
+    cache_key = f"producto_list_cat_{categoria}_act_{active}"
+    
+    # Try to get from cache
+    cached = cache_service.get(cache_key)
+    if cached is not None:
+        return cached.copy()
+    
+    # If not cached, fetch from database with parameters
+    productos = await service.get_all(
         categoria_id=categoria,
         active=active
     )
+    
+    # Convert ORM objects to Pydantic schemas and cache
+    response_data = [ProductoResponse.model_validate(p) for p in productos]
+    cache_service.set(cache_key, response_data)
+    
+    return response_data
 
 
 
@@ -91,16 +108,29 @@ async def get_productos(
 async def get_producto(
     producto_id: int = Path(..., ge=1, description="ID único del producto"),
     service: ProductService = Depends(Provide[Container.product_service]),
+    cache_service: CacheService = Depends(Provide[Container.cache_service]),
 ):
-
+    # Generate cache key based on product ID
+    cache_key = f"producto_{producto_id}"
+    
+    # Try to get from cache
+    cached = cache_service.get(cache_key)
+    if cached is not None:
+        return cached.copy() if isinstance(cached, dict) else cached
+    
+    # If not cached, fetch from database
     result: ServiceResult = await service.get_by_id(producto_id)
     if result.error:
         raise HTTPException(
             status_code=result.status_code,
             detail=result.error
         )
-
-    return result.value
+    
+    # Convert ORM object to Pydantic schema and cache
+    response_data = ProductoResponse.model_validate(result.value)
+    cache_service.set(cache_key, response_data)
+    
+    return response_data
 
 
 

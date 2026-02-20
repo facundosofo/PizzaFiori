@@ -6,6 +6,7 @@ import structlog
 from app.domain.models.offer import Offer
 from app.domain.models.offer_item import OfferItem
 from app.domain.unit_of_work import AbstractUnitOfWork
+from app.infrastructure.cache.cache_service import CacheService
 from app.presentation.schemas.offer_schemas import (
     OfferCreateRequest,
     OfferUpdateRequest,
@@ -24,9 +25,11 @@ class OfferService:
     def __init__(
         self,
         uow: AbstractUnitOfWork,
+        cache_service: CacheService,
         logger: structlog.BoundLogger | None = None,
     ):
         self.uow = uow
+        self.cache_service = cache_service
         self.logger = logger or structlog.get_logger(__name__)
 
     async def create(self, offer_create: OfferCreateRequest) -> ServiceResult:
@@ -106,6 +109,9 @@ class OfferService:
                 offer_id=offer.id,
                 nombre=offer.nombre,
             )
+
+            # Invalidate offer cache on write
+            self.cache_service.invalidate('oferta_*')
 
             return ServiceResult(value=offer, status_code=201)
 
@@ -237,6 +243,9 @@ class OfferService:
 
             self.logger.info("Oferta actualizada", offer_id=offer_id)
 
+            # Invalidate offer cache on write
+            self.cache_service.invalidate('oferta_*')
+
             return ServiceResult(value=offer)
 
         except Exception as e:
@@ -302,6 +311,9 @@ class OfferService:
                 ofertas_desactivadas=len(offer_ids),
                 offer_ids=offer_ids
             )
+            
+            # Invalidate offer cache on write
+            self.cache_service.invalidate('oferta_*')
             
             return offer_ids
             

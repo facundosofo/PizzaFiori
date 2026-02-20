@@ -4,6 +4,7 @@ import structlog
 
 from app.domain.models.category import Category
 from app.domain.unit_of_work import AbstractUnitOfWork
+from app.infrastructure.cache.cache_service import CacheService
 from app.presentation.schemas.category_schemas import (
     CategoriaCreateRequest,
     CategoriaUpdateRequest,
@@ -19,9 +20,11 @@ class CategoryService:
     def __init__(
         self, 
         uow: AbstractUnitOfWork,
+        cache_service: CacheService,
         logger: structlog.BoundLogger | None = None
     ):
         self.uow = uow
+        self.cache_service = cache_service
         self.logger = logger or structlog.get_logger(__name__)
 
     async def create(self, categoria_create: CategoriaCreateRequest) -> ServiceResult:
@@ -45,6 +48,9 @@ class CategoryService:
                     categoria_id=categoria.id,
                     categoria_nombre=categoria.nombre
                 )
+                
+                # Clear cache on write
+                self.cache_service.clear_all()
                 
                 return ServiceResult(value=categoria, status_code=201)
         except Exception as e:
@@ -87,6 +93,10 @@ class CategoryService:
 
                 await uow.commit()
                 await uow.category_repo.refresh(categoria)
+                
+                # Invalidate category cache on write (selective)
+                self.cache_service.invalidate('categoria_*')
+                
                 return ServiceResult(value=categoria)
         except Exception as e:
             return ServiceResult(error=str(e), status_code=400)
@@ -120,6 +130,9 @@ class CategoryService:
                     categoria_id=categoria_id,
                     productos_desactivados=len(producto_ids)
                 )
+                
+                # Clear cache on write
+                self.cache_service.clear_all()
                 
                 return ServiceResult(value=categoria)
         except Exception as e:

@@ -3,6 +3,7 @@ from dependency_injector.wiring import inject, Provide
 from typing import List, Optional
 
 from app.application.offer_service import OfferService, ServiceResult
+from app.infrastructure.cache.cache_service import CacheService
 from app.containers import Container
 from app.presentation.schemas.offer_schemas import (
     OfferCreateRequest,
@@ -60,8 +61,24 @@ async def get_offers(
         None, description="Filtrar por estado activo/inactivo"
     ),
     service: OfferService = Depends(Provide[Container.offer_service]),
+    cache_service: CacheService = Depends(Provide[Container.cache_service]),
 ):
-    return await service.get_all(active=active)
+    # Generate cache key based on query parameters
+    cache_key = f"oferta_list_act_{active}"
+    
+    # Try to get from cache
+    cached = cache_service.get(cache_key)
+    if cached is not None:
+        return cached.copy()
+    
+    # If not cached, fetch from database with parameters
+    ofertas = await service.get_all(active=active)
+    
+    # Convert ORM objects to Pydantic schemas and cache
+    response_data = [OfferResponse.model_validate(o) for o in ofertas]
+    cache_service.set(cache_key, response_data)
+    
+    return response_data
 
 
 @router.get(
@@ -75,16 +92,30 @@ async def get_offers(
 async def get_offer(
     offer_id: int = Path(..., ge=1, description="ID único de la oferta"),
     service: OfferService = Depends(Provide[Container.offer_service]),
+    cache_service: CacheService = Depends(Provide[Container.cache_service]),
 ):
+    # Generate cache key based on offer ID
+    cache_key = f"oferta_{offer_id}"
+    
+    # Try to get from cache
+    cached = cache_service.get(cache_key)
+    if cached is not None:
+        return cached.copy() if isinstance(cached, dict) else cached
+    
+    # If not cached, fetch from database
     result: ServiceResult = await service.get_by_id(offer_id)
-
+    
     if result.error:
         raise HTTPException(
             status_code=result.status_code,
             detail=result.error,
         )
-
-    return result.value
+    
+    # Convert ORM object to Pydantic schema and cache
+    response_data = OfferResponse.model_validate(result.value)
+    cache_service.set(cache_key, response_data)
+    
+    return response_data
 
 
 @router.put(
