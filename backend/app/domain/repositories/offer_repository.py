@@ -24,6 +24,32 @@ class AbstractOfferRepository(ABC):
         ...
 
     @abstractmethod
+    async def get_by_product(self, producto_id: int) -> List[Offer]:
+        """
+        Obtiene todas las ofertas activas que contienen el producto especificado.
+        
+        Args:
+            producto_id: ID del producto
+            
+        Returns:
+            List[Offer]: Ofertas activas que contienen el producto
+        """
+        ...
+
+    @abstractmethod
+    async def get_by_products(self, producto_ids: List[int]) -> List[Offer]:
+        """
+        Obtiene todas las ofertas activas que contienen cualquiera de los productos especificados.
+        
+        Args:
+            producto_ids: Lista de IDs de productos
+            
+        Returns:
+            List[Offer]: Ofertas activas que contienen los productos
+        """
+        ...
+
+    @abstractmethod
     async def update(self, offer: Offer) -> Offer:
         ...
 

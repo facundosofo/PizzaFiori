@@ -166,13 +166,18 @@ class CategoryService:
                 productos = await uow.product_repo.list(categoria_id=categoria_id, active=True)
                 producto_ids = [p.id for p in productos]
                 
-                # Desactivar ofertas que contengan estos productos
+                # Obtener todas las ofertas que contengan estos productos ANTES de desactivar
+                ofertas_a_desactivar = []
+                if producto_ids:
+                    ofertas_a_desactivar = await uow.offer_repo.get_by_products(producto_ids)
+                
+                # Desactivar productos
+                for producto in productos:
+                    producto.activo = False
+                
+                # Desactivar ofertas
                 if producto_ids:
                     await uow.offer_repo.deactivate_by_products(producto_ids)
-                    
-                    # Desactivar productos
-                    for producto in productos:
-                        producto.activo = False
                 
                 # Desactivar la categoría
                 categoria.activo = False
@@ -180,18 +185,37 @@ class CategoryService:
                 await uow.commit()
                 await uow.category_repo.refresh(categoria)
 
-                # Auditar desactivación como DELETE lógico
-                if self.audit_service and old_activo != categoria.activo:
-                    await self.audit_service.log_deletion(
-                        username=username,
-                        entity_type="Category",
-                        entity=categoria,
-                    )
+                # Auditar cada acción en cascada
+                if self.audit_service:
+                    # 1. Auditar cada producto desactivado
+                    for producto in productos:
+                        await self.audit_service.log_deletion(
+                            username=username,
+                            entity_type="Product",
+                            entity=producto,
+                        )
+                    
+                    # 2. Auditar cada oferta desactivada
+                    for oferta in ofertas_a_desactivar:
+                        await self.audit_service.log_deletion(
+                            username=username,
+                            entity_type="Offer",
+                            entity=oferta,
+                        )
+                    
+                    # 3. Auditar desactivación de la categoría
+                    if old_activo != categoria.activo:
+                        await self.audit_service.log_deletion(
+                            username=username,
+                            entity_type="Category",
+                            entity=categoria,
+                        )
                 
                 self.logger.info(
                     "Categoría desactivada en cascada",
                     categoria_id=categoria_id,
-                    productos_desactivados=len(producto_ids)
+                    productos_desactivados=len(producto_ids),
+                    ofertas_desactivadas=len(ofertas_a_desactivar)
                 )
                 
                 # Clear cache on write

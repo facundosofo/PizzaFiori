@@ -398,32 +398,46 @@ class OfferService:
             )
             return ServiceResult(error=str(e), status_code=400)
 
-    async def deactivate_by_product(self, producto_id: int) -> List[int]:
+    async def deactivate_by_product(self, producto_id: int, username: Optional[str] = None) -> List[int]:
         """
         Desactiva todas las ofertas activas que contienen el producto especificado.
         
         Args:
             producto_id: ID del producto
+            username: Username del usuario que realiza la acción (para auditoría)
             
         Returns:
             List[int]: IDs de las ofertas desactivadas
         """
         try:
             async with self.uow as uow:
+                # Obtener todas las ofertas activas que contienen este producto ANTES de desactivar
+                ofertas = await uow.offer_repo.get_by_product(producto_id)
+                
+                # Desactivar en la BD
                 offer_ids = await uow.offer_repo.deactivate_by_product(producto_id)
                 await uow.commit()
                 
-            self.logger.info(
-                "Ofertas desactivadas por producto inactivo",
-                producto_id=producto_id,
-                ofertas_desactivadas=len(offer_ids),
-                offer_ids=offer_ids
-            )
-            
-            # Invalidate offer cache on write
-            self.cache_service.invalidate('oferta_*')
-            
-            return offer_ids
+                # Auditar cada oferta desactivada
+                if self.audit_service and username:
+                    for oferta in ofertas:
+                        await self.audit_service.log_deletion(
+                            username=username,
+                            entity_type="Offer",
+                            entity=oferta,
+                        )
+                
+                self.logger.info(
+                    "Ofertas desactivadas por producto inactivo",
+                    producto_id=producto_id,
+                    ofertas_desactivadas=len(offer_ids),
+                    offer_ids=offer_ids
+                )
+                
+                # Invalidate offer cache on write
+                self.cache_service.invalidate('oferta_*')
+                
+                return offer_ids
             
         except Exception as e:
             self.logger.error(

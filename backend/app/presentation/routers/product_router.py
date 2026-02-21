@@ -228,7 +228,10 @@ async def deactivate_producto(
         )
     
     # 2. Desactivar ofertas relacionadas y obtener sus IDs
-    offer_ids = await offer_service.deactivate_by_product(producto_id)
+    offer_ids = await offer_service.deactivate_by_product(
+        producto_id,
+        username=admin_user["username"]
+    )
     
     # 3. Construir response con IDs de ofertas desactivadas
     producto = result.value
