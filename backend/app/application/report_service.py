@@ -229,11 +229,21 @@ class ReportService:
             self.logger.info("Generando reporte", fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
 
             async with self.uow as uow:
-                from datetime import time
+                from datetime import time, timedelta
+                fecha_desde_dt = (
+                    datetime.combine(fecha_desde, time.min) + timedelta(hours=6)
+                    if fecha_desde
+                    else None
+                )
+                fecha_hasta_dt = (
+                    datetime.combine(fecha_hasta, time.max) + timedelta(hours=6)
+                    if fecha_hasta
+                    else None
+                )
                 sales = await uow.sale_repo.list(
                     skip=0, limit=10_000,
-                    fecha_desde=datetime.combine(fecha_desde, time.min) if fecha_desde else None,
-                    fecha_hasta=datetime.combine(fecha_hasta, time.max) if fecha_hasta else None,
+                    fecha_desde=fecha_desde_dt,
+                    fecha_hasta=fecha_hasta_dt,
                 )
 
             if not sales:
