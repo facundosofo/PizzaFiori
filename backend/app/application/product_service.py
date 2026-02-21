@@ -39,9 +39,7 @@ class ProductService:
         self,
         producto_create: ProductoCreateRequest,
         image: Optional[UploadFile] = None,
-        user_id: Optional[int] = None,
-        username: Optional[str] = None,
-        correlation_id: Optional[str] = None,
+        username: Optional[str] = None
     ) -> ServiceResult:
 
         ruta_imagen = None
@@ -51,8 +49,7 @@ class ProductService:
                 "Creando producto",
                 producto_nombre=producto_create.nombre,
                 categoria_id=producto_create.categoria_id,
-                tiene_imagen=image is not None,
-                user_id=user_id,
+                tiene_imagen=image is not None
             )
             
             if image:
@@ -93,7 +90,7 @@ class ProductService:
                 producto = await uow.product_repo.get_by_id(producto.id)
 
             # Auditar creación (usa su propia transacción)
-            if self.audit_service and user_id:
+            if self.audit_service and username:
                 await self.audit_service.log_creation(
                     username=username,
                     entity_type="Product",
@@ -155,9 +152,7 @@ class ProductService:
         producto_update: Optional[ProductoUpdateRequest] = None,
         image: Optional[UploadFile] = None,
         active: Optional[bool] = None,
-        user_id: Optional[int] = None,
         username: Optional[str] = None,
-        correlation_id: Optional[str] = None,
         is_logical_delete: bool = False,
     ) -> ServiceResult:
 
@@ -245,7 +240,7 @@ class ProductService:
                 }
 
             # Auditar actualización con comparación de snapshots
-            if self.audit_service and user_id:
+            if self.audit_service and username:
                 # Si es eliminación lógica, registrar como DELETE con snapshot completo
                 if is_logical_delete:
                     async with self.uow as uow:

@@ -5,7 +5,6 @@ from datetime import datetime
 
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.domain.models.audit_log import AuditLog
 from app.domain.repositories.audit_repository import AbstractAuditRepository
@@ -64,7 +63,6 @@ class SqlAlchemyAuditRepository(
                     AuditLog.entity_id == entity_id,
                 )
             )
-            .options(selectinload(AuditLog.user))
             .order_by(AuditLog.timestamp.desc())
             .limit(limit)
             .offset(offset)
@@ -73,9 +71,9 @@ class SqlAlchemyAuditRepository(
         result = await self.session.execute(query)
         return result.scalars().all()
 
-    async def get_by_user(
+    async def get_by_username(
         self,
-        user_id: int,
+        username: str,
         limit: int = 50,
         offset: int = 0,
     ) -> List[AuditLog]:
@@ -84,8 +82,7 @@ class SqlAlchemyAuditRepository(
         """
         query = (
             select(AuditLog)
-            .where(AuditLog.user_id == user_id)
-            .options(selectinload(AuditLog.user))
+            .where(AuditLog.username == username)
             .order_by(AuditLog.timestamp.desc())
             .limit(limit)
             .offset(offset)
@@ -99,7 +96,7 @@ class SqlAlchemyAuditRepository(
         start_date: datetime,
         end_date: datetime,
         entity_type: Optional[str] = None,
-        user_id: Optional[int] = None,
+        username: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[AuditLog]:
@@ -114,13 +111,12 @@ class SqlAlchemyAuditRepository(
         if entity_type is not None:
             conditions.append(AuditLog.entity_type == entity_type)
         
-        if user_id is not None:
-            conditions.append(AuditLog.user_id == user_id)
+        if username is not None:
+            conditions.append(AuditLog.username == username)
         
         query = (
             select(AuditLog)
             .where(and_(*conditions))
-            .options(selectinload(AuditLog.user))
             .order_by(AuditLog.timestamp.desc())
             .limit(limit)
             .offset(offset)
@@ -137,7 +133,7 @@ class SqlAlchemyAuditRepository(
         """
         Obtiene los registros de auditoría más recientes del sistema.
         """
-        query = select(AuditLog).options(selectinload(AuditLog.user))
+        query = select(AuditLog)
         
         if entity_type is not None:
             query = query.where(AuditLog.entity_type == entity_type)
@@ -150,7 +146,7 @@ class SqlAlchemyAuditRepository(
     async def count(
         self,
         entity_type: Optional[str] = None,
-        user_id: Optional[int] = None,
+        username: Optional[str] = None,
     ) -> int:
         """
         Cuenta el número total de registros de auditoría con filtros opcionales.
@@ -161,8 +157,8 @@ class SqlAlchemyAuditRepository(
         if entity_type is not None:
             conditions.append(AuditLog.entity_type == entity_type)
         
-        if user_id is not None:
-            conditions.append(AuditLog.user_id == user_id)
+        if username is not None:
+            conditions.append(AuditLog.username == username)
         
         if conditions:
             query = query.where(and_(*conditions))

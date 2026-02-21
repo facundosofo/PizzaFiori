@@ -9,6 +9,17 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import RelationshipProperty
 
 
+# Campos sensibles que no deben incluirse en auditoría por seguridad
+SENSITIVE_FIELDS = {
+    'password_hash',
+    'password',
+    'token',
+    'refresh_token',
+    'api_key',
+    'secret_key',
+}
+
+
 def compute_entity_diff(
     old_entity: Any,
     new_entity: Any,
@@ -34,13 +45,16 @@ def compute_entity_diff(
         >>> # {"nombre": {"old": "Pizza", "new": "Pizza Deluxe"}, "precio": {"old": 100, "new": 150}}
     """
     if exclude_fields is None:
-        # Excluir automáticamente campos de timestamp
+        # Excluir automáticamente campos de timestamp y campos sensibles
         exclude_fields = {
             'fecha_actualizacion', 
             'updated_at', 
             'fecha_creacion',
             'created_at',
-        }
+        }.union(SENSITIVE_FIELDS)
+    else:
+        # Si se pasan exclude_fields, agregar los campos sensibles al conjunto
+        exclude_fields = exclude_fields.union(SENSITIVE_FIELDS)
     
     diff = {}
     
@@ -135,10 +149,19 @@ def entity_to_snapshot(entity: Any, exclude_fields: Optional[Set[str]] = None) -
         exclude_fields: Set de nombres de campos a excluir
     
     Returns:
-        Diccionario con todos los campos de la entidad
+        Diccionario con todos los campos de la entidad (excepto sensibles)
     """
     if exclude_fields is None:
-        exclude_fields = set()
+        # Excluir campos de timestamp y campos sensibles por seguridad
+        exclude_fields = {
+            'fecha_actualizacion', 
+            'updated_at', 
+            'fecha_creacion',
+            'created_at',
+        }.union(SENSITIVE_FIELDS)
+    else:
+        # Si se pasan exclude_fields, agregar los campos sensibles al conjunto
+        exclude_fields = exclude_fields.union(SENSITIVE_FIELDS)
     
     snapshot = {}
     mapper = inspect(entity.__class__)

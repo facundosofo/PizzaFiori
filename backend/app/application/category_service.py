@@ -33,15 +33,12 @@ class CategoryService:
     async def create(
         self,
         categoria_create: CategoriaCreateRequest,
-        user_id: int,
         username: str,
-        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
             self.logger.debug(
                 "Creando categoría",
-                categoria_nombre=categoria_create.nombre,
-                user_id=user_id,
+                categoria_nombre=categoria_create.nombre
             )
             
             async with self.uow as uow:
@@ -100,9 +97,7 @@ class CategoryService:
         self,
         categoria_id: int,
         categoria_update: CategoriaUpdateRequest,
-        user_id: int,
         username: str,
-        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
             async with self.uow as uow:
@@ -149,9 +144,7 @@ class CategoryService:
     async def deactivate(
         self,
         categoria_id: int,
-        user_id: int,
-        username: str,
-        correlation_id: Optional[str] = None,
+        username: str
     ) -> ServiceResult:
         try:
             async with self.uow as uow:

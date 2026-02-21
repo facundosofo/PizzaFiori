@@ -43,11 +43,11 @@ async def register(
     request_obj: Request,
     request: RegisterRequest,
     service: UserService = Depends(Provide[Container.user_service]),
+    current_user: dict = Depends(get_current_user),
 ):
     """Register a new user account."""
-    # Extraer contexto para auditoría
-    correlation_id = getattr(request_obj.state, 'correlation_id', None)
     
+    # El registro siempre requiere autenticación - admin creando el usuario
     result = await service.register_user(
         username=request.username,
         email=request.email,
@@ -55,8 +55,7 @@ async def register(
         first_name=request.first_name,
         last_name=request.last_name,
         role=request.role,
-        created_by_user_id=None,  # Auto-registro
-        created_by_username=None,  # Auto-registro
+        created_by_username=current_user["username"],
     )
 
     if result.error:
@@ -261,17 +260,11 @@ async def update_user(
     """Update user information."""
     # Convert to dict and filter out None values
     update_data = data.model_dump(exclude_unset=True)
-    
-    # Contexto de auditoría
-    updated_by_user_id = admin_user["id"]
-    updated_by_username = admin_user["username"]
-    correlation_id = getattr(request.state, 'correlation_id', None)
-    
+
     result = await service.update_user(
         user_id,
         update_data,
-        updated_by_user_id=updated_by_user_id,
-        updated_by_username=updated_by_username,
+        updated_by_username=admin_user["username"],
     )
 
     if result.error:
@@ -308,15 +301,10 @@ async def delete_user(
     service: UserService = Depends(Provide[Container.user_service]),
 ):
     """Delete a user."""
-    # Contexto de auditoría
-    deleted_by_user_id = admin_user["id"]
-    deleted_by_username = admin_user["username"]
-    correlation_id = getattr(request.state, 'correlation_id', None)
     
     result = await service.delete_user(
         user_id,
-        deleted_by_user_id=deleted_by_user_id,
-        deleted_by_username=deleted_by_username,
+        deleted_by_username=admin_user["username"]
     )
 
     if result.error:
@@ -346,12 +334,17 @@ async def delete_user(
 )
 @inject
 async def unlock_user(
+    request: Request,
     user_id: int,
     admin_user: dict = Depends(require_admin),
     service: UserService = Depends(Provide[Container.user_service]),
 ):
     """Unlock a locked user account."""
-    result = await service.unlock_user_account(user_id)
+    result = await service.unlock_user_account(
+        user_id,
+        unlocked_by_user_id=admin_user["id"],
+        unlocked_by_username=admin_user["username"],
+    )
 
     if result.error:
         logger.warning("Failed to unlock user", user_id=user_id, error=result.error)

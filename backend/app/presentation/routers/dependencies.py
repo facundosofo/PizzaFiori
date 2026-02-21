@@ -4,6 +4,7 @@ Shared dependencies for all routers.
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from typing import Optional
 
 bearer_scheme = HTTPBearer()
 
@@ -20,7 +21,6 @@ def get_current_user(
             detail="Not authenticated",
         )
     return request.state.current_user
-
 
 def require_admin(request: Request) -> dict:
     """Dependency to require admin role (ADMIN)."""

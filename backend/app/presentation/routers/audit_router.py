@@ -13,15 +13,17 @@ from app.containers import Container
 from app.presentation.schemas.audit_schemas import (
     AuditLogResponse,
     AuditHistoryResponse,
-    AuditQueryParams,
     RecentActivityResponse,
-    SaleAuditDetail,
-    UserBasicInfo,
+    SaleAuditDetail
 )
-from app.presentation.routers.dependencies import get_current_user, require_admin
+from app.presentation.routers.dependencies import require_admin
 
 
-router = APIRouter(prefix="/audit", tags=["Audit"])
+router = APIRouter(
+    prefix="/audit",
+    tags=["Audit"],
+    dependencies=[Depends(require_admin)],
+)
 logger = structlog.get_logger(__name__)
 
 
@@ -37,7 +39,6 @@ async def get_entity_history(
     entity_id: int,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    current_user: dict = Depends(get_current_user),
     service: AuditService = Depends(Provide[Container.audit_service]),
 ):
     """
@@ -85,28 +86,27 @@ async def get_entity_history(
 
 
 @router.get(
-    "/user/{user_id}",
+    "/user/{username}",
     response_model=AuditHistoryResponse,
     summary="Get User Actions",
     description="Get all actions performed by a specific user (Admin only)",
 )
 @inject
 async def get_user_actions(
-    user_id: int,
+    username: str,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    admin_user: dict = Depends(require_admin),
     service: AuditService = Depends(Provide[Container.audit_service]),
 ):
     """
     Get all actions performed by a user (Admin only).
     
-    - **user_id**: ID of the user
+    - **username**: Username of the user
     - **limit**: Number of records to return
     - **offset**: Number of records to skip
     """
     result = await service.get_user_actions(
-        user_id=user_id,
+        username=username,
         limit=limit,
         offset=offset,
     )
@@ -114,7 +114,7 @@ async def get_user_actions(
     if result.error:
         logger.error(
             "Error retrieving user actions",
-            user_id=user_id,
+            username=username,
             error=result.error,
         )
         raise HTTPException(
@@ -140,7 +140,6 @@ async def get_user_actions(
 async def get_recent_activity(
     limit: int = Query(100, ge=1, le=500),
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),
-    admin_user: dict = Depends(require_admin),
     service: AuditService = Depends(Provide[Container.audit_service]),
 ):
     """
@@ -179,7 +178,6 @@ async def get_recent_activity(
 @inject
 async def get_sale_history(
     sale_id: int,
-    current_user: dict = Depends(get_current_user),
     service: AuditService = Depends(Provide[Container.audit_service]),
 ):
     """
@@ -220,10 +218,9 @@ async def search_audit_logs(
     start_date: Optional[datetime] = Query(None, description="Start date"),
     end_date: Optional[datetime] = Query(None, description="End date"),
     entity_type: Optional[str] = Query(None, description="Entity type"),
-    user_id: Optional[int] = Query(None, description="User ID"),
+    username: Optional[str] = Query(None, description="Username"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    admin_user: dict = Depends(require_admin),
     service: AuditService = Depends(Provide[Container.audit_service]),
 ):
     """
@@ -232,7 +229,7 @@ async def search_audit_logs(
     - **start_date**: Filter by start date
     - **end_date**: Filter by end date
     - **entity_type**: Filter by entity type
-    - **user_id**: Filter by user who performed the action
+    - **username**: Filter by user who performed the action
     - **limit**: Number of records to return
     - **offset**: Number of records to skip
     """
@@ -261,7 +258,7 @@ async def search_audit_logs(
         start_date=start_date,
         end_date=end_date,
         entity_type=entity_type,
-        user_id=user_id,
+        username=username,
         limit=limit,
         offset=offset,
     )

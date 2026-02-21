@@ -53,7 +53,6 @@ async def create_producto(
     result: ServiceResult = await service.create(
         producto_request,
         image=imagen,
-        user_id=admin_user["id"],
         username=admin_user["username"],
     )
 
@@ -178,7 +177,6 @@ async def update_producto(
         producto_id,
         producto_request,
         image=imagen,
-        user_id=admin_user["id"],
         username=admin_user["username"],
     )
 
@@ -216,7 +214,6 @@ async def deactivate_producto(
     result = await product_service.update(
         producto_id, 
         active=False,
-        user_id=admin_user["id"],
         username=admin_user["username"],
         is_logical_delete=True,
     )

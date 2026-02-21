@@ -37,9 +37,7 @@ class OfferService:
     async def create(
         self, 
         offer_create: OfferCreateRequest,
-        user_id: Optional[int] = None,
         username: Optional[str] = None,
-        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
             self.logger.debug(
@@ -113,7 +111,7 @@ class OfferService:
                 offer = await uow.offer_repo.get_by_id(offer.id)
 
             # Auditar creación (usa su propia transacción)
-            if self.audit_service and user_id:
+            if self.audit_service and username:
                 await self.audit_service.log_creation(
                     username=username,
                     entity_type="Offer",
@@ -181,9 +179,7 @@ class OfferService:
         offer_id: int, 
         offer_update: Optional[OfferUpdateRequest] = None, 
         active: Optional[bool] = None,
-        user_id: Optional[int] = None,
         username: Optional[str] = None,
-        correlation_id: Optional[str] = None,
         is_logical_delete: bool = False,
     ) -> ServiceResult:
         try:
@@ -307,7 +303,7 @@ class OfferService:
                 }
 
             # Auditar actualización con comparación de snapshots
-            if self.audit_service and user_id:
+            if self.audit_service and username:
                 # Si es eliminación lógica, registrar como DELETE con snapshot completo
                 if is_logical_delete:
                     async with self.uow as uow:

@@ -295,7 +295,7 @@ class AuditService:
     
     async def get_user_actions(
         self,
-        user_id: int,
+        username: str,
         limit: int = 50,
         offset: int = 0,
     ) -> AuditServiceResult:
@@ -303,7 +303,7 @@ class AuditService:
         Obtiene todas las acciones realizadas por un usuario.
         
         Args:
-            user_id: ID del usuario
+            username: Username del usuario
             limit: Número máximo de registros
             offset: Número de registros a omitir
         
@@ -312,15 +312,15 @@ class AuditService:
         """
         try:
             async with self.uow as uow:
-                audit_logs = await uow.audit_repo.get_by_user(
-                    user_id=user_id,
+                audit_logs = await uow.audit_repo.get_by_username(
+                    username=username,
                     limit=limit,
                     offset=offset,
                 )
             
             self.logger.debug(
                 "Acciones de usuario obtenidas",
-                user_id=user_id,
+                username=username,
                 records_count=len(audit_logs),
             )
             
@@ -330,7 +330,7 @@ class AuditService:
             self.logger.error(
                 "Error al obtener acciones de usuario",
                 error=str(e),
-                user_id=user_id,
+                username=username,
                 exc_info=True
             )
             return AuditServiceResult(
@@ -384,7 +384,7 @@ class AuditService:
         start_date: datetime,
         end_date: datetime,
         entity_type: Optional[str] = None,
-        user_id: Optional[int] = None,
+        username: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> AuditServiceResult:
@@ -395,7 +395,7 @@ class AuditService:
             start_date: Fecha inicial
             end_date: Fecha final
             entity_type: Filtrar por tipo de entidad (opcional)
-            user_id: Filtrar por usuario (opcional)
+            username: Filtrar por usuario (opcional)
             limit: Número máximo de registros
             offset: Número de registros a omitir
         
@@ -408,7 +408,7 @@ class AuditService:
                     start_date=start_date,
                     end_date=end_date,
                     entity_type=entity_type,
-                    user_id=user_id,
+                    username=username,
                     limit=limit,
                     offset=offset,
                 )

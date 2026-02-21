@@ -59,9 +59,9 @@ class AbstractAuditRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_user(
+    async def get_by_username(
         self,
-        user_id: int,
+        username: str,
         limit: int = 50,
         offset: int = 0,
     ) -> List[AuditLog]:
@@ -69,7 +69,7 @@ class AbstractAuditRepository(ABC):
         Obtiene todas las acciones realizadas por un usuario.
         
         Args:
-            user_id: ID del usuario
+            username: Username del usuario
             limit: Número máximo de registros
             offset: Número de registros a omitir
         
@@ -84,7 +84,7 @@ class AbstractAuditRepository(ABC):
         start_date: datetime,
         end_date: datetime,
         entity_type: Optional[str] = None,
-        user_id: Optional[int] = None,
+        username: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[AuditLog]:
@@ -95,7 +95,7 @@ class AbstractAuditRepository(ABC):
             start_date: Fecha inicial
             end_date: Fecha final
             entity_type: Filtrar por tipo de entidad (opcional)
-            user_id: Filtrar por usuario (opcional)
+            username: Filtrar por usuario (opcional)
             limit: Número máximo de registros
             offset: Número de registros a omitir
         
@@ -126,14 +126,14 @@ class AbstractAuditRepository(ABC):
     async def count(
         self,
         entity_type: Optional[str] = None,
-        user_id: Optional[int] = None,
+        username: Optional[str] = None,
     ) -> int:
         """
         Cuenta el número total de registros de auditoría.
         
         Args:
             entity_type: Filtrar por tipo de entidad (opcional)
-            user_id: Filtrar por usuario (opcional)
+            username: Filtrar por usuario (opcional)
         
         Returns:
             Número total de registros

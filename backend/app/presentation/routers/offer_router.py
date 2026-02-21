@@ -41,7 +41,6 @@ async def create_offer(
 ):
     result: ServiceResult = await service.create(
         offer,
-        user_id=admin_user["id"],
         username=admin_user["username"],
     )
 
@@ -145,7 +144,6 @@ async def update_offer(
     result: ServiceResult = await service.update(
         offer_id, 
         offer_update,
-        user_id=admin_user["id"],
         username=admin_user["username"],
     )
 
@@ -178,7 +176,6 @@ async def deactivate_offer(
     result = await service.update(
         offer_id, 
         active=False,
-        user_id=admin_user["id"],
         username=admin_user["username"],
         is_logical_delete=True,
     )

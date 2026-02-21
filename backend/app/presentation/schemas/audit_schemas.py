@@ -27,16 +27,6 @@ class AuditQueryParams(BaseModel):
 # Response Models - Audit
 # ---------------------------
 
-class UserBasicInfo(BaseModel):
-    """Basic user information for audit logs"""
-    id: int
-    username: str
-    email: str
-    role: str
-    
-    model_config = ConfigDict(from_attributes=True)
-
-
 class AuditLogResponse(BaseModel):
     """Audit log response model"""
     id: int
@@ -84,7 +74,7 @@ class SaleAuditDetail(BaseModel):
     """Detailed audit information specific to sales"""
     audit_id: int
     timestamp: datetime
-    user: UserBasicInfo
+    username: str
     action: str
     sale_id: int
     changes: dict  # Includes basic sale changes
@@ -101,7 +91,7 @@ class SaleAuditDetail(BaseModel):
         return cls(
             audit_id=audit_log.id,
             timestamp=audit_log.timestamp,
-            user=UserBasicInfo.model_validate(audit_log.user),
+            username=audit_log.username,
             action=audit_log.action,
             sale_id=audit_log.entity_id,
             changes={k: v for k, v in changes.items() if k != "items"},

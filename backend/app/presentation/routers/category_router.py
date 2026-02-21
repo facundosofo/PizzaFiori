@@ -30,16 +30,10 @@ async def create_categoria(
     admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    # Extraer contexto para auditoría
-    user_id = admin_user["id"]
-    username = admin_user["username"]
-    correlation_id = getattr(request.state, 'correlation_id', None)
     
     result: ServiceResult = await service.create(
         categoria,
-        user_id=user_id,
-        username=username,
-        correlation_id=correlation_id,
+        username=admin_user["username"],
     )
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
@@ -124,16 +118,10 @@ async def update_categoria(
     admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    user_id = admin_user["id"]
-    username = admin_user["username"]
-    correlation_id = getattr(request.state, 'correlation_id', None)
-    
     result: ServiceResult = await service.update(
         categoria_id,
         categoria,
-        user_id=user_id,
-        username=username,
-        correlation_id=correlation_id,
+        username=admin_user["username"]
     )
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
@@ -157,15 +145,10 @@ async def deactivate_categoria(
     admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    user_id = admin_user["id"]
-    username = admin_user["username"]
-    correlation_id = getattr(request.state, 'correlation_id', None)
-    
+  
     result: ServiceResult = await service.deactivate(
         categoria_id,
-        user_id=user_id,
-        username=username,
-        correlation_id=correlation_id,
+        username=admin_user["username"]
     )
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)

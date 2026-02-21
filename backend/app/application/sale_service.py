@@ -200,9 +200,7 @@ class SaleService:
     async def create(
         self, 
         sale_create: SaleCreateRequest,
-        user_id: Optional[int] = None,
         username: Optional[str] = None,
-        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Crea una nueva venta."""
         try:
@@ -382,7 +380,7 @@ class SaleService:
                 await uow.sale_repo.refresh(sale, attribute_names=["items"])
 
             # Auditar creación (usa su propia transacción)
-            if self.audit_service and user_id:
+            if self.audit_service and username:
                 await self.audit_service.log_creation(
                     username=username,
                     entity_type="Sale",
@@ -543,9 +541,7 @@ class SaleService:
         self, 
         sale_id: int, 
         sale_update,
-        user_id: Optional[int] = None,
         username: Optional[str] = None,
-        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Actualiza una venta existente.
         
@@ -681,7 +677,7 @@ class SaleService:
                 new_sale_dict = sale_to_snapshot(existing_sale)
 
             # Auditar actualización con comparación de snapshots
-            if self.audit_service and user_id:
+            if self.audit_service and username:
                 # Calcular diff manualmente entre snapshots
                 diff = {}
                 
@@ -731,9 +727,7 @@ class SaleService:
     async def delete(
         self, 
         sale_id: int,
-        user_id: Optional[int] = None,
-        username: Optional[str] = None,
-        correlation_id: Optional[str] = None,
+        username: Optional[str] = None
     ) -> ServiceResult:
         """Elimina una venta."""
         try:
@@ -749,7 +743,7 @@ class SaleService:
                     )
 
                 # Auditar eliminación ANTES de borrar (AuditService usa su propia transacción)
-                if self.audit_service and user_id:
+                if self.audit_service and username:
                     await self.audit_service.log_deletion(
                         username=username,
                         entity_type="Sale",
