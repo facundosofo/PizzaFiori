@@ -56,7 +56,7 @@ async def register(
         last_name=request.last_name,
         role=request.role,
         created_by_user_id=None,  # Auto-registro
-        correlation_id=correlation_id,
+        created_by_username=None,  # Auto-registro
     )
 
     if result.error:
@@ -264,13 +264,14 @@ async def update_user(
     
     # Contexto de auditoría
     updated_by_user_id = admin_user["id"]
+    updated_by_username = admin_user["username"]
     correlation_id = getattr(request.state, 'correlation_id', None)
     
     result = await service.update_user(
         user_id,
         update_data,
         updated_by_user_id=updated_by_user_id,
-        correlation_id=correlation_id,
+        updated_by_username=updated_by_username,
     )
 
     if result.error:
@@ -309,12 +310,13 @@ async def delete_user(
     """Delete a user."""
     # Contexto de auditoría
     deleted_by_user_id = admin_user["id"]
+    deleted_by_username = admin_user["username"]
     correlation_id = getattr(request.state, 'correlation_id', None)
     
     result = await service.delete_user(
         user_id,
         deleted_by_user_id=deleted_by_user_id,
-        correlation_id=correlation_id,
+        deleted_by_username=deleted_by_username,
     )
 
     if result.error:

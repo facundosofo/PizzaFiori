@@ -34,6 +34,7 @@ class CategoryService:
         self,
         categoria_create: CategoriaCreateRequest,
         user_id: int,
+        username: str,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
@@ -57,10 +58,9 @@ class CategoryService:
                 # Auditar creación
                 if self.audit_service:
                     await self.audit_service.log_creation(
-                        user_id=user_id,
+                        username=username,
                         entity_type="Category",
                         entity=categoria,
-                        correlation_id=correlation_id,
                     )
 
                 self.logger.debug(
@@ -101,6 +101,7 @@ class CategoryService:
         categoria_id: int,
         categoria_update: CategoriaUpdateRequest,
         user_id: int,
+        username: str,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
@@ -132,11 +133,10 @@ class CategoryService:
                     old_cat = CategoryModel(**old_categoria_dict)
                     
                     await self.audit_service.log_update(
-                        user_id=user_id,
+                        username=username,
                         entity_type="Category",
                         old_entity=old_cat,
                         new_entity=categoria,
-                        correlation_id=correlation_id,
                     )
                 
                 # Invalidate category cache on write (selective)
@@ -150,6 +150,7 @@ class CategoryService:
         self,
         categoria_id: int,
         user_id: int,
+        username: str,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
@@ -182,10 +183,9 @@ class CategoryService:
                 # Auditar desactivación como DELETE lógico
                 if self.audit_service and old_activo != categoria.activo:
                     await self.audit_service.log_deletion(
-                        user_id=user_id,
+                        username=username,
                         entity_type="Category",
                         entity=categoria,
-                        correlation_id=correlation_id,
                     )
                 
                 self.logger.info(

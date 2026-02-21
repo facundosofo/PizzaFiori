@@ -15,23 +15,21 @@ class AbstractAuditRepository(ABC):
     @abstractmethod
     async def log_action(
         self,
-        user_id: int,
+        username: str,
         entity_type: str,
         entity_id: int,
         action: str,
         changes: dict,
-        correlation_id: Optional[str] = None,
     ) -> AuditLog:
         """
         Registra una acción de auditoría.
         
         Args:
-            user_id: ID del usuario que realizó la acción
+            username: Nombre de usuario que realizó la acción
             entity_type: Tipo de entidad (Product, User, Sale, etc.)
             entity_id: ID de la entidad afectada
             action: Acción realizada (CREATE, UPDATE, DELETE)
             changes: Diccionario con los cambios (formato: {"field": {"old": val, "new": val}})
-            correlation_id: ID de correlación del request HTTP (opcional)
         
         Returns:
             AuditLog creado

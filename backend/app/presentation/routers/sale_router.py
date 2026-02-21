@@ -40,7 +40,7 @@ async def create_sale(
     result: ServiceResult = await service.create(
         sale,
         user_id=current_user["id"],
-        correlation_id=getattr(request.state, "correlation_id", None),
+        username=current_user["username"],
     )
 
     if result.error:
@@ -166,7 +166,7 @@ async def delete_sale(
     result: ServiceResult = await service.delete(
         sale_id,
         user_id=admin_user["id"],
-        correlation_id=getattr(request.state, "correlation_id", None),
+        username=admin_user["username"],
     )
 
     if result.error:

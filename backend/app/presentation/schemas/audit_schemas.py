@@ -15,7 +15,7 @@ class AuditQueryParams(BaseModel):
     """Parameters for querying audit logs"""
     entity_type: Optional[str] = Field(None, description="Filter by entity type (Product, User, Sale, etc.)")
     entity_id: Optional[int] = Field(None, description="Filter by specific entity ID")
-    user_id: Optional[int] = Field(None, description="Filter by user who performed the action")
+    username: Optional[str] = Field(None, description="Filter by username who performed the action")
     action: Optional[str] = Field(None, description="Filter by action (CREATE, UPDATE, DELETE)")
     date_from: Optional[datetime] = Field(None, description="Filter by start date")
     date_to: Optional[datetime] = Field(None, description="Filter by end date")
@@ -41,13 +41,11 @@ class AuditLogResponse(BaseModel):
     """Audit log response model"""
     id: int
     timestamp: datetime
-    user_id: int
-    user: UserBasicInfo  # Information about who performed the action
+    username: str  # Username del usuario que realizó la acción
     entity_type: str
     entity_id: int
     action: str  # CREATE, UPDATE, DELETE
     changes: dict  # JSON field with change details
-    correlation_id: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 

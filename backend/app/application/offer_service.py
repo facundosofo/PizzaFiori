@@ -38,6 +38,7 @@ class OfferService:
         self, 
         offer_create: OfferCreateRequest,
         user_id: Optional[int] = None,
+        username: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
@@ -114,10 +115,12 @@ class OfferService:
             # Auditar creación (usa su propia transacción)
             if self.audit_service and user_id:
                 await self.audit_service.log_creation(
-                    user_id=user_id,
+                    username=username,
                     entity_type="Offer",
                     entity=offer,
-
+                )
+            
+            self.logger.info(
                 "Oferta creada exitosamente",
                 offer_id=offer.id,
                 nombre=offer.nombre,
@@ -179,6 +182,7 @@ class OfferService:
         offer_update: Optional[OfferUpdateRequest] = None, 
         active: Optional[bool] = None,
         user_id: Optional[int] = None,
+        username: Optional[str] = None,
         correlation_id: Optional[str] = None,
         is_logical_delete: bool = False,
     ) -> ServiceResult:
@@ -308,12 +312,11 @@ class OfferService:
                 if is_logical_delete:
                     async with self.uow as uow:
                         await uow.audit_repo.log_action(
-                            user_id=user_id,
+                            username=username,
                             entity_type="Offer",
                             entity_id=offer.id,
                             action="DELETE",
                             changes={"old": old_offer_snapshot},
-                            correlation_id=correlation_id,
                         )
                         await uow.commit()
                 else:
@@ -337,12 +340,11 @@ class OfferService:
                     if diff:
                         async with self.uow as uow:
                             await uow.audit_repo.log_action(
-                                user_id=user_id,
+                                username=username,
                                 entity_type="Offer",
                                 entity_id=offer.id,
                                 action="UPDATE",
                                 changes=diff,
-                                correlation_id=correlation_id,
                             )
                             await uow.commit()
 

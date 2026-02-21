@@ -17,8 +17,7 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=datetime.now, nullable=False, index=True)
     
     # Quién realizó la acción
-    user_id = Column(Integer, ForeignKey("Usuarios.id"), nullable=False, index=True)
-    user = relationship("User", foreign_keys=[user_id])
+    username = Column(String(100), nullable=False)  # Username guardado para referencia permanente
     
     # Sobre qué entidad
     entity_type = Column(String(50), nullable=False, index=True)  # "Product", "User", "Sale", etc.
@@ -30,13 +29,10 @@ class AuditLog(Base):
     # Qué cambió (diff completo: old/new values)
     changes = Column(JSONB, nullable=False)
     
-    # Contexto adicional
-    correlation_id = Column(String(36), nullable=True, index=True)  # UUID del request
-    
     # Índices compuestos para optimizar queries comunes
     __table_args__ = (
         Index('ix_audit_entity_timestamp', 'entity_type', 'entity_id', 'timestamp'),
-        Index('ix_audit_user_timestamp', 'user_id', 'timestamp'),
+        Index('ix_audit_username_timestamp', 'username', 'timestamp'),
         Index('ix_audit_timestamp_desc', timestamp.desc()),
     )
 

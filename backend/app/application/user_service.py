@@ -76,6 +76,7 @@ class UserService:
         last_name: str,
         role: str = "USER",
         created_by_user_id: Optional[int] = None,  # Para auditoría
+        created_by_username: Optional[str] = None,  # Username del creador
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """
@@ -143,12 +144,11 @@ class UserService:
 
                 # Auditar creación (usar el ID del usuario que lo creó, o el mismo si es auto-registro)
                 if self.audit_service:
-                    audit_user_id = created_by_user_id if created_by_user_id else user.id
-await self.audit_service.log_creation(
-                    user_id=audit_user_id,
-                    entity_type="User",
-                    entity=user,
-                        correlation_id=correlation_id,
+                    audit_username = created_by_username if created_by_username else username
+                    await self.audit_service.log_creation(
+                        username=audit_username,
+                        entity_type="User",
+                        entity=user,
                     )
 
                 self.logger.info(
@@ -296,6 +296,7 @@ await self.audit_service.log_creation(
         user_id: int,
         data: dict,
         updated_by_user_id: int,
+        updated_by_username: str,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Update user information."""
@@ -340,11 +341,14 @@ await self.audit_service.log_creation(
                     old_user = UserModel(**old_user_dict)
                     
                     await self.audit_service.log_update(
-                        user_id=updated_by_user_id,
+                        username=updated_by_username,
                         entity_type="User",
                         old_entity=old_user,
                         new_entity=user,
+                    )
 
+                self.logger.info(
+                    "User updated successfully",
                     user_id=user.id,
                 )
 
@@ -403,6 +407,7 @@ await self.audit_service.log_creation(
         self,
         user_id: int,
         deleted_by_user_id: int,
+        deleted_by_username: str,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Delete a user."""
@@ -416,10 +421,12 @@ await self.audit_service.log_creation(
                 # Auditar antes de eliminar
                 if self.audit_service:
                     await self.audit_service.log_deletion(
-                        user_id=deleted_by_user_id,
+                        username=deleted_by_username,
                         entity_type="User",
                         entity=user,
+                    )
 
+                await uow.users.delete(user_id)
                 await uow.commit()
 
                 self.logger.info(

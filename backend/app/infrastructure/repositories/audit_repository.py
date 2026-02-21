@@ -25,23 +25,21 @@ class SqlAlchemyAuditRepository(
 
     async def log_action(
         self,
-        user_id: int,
+        username: str,
         entity_type: str,
         entity_id: int,
         action: str,
         changes: dict,
-        correlation_id: Optional[str] = None,
     ) -> AuditLog:
         """
         Registra una acción de auditoría en la base de datos.
         """
         audit_log = AuditLog(
-            user_id=user_id,
+            username=username,
             entity_type=entity_type,
             entity_id=entity_id,
             action=action,
             changes=changes,
-            correlation_id=correlation_id,
             timestamp=datetime.now(),
         )
         

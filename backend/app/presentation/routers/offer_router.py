@@ -42,7 +42,7 @@ async def create_offer(
     result: ServiceResult = await service.create(
         offer,
         user_id=admin_user["id"],
-        correlation_id=getattr(request.state, "correlation_id", None),
+        username=admin_user["username"],
     )
 
     if result.error:
@@ -146,7 +146,7 @@ async def update_offer(
         offer_id, 
         offer_update,
         user_id=admin_user["id"],
-        correlation_id=getattr(request.state, "correlation_id", None),
+        username=admin_user["username"],
     )
 
     if result.error:
@@ -179,7 +179,7 @@ async def deactivate_offer(
         offer_id, 
         active=False,
         user_id=admin_user["id"],
-        correlation_id=getattr(request.state, "correlation_id", None),
+        username=admin_user["username"],
         is_logical_delete=True,
     )
     

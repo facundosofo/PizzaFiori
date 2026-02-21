@@ -44,19 +44,17 @@ class AuditService:
     
     async def log_creation(
         self,
-        user_id: int,
+        username: str,
         entity_type: str,
         entity: Any,
-        correlation_id: Optional[str] = None,
     ) -> AuditServiceResult:
         """
         Registra la creación de una entidad.
         
         Args:
-            user_id: ID del usuario que creó la entidad
+            username: Username del usuario (para referencia permanente)
             entity_type: Tipo de entidad (Product, User, Sale, etc.)
             entity: Instancia de la entidad creada
-            correlation_id: ID de correlación del request (opcional)
         
         Returns:
             AuditServiceResult con el log de auditoría creado
@@ -79,19 +77,17 @@ class AuditService:
             
             async with self.uow as uow:
                 audit_log = await uow.audit_repo.log_action(
-                    user_id=user_id,
+                    username=username,
                     entity_type=entity_type,
                     entity_id=entity_id,
                     action="CREATE",
                     changes=changes,
-                    correlation_id=correlation_id,
                 )
                 await uow.commit()
             
             self.logger.info(
                 "Auditoría de creación registrada",
                 audit_id=audit_log.id,
-                user_id=user_id,
                 entity_type=entity_type,
                 entity_id=entity_id,
             )
@@ -102,7 +98,6 @@ class AuditService:
             self.logger.error(
                 "Error al registrar auditoría de creación",
                 error=str(e),
-                user_id=user_id,
                 entity_type=entity_type,
                 exc_info=True
             )
@@ -113,21 +108,19 @@ class AuditService:
     
     async def log_update(
         self,
-        user_id: int,
+        username: str,
         entity_type: str,
         old_entity: Any,
         new_entity: Any,
-        correlation_id: Optional[str] = None,
     ) -> AuditServiceResult:
         """
         Registra la actualización de una entidad.
         
         Args:
-            user_id: ID del usuario que actualizó la entidad
+            username: Username del usuario (para referencia permanente)
             entity_type: Tipo de entidad
             old_entity: Instancia anterior de la entidad (antes del cambio)
             new_entity: Instancia nueva de la entidad (después del cambio)
-            correlation_id: ID de correlación del request (opcional)
         
         Returns:
             AuditServiceResult con el log de auditoría creado
@@ -143,7 +136,6 @@ class AuditService:
             if not diff:
                 self.logger.debug(
                     "No hay cambios para auditar",
-                    user_id=user_id,
                     entity_type=entity_type,
                 )
                 return AuditServiceResult(value=None, status_code=200)
@@ -157,19 +149,17 @@ class AuditService:
             
             async with self.uow as uow:
                 audit_log = await uow.audit_repo.log_action(
-                    user_id=user_id,
+                    username=username,
                     entity_type=entity_type,
                     entity_id=entity_id,
                     action="UPDATE",
                     changes=diff,
-                    correlation_id=correlation_id,
                 )
                 await uow.commit()
             
             self.logger.info(
                 "Auditoría de actualización registrada",
                 audit_id=audit_log.id,
-                user_id=user_id,
                 entity_type=entity_type,
                 entity_id=entity_id,
                 fields_changed=list(diff.keys()),
@@ -181,7 +171,6 @@ class AuditService:
             self.logger.error(
                 "Error al registrar auditoría de actualización",
                 error=str(e),
-                user_id=user_id,
                 entity_type=entity_type,
                 exc_info=True
             )
@@ -192,19 +181,17 @@ class AuditService:
     
     async def log_deletion(
         self,
-        user_id: int,
+        username: str,
         entity_type: str,
         entity: Any,
-        correlation_id: Optional[str] = None,
     ) -> AuditServiceResult:
         """
         Registra la eliminación de una entidad.
         
         Args:
-            user_id: ID del usuario que eliminó la entidad
+            username: Username del usuario (para referencia permanente)
             entity_type: Tipo de entidad
             entity: Instancia de la entidad antes de ser eliminada
-            correlation_id: ID de correlación del request (opcional)
         
         Returns:
             AuditServiceResult con el log de auditoría creado
@@ -227,19 +214,17 @@ class AuditService:
             
             async with self.uow as uow:
                 audit_log = await uow.audit_repo.log_action(
-                    user_id=user_id,
+                    username=username,
                     entity_type=entity_type,
                     entity_id=entity_id,
                     action="DELETE",
                     changes=changes,
-                    correlation_id=correlation_id,
                 )
                 await uow.commit()
             
             self.logger.info(
                 "Auditoría de eliminación registrada",
                 audit_id=audit_log.id,
-                user_id=user_id,
                 entity_type=entity_type,
                 entity_id=entity_id,
             )
@@ -250,7 +235,6 @@ class AuditService:
             self.logger.error(
                 "Error al registrar auditoría de eliminación",
                 error=str(e),
-                user_id=user_id,
                 entity_type=entity_type,
                 exc_info=True
             )
