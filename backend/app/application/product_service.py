@@ -25,18 +25,23 @@ class ProductService:
         uow: AbstractUnitOfWork, 
         file_service: FileService,
         cache_service: CacheService,
+        audit_service=None,  # Optional for backward compatibility
         logger: structlog.BoundLogger | None = None
     ):
         self.uow = uow
         self.file_service = file_service
         self.cache_service = cache_service
+        self.audit_service = audit_service
         self.logger = logger or structlog.get_logger(__name__)
 
 
     async def create(
         self,
         producto_create: ProductoCreateRequest,
-        image: Optional[UploadFile] = None
+        image: Optional[UploadFile] = None,
+        user_id: Optional[int] = None,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
 
         ruta_imagen = None
@@ -46,7 +51,8 @@ class ProductService:
                 "Creando producto",
                 producto_nombre=producto_create.nombre,
                 categoria_id=producto_create.categoria_id,
-                tiene_imagen=image is not None
+                tiene_imagen=image is not None,
+                user_id=user_id,
             )
             
             if image:
@@ -84,7 +90,17 @@ class ProductService:
 
                 await uow.product_repo.add(producto)
                 await uow.commit()
-                await uow.product_repo.refresh(producto, attribute_names=["precios"])
+                producto = await uow.product_repo.get_by_id(producto.id)
+
+            # Auditar creación (usa su propia transacción)
+            if self.audit_service and user_id:
+                await self.audit_service.log_creation(
+                    user_id=user_id,
+                    entity_type="Product",
+                    entity=producto,
+                    ip_address=ip_address,
+                    correlation_id=correlation_id,
+                )
 
             self.logger.debug(
                 "Producto creado exitosamente",
@@ -140,7 +156,10 @@ class ProductService:
         producto_id: int,
         producto_update: Optional[ProductoUpdateRequest] = None,
         image: Optional[UploadFile] = None,
-        active: Optional[bool] = None
+        active: Optional[bool] = None,
+        user_id: Optional[int] = None,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
 
         ruta_imagen_nueva = None
@@ -151,6 +170,26 @@ class ProductService:
 
                 if not producto:
                     return ServiceResult(error="Producto no encontrado", status_code=404)
+
+                # Capturar estado anterior completo para auditoría (incluyendo precios)
+                from copy import deepcopy
+                old_producto_snapshot = {
+                    'id': producto.id,
+                    'sku': producto.sku,
+                    'nombre': producto.nombre,
+                    'categoria_id': producto.categoria_id,
+                    'imagen': producto.imagen,
+                    'activo': producto.activo,
+                    'fecha_creacion': producto.fecha_creacion,
+                    'fecha_actualizacion': producto.fecha_actualizacion,
+                    'precios': [
+                        {
+                            'cantidad': p.cantidad,
+                            'precio': float(p.precio) if p.precio else 0.0
+                        }
+                        for p in (producto.precios or [])
+                    ]
+                }
 
                 ruta_imagen_vieja = producto.imagen
 
@@ -182,17 +221,69 @@ class ProductService:
 
                 producto.fecha_actualizacion = datetime.now()
                 await uow.commit()
-                
-                if producto_update and producto_update.precios is not None:
-                    await uow.product_repo.refresh(producto, attribute_names=["precios"])
 
-                if image and ruta_imagen_vieja:
-                    self.file_service.delete_file(ruta_imagen_vieja)
-
-                # Invalidate product cache on write (selective)
-                self.cache_service.invalidate('producto_*')
+            # Recargar el producto con las relaciones actualizadas (fuera de la transacción anterior)
+            async with self.uow as uow:
+                producto = await uow.product_repo.get_by_id(producto_id)
                 
-                return ServiceResult(value=producto)
+                # Capturar nuevo estado para comparación
+                new_producto_snapshot = {
+                    'id': producto.id,
+                    'sku': producto.sku,
+                    'nombre': producto.nombre,
+                    'categoria_id': producto.categoria_id,
+                    'imagen': producto.imagen,
+                    'activo': producto.activo,
+                    'fecha_creacion': producto.fecha_creacion,
+                    'fecha_actualizacion': producto.fecha_actualizacion,
+                    'precios': [
+                        {
+                            'cantidad': p.cantidad,
+                            'precio': float(p.precio) if p.precio else 0.0
+                        }
+                        for p in (producto.precios or [])
+                    ]
+                }
+
+            # Auditar actualización con comparación de snapshots
+            if self.audit_service and user_id:
+                # Calcular diff manualmente
+                diff = {}
+                
+                # Comparar campos simples
+                for key in ['nombre', 'categoria_id', 'imagen', 'activo', 'sku']:
+                    old_val = old_producto_snapshot.get(key)
+                    new_val = new_producto_snapshot.get(key)
+                    if old_val != new_val:
+                        diff[key] = {"old": old_val, "new": new_val}
+                
+                # Comparar precios
+                old_precios = old_producto_snapshot.get('precios', [])
+                new_precios = new_producto_snapshot.get('precios', [])
+                if old_precios != new_precios:
+                    diff['precios'] = {"old": old_precios, "new": new_precios}
+                
+                # Solo registrar si hay cambios
+                if diff:
+                    async with self.uow as uow:
+                        await uow.audit_repo.log_action(
+                            user_id=user_id,
+                            entity_type="Product",
+                            entity_id=producto.id,
+                            action="UPDATE",
+                            changes=diff,
+                            ip_address=ip_address,
+                            correlation_id=correlation_id,
+                        )
+                        await uow.commit()
+
+            if image and ruta_imagen_vieja:
+                self.file_service.delete_file(ruta_imagen_vieja)
+
+            # Invalidate product cache on write (selective)
+            self.cache_service.invalidate('producto_*')
+            
+            return ServiceResult(value=producto)
 
         except Exception as e:
             if ruta_imagen_nueva:

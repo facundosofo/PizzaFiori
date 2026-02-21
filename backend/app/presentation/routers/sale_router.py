@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Query, Request
 from fastapi.responses import Response
 from dependency_injector.wiring import inject, Provide
 from typing import List
@@ -32,10 +32,17 @@ router = APIRouter(
 )
 @inject
 async def create_sale(
+    request: Request,
     sale: SaleCreateRequest,
+    current_user: dict = Depends(get_current_user),
     service: SaleService = Depends(Provide[Container.sale_service]),
 ):
-    result: ServiceResult = await service.create(sale)
+    result: ServiceResult = await service.create(
+        sale,
+        user_id=current_user["id"],
+        ip_address=request.client.host if request.client else None,
+        correlation_id=getattr(request.state, "correlation_id", None),
+    )
 
     if result.error:
         raise HTTPException(
@@ -117,12 +124,19 @@ async def get_sale(
 )
 @inject
 async def update_sale(
+    request: Request,
     sale_update: SaleUpdateRequest,
     sale_id: int = Path(..., ge=1, description="ID único de la venta"),
     admin_user: dict = Depends(require_admin),
     service: SaleService = Depends(Provide[Container.sale_service]),
 ):
-    result: ServiceResult = await service.update(sale_id, sale_update)
+    result: ServiceResult = await service.update(
+        sale_id, 
+        sale_update,
+        user_id=admin_user["id"],
+        ip_address=request.client.host if request.client else None,
+        correlation_id=getattr(request.state, "correlation_id", None),
+    )
 
     if result.error:
         raise HTTPException(
@@ -145,11 +159,17 @@ async def update_sale(
 )
 @inject
 async def delete_sale(
+    request: Request,
     sale_id: int = Path(..., ge=1, description="ID único de la venta"),
     admin_user: dict = Depends(require_admin),
     service: SaleService = Depends(Provide[Container.sale_service]),
 ):
-    result: ServiceResult = await service.delete(sale_id)
+    result: ServiceResult = await service.delete(
+        sale_id,
+        user_id=admin_user["id"],
+        ip_address=request.client.host if request.client else None,
+        correlation_id=getattr(request.state, "correlation_id", None),
+    )
 
     if result.error:
         raise HTTPException(

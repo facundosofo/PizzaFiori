@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
+from datetime import datetime
 import structlog
 
 from app.domain.models.category import Category
@@ -21,27 +22,48 @@ class CategoryService:
         self, 
         uow: AbstractUnitOfWork,
         cache_service: CacheService,
+        audit_service=None,  # Optional for backward compatibility
         logger: structlog.BoundLogger | None = None
     ):
         self.uow = uow
         self.cache_service = cache_service
+        self.audit_service = audit_service
         self.logger = logger or structlog.get_logger(__name__)
 
-    async def create(self, categoria_create: CategoriaCreateRequest) -> ServiceResult:
+    async def create(
+        self,
+        categoria_create: CategoriaCreateRequest,
+        user_id: int,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
+    ) -> ServiceResult:
         try:
             self.logger.debug(
                 "Creando categoría",
-                categoria_nombre=categoria_create.nombre
+                categoria_nombre=categoria_create.nombre,
+                user_id=user_id,
             )
             
             async with self.uow as uow:
                 categoria = Category(
                     nombre=categoria_create.nombre,
+                    fecha_creacion=datetime.now(),
+                    fecha_actualizacion=datetime.now(),
                 )
 
                 await uow.category_repo.add(categoria)
                 await uow.commit()
                 await uow.category_repo.refresh(categoria)
+
+                # Auditar creación
+                if self.audit_service:
+                    await self.audit_service.log_creation(
+                        user_id=user_id,
+                        entity_type="Category",
+                        entity=categoria,
+                        ip_address=ip_address,
+                        correlation_id=correlation_id,
+                    )
 
                 self.logger.debug(
                     "Categoría creada exitosamente",
@@ -80,6 +102,9 @@ class CategoryService:
         self,
         categoria_id: int,
         categoria_update: CategoriaUpdateRequest,
+        user_id: int,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
             async with self.uow as uow:
@@ -87,12 +112,36 @@ class CategoryService:
                 if not categoria:
                     return ServiceResult(error="Categoría no encontrada", status_code=404)
 
+                # Capturar estado anterior para auditoría
+                from copy import deepcopy
+                old_categoria_dict = {
+                    'id': categoria.id,
+                    'nombre': categoria.nombre,
+                    'activo': categoria.activo,
+                }
+
                 for var, value in vars(categoria_update).items():
                     if value is not None:
                         setattr(categoria, var, value)
 
+                categoria.fecha_actualizacion = datetime.now()
                 await uow.commit()
                 await uow.category_repo.refresh(categoria)
+
+                # Auditar actualización
+                if self.audit_service:
+                    # Crear objeto temporal para el diff
+                    from app.domain.models.category import Category as CategoryModel
+                    old_cat = CategoryModel(**old_categoria_dict)
+                    
+                    await self.audit_service.log_update(
+                        user_id=user_id,
+                        entity_type="Category",
+                        old_entity=old_cat,
+                        new_entity=categoria,
+                        ip_address=ip_address,
+                        correlation_id=correlation_id,
+                    )
                 
                 # Invalidate category cache on write (selective)
                 self.cache_service.invalidate('categoria_*')
@@ -101,12 +150,21 @@ class CategoryService:
         except Exception as e:
             return ServiceResult(error=str(e), status_code=400)
 
-    async def deactivate(self, categoria_id: int) -> ServiceResult:
+    async def deactivate(
+        self,
+        categoria_id: int,
+        user_id: int,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
+    ) -> ServiceResult:
         try:
             async with self.uow as uow:
                 categoria = await uow.category_repo.get_by_id(categoria_id)
                 if not categoria:
                     return ServiceResult(error="Categoría no encontrada", status_code=404)
+
+                # Capturar estado anterior
+                old_activo = categoria.activo
 
                 # Obtener productos activos de la categoría
                 productos = await uow.product_repo.list(categoria_id=categoria_id, active=True)
@@ -122,8 +180,27 @@ class CategoryService:
                 
                 # Desactivar la categoría
                 categoria.activo = False
+                categoria.fecha_actualizacion = datetime.now()
                 await uow.commit()
                 await uow.category_repo.refresh(categoria)
+
+                # Auditar desactivación
+                if self.audit_service and old_activo != categoria.activo:
+                    from app.domain.models.category import Category as CategoryModel
+                    old_cat = CategoryModel(
+                        id=categoria.id,
+                        nombre=categoria.nombre,
+                        activo=old_activo,
+                    )
+                    
+                    await self.audit_service.log_update(
+                        user_id=user_id,
+                        entity_type="Category",
+                        old_entity=old_cat,
+                        new_entity=categoria,
+                        ip_address=ip_address,
+                        correlation_id=correlation_id,
+                    )
                 
                 self.logger.info(
                     "Categoría desactivada en cascada",

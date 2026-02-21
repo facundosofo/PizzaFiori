@@ -40,10 +40,15 @@ logger = get_logger(__name__)
 )
 @inject
 async def register(
+    request_obj: Request,
     request: RegisterRequest,
     service: UserService = Depends(Provide[Container.user_service]),
 ):
     """Register a new user account."""
+    # Extraer IP para auditoría
+    ip_address = request_obj.client.host if request_obj.client else None
+    correlation_id = getattr(request_obj.state, 'correlation_id', None)
+    
     result = await service.register_user(
         username=request.username,
         email=request.email,
@@ -51,6 +56,9 @@ async def register(
         first_name=request.first_name,
         last_name=request.last_name,
         role=request.role,
+        created_by_user_id=None,  # Auto-registro
+        ip_address=ip_address,
+        correlation_id=correlation_id,
     )
 
     if result.error:
@@ -246,6 +254,7 @@ async def get_user_details(
 )
 @inject
 async def update_user(
+    request: Request,
     user_id: int,
     data: UpdateUserRequest,
     admin_user: dict = Depends(require_admin),
@@ -254,7 +263,19 @@ async def update_user(
     """Update user information."""
     # Convert to dict and filter out None values
     update_data = data.model_dump(exclude_unset=True)
-    result = await service.update_user(user_id, update_data)
+    
+    # Contexto de auditoría
+    updated_by_user_id = admin_user["id"]
+    ip_address = request.client.host if request.client else None
+    correlation_id = getattr(request.state, 'correlation_id', None)
+    
+    result = await service.update_user(
+        user_id,
+        update_data,
+        updated_by_user_id=updated_by_user_id,
+        ip_address=ip_address,
+        correlation_id=correlation_id,
+    )
 
     if result.error:
         logger.warning("Failed to update user", user_id=user_id, error=result.error)
@@ -284,12 +305,23 @@ async def update_user(
 )
 @inject
 async def delete_user(
+    request: Request,
     user_id: int,
     admin_user: dict = Depends(require_admin),
     service: UserService = Depends(Provide[Container.user_service]),
 ):
     """Delete a user."""
-    result = await service.delete_user(user_id)
+    # Contexto de auditoría
+    deleted_by_user_id = admin_user["id"]
+    ip_address = request.client.host if request.client else None
+    correlation_id = getattr(request.state, 'correlation_id', None)
+    
+    result = await service.delete_user(
+        user_id,
+        deleted_by_user_id=deleted_by_user_id,
+        ip_address=ip_address,
+        correlation_id=correlation_id,
+    )
 
     if result.error:
         logger.warning("Failed to delete user", user_id=user_id, error=result.error)

@@ -38,9 +38,11 @@ class UserService:
     def __init__(
         self,
         uow: AbstractUnitOfWork,
+        audit_service=None,  # Optional for backward compatibility
         logger: structlog.BoundLogger | None = None,
     ):
         self.uow = uow
+        self.audit_service = audit_service
         self.logger = logger or structlog.get_logger(__name__)
         self.settings = settings
 
@@ -73,6 +75,9 @@ class UserService:
         first_name: str,
         last_name: str,
         role: str = "USER",
+        created_by_user_id: Optional[int] = None,  # Para auditoría
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """
         Register a new user.
@@ -84,6 +89,9 @@ class UserService:
             first_name: User's first name
             last_name: User's last name
             role: User role (default: USER)
+            created_by_user_id: ID of user creating this user (for audit)
+            ip_address: IP address (for audit)
+            correlation_id: Correlation ID (for audit)
 
         Returns:
             ServiceResult with created user or error
@@ -134,6 +142,17 @@ class UserService:
                 await uow.users.add(user)
                 await uow.commit()
                 await uow.users.refresh(user)
+
+                # Auditar creación (usar el ID del usuario que lo creó, o el mismo si es auto-registro)
+                if self.audit_service:
+                    audit_user_id = created_by_user_id if created_by_user_id else user.id
+                    await self.audit_service.log_creation(
+                        user_id=audit_user_id,
+                        entity_type="User",
+                        entity=user,
+                        ip_address=ip_address,
+                        correlation_id=correlation_id,
+                    )
 
                 self.logger.info(
                     "User registered successfully",
@@ -275,7 +294,14 @@ class UserService:
             self.logger.exception("Error getting users", exc_info=True)
             return ServiceResult(error=str(e), status_code=500)
 
-    async def update_user(self, user_id: int, data: dict) -> ServiceResult:
+    async def update_user(
+        self,
+        user_id: int,
+        data: dict,
+        updated_by_user_id: int,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
+    ) -> ServiceResult:
         """Update user information."""
         try:
             async with self.uow as uow:
@@ -283,6 +309,20 @@ class UserService:
 
                 if not user:
                     return ServiceResult(error="User not found", status_code=404)
+
+                # Capturar estado anterior
+                old_user_dict = {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'role': user.role,
+                    'failed_login_attempts': user.failed_login_attempts,
+                    'locked_until': user.locked_until,
+                    'created_at': user.created_at,
+                    'updated_at': user.updated_at,
+                }
 
                 # Update allowed fields
                 allowed_fields = {
@@ -297,6 +337,20 @@ class UserService:
                 await uow.users.update(user)
                 await uow.commit()
                 await uow.users.refresh(user)
+
+                # Auditar actualización
+                if self.audit_service:
+                    from app.domain.models.user import User as UserModel
+                    old_user = UserModel(**old_user_dict)
+                    
+                    await self.audit_service.log_update(
+                        user_id=updated_by_user_id,
+                        entity_type="User",
+                        old_entity=old_user,
+                        new_entity=user,
+                        ip_address=ip_address,
+                        correlation_id=correlation_id,
+                    )
 
                 self.logger.info(
                     "User updated successfully",
@@ -354,7 +408,13 @@ class UserService:
             await self.uow.rollback()
             return ServiceResult(error=str(e), status_code=500)
 
-    async def delete_user(self, user_id: int) -> ServiceResult:
+    async def delete_user(
+        self,
+        user_id: int,
+        deleted_by_user_id: int,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
+    ) -> ServiceResult:
         """Delete a user."""
         try:
             async with self.uow as uow:
@@ -362,6 +422,16 @@ class UserService:
 
                 if not user:
                     return ServiceResult(error="User not found", status_code=404)
+
+                # Auditar antes de eliminar
+                if self.audit_service:
+                    await self.audit_service.log_deletion(
+                        user_id=deleted_by_user_id,
+                        entity_type="User",
+                        entity=user,
+                        ip_address=ip_address,
+                        correlation_id=correlation_id,
+                    )
 
                 await uow.users.delete(user)
                 await uow.commit()

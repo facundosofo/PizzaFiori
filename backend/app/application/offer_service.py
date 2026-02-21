@@ -26,13 +26,21 @@ class OfferService:
         self,
         uow: AbstractUnitOfWork,
         cache_service: CacheService,
+        audit_service=None,
         logger: structlog.BoundLogger | None = None,
     ):
         self.uow = uow
         self.cache_service = cache_service
+        self.audit_service = audit_service
         self.logger = logger or structlog.get_logger(__name__)
 
-    async def create(self, offer_create: OfferCreateRequest) -> ServiceResult:
+    async def create(
+        self, 
+        offer_create: OfferCreateRequest,
+        user_id: Optional[int] = None,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
+    ) -> ServiceResult:
         try:
             self.logger.debug(
                 "Creando oferta",
@@ -104,6 +112,16 @@ class OfferService:
                 await uow.commit()
                 offer = await uow.offer_repo.get_by_id(offer.id)
 
+            # Auditar creación (usa su propia transacción)
+            if self.audit_service and user_id:
+                await self.audit_service.log_creation(
+                    user_id=user_id,
+                    entity_type="Offer",
+                    entity=offer,
+                    ip_address=ip_address,
+                    correlation_id=correlation_id,
+                )
+
             self.logger.info(
                 "Oferta creada exitosamente",
                 offer_id=offer.id,
@@ -161,7 +179,14 @@ class OfferService:
             return []
 
     async def update(
-        self, offer_id: int, offer_update: Optional[OfferUpdateRequest] = None, active: Optional[bool] = None) -> ServiceResult:
+        self, 
+        offer_id: int, 
+        offer_update: Optional[OfferUpdateRequest] = None, 
+        active: Optional[bool] = None,
+        user_id: Optional[int] = None,
+        ip_address: Optional[str] = None,
+        correlation_id: Optional[str] = None,
+    ) -> ServiceResult:
         try:
             async with self.uow as uow:
                 offer = await uow.offer_repo.get_by_id(offer_id)
@@ -171,6 +196,25 @@ class OfferService:
                         error=f"Oferta {offer_id} no encontrada",
                         status_code=404,
                     )
+
+                # Capturar estado anterior completo (incluyendo items/productos)
+                old_offer_snapshot = {
+                    'id': offer.id,
+                    'nombre': offer.nombre,
+                    'descripcion': offer.descripcion,
+                    'precio': float(offer.precio) if offer.precio else 0.0,
+                    'activo': offer.activo,
+                    'fecha_creacion': offer.fecha_creacion,
+                    'fecha_actualizacion': offer.fecha_actualizacion,
+                    'productos': [
+                        {
+                            'categoria_id': item.categoria_id,
+                            'cantidad': item.cantidad,
+                            'productos_ids': [p.id for p in (item.productos or [])]
+                        }
+                        for item in (offer.productos or [])
+                    ]
+                }
 
                 if offer_update is not None:
                     if offer_update.nombre is not None:
@@ -239,7 +283,61 @@ class OfferService:
 
                 await uow.offer_repo.update(offer)
                 await uow.commit()
+
+            # Recargar la oferta con las relaciones actualizadas (fuera de la transacción anterior)
+            async with self.uow as uow:
                 offer = await uow.offer_repo.get_by_id(offer_id)
+
+                # Capturar nuevo estado para comparación
+                new_offer_snapshot = {
+                    'id': offer.id,
+                    'nombre': offer.nombre,
+                    'descripcion': offer.descripcion,
+                    'precio': float(offer.precio) if offer.precio else 0.0,
+                    'activo': offer.activo,
+                    'fecha_creacion': offer.fecha_creacion,
+                    'fecha_actualizacion': offer.fecha_actualizacion,
+                    'productos': [
+                        {
+                            'categoria_id': item.categoria_id,
+                            'cantidad': item.cantidad,
+                            'productos_ids': [p.id for p in (item.productos or [])]
+                        }
+                        for item in (offer.productos or [])
+                    ]
+                }
+
+            # Auditar actualización con comparación de snapshots
+            if self.audit_service and user_id:
+                # Calcular diff manualmente
+                diff = {}
+                
+                # Comparar campos simples
+                for key in ['nombre', 'descripcion', 'precio', 'activo']:
+                    old_val = old_offer_snapshot.get(key)
+                    new_val = new_offer_snapshot.get(key)
+                    if old_val != new_val:
+                        diff[key] = {"old": old_val, "new": new_val}
+                
+                # Comparar productos/items
+                old_productos = old_offer_snapshot.get('productos', [])
+                new_productos = new_offer_snapshot.get('productos', [])
+                if old_productos != new_productos:
+                    diff['productos'] = {"old": old_productos, "new": new_productos}
+                
+                # Solo registrar si hay cambios
+                if diff:
+                    async with self.uow as uow:
+                        await uow.audit_repo.log_action(
+                            user_id=user_id,
+                            entity_type="Offer",
+                            entity_id=offer.id,
+                            action="UPDATE",
+                            changes=diff,
+                            ip_address=ip_address,
+                            correlation_id=correlation_id,
+                        )
+                        await uow.commit()
 
             self.logger.info("Oferta actualizada", offer_id=offer_id)
 

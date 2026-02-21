@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, Form, File, HTTPException, status, Path, Query
+from fastapi import APIRouter, Depends, UploadFile, Form, File, HTTPException, status, Path, Query, Request
 from dependency_injector.wiring import inject, Provide
 from typing import List, Optional
 import json
@@ -30,6 +30,7 @@ router = APIRouter(
 )
 @inject
 async def create_producto(
+    request: Request,
     nombre: str = Form(...),
     categoria_id: int = Form(...),
     precios: str = Form(..., description='Ej: [{"cantidad":1,"precio":1200}]'),
@@ -51,7 +52,10 @@ async def create_producto(
 
     result: ServiceResult = await service.create(
         producto_request,
-        image=imagen
+        image=imagen,
+        user_id=admin_user["id"],
+        ip_address=request.client.host if request.client else None,
+        correlation_id=getattr(request.state, "correlation_id", None),
     )
 
     if result.error:
@@ -145,6 +149,7 @@ async def get_producto(
 )
 @inject
 async def update_producto(
+    request: Request,
     producto_id: int = Path(..., ge=1),
     nombre: Optional[str] = Form(None),
     categoria_id: Optional[int] = Form(None),
@@ -173,7 +178,10 @@ async def update_producto(
     result: ServiceResult = await service.update(
         producto_id,
         producto_request,
-        image=imagen
+        image=imagen,
+        user_id=admin_user["id"],
+        ip_address=request.client.host if request.client else None,
+        correlation_id=getattr(request.state, "correlation_id", None),
     )
 
     if result.error:
@@ -200,13 +208,20 @@ async def update_producto(
 )
 @inject
 async def deactivate_producto(
+    request: Request,
     producto_id: int = Path(..., ge=1, description="ID único del producto"),
     admin_user: dict = Depends(require_admin),
     product_service: ProductService = Depends(Provide[Container.product_service]),
     offer_service: OfferService = Depends(Provide[Container.offer_service]),
 ):
-    # 1. Desactivar el producto
-    result = await product_service.update(producto_id, active=False)
+    # 1. Desactivar el producto con auditoría
+    result = await product_service.update(
+        producto_id, 
+        active=False,
+        user_id=admin_user["id"],
+        ip_address=request.client.host if request.client else None,
+        correlation_id=getattr(request.state, "correlation_id", None),
+    )
     
     if result.error:
         raise HTTPException(

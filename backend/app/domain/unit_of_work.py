@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from app.domain.repositories.audit_repository import AbstractAuditRepository
 from app.domain.repositories.category_repository import AbstractCategoryRepository
 from app.domain.repositories.product_repository import AbstractProductRepository
 from app.domain.repositories.offer_repository import AbstractOfferRepository
@@ -17,6 +18,7 @@ class AbstractUnitOfWork(ABC):
     sale_repo: AbstractSaleRepository
     sequence_repo: AbstractSequenceRepository
     users: AbstractUserRepository
+    audit_repo: AbstractAuditRepository
 
 
     async def __aenter__(self):
