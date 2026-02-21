@@ -121,6 +121,9 @@ const CategoryModal = ({
                   disabled={loading}
                   autoFocus
                 />
+                <span className="form-hint">
+                  {nombre.length}/50 caracteres
+                </span>
               </div>
 
               {/* Error */}
