@@ -46,6 +46,7 @@ const DashboardOverview = () => {
   const [topProductsTimeFilter, setTopProductsTimeFilter] = useState<TimeFilter>('last_year');
   const [topProductsSort, setTopProductsSort] = useState<ProductSort>('top');
   const [topProductsCategory, setTopProductsCategory] = useState<string>('');
+  const [topProductsLimit, setTopProductsLimit] = useState<number>(5);
   
   // Estados para el gráfico de weekday revenue
   const [weekdayMetric, setWeekdayMetric] = useState<WeekdayMetric>('items');
@@ -112,7 +113,7 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchTopProducts = async () => {
       try {
-        const topProducts = await getTopProducts(5, topProductsTimeFilter, topProductsSort, topProductsCategory || undefined);
+        const topProducts = await getTopProducts(topProductsLimit, topProductsTimeFilter, topProductsSort, topProductsCategory || undefined);
         setData((prev) => (prev ? { ...prev, topProducts } : prev));
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar productos mas vendidos';
@@ -124,7 +125,7 @@ const DashboardOverview = () => {
       fetchTopProducts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topProductsTimeFilter, topProductsSort, topProductsCategory]);
+  }, [topProductsLimit, topProductsTimeFilter, topProductsSort, topProductsCategory]);
 
   useEffect(() => {
     const fetchWeekdayRevenue = async () => {
@@ -277,6 +278,28 @@ const DashboardOverview = () => {
             <div className="section-header">
               <h2 className="section-title">Ranking de productos</h2>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {/* Selector de top de productos */}
+                <select
+                  value={topProductsLimit}
+                  onChange={(e) => setTopProductsLimit(Number(e.target.value))}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--color-hover)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    color: 'var(--color-text-muted)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
+                  <option value={15}>Top 15</option>
+                  <option value={20}>Top 20</option>
+                </select>
+
                 {/* Selector de ordenamiento */}
                 <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px' }}>
                   <button
