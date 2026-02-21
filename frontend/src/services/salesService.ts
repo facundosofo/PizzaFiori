@@ -36,7 +36,6 @@ export const getSales = async (
 
     const response = await api.get<SalesResponse>("/ventas", { params });
     return response.data;
-    return data as SalesResponse;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     throw new Error(errorMessage);

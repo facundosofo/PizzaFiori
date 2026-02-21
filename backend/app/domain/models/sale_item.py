@@ -10,9 +10,9 @@ class SaleItem(Base):
     __table_args__ = (
         CheckConstraint(
             "("
-            "(producto_id IS NOT NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = 0) OR "
-            "(producto_id IS NULL AND oferta_id IS NOT NULL AND es_pizza_mitad_mitad = 0) OR "
-            "(producto_id IS NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = 1)"
+            "(producto_id IS NOT NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = false) OR "
+            "(producto_id IS NULL AND oferta_id IS NOT NULL AND es_pizza_mitad_mitad = false) OR "
+            "(producto_id IS NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = true)"
             ")",
         name="check_producto_oferta_or_mitad_mitad"
         ),

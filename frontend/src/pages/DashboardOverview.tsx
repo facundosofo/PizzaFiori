@@ -9,7 +9,7 @@
  * Diseño centrado respetando guía UX (GUIA_UX_COLORES.md)
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   getDashboardData,
   getSalesByCategory,
@@ -46,6 +46,7 @@ const DashboardOverview = () => {
   const [topProductsTimeFilter, setTopProductsTimeFilter] = useState<TimeFilter>('last_year');
   const [topProductsSort, setTopProductsSort] = useState<ProductSort>('top');
   const [topProductsCategory, setTopProductsCategory] = useState<string>('');
+  const [topProductsLimit, setTopProductsLimit] = useState<number>(5);
   
   // Estados para el gráfico de weekday revenue
   const [weekdayMetric, setWeekdayMetric] = useState<WeekdayMetric>('items');
@@ -64,85 +65,111 @@ const DashboardOverview = () => {
     setError(null);
   };
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setError(null);
-        setLoading(true);
-        
-        // Cargar datos del dashboard y categorías en paralelo
-        const [dashboardData, categoriesData] = await Promise.all([
-          getDashboardData(),
-          getCategories(),
-        ]);
-        
-        setData(dashboardData);
-        
-        // Usar las categorías del endpoint de categorías
-        const categories = categoriesData.map(c => c.nombre).sort();
-        setAvailableCategories(categories);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar el dashboard';
-        setError(`Error al cargar dashboard: ${errorMessage}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      
+      // Cargar datos del dashboard y categorías en paralelo
+      const [dashboardData, categoriesData] = await Promise.all([
+        getDashboardData(),
+        getCategories(),
+      ]);
+      
+      setData(dashboardData);
+      
+      // Usar las categorías del endpoint de categorías
+      const categories = categoriesData.map(c => c.nombre).sort();
+      setAvailableCategories(categories);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar el dashboard';
+      setError(`Error al cargar dashboard: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => {
-    const fetchSalesByCategory = async () => {
-      try {
-        const salesByCategory = await getSalesByCategory(8, salesByCategoryTimeFilter);
-        setData((prev) => (prev ? { ...prev, salesByCategory } : prev));
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar ventas por categoria';
-        setError(`Error al cargar ventas por categoria: ${errorMessage}`);
-      }
-    };
-
-    if (data) {
-      fetchSalesByCategory();
+  const fetchSalesByCategory = useCallback(async () => {
+    try {
+      const salesByCategory = await getSalesByCategory(8, salesByCategoryTimeFilter);
+      setData((prev) => (prev ? { ...prev, salesByCategory } : prev));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar ventas por categoria';
+      setError(`Error al cargar ventas por categoria: ${errorMessage}`);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salesByCategoryTimeFilter]);
 
-  useEffect(() => {
-    const fetchTopProducts = async () => {
-      try {
-        const topProducts = await getTopProducts(5, topProductsTimeFilter, topProductsSort, topProductsCategory || undefined);
-        setData((prev) => (prev ? { ...prev, topProducts } : prev));
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar productos mas vendidos';
-        setError(`Error al cargar productos mas vendidos: ${errorMessage}`);
-      }
-    };
-
-    if (data) {
-      fetchTopProducts();
+  const fetchTopProducts = useCallback(async () => {
+    try {
+      const topProducts = await getTopProducts(
+        topProductsLimit,
+        topProductsTimeFilter,
+        topProductsSort,
+        topProductsCategory || undefined
+      );
+      setData((prev) => (prev ? { ...prev, topProducts } : prev));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar productos mas vendidos';
+      setError(`Error al cargar productos mas vendidos: ${errorMessage}`);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topProductsTimeFilter, topProductsSort, topProductsCategory]);
+  }, [topProductsLimit, topProductsTimeFilter, topProductsSort, topProductsCategory]);
+
+  const fetchWeekdayRevenue = useCallback(async () => {
+    try {
+      setWeekdayLoading(true);
+      const weekdayRevenue = await getWeekdayRevenue(weekdayCategory || undefined, weekdayTimeFilter);
+      setWeekdayData(weekdayRevenue);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar promedio por día de semana';
+      setError(`Error al cargar promedio por día de semana: ${errorMessage}`);
+    } finally {
+      setWeekdayLoading(false);
+    }
+  }, [weekdayCategory, weekdayTimeFilter]);
 
   useEffect(() => {
-    const fetchWeekdayRevenue = async () => {
-      try {
-        setWeekdayLoading(true);
-        const weekdayRevenue = await getWeekdayRevenue(weekdayCategory || undefined, weekdayTimeFilter);
-        setWeekdayData(weekdayRevenue);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar promedio por día de semana';
-        setError(`Error al cargar promedio por día de semana: ${errorMessage}`);
-      } finally {
-        setWeekdayLoading(false);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  useEffect(() => {
+    fetchSalesByCategory();
+  }, [fetchSalesByCategory]);
+
+  useEffect(() => {
+    fetchTopProducts();
+  }, [fetchTopProducts]);
+
+  useEffect(() => {
+    fetchWeekdayRevenue();
+  }, [fetchWeekdayRevenue]);
+
+  useEffect(() => {
+    const saleEventKey = 'pizza_fiori:sale_created_at';
+
+    const handleSaleCreated = async () => {
+      await fetchDashboardData();
+      await Promise.all([
+        fetchSalesByCategory(),
+        fetchTopProducts(),
+        fetchWeekdayRevenue(),
+      ]);
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === saleEventKey) {
+        void handleSaleCreated();
       }
     };
 
-    fetchWeekdayRevenue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekdayCategory, weekdayTimeFilter]);
+    window.addEventListener('sale:created', handleSaleCreated);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('sale:created', handleSaleCreated);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [fetchDashboardData, fetchSalesByCategory, fetchTopProducts, fetchWeekdayRevenue]);
+
 
   if (loading) {
     return (
@@ -277,6 +304,28 @@ const DashboardOverview = () => {
             <div className="section-header">
               <h2 className="section-title">Ranking de productos</h2>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {/* Selector de top de productos */}
+                <select
+                  value={topProductsLimit}
+                  onChange={(e) => setTopProductsLimit(Number(e.target.value))}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--color-hover)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    color: 'var(--color-text-muted)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
+                  <option value={15}>Top 15</option>
+                  <option value={20}>Top 20</option>
+                </select>
+
                 {/* Selector de ordenamiento */}
                 <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px' }}>
                   <button

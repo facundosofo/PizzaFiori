@@ -1,87 +1,115 @@
 import time
 import uuid
+from typing import Callable
+
+import structlog
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.infrastructure.logging import get_logger
+from starlette.responses import StreamingResponse
+
+from app.infrastructure.logging import get_logger, sanitize_headers
+
+BINARY_CONTENT_TYPES = ("image/", "application/octet-stream", "application/pdf", "multipart/form-data")
+
+
+def _is_binary(content_type: str) -> bool:
+    return any(t in content_type for t in BINARY_CONTENT_TYPES)
+
+
+def _decode_body(raw: bytes, content_type: str, max_size: int) -> str | None:
+    """Decodifica el body a string. Retorna None si es binario o vacío."""
+    if not raw:
+        return None
+    if _is_binary(content_type):
+        return f"<binary {len(raw)} bytes>"
+    try:
+        decoded = raw.decode("utf-8")
+        if len(decoded) > max_size:
+            return decoded[:max_size] + f"... <truncated, total {len(decoded)} chars>"
+        return decoded
+    except UnicodeDecodeError:
+        return f"<binary {len(raw)} bytes>"
 
 
 class HttpLoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware que loguea request y response usando structlog."""
+    """Middleware que loguea request y response como eventos JSON estructurados."""
 
-    def __init__(self, app, logger=None, log_response_body: bool = True, max_body_size: int = 50_000):
+    def __init__(
+        self,
+        app,
+        logger=None,
+        log_request_body: bool = True,
+        log_response_body: bool = True,
+        max_body_size: int = 50_000,
+    ):
         super().__init__(app)
         self.logger = logger or get_logger("http.external")
+        self.log_request_body = log_request_body
         self.log_response_body = log_response_body
         self.max_body_size = max_body_size
 
-    async def dispatch(self, request: Request, call_next):
-        start_time = time.time()
-
-        # Generar correlation ID único por request
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         correlation_id = str(uuid.uuid4())
         request.state.correlation_id = correlation_id
 
-        # --- LOGUEAR REQUEST ---
+        # Bindear el correlation_id al contexto de la corrutina.
+        # Todos los logs emitidos durante este request (servicios, repos, etc.)
+        # van a incluir request_id automáticamente via merge_contextvars.
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(request_id=correlation_id)
+
+        await self._log_request(request, correlation_id)
+
+        start_time = time.perf_counter()
+        response = await call_next(request)
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+
+        response = await self._log_response(response, correlation_id, duration_ms)
+        return response
+
+    async def _log_request(self, request: Request, correlation_id: str) -> None:
         body_bytes = await request.body()
-        headers_str = "\n".join([f"  {k}: {v}" for k, v in request.headers.items()])
         content_type = request.headers.get("content-type", "")
 
-        request_log = f"Request recibido: {request.method} {request.url} \nHEADERS:\n{headers_str}"
-        
-        # Solo intentar decodificar si es texto (JSON, form-urlencoded, etc.)
-        if body_bytes:
-            if "multipart/form-data" in content_type or "application/octet-stream" in content_type:
-                request_log += f"\nBODY: <binary data, {len(body_bytes)} bytes>"
+        log_data = {
+            "event": "http.request",
+            "request_id": correlation_id,
+            "http": {
+                "method": request.method,
+                "url": str(request.url),
+                "path": request.url.path,
+                "query": str(request.url.query) or None,
+                "headers": sanitize_headers(dict(request.headers)),
+            },
+        }
+
+        if self.log_request_body:
+            log_data["http"]["body"] = _decode_body(body_bytes, content_type, self.max_body_size)
+
+        self.logger.debug(**log_data)
+
+    async def _log_response(self, response: Response, correlation_id: str, duration_ms: float) -> Response:
+        content_type = response.headers.get("content-type", "")
+
+        log_data = {
+            "event": "http.response",
+            "request_id": correlation_id,
+            "http": {
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+                "headers": sanitize_headers(dict(response.headers)),
+            },
+        }
+
+        if self.log_response_body:
+            if isinstance(response, StreamingResponse):
+                log_data["http"]["body"] = "<streaming>"
             else:
-                try:
-                    body_str = body_bytes.decode("utf-8")
-                    request_log += f"\nBODY:\n{body_str}"
-                except UnicodeDecodeError:
-                    request_log += f"\nBODY: <binary data, {len(body_bytes)} bytes>"
+                resp_body = getattr(response, "body", None)
+                if resp_body:
+                    log_data["http"]["body"] = _decode_body(resp_body, content_type, self.max_body_size)
 
-        self.logger.debug(
-            event=request_log,
-            request_id=correlation_id,
-        )
-
-        # --- PROCESAR REQUEST ---
-        response: Response = await call_next(request)
-
-        # Capturar el body del response
-        resp_body = b""
-        async for chunk in response.body_iterator:
-            resp_body += chunk
-        
-        # Crear un async generator para reconstruir el iterator
-        async def body_generator():
-            yield resp_body
-        
-        response.body_iterator = body_generator()
-
-        duration_ms = round((time.time() - start_time) * 1000, 2)
-
-        # --- LOGUEAR RESPONSE ---
-        response_headers = "\n".join([f"  {k}: {v}" for k, v in response.headers.items()])
-        response_content_type = response.headers.get("content-type", "")
-        
-        response_log = f"Response enviado: status_code={response.status_code} duration_ms={duration_ms}ms\nHEADERS:\n{response_headers}"
-        
-        if self.log_response_body and resp_body:
-            if any(t in response_content_type for t in ["image/", "application/octet-stream", "application/pdf"]):
-                response_log += f"\nBODY: <binary data, {len(resp_body)} bytes>"
-            else:
-                try:
-                    response_body = resp_body.decode("utf-8")
-                    if len(response_body) > self.max_body_size:
-                        response_log += f"\nBODY (truncado {len(response_body)} caracteres):\n{response_body[:self.max_body_size]}..."
-                    else:
-                        response_log += f"\nBODY:\n{response_body}"
-                except UnicodeDecodeError:
-                    response_log += f"\nBODY: <binary data, {len(resp_body)} bytes>"
-        
-        self.logger.debug(
-            event=response_log,
-            request_id=correlation_id,
-        )
+        log_fn = self.logger.warning if response.status_code >= 400 else self.logger.debug
+        log_fn(**log_data)
 
         return response

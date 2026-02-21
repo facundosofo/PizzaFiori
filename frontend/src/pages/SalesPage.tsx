@@ -39,6 +39,7 @@ const SalesPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [saleToDelete, setSaleToDelete] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const saleEventKey = 'pizza_fiori:sale_created_at';
 
   // Filter state
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
@@ -175,6 +176,7 @@ const SalesPage = () => {
     const skip = (currentPage - 1) * limit;
     const data = await getSales(skip, limit);
     setSales(data.items || []);
+    localStorage.setItem(saleEventKey, Date.now().toString());
   };
 
   const handleDeleteClick = (saleId: number) => {
@@ -193,6 +195,7 @@ const SalesPage = () => {
       const data = await getSales(skip, limit);
       setSales(data.items || []);
       setTotalPages(Math.ceil((data.total || 0) / limit));
+      localStorage.setItem(saleEventKey, Date.now().toString());
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Error desconocido";

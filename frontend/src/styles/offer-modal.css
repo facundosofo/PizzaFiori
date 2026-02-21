@@ -52,25 +52,28 @@
 }
 
 .modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(239, 68, 68, 0.8);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: var(--color-danger-bg);
-  border: 2px solid rgba(239, 68, 68, 0.4);
-  border-radius: 50%;
-  color: var(--color-danger);
-  cursor: pointer;
-  transition: all 0.3s ease;
   padding: 0;
 }
 
 .modal-close:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.3);
-  border-color: var(--color-danger);
+  background: var(--color-danger);
   transform: scale(1.1) rotate(90deg);
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
 }
 
 .modal-close:disabled {
