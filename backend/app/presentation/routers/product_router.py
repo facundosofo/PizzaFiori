@@ -214,13 +214,14 @@ async def deactivate_producto(
     product_service: ProductService = Depends(Provide[Container.product_service]),
     offer_service: OfferService = Depends(Provide[Container.offer_service]),
 ):
-    # 1. Desactivar el producto con auditoría
+    # 1. Desactivar el producto con auditoría (registrar como DELETE)
     result = await product_service.update(
         producto_id, 
         active=False,
         user_id=admin_user["id"],
         ip_address=request.client.host if request.client else None,
         correlation_id=getattr(request.state, "correlation_id", None),
+        is_logical_delete=True,
     )
     
     if result.error:

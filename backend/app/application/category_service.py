@@ -184,20 +184,12 @@ class CategoryService:
                 await uow.commit()
                 await uow.category_repo.refresh(categoria)
 
-                # Auditar desactivación
+                # Auditar desactivación como DELETE lógico
                 if self.audit_service and old_activo != categoria.activo:
-                    from app.domain.models.category import Category as CategoryModel
-                    old_cat = CategoryModel(
-                        id=categoria.id,
-                        nombre=categoria.nombre,
-                        activo=old_activo,
-                    )
-                    
-                    await self.audit_service.log_update(
+                    await self.audit_service.log_deletion(
                         user_id=user_id,
                         entity_type="Category",
-                        old_entity=old_cat,
-                        new_entity=categoria,
+                        entity=categoria,
                         ip_address=ip_address,
                         correlation_id=correlation_id,
                     )

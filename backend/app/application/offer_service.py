@@ -186,6 +186,7 @@ class OfferService:
         user_id: Optional[int] = None,
         ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
+        is_logical_delete: bool = False,
     ) -> ServiceResult:
         try:
             async with self.uow as uow:
@@ -204,8 +205,8 @@ class OfferService:
                     'descripcion': offer.descripcion,
                     'precio': float(offer.precio) if offer.precio else 0.0,
                     'activo': offer.activo,
-                    'fecha_creacion': offer.fecha_creacion,
-                    'fecha_actualizacion': offer.fecha_actualizacion,
+                    'fecha_creacion': offer.fecha_creacion.isoformat() if offer.fecha_creacion else None,
+                    'fecha_actualizacion': offer.fecha_actualizacion.isoformat() if offer.fecha_actualizacion else None,
                     'productos': [
                         {
                             'categoria_id': item.categoria_id,
@@ -295,8 +296,8 @@ class OfferService:
                     'descripcion': offer.descripcion,
                     'precio': float(offer.precio) if offer.precio else 0.0,
                     'activo': offer.activo,
-                    'fecha_creacion': offer.fecha_creacion,
-                    'fecha_actualizacion': offer.fecha_actualizacion,
+                    'fecha_creacion': offer.fecha_creacion.isoformat() if offer.fecha_creacion else None,
+                    'fecha_actualizacion': offer.fecha_actualizacion.isoformat() if offer.fecha_actualizacion else None,
                     'productos': [
                         {
                             'categoria_id': item.categoria_id,
@@ -309,35 +310,49 @@ class OfferService:
 
             # Auditar actualización con comparación de snapshots
             if self.audit_service and user_id:
-                # Calcular diff manualmente
-                diff = {}
-                
-                # Comparar campos simples
-                for key in ['nombre', 'descripcion', 'precio', 'activo']:
-                    old_val = old_offer_snapshot.get(key)
-                    new_val = new_offer_snapshot.get(key)
-                    if old_val != new_val:
-                        diff[key] = {"old": old_val, "new": new_val}
-                
-                # Comparar productos/items
-                old_productos = old_offer_snapshot.get('productos', [])
-                new_productos = new_offer_snapshot.get('productos', [])
-                if old_productos != new_productos:
-                    diff['productos'] = {"old": old_productos, "new": new_productos}
-                
-                # Solo registrar si hay cambios
-                if diff:
+                # Si es eliminación lógica, registrar como DELETE con snapshot completo
+                if is_logical_delete:
                     async with self.uow as uow:
                         await uow.audit_repo.log_action(
                             user_id=user_id,
                             entity_type="Offer",
                             entity_id=offer.id,
-                            action="UPDATE",
-                            changes=diff,
+                            action="DELETE",
+                            changes={"old": old_offer_snapshot},
                             ip_address=ip_address,
                             correlation_id=correlation_id,
                         )
                         await uow.commit()
+                else:
+                    # Calcular diff manualmente para actualizaciones normales
+                    diff = {}
+                    
+                    # Comparar campos simples
+                    for key in ['nombre', 'descripcion', 'precio', 'activo']:
+                        old_val = old_offer_snapshot.get(key)
+                        new_val = new_offer_snapshot.get(key)
+                        if old_val != new_val:
+                            diff[key] = {"old": old_val, "new": new_val}
+                    
+                    # Comparar productos/items
+                    old_productos = old_offer_snapshot.get('productos', [])
+                    new_productos = new_offer_snapshot.get('productos', [])
+                    if old_productos != new_productos:
+                        diff['productos'] = {"old": old_productos, "new": new_productos}
+                    
+                    # Solo registrar si hay cambios
+                    if diff:
+                        async with self.uow as uow:
+                            await uow.audit_repo.log_action(
+                                user_id=user_id,
+                                entity_type="Offer",
+                                entity_id=offer.id,
+                                action="UPDATE",
+                                changes=diff,
+                                ip_address=ip_address,
+                                correlation_id=correlation_id,
+                            )
+                            await uow.commit()
 
             self.logger.info("Oferta actualizada", offer_id=offer_id)
 
@@ -355,6 +370,7 @@ class OfferService:
             )
             return ServiceResult(error=str(e), status_code=400)
 
+    async def delete(self, offer_id: int) -> ServiceResult:
         try:
             async with self.uow as uow:
                 offer = await uow.offer_repo.get_by_id(offer_id)

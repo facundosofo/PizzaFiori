@@ -160,6 +160,7 @@ class ProductService:
         user_id: Optional[int] = None,
         ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
+        is_logical_delete: bool = False,
     ) -> ServiceResult:
 
         ruta_imagen_nueva = None
@@ -180,8 +181,8 @@ class ProductService:
                     'categoria_id': producto.categoria_id,
                     'imagen': producto.imagen,
                     'activo': producto.activo,
-                    'fecha_creacion': producto.fecha_creacion,
-                    'fecha_actualizacion': producto.fecha_actualizacion,
+                    'fecha_creacion': producto.fecha_creacion.isoformat() if producto.fecha_creacion else None,
+                    'fecha_actualizacion': producto.fecha_actualizacion.isoformat() if producto.fecha_actualizacion else None,
                     'precios': [
                         {
                             'cantidad': p.cantidad,
@@ -234,8 +235,8 @@ class ProductService:
                     'categoria_id': producto.categoria_id,
                     'imagen': producto.imagen,
                     'activo': producto.activo,
-                    'fecha_creacion': producto.fecha_creacion,
-                    'fecha_actualizacion': producto.fecha_actualizacion,
+                    'fecha_creacion': producto.fecha_creacion.isoformat() if producto.fecha_creacion else None,
+                    'fecha_actualizacion': producto.fecha_actualizacion.isoformat() if producto.fecha_actualizacion else None,
                     'precios': [
                         {
                             'cantidad': p.cantidad,
@@ -247,35 +248,49 @@ class ProductService:
 
             # Auditar actualización con comparación de snapshots
             if self.audit_service and user_id:
-                # Calcular diff manualmente
-                diff = {}
-                
-                # Comparar campos simples
-                for key in ['nombre', 'categoria_id', 'imagen', 'activo', 'sku']:
-                    old_val = old_producto_snapshot.get(key)
-                    new_val = new_producto_snapshot.get(key)
-                    if old_val != new_val:
-                        diff[key] = {"old": old_val, "new": new_val}
-                
-                # Comparar precios
-                old_precios = old_producto_snapshot.get('precios', [])
-                new_precios = new_producto_snapshot.get('precios', [])
-                if old_precios != new_precios:
-                    diff['precios'] = {"old": old_precios, "new": new_precios}
-                
-                # Solo registrar si hay cambios
-                if diff:
+                # Si es eliminación lógica, registrar como DELETE con snapshot completo
+                if is_logical_delete:
                     async with self.uow as uow:
                         await uow.audit_repo.log_action(
                             user_id=user_id,
                             entity_type="Product",
                             entity_id=producto.id,
-                            action="UPDATE",
-                            changes=diff,
+                            action="DELETE",
+                            changes={"old": old_producto_snapshot},
                             ip_address=ip_address,
                             correlation_id=correlation_id,
                         )
                         await uow.commit()
+                else:
+                    # Calcular diff manualmente para actualizaciones normales
+                    diff = {}
+                    
+                    # Comparar campos simples
+                    for key in ['nombre', 'categoria_id', 'imagen', 'activo', 'sku']:
+                        old_val = old_producto_snapshot.get(key)
+                        new_val = new_producto_snapshot.get(key)
+                        if old_val != new_val:
+                            diff[key] = {"old": old_val, "new": new_val}
+                    
+                    # Comparar precios
+                    old_precios = old_producto_snapshot.get('precios', [])
+                    new_precios = new_producto_snapshot.get('precios', [])
+                    if old_precios != new_precios:
+                        diff['precios'] = {"old": old_precios, "new": new_precios}
+                    
+                    # Solo registrar si hay cambios
+                    if diff:
+                        async with self.uow as uow:
+                            await uow.audit_repo.log_action(
+                                user_id=user_id,
+                                entity_type="Product",
+                                entity_id=producto.id,
+                                action="UPDATE",
+                                changes=diff,
+                                ip_address=ip_address,
+                                correlation_id=correlation_id,
+                            )
+                            await uow.commit()
 
             if image and ruta_imagen_vieja:
                 self.file_service.delete_file(ruta_imagen_vieja)

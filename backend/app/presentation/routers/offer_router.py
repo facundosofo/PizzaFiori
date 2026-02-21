@@ -183,6 +183,7 @@ async def deactivate_offer(
         user_id=admin_user["id"],
         ip_address=request.client.host if request.client else None,
         correlation_id=getattr(request.state, "correlation_id", None),
+        is_logical_delete=True,
     )
     
     if result.error:
