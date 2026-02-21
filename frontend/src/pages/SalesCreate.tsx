@@ -428,6 +428,11 @@ export const SalesCreatePage: React.FC = () => {
         items: saleItems,
       });
 
+      const saleEventKey = 'pizza_fiori:sale_created_at';
+      const timestamp = Date.now().toString();
+      window.dispatchEvent(new CustomEvent('sale:created'));
+      localStorage.setItem(saleEventKey, timestamp);
+
       // Show success feedback
       setShowSuccess(true);
       setCartItems([]);
