@@ -78,6 +78,7 @@ const LoginPage = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Ingresa tu usuario"
+                maxLength={50}
                 autoComplete="username"
                 autoFocus
                 disabled={isLoading}

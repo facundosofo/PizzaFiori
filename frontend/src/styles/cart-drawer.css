@@ -141,12 +141,23 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  white-space: normal;
+  flex-wrap: wrap;
 }
 
 .cart-item-category {
   font-size: 11px;
   color: var(--color-text-muted);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 .cart-item-remove {
@@ -195,17 +206,7 @@
   white-space: nowrap;
 }
 
-/* Nombre más grande para ofertas (sin categoría) */
-.cart-item-offer .cart-item-name {
-  font-size: 15px;
-  margin: 0;
-}
 
-/* Nombre más grande cuando es oferta (sin categoría) */
-.cart-item-offer .cart-item-name {
-  font-size: 15px;
-  line-height: 1.4;
-}
 
 /* Offer item specific styles */
 .cart-item-offer {
@@ -270,6 +271,12 @@
 
 .cart-offer-product-name {
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 /* Footer del carrito */

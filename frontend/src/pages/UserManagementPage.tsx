@@ -222,6 +222,7 @@ const UserManagementPage = () => {
                   value={formData.first_name}
                   onChange={(e) => handleChange('first_name', e.target.value)}
                   placeholder="Nombre"
+                  maxLength={50}
                   autoComplete="off"
                 />
               </div>
@@ -233,6 +234,7 @@ const UserManagementPage = () => {
                   value={formData.last_name}
                   onChange={(e) => handleChange('last_name', e.target.value)}
                   placeholder="Apellido"
+                  maxLength={50}
                   autoComplete="off"
                 />
               </div>
@@ -247,6 +249,7 @@ const UserManagementPage = () => {
                   value={formData.username}
                   onChange={(e) => handleChange('username', e.target.value)}
                   placeholder="Usuario"
+                  maxLength={50}
                   autoComplete="off"
                 />
               </div>
@@ -258,6 +261,7 @@ const UserManagementPage = () => {
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
                   placeholder="email@ejemplo.com"
+                  maxLength={255}
                   autoComplete="off"
                 />
               </div>

@@ -9,8 +9,8 @@ class Offer(Base):
     __tablename__ = "Ofertas"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nombre = Column(String(255), nullable=False)
-    descripcion = Column(String, nullable=True)
+    nombre = Column(String(50), nullable=False)
+    descripcion = Column(String(255), nullable=True)
     precio = Column(Numeric(10, 2), nullable=False)
     activo = Column(Boolean, nullable=False, default=True)
     fecha_creacion = Column(DateTime, default=datetime.now)

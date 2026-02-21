@@ -11,7 +11,7 @@ from typing import List, Optional
 class ProductoPrecioRequest(BaseModel):
     id: Optional[int] = None
     cantidad: int = Field(...,gt=0,le=1000,description="Cantidad mínima para aplicar el precio")
-    precio: Decimal = Field(...,gt=0,le=1_000_000,max_digits=10, decimal_places=2,description="Precio para la cantidad indicada")
+    precio: Decimal = Field(...,gt=0,le=99_999_999.99,max_digits=10, decimal_places=2,description="Precio para la cantidad indicada")
 
 class ProductoPrecioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -25,7 +25,7 @@ class ProductoPrecioResponse(BaseModel):
 # ======================================================
 
 class ProductoCreateRequest(BaseModel):
-    nombre: str = Field(...,min_length=1,max_length=255)
+    nombre: str = Field(...,min_length=1,max_length=50)
     categoria_id: int = Field(..., gt=0)
     precios: List[ProductoPrecioRequest]
 
@@ -50,7 +50,7 @@ class ProductoCreateRequest(BaseModel):
 
 
 class ProductoUpdateRequest(BaseModel):
-    nombre: Optional[str] = Field(None,min_length=1,max_length=255)
+    nombre: Optional[str] = Field(None,min_length=1,max_length=50)
     categoria_id: Optional[int] = Field(None, gt=0)
     precios: Optional[List[ProductoPrecioRequest]] = None
         

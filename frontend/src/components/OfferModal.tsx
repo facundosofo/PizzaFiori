@@ -148,11 +148,17 @@ const OfferModal = ({
     if (!nombre.trim()) {
       return setError("El nombre es requerido");
     }
-    if (nombre.trim().length > 255) {
-      return setError("El nombre no puede superar los 255 caracteres");
+    if (nombre.trim().length > 50) {
+      return setError("El nombre no puede superar los 50 caracteres");
+    }
+    if (descripcion.trim().length > 255) {
+      return setError("La descripción no puede superar los 255 caracteres");
     }
     if (!precio || precio <= 0) {
       return setError("El precio debe ser mayor a 0");
+    }
+    if (precio > 99_999_999.99) {
+      return setError("El precio no puede exceder 99.999.999,99");
     }
     if (items.length === 0) {
       return setError("Debes agregar al menos un item a la oferta");
@@ -249,12 +255,12 @@ const OfferModal = ({
                   onChange={(e) => setNombre(e.target.value)}
                   className="form-input"
                   placeholder="Ej: Promo Pizza Grande"
-                  maxLength={255}
+                  maxLength={50}
                   disabled={loading}
                   autoComplete="off"
                 />
                 <span className="form-hint">
-                  {nombre.length}/255 caracteres
+                  {nombre.length}/50 caracteres
                 </span>
               </div>
 
@@ -267,13 +273,13 @@ const OfferModal = ({
                   onChange={(e) => setDescripcion(e.target.value)}
                   className="form-input form-textarea"
                   placeholder="Descripción opcional de la oferta"
-                  maxLength={1000}
+                  maxLength={255}
                   rows={3}
                   disabled={loading}
                   autoComplete="off"
                 />
                 <span className="form-hint">
-                  {descripcion.length}/1000 caracteres
+                  {descripcion.length}/255 caracteres
                 </span>
               </div>
 
@@ -395,7 +401,7 @@ const OfferModal = ({
                                   <input
                                     type="number"
                                     min="1"
-                                    max="1000"
+                                    max="100"
                                     className="qty-input"
                                     value={item.cantidad}
                                     onFocus={selectInputValue}
