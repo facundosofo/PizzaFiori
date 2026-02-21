@@ -58,7 +58,7 @@ class SqlAlchemySaleRepository(
         
         # Aplicar ajuste de horario de negocio (-6 horas)
         # Las ventas entre 00:00-05:59 se asignan al día anterior
-        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         business_date = cast(adjusted_fecha, Date)
         
         # Aplicar filtros de fecha (comparando con fecha de negocio)
@@ -86,7 +86,7 @@ class SqlAlchemySaleRepository(
         
         # Aplicar ajuste de horario de negocio (-6 horas)
         # Las ventas entre 00:00-05:59 se asignan al día anterior
-        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         business_date = cast(adjusted_fecha, Date)
         
         # Aplicar filtros de fecha (comparando con fecha de negocio)

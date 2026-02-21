@@ -14,7 +14,9 @@ class Settings(BaseSettings):
     debug: bool
     db_host: str
     db_name: str
-    db_driver: str
+    db_user: str
+    db_password: str
+    db_port: int
     api_port: int
     
     # Logging settings

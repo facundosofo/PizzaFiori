@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 from datetime import datetime, timedelta
 import structlog
-from sqlalchemy import func, select, and_, cast, Date, Numeric, distinct
+from sqlalchemy import func, select, and_, cast, Date, Numeric, distinct, extract
 
 from app.domain.models.sale import Sale
 from app.domain.models.sale_item import SaleItem
@@ -226,7 +226,7 @@ class DashboardService:
         # PASO 1: Subconsulta de ventas (pre-filtrado)
         # Calcula la fecha de negocio UNA VEZ por venta
         business_date_expr = cast(
-            func.dateadd(text('HOUR'), -6, Sale.fecha_creacion),
+            Sale.fecha_creacion - text("INTERVAL '6 hours'"),
             Date
         )
         
@@ -339,11 +339,11 @@ class DashboardService:
             end_date = datetime(now.year, now.month + 1, 1)
         
         # PASO 1: Subconsulta de ventas (pre-filtrado por rango de fechas)
-        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         sale_subquery = select(
             Sale.id.label("sale_id"),
-            func.year(adjusted_fecha).label("year"),
-            func.month(adjusted_fecha).label("month"),
+            extract('year', adjusted_fecha).label("year"),
+            extract('month', adjusted_fecha).label("month"),
             Sale.total.label("sale_total")
         ).where(
             and_(
@@ -473,10 +473,10 @@ class DashboardService:
         start_date = datetime.now() - timedelta(days=limit * 365)
         
         # PASO 1: Subconsulta de ventas (pre-filtrado por fecha)
-        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         sale_subquery = select(
             Sale.id.label("sale_id"),
-            func.year(adjusted_fecha).label("year"),
+            extract('year', adjusted_fecha).label("year"),
             Sale.total.label("sale_total")
         ).where(
             adjusted_fecha >= start_date
@@ -587,7 +587,7 @@ class DashboardService:
         # ==== SUBCONSULTA: Pre-filtrar ventas por fecha (ajustada a día de negocio) ====
         # Esto reduce drásticamente el tamaño de los JOINs posteriores
         #  COHERENCIA: Todos los filtros (HOY, ULTIMOS_7_DIAS, etc) usan adjusted_fecha
-        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         business_date_expr = cast(adjusted_fecha, Date)
         sales_filtered = select(Sale.id)
         
@@ -753,7 +753,7 @@ class DashboardService:
         # ==== SUBCONSULTA: Pre-filtrar ventas por fecha (ajustada a día de negocio) ====
         # Esto reduce drásticamente el tamaño de los JOINs posteriores
         # COHERENCIA: Todos los filtros (HOY, ULTIMOS_7_DIAS, etc) usan adjusted_fecha
-        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         business_date_expr = cast(adjusted_fecha, Date)
         sales_filtered = select(Sale.id)
         
@@ -879,7 +879,7 @@ class DashboardService:
         
         # PASO 1: CTE para fecha+hora de negocio (reutilizable en la query)
         # Resta 6 horas para convertir a horario de negocio (16:00 a 06:00)
-        adjusted_fecha = func.dateadd(text('HOUR'), -6, Sale.fecha_creacion)
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         
         # PASO 2: Pre-filtrar ventas por fecha (índice en fecha_creacion)
         sales_filter = select(Sale.id)
@@ -963,7 +963,7 @@ class DashboardService:
         sale_daily_data = select(
             Sale.id.label("sale_id"),
             cast(adjusted_fecha, Date).label("business_date"),
-            func.datepart(text('WEEKDAY'), adjusted_fecha).label("dow"),
+            (extract('dow', adjusted_fecha) + 1).label("dow"),
             Sale.total.label("revenue"),
             (func.coalesce(direct_items_query.c.direct_qty, 0) + 
              func.coalesce(offer_items_query.c.offer_qty, 0) + 

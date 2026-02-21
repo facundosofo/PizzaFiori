@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 94182d0f6b12
+Revision ID: 76d411b38a74
 Revises: 
-Create Date: 2026-02-20 20:26:29.225065
+Create Date: 2026-02-20 22:15:09.156830
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '94182d0f6b12'
+revision: str = '76d411b38a74'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -128,7 +128,7 @@ def upgrade() -> None:
     sa.Column('item_categoria', sa.String(length=100), nullable=False),
     sa.Column('item_descripcion', sa.Text(), nullable=True),
     sa.Column('es_pizza_mitad_mitad', sa.Boolean(), nullable=True),
-    sa.CheckConstraint('((producto_id IS NOT NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = 0) OR (producto_id IS NULL AND oferta_id IS NOT NULL AND es_pizza_mitad_mitad = 0) OR (producto_id IS NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = 1))', name='check_producto_oferta_or_mitad_mitad'),
+    sa.CheckConstraint('((producto_id IS NOT NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = false) OR (producto_id IS NULL AND oferta_id IS NOT NULL AND es_pizza_mitad_mitad = false) OR (producto_id IS NULL AND oferta_id IS NULL AND es_pizza_mitad_mitad = true))', name='check_producto_oferta_or_mitad_mitad'),
     sa.ForeignKeyConstraint(['oferta_id'], ['Ofertas.id'], ),
     sa.ForeignKeyConstraint(['producto_id'], ['Productos.id'], ),
     sa.ForeignKeyConstraint(['venta_id'], ['Ventas.id'], ),
