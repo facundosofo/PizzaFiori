@@ -17,7 +17,7 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=datetime.now, nullable=False, index=True)
     
     # Quién realizó la acción
-    username = Column(String(100), nullable=False)  # Username guardado para referencia permanente
+    username = Column(String(50), nullable=False)  # Username guardado para referencia permanente
     
     # Sobre qué entidad
     entity_type = Column(String(50), nullable=False, index=True)  # "Product", "User", "Sale", etc.
@@ -38,6 +38,6 @@ class AuditLog(Base):
 
     def __repr__(self):
         return (
-            f"<AuditLog(id={self.id}, user_id={self.user_id}, "
+            f"<AuditLog(id={self.id}, username={self.username}, "
             f"action={self.action}, entity={self.entity_type}:{self.entity_id})>"
         )
