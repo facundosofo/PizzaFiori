@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
 import logo from "../assets/PizzaFioriLogo.png";
-import { ModuleCard } from "../components/ModuleCard";
+import { useAuth } from "../contexts/AuthContext";
 import "../styles/home.css";
 
 export const HomePage = () => {
+  const { user } = useAuth();
+
   return (
     <div className="home-container">
       {/* LOGO */}
@@ -11,26 +13,25 @@ export const HomePage = () => {
         src={logo}
         alt="PizzaFiori"
         className="logo"
-        initial={{ scale: 1.4 }}
-        animate={{ scale: 0.85, y: -90 }}
+        initial={{ scale: 1.4, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{
           duration: 1.5,
           ease: "easeInOut",
         }}
       />
 
-      {/* MÓDULOS */}
+      {/* MENSAJE DE BIENVENIDA */}
       <motion.div
-        className="modules"
-        initial={{ opacity: 0, y: 30 }}
+        className="welcome-message"
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1, duration: 0.6 }}
+        transition={{ delay: 0.8, duration: 0.8 }}
       >
-        <ModuleCard title="Productos" to="/productos" />
-        <ModuleCard title="Ofertas" to="/ofertas" />
-        <ModuleCard title="Registrar Venta" to="/registrar-venta" />
-        <ModuleCard title="Ver Ventas" to="/ventas" />
-        <ModuleCard title="Dashboard" to="/dashboard" />
+        <h1>
+          ¡Bienvenido{user && `, ${user.first_name}`}!
+        </h1>
+        <p>Utiliza el menú lateral para navegar por las diferentes secciones</p>
       </motion.div>
     </div>
   );
