@@ -20,7 +20,6 @@ class AbstractAuditRepository(ABC):
         entity_id: int,
         action: str,
         changes: dict,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> AuditLog:
         """
@@ -32,7 +31,6 @@ class AbstractAuditRepository(ABC):
             entity_id: ID de la entidad afectada
             action: Acción realizada (CREATE, UPDATE, DELETE)
             changes: Diccionario con los cambios (formato: {"field": {"old": val, "new": val}})
-            ip_address: Dirección IP del cliente (opcional)
             correlation_id: ID de correlación del request HTTP (opcional)
         
         Returns:

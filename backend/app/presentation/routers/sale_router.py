@@ -40,7 +40,6 @@ async def create_sale(
     result: ServiceResult = await service.create(
         sale,
         user_id=current_user["id"],
-        ip_address=request.client.host if request.client else None,
         correlation_id=getattr(request.state, "correlation_id", None),
     )
 
@@ -134,7 +133,7 @@ async def update_sale(
         sale_id, 
         sale_update,
         user_id=admin_user["id"],
-        ip_address=request.client.host if request.client else None,
+
         correlation_id=getattr(request.state, "correlation_id", None),
     )
 
@@ -167,7 +166,6 @@ async def delete_sale(
     result: ServiceResult = await service.delete(
         sale_id,
         user_id=admin_user["id"],
-        ip_address=request.client.host if request.client else None,
         correlation_id=getattr(request.state, "correlation_id", None),
     )
 

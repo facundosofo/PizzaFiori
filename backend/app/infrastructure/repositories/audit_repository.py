@@ -30,7 +30,6 @@ class SqlAlchemyAuditRepository(
         entity_id: int,
         action: str,
         changes: dict,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> AuditLog:
         """
@@ -42,7 +41,6 @@ class SqlAlchemyAuditRepository(
             entity_id=entity_id,
             action=action,
             changes=changes,
-            ip_address=ip_address,
             correlation_id=correlation_id,
             timestamp=datetime.now(),
         )

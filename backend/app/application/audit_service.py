@@ -47,7 +47,6 @@ class AuditService:
         user_id: int,
         entity_type: str,
         entity: Any,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> AuditServiceResult:
         """
@@ -57,7 +56,6 @@ class AuditService:
             user_id: ID del usuario que creó la entidad
             entity_type: Tipo de entidad (Product, User, Sale, etc.)
             entity: Instancia de la entidad creada
-            ip_address: IP del cliente (opcional)
             correlation_id: ID de correlación del request (opcional)
         
         Returns:
@@ -86,7 +84,6 @@ class AuditService:
                     entity_id=entity_id,
                     action="CREATE",
                     changes=changes,
-                    ip_address=ip_address,
                     correlation_id=correlation_id,
                 )
                 await uow.commit()
@@ -120,7 +117,6 @@ class AuditService:
         entity_type: str,
         old_entity: Any,
         new_entity: Any,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> AuditServiceResult:
         """
@@ -131,7 +127,6 @@ class AuditService:
             entity_type: Tipo de entidad
             old_entity: Instancia anterior de la entidad (antes del cambio)
             new_entity: Instancia nueva de la entidad (después del cambio)
-            ip_address: IP del cliente (opcional)
             correlation_id: ID de correlación del request (opcional)
         
         Returns:
@@ -167,7 +162,6 @@ class AuditService:
                     entity_id=entity_id,
                     action="UPDATE",
                     changes=diff,
-                    ip_address=ip_address,
                     correlation_id=correlation_id,
                 )
                 await uow.commit()
@@ -201,7 +195,6 @@ class AuditService:
         user_id: int,
         entity_type: str,
         entity: Any,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> AuditServiceResult:
         """
@@ -211,7 +204,6 @@ class AuditService:
             user_id: ID del usuario que eliminó la entidad
             entity_type: Tipo de entidad
             entity: Instancia de la entidad antes de ser eliminada
-            ip_address: IP del cliente (opcional)
             correlation_id: ID de correlación del request (opcional)
         
         Returns:
@@ -240,7 +232,6 @@ class AuditService:
                     entity_id=entity_id,
                     action="DELETE",
                     changes=changes,
-                    ip_address=ip_address,
                     correlation_id=correlation_id,
                 )
                 await uow.commit()

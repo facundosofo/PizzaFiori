@@ -47,7 +47,6 @@ class AuditLogResponse(BaseModel):
     entity_id: int
     action: str  # CREATE, UPDATE, DELETE
     changes: dict  # JSON field with change details
-    ip_address: Optional[str] = None
     correlation_id: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)

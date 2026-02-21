@@ -201,7 +201,6 @@ class SaleService:
         self, 
         sale_create: SaleCreateRequest,
         user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Crea una nueva venta."""
@@ -387,11 +386,7 @@ class SaleService:
                     user_id=user_id,
                     entity_type="Sale",
                     entity=sale,
-                    ip_address=ip_address,
-                    correlation_id=correlation_id,
-                )
 
-            # Compute and attach total_items for consistency with API responses
                 try:
                     total_items = 0
                     for it in sale.items:
@@ -547,7 +542,6 @@ class SaleService:
         sale_id: int, 
         sale_update,
         user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Actualiza una venta existente.
@@ -710,7 +704,6 @@ class SaleService:
                             entity_id=existing_sale.id,
                             action="UPDATE",
                             changes=diff,
-                            ip_address=ip_address,
                             correlation_id=correlation_id,
                         )
                         await uow.commit()
@@ -737,7 +730,6 @@ class SaleService:
         self, 
         sale_id: int,
         user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Elimina una venta."""
@@ -759,11 +751,7 @@ class SaleService:
                         user_id=user_id,
                         entity_type="Sale",
                         entity=sale,
-                        ip_address=ip_address,
-                        correlation_id=correlation_id,
-                    )
 
-                await uow.sale_repo.delete(sale)
                 await uow.commit()
 
             self.logger.info("Venta eliminada exitosamente", sale_id=sale_id)

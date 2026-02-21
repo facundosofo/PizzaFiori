@@ -45,8 +45,7 @@ async def register(
     service: UserService = Depends(Provide[Container.user_service]),
 ):
     """Register a new user account."""
-    # Extraer IP para auditoría
-    ip_address = request_obj.client.host if request_obj.client else None
+    # Extraer contexto para auditoría
     correlation_id = getattr(request_obj.state, 'correlation_id', None)
     
     result = await service.register_user(
@@ -57,7 +56,6 @@ async def register(
         last_name=request.last_name,
         role=request.role,
         created_by_user_id=None,  # Auto-registro
-        ip_address=ip_address,
         correlation_id=correlation_id,
     )
 
@@ -266,14 +264,12 @@ async def update_user(
     
     # Contexto de auditoría
     updated_by_user_id = admin_user["id"]
-    ip_address = request.client.host if request.client else None
     correlation_id = getattr(request.state, 'correlation_id', None)
     
     result = await service.update_user(
         user_id,
         update_data,
         updated_by_user_id=updated_by_user_id,
-        ip_address=ip_address,
         correlation_id=correlation_id,
     )
 
@@ -313,13 +309,11 @@ async def delete_user(
     """Delete a user."""
     # Contexto de auditoría
     deleted_by_user_id = admin_user["id"]
-    ip_address = request.client.host if request.client else None
     correlation_id = getattr(request.state, 'correlation_id', None)
     
     result = await service.delete_user(
         user_id,
         deleted_by_user_id=deleted_by_user_id,
-        ip_address=ip_address,
         correlation_id=correlation_id,
     )
 

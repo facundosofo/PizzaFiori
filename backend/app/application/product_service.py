@@ -40,7 +40,6 @@ class ProductService:
         producto_create: ProductoCreateRequest,
         image: Optional[UploadFile] = None,
         user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
 
@@ -98,11 +97,7 @@ class ProductService:
                     user_id=user_id,
                     entity_type="Product",
                     entity=producto,
-                    ip_address=ip_address,
-                    correlation_id=correlation_id,
-                )
 
-            self.logger.debug(
                 "Producto creado exitosamente",
                 producto_id=producto.id,
                 producto_nombre=producto.nombre
@@ -158,7 +153,6 @@ class ProductService:
         image: Optional[UploadFile] = None,
         active: Optional[bool] = None,
         user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
         is_logical_delete: bool = False,
     ) -> ServiceResult:
@@ -257,7 +251,6 @@ class ProductService:
                             entity_id=producto.id,
                             action="DELETE",
                             changes={"old": old_producto_snapshot},
-                            ip_address=ip_address,
                             correlation_id=correlation_id,
                         )
                         await uow.commit()
@@ -287,7 +280,6 @@ class ProductService:
                                 entity_id=producto.id,
                                 action="UPDATE",
                                 changes=diff,
-                                ip_address=ip_address,
                                 correlation_id=correlation_id,
                             )
                             await uow.commit()

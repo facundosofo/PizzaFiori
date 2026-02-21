@@ -31,7 +31,6 @@ class AuditLog(Base):
     changes = Column(JSONB, nullable=False)
     
     # Contexto adicional
-    ip_address = Column(String(45), nullable=True)  # IPv4 o IPv6
     correlation_id = Column(String(36), nullable=True, index=True)  # UUID del request
     
     # Índices compuestos para optimizar queries comunes

@@ -38,7 +38,6 @@ class OfferService:
         self, 
         offer_create: OfferCreateRequest,
         user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
@@ -118,11 +117,7 @@ class OfferService:
                     user_id=user_id,
                     entity_type="Offer",
                     entity=offer,
-                    ip_address=ip_address,
-                    correlation_id=correlation_id,
-                )
 
-            self.logger.info(
                 "Oferta creada exitosamente",
                 offer_id=offer.id,
                 nombre=offer.nombre,
@@ -184,7 +179,6 @@ class OfferService:
         offer_update: Optional[OfferUpdateRequest] = None, 
         active: Optional[bool] = None,
         user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
         is_logical_delete: bool = False,
     ) -> ServiceResult:
@@ -319,7 +313,6 @@ class OfferService:
                             entity_id=offer.id,
                             action="DELETE",
                             changes={"old": old_offer_snapshot},
-                            ip_address=ip_address,
                             correlation_id=correlation_id,
                         )
                         await uow.commit()
@@ -349,7 +342,6 @@ class OfferService:
                                 entity_id=offer.id,
                                 action="UPDATE",
                                 changes=diff,
-                                ip_address=ip_address,
                                 correlation_id=correlation_id,
                             )
                             await uow.commit()

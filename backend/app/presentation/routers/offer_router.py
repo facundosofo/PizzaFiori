@@ -42,7 +42,6 @@ async def create_offer(
     result: ServiceResult = await service.create(
         offer,
         user_id=admin_user["id"],
-        ip_address=request.client.host if request.client else None,
         correlation_id=getattr(request.state, "correlation_id", None),
     )
 
@@ -147,7 +146,6 @@ async def update_offer(
         offer_id, 
         offer_update,
         user_id=admin_user["id"],
-        ip_address=request.client.host if request.client else None,
         correlation_id=getattr(request.state, "correlation_id", None),
     )
 
@@ -181,7 +179,6 @@ async def deactivate_offer(
         offer_id, 
         active=False,
         user_id=admin_user["id"],
-        ip_address=request.client.host if request.client else None,
         correlation_id=getattr(request.state, "correlation_id", None),
         is_logical_delete=True,
     )

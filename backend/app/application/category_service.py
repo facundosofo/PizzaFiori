@@ -34,7 +34,6 @@ class CategoryService:
         self,
         categoria_create: CategoriaCreateRequest,
         user_id: int,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
@@ -61,7 +60,6 @@ class CategoryService:
                         user_id=user_id,
                         entity_type="Category",
                         entity=categoria,
-                        ip_address=ip_address,
                         correlation_id=correlation_id,
                     )
 
@@ -103,7 +101,6 @@ class CategoryService:
         categoria_id: int,
         categoria_update: CategoriaUpdateRequest,
         user_id: int,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
@@ -139,7 +136,6 @@ class CategoryService:
                         entity_type="Category",
                         old_entity=old_cat,
                         new_entity=categoria,
-                        ip_address=ip_address,
                         correlation_id=correlation_id,
                     )
                 
@@ -154,7 +150,6 @@ class CategoryService:
         self,
         categoria_id: int,
         user_id: int,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         try:
@@ -190,7 +185,6 @@ class CategoryService:
                         user_id=user_id,
                         entity_type="Category",
                         entity=categoria,
-                        ip_address=ip_address,
                         correlation_id=correlation_id,
                     )
                 

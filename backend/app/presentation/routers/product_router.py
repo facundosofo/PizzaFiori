@@ -54,7 +54,7 @@ async def create_producto(
         producto_request,
         image=imagen,
         user_id=admin_user["id"],
-        ip_address=request.client.host if request.client else None,
+
         correlation_id=getattr(request.state, "correlation_id", None),
     )
 
@@ -180,7 +180,6 @@ async def update_producto(
         producto_request,
         image=imagen,
         user_id=admin_user["id"],
-        ip_address=request.client.host if request.client else None,
         correlation_id=getattr(request.state, "correlation_id", None),
     )
 
@@ -219,7 +218,7 @@ async def deactivate_producto(
         producto_id, 
         active=False,
         user_id=admin_user["id"],
-        ip_address=request.client.host if request.client else None,
+
         correlation_id=getattr(request.state, "correlation_id", None),
         is_logical_delete=True,
     )

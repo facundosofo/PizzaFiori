@@ -32,13 +32,11 @@ async def create_categoria(
 ):
     # Extraer contexto para auditoría
     user_id = admin_user["id"]
-    ip_address = request.client.host if request.client else None
     correlation_id = getattr(request.state, 'correlation_id', None)
     
     result: ServiceResult = await service.create(
         categoria,
         user_id=user_id,
-        ip_address=ip_address,
         correlation_id=correlation_id,
     )
     if result.error:
@@ -125,14 +123,12 @@ async def update_categoria(
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
     user_id = admin_user["id"]
-    ip_address = request.client.host if request.client else None
     correlation_id = getattr(request.state, 'correlation_id', None)
     
     result: ServiceResult = await service.update(
         categoria_id,
         categoria,
         user_id=user_id,
-        ip_address=ip_address,
         correlation_id=correlation_id,
     )
     if result.error:
@@ -158,13 +154,11 @@ async def deactivate_categoria(
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
     user_id = admin_user["id"]
-    ip_address = request.client.host if request.client else None
     correlation_id = getattr(request.state, 'correlation_id', None)
     
     result: ServiceResult = await service.deactivate(
         categoria_id,
         user_id=user_id,
-        ip_address=ip_address,
         correlation_id=correlation_id,
     )
     if result.error:

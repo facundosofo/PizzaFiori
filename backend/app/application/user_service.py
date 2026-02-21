@@ -76,7 +76,6 @@ class UserService:
         last_name: str,
         role: str = "USER",
         created_by_user_id: Optional[int] = None,  # Para auditoría
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """
@@ -90,7 +89,6 @@ class UserService:
             last_name: User's last name
             role: User role (default: USER)
             created_by_user_id: ID of user creating this user (for audit)
-            ip_address: IP address (for audit)
             correlation_id: Correlation ID (for audit)
 
         Returns:
@@ -146,11 +144,10 @@ class UserService:
                 # Auditar creación (usar el ID del usuario que lo creó, o el mismo si es auto-registro)
                 if self.audit_service:
                     audit_user_id = created_by_user_id if created_by_user_id else user.id
-                    await self.audit_service.log_creation(
-                        user_id=audit_user_id,
-                        entity_type="User",
-                        entity=user,
-                        ip_address=ip_address,
+await self.audit_service.log_creation(
+                    user_id=audit_user_id,
+                    entity_type="User",
+                    entity=user,
                         correlation_id=correlation_id,
                     )
 
@@ -299,7 +296,6 @@ class UserService:
         user_id: int,
         data: dict,
         updated_by_user_id: int,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Update user information."""
@@ -348,12 +344,7 @@ class UserService:
                         entity_type="User",
                         old_entity=old_user,
                         new_entity=user,
-                        ip_address=ip_address,
-                        correlation_id=correlation_id,
-                    )
 
-                self.logger.info(
-                    "User updated successfully",
                     user_id=user.id,
                 )
 
@@ -412,7 +403,6 @@ class UserService:
         self,
         user_id: int,
         deleted_by_user_id: int,
-        ip_address: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ) -> ServiceResult:
         """Delete a user."""
@@ -429,11 +419,7 @@ class UserService:
                         user_id=deleted_by_user_id,
                         entity_type="User",
                         entity=user,
-                        ip_address=ip_address,
-                        correlation_id=correlation_id,
-                    )
 
-                await uow.users.delete(user)
                 await uow.commit()
 
                 self.logger.info(
