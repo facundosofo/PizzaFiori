@@ -219,7 +219,7 @@ const AuditPage = () => {
     if (changes.new || changes.old) {
       const snapshot = changes.new || changes.old || {};
       const count = Object.keys(snapshot).length;
-      return `Snapshot (${count})`;
+      return `Captura (${count})`;
     }
 
     const keys = Object.keys(changes);
@@ -589,10 +589,6 @@ const AuditPage = () => {
             >
               Siguiente
             </button>
-
-            <div className="audit-pagination-info">
-              {totalRecords} registros
-            </div>
           </div>
         </>
       )}
