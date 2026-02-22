@@ -25,6 +25,12 @@ from app.infrastructure.repositories.sequence_repository import (
 from app.infrastructure.repositories.user_repository import (
     SqlAlchemyUserRepository,
 )
+from app.infrastructure.repositories.expense_category_repository import (
+    SqlAlchemyExpenseCategoryRepository,
+)
+from app.infrastructure.repositories.expense_repository import (
+    SqlAlchemyExpenseRepository,
+)
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
@@ -38,6 +44,8 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.sequence_repo = None
         self.users = None
         self.audit_repo = None
+        self.expense_category_repo = None
+        self.expense_repo = None
 
     async def __aenter__(self):
         self.session = self.session_factory()
@@ -48,6 +56,8 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.sequence_repo = SqlAlchemySequenceRepository(self.session)
         self.users = SqlAlchemyUserRepository(self.session)
         self.audit_repo = SqlAlchemyAuditRepository(self.session)
+        self.expense_category_repo = SqlAlchemyExpenseCategoryRepository(self.session)
+        self.expense_repo = SqlAlchemyExpenseRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):

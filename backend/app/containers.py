@@ -8,6 +8,8 @@ from app.application.sale_service import SaleService
 from app.application.dashboard_service import DashboardService
 from app.application.user_service import UserService
 from app.application.report_service import ReportService
+from app.application.expense_category_service import ExpenseCategoryService
+from app.application.expense_service import ExpenseService
 from app.infrastructure.file_service import FileService
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
@@ -25,6 +27,8 @@ class Container(containers.DeclarativeContainer):
             "app.presentation.routers.auth_router",
             "app.presentation.routers.user_router",
             "app.presentation.routers.audit_router",
+            "app.presentation.routers.expense_category_router",
+            "app.presentation.routers.expense_router",
         ]
     )
     
@@ -89,6 +93,22 @@ class Container(containers.DeclarativeContainer):
     report_service = providers.Factory(
         ReportService,
         uow=unit_of_work,
+        logger=logging,
+    )
+
+    expense_category_service = providers.Factory(
+        ExpenseCategoryService,
+        uow=unit_of_work,
+        cache_service=cache_service,
+        audit_service=audit_service,
+        logger=logging,
+    )
+
+    expense_service = providers.Factory(
+        ExpenseService,
+        uow=unit_of_work,
+        cache_service=cache_service,
+        audit_service=audit_service,
         logger=logging,
     )
 
