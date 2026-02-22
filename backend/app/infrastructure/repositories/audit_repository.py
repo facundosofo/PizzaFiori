@@ -149,8 +149,11 @@ class SqlAlchemyAuditRepository(
 
     async def count(
         self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         entity_type: Optional[str] = None,
         username: Optional[str] = None,
+        action: Optional[str] = None,
     ) -> int:
         """
         Cuenta el número total de registros de auditoría con filtros opcionales.
@@ -158,11 +161,20 @@ class SqlAlchemyAuditRepository(
         query = select(func.count()).select_from(AuditLog)
         
         conditions = []
+        if start_date is not None:
+            conditions.append(AuditLog.timestamp >= start_date)
+        
+        if end_date is not None:
+            conditions.append(AuditLog.timestamp <= end_date)
+        
         if entity_type is not None:
             conditions.append(AuditLog.entity_type == entity_type)
         
         if username is not None:
             conditions.append(AuditLog.username == username)
+        
+        if action is not None:
+            conditions.append(AuditLog.action == action)
         
         if conditions:
             query = query.where(and_(*conditions))

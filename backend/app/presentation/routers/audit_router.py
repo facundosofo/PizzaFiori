@@ -277,8 +277,8 @@ async def search_audit_logs(
         )
     
     return AuditHistoryResponse(
-        total=len(result.value),
+        total=result.value["total"],
         limit=limit,
         offset=offset,
-        records=[AuditLogResponse.model_validate(log) for log in result.value],
+        records=[AuditLogResponse.model_validate(log) for log in result.value["records"]],
     )

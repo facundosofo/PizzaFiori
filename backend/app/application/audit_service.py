@@ -406,6 +406,14 @@ class AuditService:
         """
         try:
             async with self.uow as uow:
+                total = await uow.audit_repo.count(
+                    start_date=start_date,
+                    end_date=end_date,
+                    entity_type=entity_type,
+                    username=username,
+                    action=action,
+                )
+                
                 audit_logs = await uow.audit_repo.get_by_date_range(
                     start_date=start_date,
                     end_date=end_date,
@@ -421,9 +429,13 @@ class AuditService:
                 start_date=start_date.isoformat(),
                 end_date=end_date.isoformat(),
                 records_count=len(audit_logs),
+                total_count=total,
             )
             
-            return AuditServiceResult(value=audit_logs, status_code=200)
+            return AuditServiceResult(
+                value={"records": audit_logs, "total": total},
+                status_code=200
+            )
         
         except Exception as e:
             self.logger.error(
