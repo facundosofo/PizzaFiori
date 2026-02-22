@@ -219,6 +219,7 @@ async def search_audit_logs(
     end_date: Optional[datetime] = Query(None, description="End date"),
     entity_type: Optional[str] = Query(None, description="Entity type"),
     username: Optional[str] = Query(None, description="Username"),
+    action: Optional[str] = Query(None, description="Action type (CREATE, UPDATE, DELETE)"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     service: AuditService = Depends(Provide[Container.audit_service]),
@@ -230,6 +231,7 @@ async def search_audit_logs(
     - **end_date**: Filter by end date
     - **entity_type**: Filter by entity type
     - **username**: Filter by user who performed the action
+    - **action**: Filter by action type (CREATE, UPDATE, DELETE)
     - **limit**: Number of records to return
     - **offset**: Number of records to skip
     """
@@ -259,6 +261,7 @@ async def search_audit_logs(
         end_date=end_date,
         entity_type=entity_type,
         username=username,
+        action=action,
         limit=limit,
         offset=offset,
     )

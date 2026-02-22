@@ -85,6 +85,7 @@ class AbstractAuditRepository(ABC):
         end_date: datetime,
         entity_type: Optional[str] = None,
         username: Optional[str] = None,
+        action: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[AuditLog]:
@@ -96,6 +97,7 @@ class AbstractAuditRepository(ABC):
             end_date: Fecha final
             entity_type: Filtrar por tipo de entidad (opcional)
             username: Filtrar por usuario (opcional)
+            action: Filtrar por tipo de acción (opcional)
             limit: Número máximo de registros
             offset: Número de registros a omitir
         

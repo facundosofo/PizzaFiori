@@ -97,6 +97,7 @@ class SqlAlchemyAuditRepository(
         end_date: datetime,
         entity_type: Optional[str] = None,
         username: Optional[str] = None,
+        action: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[AuditLog]:
@@ -113,6 +114,9 @@ class SqlAlchemyAuditRepository(
         
         if username is not None:
             conditions.append(AuditLog.username == username)
+        
+        if action is not None:
+            conditions.append(AuditLog.action == action)
         
         query = (
             select(AuditLog)

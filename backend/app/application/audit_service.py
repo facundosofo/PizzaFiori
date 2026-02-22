@@ -385,6 +385,7 @@ class AuditService:
         end_date: datetime,
         entity_type: Optional[str] = None,
         username: Optional[str] = None,
+        action: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> AuditServiceResult:
@@ -396,6 +397,7 @@ class AuditService:
             end_date: Fecha final
             entity_type: Filtrar por tipo de entidad (opcional)
             username: Filtrar por usuario (opcional)
+            action: Filtrar por tipo de acción (CREATE, UPDATE, DELETE) (opcional)
             limit: Número máximo de registros
             offset: Número de registros a omitir
         
@@ -409,6 +411,7 @@ class AuditService:
                     end_date=end_date,
                     entity_type=entity_type,
                     username=username,
+                    action=action,
                     limit=limit,
                     offset=offset,
                 )
