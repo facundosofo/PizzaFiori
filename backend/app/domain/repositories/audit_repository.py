@@ -36,47 +36,7 @@ class AbstractAuditRepository(ABC):
         """
         ...
 
-    @abstractmethod
-    async def get_by_entity(
-        self,
-        entity_type: str,
-        entity_id: int,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> List[AuditLog]:
-        """
-        Obtiene el historial de auditoría de una entidad específica.
-        
-        Args:
-            entity_type: Tipo de entidad
-            entity_id: ID de la entidad
-            limit: Número máximo de registros
-            offset: Número de registros a omitir
-        
-        Returns:
-            Lista de registros de auditoría ordenados por timestamp DESC
-        """
-        ...
 
-    @abstractmethod
-    async def get_by_username(
-        self,
-        username: str,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> List[AuditLog]:
-        """
-        Obtiene todas las acciones realizadas por un usuario.
-        
-        Args:
-            username: Username del usuario
-            limit: Número máximo de registros
-            offset: Número de registros a omitir
-        
-        Returns:
-            Lista de registros de auditoría ordenados por timestamp DESC
-        """
-        ...
 
     @abstractmethod
     async def get_by_date_range(
@@ -105,37 +65,26 @@ class AbstractAuditRepository(ABC):
             Lista de registros de auditoría ordenados por timestamp DESC
         """
         ...
-    
-    @abstractmethod
-    async def get_recent(
-        self,
-        limit: int = 100,
-        entity_type: Optional[str] = None,
-    ) -> List[AuditLog]:
-        """
-        Obtiene los registros de auditoría más recientes del sistema.
-        
-        Args:
-            limit: Número máximo de registros
-            entity_type: Filtrar por tipo de entidad (opcional)
-        
-        Returns:
-            Lista de registros de auditoría ordenados por timestamp DESC
-        """
-        ...
+
     
     @abstractmethod
     async def count(
         self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         entity_type: Optional[str] = None,
         username: Optional[str] = None,
+        action: Optional[str] = None,
     ) -> int:
         """
-        Cuenta el número total de registros de auditoría.
+        Cuenta el número total de registros de auditoría con filtros.
         
         Args:
+            start_date: Fecha inicial (opcional)
+            end_date: Fecha final (opcional)
             entity_type: Filtrar por tipo de entidad (opcional)
             username: Filtrar por usuario (opcional)
+            action: Filtrar por tipo de acción (opcional)
         
         Returns:
             Número total de registros

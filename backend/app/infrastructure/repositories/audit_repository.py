@@ -44,52 +44,6 @@ class SqlAlchemyAuditRepository(
         
         return await self.add(audit_log)
 
-    async def get_by_entity(
-        self,
-        entity_type: str,
-        entity_id: int,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> List[AuditLog]:
-        """
-        Obtiene el historial de auditoría de una entidad específica.
-        Incluye información del usuario que realizó la acción.
-        """
-        query = (
-            select(AuditLog)
-            .where(
-                and_(
-                    AuditLog.entity_type == entity_type,
-                    AuditLog.entity_id == entity_id,
-                )
-            )
-            .order_by(AuditLog.timestamp.desc())
-            .limit(limit)
-            .offset(offset)
-        )
-        
-        result = await self.session.execute(query)
-        return result.scalars().all()
-
-    async def get_by_username(
-        self,
-        username: str,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> List[AuditLog]:
-        """
-        Obtiene todas las acciones realizadas por un usuario.
-        """
-        query = (
-            select(AuditLog)
-            .where(AuditLog.username == username)
-            .order_by(AuditLog.timestamp.desc())
-            .limit(limit)
-            .offset(offset)
-        )
-        
-        result = await self.session.execute(query)
-        return result.scalars().all()
 
     async def get_by_date_range(
         self,
@@ -125,24 +79,6 @@ class SqlAlchemyAuditRepository(
             .limit(limit)
             .offset(offset)
         )
-        
-        result = await self.session.execute(query)
-        return result.scalars().all()
-
-    async def get_recent(
-        self,
-        limit: int = 100,
-        entity_type: Optional[str] = None,
-    ) -> List[AuditLog]:
-        """
-        Obtiene los registros de auditoría más recientes del sistema.
-        """
-        query = select(AuditLog)
-        
-        if entity_type is not None:
-            query = query.where(AuditLog.entity_type == entity_type)
-        
-        query = query.order_by(AuditLog.timestamp.desc()).limit(limit)
         
         result = await self.session.execute(query)
         return result.scalars().all()
