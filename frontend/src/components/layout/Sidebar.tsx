@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
+  Boxes,
   ChartLine,
   FileText,
   FolderTree,
@@ -29,6 +30,7 @@ const navItems = [
   { label: "Home", to: "/", icon: Home },
   { label: "Registrar venta", to: "/registrar-venta", icon: ShoppingBasket },
   { label: "Ventas", to: "/ventas", icon: Receipt },
+  { label: "Stock", to: "/stock", icon: Boxes },
   { label: "Dashboard", to: "/dashboard", icon: ChartLine },
   { label: "Reportes", to: "/reportes", icon: FileText },
 ];
