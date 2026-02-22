@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 from app.domain.models.base import Base
 
@@ -9,6 +10,8 @@ class Category(Base):
     id = Column(Integer, primary_key=True)
     nombre = Column(String(50), unique=True, index=True, nullable=False)
     activo = Column(Boolean, nullable=False, default=True)
+    fecha_creacion = Column(DateTime, default=datetime.now, nullable=False)
+    fecha_actualizacion = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
     productos = relationship(
         "Product",

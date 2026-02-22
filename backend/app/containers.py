@@ -1,5 +1,6 @@
 from dependency_injector import containers, providers
 
+from app.application.audit_service import AuditService
 from app.application.category_service import CategoryService
 from app.application.product_service import ProductService
 from app.application.offer_service import OfferService
@@ -23,6 +24,7 @@ class Container(containers.DeclarativeContainer):
             "app.presentation.routers.dashboard_router",
             "app.presentation.routers.auth_router",
             "app.presentation.routers.user_router",
+            "app.presentation.routers.audit_router",
         ]
     )
     
@@ -32,11 +34,19 @@ class Container(containers.DeclarativeContainer):
     cache_service = providers.Singleton(CacheService)
     unit_of_work = providers.Factory(SqlAlchemyUnitOfWork)
 
+    # Audit service (used by other services)
+    audit_service = providers.Factory(
+        AuditService,
+        uow=unit_of_work,
+        logger=logging,
+    )
+
     product_service = providers.Factory(
         ProductService,
         uow=unit_of_work,
         file_service=file_service,
         cache_service=cache_service,
+        audit_service=audit_service,
         logger=logging,
     )
 
@@ -44,6 +54,7 @@ class Container(containers.DeclarativeContainer):
         CategoryService,
         uow=unit_of_work,
         cache_service=cache_service,
+        audit_service=audit_service,
         logger=logging,
     )
 
@@ -51,12 +62,14 @@ class Container(containers.DeclarativeContainer):
         OfferService,
         uow=unit_of_work,
         cache_service=cache_service,
+        audit_service=audit_service,
         logger=logging,
     )
 
     sale_service = providers.Factory(
         SaleService,
         uow=unit_of_work,
+        audit_service=audit_service,
         logger=logging,
     )
 
@@ -69,6 +82,7 @@ class Container(containers.DeclarativeContainer):
     user_service = providers.Factory(
         UserService,
         uow=unit_of_work,
+        audit_service=audit_service,
         logger=logging,
     )
 

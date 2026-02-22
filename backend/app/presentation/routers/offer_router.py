@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Query, Request
 from dependency_injector.wiring import inject, Provide
 from typing import List, Optional
 
@@ -34,11 +34,15 @@ router = APIRouter(
 )
 @inject
 async def create_offer(
+    request: Request,
     offer: OfferCreateRequest,
     admin_user: dict = Depends(require_admin),
     service: OfferService = Depends(Provide[Container.offer_service]),
 ):
-    result: ServiceResult = await service.create(offer)
+    result: ServiceResult = await service.create(
+        offer,
+        username=admin_user["username"],
+    )
 
     if result.error:
         raise HTTPException(
@@ -131,12 +135,17 @@ async def get_offer(
 )
 @inject
 async def update_offer(
+    request: Request,
     offer_id: int,
     offer_update: OfferUpdateRequest,
     admin_user: dict = Depends(require_admin),
     service: OfferService = Depends(Provide[Container.offer_service]),
 ):
-    result: ServiceResult = await service.update(offer_id, offer_update)
+    result: ServiceResult = await service.update(
+        offer_id, 
+        offer_update,
+        username=admin_user["username"],
+    )
 
     if result.error:
         raise HTTPException(
@@ -159,11 +168,17 @@ async def update_offer(
 )
 @inject
 async def deactivate_offer(
+    request: Request,
     offer_id: int = Path(..., ge=1, description="ID único de la oferta"),
     admin_user: dict = Depends(require_admin),
     service: OfferService = Depends(Provide[Container.offer_service]),
 ):
-    result = await service.update(offer_id, active=False)
+    result = await service.update(
+        offer_id, 
+        active=False,
+        username=admin_user["username"],
+        is_logical_delete=True,
+    )
     
     if result.error:
         raise HTTPException(

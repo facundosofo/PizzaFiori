@@ -48,6 +48,69 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
         result = await self.session.execute(query)
         return result.scalars().all()
 
+    async def get_by_product(self, producto_id: int) -> List[Offer]:
+        """
+        Obtiene todas las ofertas activas que contienen el producto especificado.
+        
+        Args:
+            producto_id: ID del producto
+            
+        Returns:
+            List[Offer]: Ofertas activas que contienen el producto
+        """
+        subquery = (
+            select(OfferItem.oferta_id)
+            .join(oferta_item_productos, OfferItem.id == oferta_item_productos.c.oferta_item_id)
+            .where(oferta_item_productos.c.producto_id == producto_id)
+            .distinct()
+        )
+        
+        query = (
+            select(Offer)
+            .where(Offer.id.in_(subquery))
+            .where(Offer.activo == True)
+            .options(
+                selectinload(Offer.productos).selectinload(OfferItem.productos),
+                selectinload(Offer.productos).selectinload(OfferItem.categoria),
+            )
+        )
+        
+        result = await self.session.execute(query)
+        return result.scalars().all()
+
+    async def get_by_products(self, producto_ids: List[int]) -> List[Offer]:
+        """
+        Obtiene todas las ofertas activas que contienen cualquiera de los productos especificados.
+        
+        Args:
+            producto_ids: Lista de IDs de productos
+            
+        Returns:
+            List[Offer]: Ofertas activas que contienen los productos
+        """
+        if not producto_ids:
+            return []
+        
+        subquery = (
+            select(OfferItem.oferta_id)
+            .join(oferta_item_productos, OfferItem.id == oferta_item_productos.c.oferta_item_id)
+            .where(oferta_item_productos.c.producto_id.in_(producto_ids))
+            .distinct()
+        )
+        
+        query = (
+            select(Offer)
+            .where(Offer.id.in_(subquery))
+            .where(Offer.activo == True)
+            .options(
+                selectinload(Offer.productos).selectinload(OfferItem.productos),
+                selectinload(Offer.productos).selectinload(OfferItem.categoria),
+            )
+        )
+        
+        result = await self.session.execute(query)
+        return result.scalars().all()
+
     async def replace_items(
         self,
         offer_id: int,

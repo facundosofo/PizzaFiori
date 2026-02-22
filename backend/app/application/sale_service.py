@@ -23,9 +23,11 @@ class SaleService:
     def __init__(
         self,
         uow: AbstractUnitOfWork,
+        audit_service=None,
         logger: structlog.BoundLogger | None = None,
     ):
         self.uow = uow
+        self.audit_service = audit_service
         self.logger = logger or structlog.get_logger(__name__)
 
     def limpiar_nombre_pizza(self,nombre: str) -> str:
@@ -195,7 +197,11 @@ class SaleService:
         # Validación exitosa
         return None
 
-    async def create(self, sale_create: SaleCreateRequest) -> ServiceResult:
+    async def create(
+        self, 
+        sale_create: SaleCreateRequest,
+        username: Optional[str] = None,
+    ) -> ServiceResult:
         """Crea una nueva venta."""
         try:
             self.logger.debug(
@@ -373,18 +379,25 @@ class SaleService:
                 await uow.commit()
                 await uow.sale_repo.refresh(sale, attribute_names=["items"])
 
-                # Compute and attach total_items for consistency with API responses
-                try:
-                    total_items = 0
-                    for it in sale.items:
-                        if getattr(it, 'oferta_productos_snapshot', None):
-                            for p in it.oferta_productos_snapshot:
-                                total_items += (p.cantidad or 0) * (it.cantidad or 1)
-                        else:
-                            total_items += it.cantidad or 0
-                    setattr(sale, 'total_items', total_items)
-                except Exception:
-                    setattr(sale, 'total_items', 0)
+            # Auditar creación (usa su propia transacción)
+            if self.audit_service and username:
+                await self.audit_service.log_creation(
+                    username=username,
+                    entity_type="Sale",
+                    entity=sale,
+                )
+
+            try:
+                total_items = 0
+                for it in sale.items:
+                    if getattr(it, 'oferta_productos_snapshot', None):
+                        for p in it.oferta_productos_snapshot:
+                            total_items += (p.cantidad or 0) * (it.cantidad or 1)
+                    else:
+                        total_items += it.cantidad or 0
+                setattr(sale, 'total_items', total_items)
+            except Exception:
+                setattr(sale, 'total_items', 0)
 
             self.logger.info(
                 "Venta creada exitosamente",
@@ -524,7 +537,12 @@ class SaleService:
             )
             return 0
 
-    async def update(self, sale_id: int, sale_update) -> ServiceResult:
+    async def update(
+        self, 
+        sale_id: int, 
+        sale_update,
+        username: Optional[str] = None,
+    ) -> ServiceResult:
         """Actualiza una venta existente.
         
         Nota: El número de orden (numero_orden) no puede ser editado.
@@ -544,6 +562,10 @@ class SaleService:
                         error=f"Venta {sale_id} no encontrada",
                         status_code=404,
                     )
+
+                # Capturar estado anterior para auditoría (usando helpers especializados)
+                from app.application.utils.audit_helpers import sale_to_snapshot
+                old_sale_dict = sale_to_snapshot(existing_sale)
 
                 # Calcular nuevos items y total
                 sale_items = []
@@ -651,6 +673,39 @@ class SaleService:
                 await uow.commit()
                 await uow.sale_repo.refresh(existing_sale, attribute_names=["items"])
 
+                # Capturar nuevo estado para comparación
+                new_sale_dict = sale_to_snapshot(existing_sale)
+
+            # Auditar actualización con comparación de snapshots
+            if self.audit_service and username:
+                # Calcular diff manualmente entre snapshots
+                diff = {}
+                
+                # Comparar campos simples
+                for key in ['numero_orden', 'total']:
+                    old_val = old_sale_dict.get(key)
+                    new_val = new_sale_dict.get(key)
+                    if old_val != new_val:
+                        diff[key] = {"old": old_val, "new": new_val}
+                
+                # Comparar items
+                old_items = old_sale_dict.get('items', [])
+                new_items = new_sale_dict.get('items', [])
+                if old_items != new_items:
+                    diff['items'] = {"old": old_items, "new": new_items}
+                
+                # Solo registrar si hay cambios
+                if diff:
+                    async with self.uow as uow:
+                        await uow.audit_repo.log_action(
+                            username=username,
+                            entity_type="Sale",
+                            entity_id=existing_sale.id,
+                            action="UPDATE",
+                            changes=diff,
+                        )
+                        await uow.commit()
+
             self.logger.info(
                 "Venta actualizada exitosamente",
                 sale_id=sale_id,
@@ -669,7 +724,11 @@ class SaleService:
             )
             return ServiceResult(error=str(e), status_code=400)
 
-    async def delete(self, sale_id: int) -> ServiceResult:
+    async def delete(
+        self, 
+        sale_id: int,
+        username: Optional[str] = None
+    ) -> ServiceResult:
         """Elimina una venta."""
         try:
             self.logger.debug("Eliminando venta", sale_id=sale_id)
@@ -683,7 +742,15 @@ class SaleService:
                         status_code=404,
                     )
 
-                await uow.sale_repo.delete(sale)
+                # Auditar eliminación ANTES de borrar (AuditService usa su propia transacción)
+                if self.audit_service and username:
+                    await self.audit_service.log_deletion(
+                        username=username,
+                        entity_type="Sale",
+                        entity=sale,
+                    )
+
+                await uow.sale_repo.delete(sale_id)
                 await uow.commit()
 
             self.logger.info("Venta eliminada exitosamente", sale_id=sale_id)

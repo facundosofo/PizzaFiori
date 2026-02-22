@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Query, Request
 from dependency_injector.wiring import inject, Provide
 from typing import List, Optional
 
@@ -25,11 +25,16 @@ router = APIRouter(
 )
 @inject
 async def create_categoria(
+    request: Request,
     categoria: CategoriaCreateRequest = Body(..., description="Datos de la categoría a crear"),
     admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    result: ServiceResult = await service.create(categoria)
+    
+    result: ServiceResult = await service.create(
+        categoria,
+        username=admin_user["username"],
+    )
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
     return result.value
@@ -107,12 +112,17 @@ async def get_categoria(
 )
 @inject
 async def update_categoria(
+    request: Request,
     categoria_id: int = Path(..., ge=1, description="ID de la categoría a actualizar"),
     categoria: CategoriaUpdateRequest = Body(..., description="Campos a actualizar"),
     admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    result: ServiceResult = await service.update(categoria_id, categoria)
+    result: ServiceResult = await service.update(
+        categoria_id,
+        categoria,
+        username=admin_user["username"]
+    )
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
     return result.value
@@ -130,11 +140,16 @@ async def update_categoria(
 )
 @inject
 async def deactivate_categoria(
+    request: Request,
     categoria_id: int = Path(..., ge=1, description="ID único de la categoría"),
     admin_user: dict = Depends(require_admin),
     service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    result: ServiceResult = await service.deactivate(categoria_id)
+  
+    result: ServiceResult = await service.deactivate(
+        categoria_id,
+        username=admin_user["username"]
+    )
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
     return result.value

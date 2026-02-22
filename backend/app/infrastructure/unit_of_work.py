@@ -4,6 +4,9 @@ from typing import Optional
 
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.infrastructure.database import AsyncSessionLocal
+from app.infrastructure.repositories.audit_repository import (
+    SqlAlchemyAuditRepository,
+)
 from app.infrastructure.repositories.category_repository import (
     SqlAlchemyCategoryRepository,
 )
@@ -34,6 +37,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.sale_repo = None
         self.sequence_repo = None
         self.users = None
+        self.audit_repo = None
 
     async def __aenter__(self):
         self.session = self.session_factory()
@@ -43,6 +47,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.sale_repo = SqlAlchemySaleRepository(self.session)
         self.sequence_repo = SqlAlchemySequenceRepository(self.session)
         self.users = SqlAlchemyUserRepository(self.session)
+        self.audit_repo = SqlAlchemyAuditRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
