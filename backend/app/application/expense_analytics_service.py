@@ -90,6 +90,7 @@ class ExpenseAnalyticsService:
         self,
         limit: int = 8,
         time_filter: FiltroTiempo = FiltroTiempo.ULTIMO_ANO,
+        include_subcategories: bool = False,
     ) -> ServiceResult:
         """Obtiene gastos agregados por categoria (padres incluyen subcategorias)."""
         try:
@@ -98,11 +99,20 @@ class ExpenseAnalyticsService:
                     "Getting expenses by category",
                     limit=limit,
                     time_filter=time_filter,
+                    include_subcategories=include_subcategories,
                 )
-                result = await self._get_expenses_by_category_data(
-                    limit=limit,
-                    time_filter=time_filter,
-                )
+                
+                if include_subcategories:
+                    result = await self._get_expenses_by_category_with_subcategories(
+                        limit=limit,
+                        time_filter=time_filter,
+                    )
+                else:
+                    result = await self._get_expenses_by_category_data(
+                        limit=limit,
+                        time_filter=time_filter,
+                    )
+                    
                 return ServiceResult(value=result)
         except Exception as e:
             self.logger.error("Error obteniendo gastos por categoria", error=str(e))
@@ -343,3 +353,98 @@ class ExpenseAnalyticsService:
             }
             for row in rows
         ]
+
+    async def _get_expenses_by_category_with_subcategories(
+        self,
+        limit: int,
+        time_filter: FiltroTiempo,
+    ) -> List[dict]:
+        """Obtiene gastos por categoría con subcategorías anidadas."""
+        start_date = self._get_start_date_for_time_filter(time_filter)
+        
+        # Obtener todas las categorías padre activas
+        parent_categories_query = select(
+            ExpenseCategory.id,
+            ExpenseCategory.nombre,
+        ).where(
+            and_(
+                ExpenseCategory.padre_id.is_(None),
+                ExpenseCategory.activo.is_(True),
+            )
+        )
+        
+        parent_categories_result = await self.uow.session.execute(parent_categories_query)
+        parent_categories = parent_categories_result.fetchall()
+        
+        results = []
+        for parent_cat in parent_categories:
+            # Obtener IDs de la categoría y sus subcategorías
+            category_ids = [parent_cat.id]
+            
+            # Obtener subcategorías
+            subcategories_query = select(ExpenseCategory.id, ExpenseCategory.nombre).where(
+                and_(
+                    ExpenseCategory.padre_id == parent_cat.id,
+                    ExpenseCategory.activo.is_(True),
+                )
+            )
+            subcategories_result = await self.uow.session.execute(subcategories_query)
+            subcategories_rows = subcategories_result.fetchall()
+            
+            # Calcular total de gastos para la categoría padre (incluyendo subcategorías)
+            all_category_ids = [parent_cat.id] + [row.id for row in subcategories_rows]
+            
+            total_query = select(
+                func.sum(Expense.monto).label("total_gastos"),
+            ).where(
+                and_(
+                    Expense.activo.is_(True),
+                    Expense.categoria_gasto_id.in_(all_category_ids),
+                )
+            )
+            
+            if start_date is not None:
+                total_query = total_query.where(Expense.fecha_pago >= start_date)
+            
+            total_result = await self.uow.session.execute(total_query)
+            total_row = total_result.fetchone()
+            total_gastos = float(total_row.total_gastos or 0) if total_row else 0
+            
+            # Solo incluir categorías con gastos > 0
+            if total_gastos > 0:
+                # Obtener desglose de subcategorías
+                subcategories_detail = []
+                for subcat_row in subcategories_rows:
+                    subcat_query = select(
+                        func.sum(Expense.monto).label("total_gastos"),
+                    ).where(
+                        and_(
+                            Expense.activo.is_(True),
+                            Expense.categoria_gasto_id == subcat_row.id,
+                        )
+                    )
+                    
+                    if start_date is not None:
+                        subcat_query = subcat_query.where(Expense.fecha_pago >= start_date)
+                    
+                    subcat_result = await self.uow.session.execute(subcat_query)
+                    subcat_total = subcat_result.fetchone()
+                    
+                    if subcat_total and subcat_total.total_gastos and float(subcat_total.total_gastos) > 0:
+                        subcategories_detail.append({
+                            "categoria": subcat_row.nombre,
+                            "gastos": float(subcat_total.total_gastos),
+                        })
+                
+                # Ordenar subcategorías por gastos descendente
+                subcategories_detail.sort(key=lambda x: x["gastos"], reverse=True)
+                
+                results.append({
+                    "categoria": parent_cat.nombre or "Sin categoría",
+                    "gastos": total_gastos,
+                    "subcategorias": subcategories_detail if subcategories_detail else None,
+                })
+        
+        # Ordenar por gastos totales descendente y limitar
+        results.sort(key=lambda x: x["gastos"], reverse=True)
+        return results[:limit]

@@ -132,12 +132,32 @@ class GastosPorCategoriaResponse(BaseModel):
     """Respuesta para gastos agrupados por categoria."""
     categoria: str = Field(..., description="Nombre de la categoria")
     gastos: float = Field(..., description="Monto total de gastos en pesos")
+    subcategorias: List['SubcategoriaGastoResponse'] | None = Field(None, description="Subcategorias con sus gastos (opcional)")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "categoria": "Servicios",
-                "gastos": 18000.0
+                "gastos": 18000.0,
+                "subcategorias": [
+                    {"categoria": "Luz", "gastos": 8000.0},
+                    {"categoria": "Gas", "gastos": 5000.0},
+                ]
+            }
+        }
+    )
+
+
+class SubcategoriaGastoResponse(BaseModel):
+    """Respuesta para subcategoría de gastos."""
+    categoria: str = Field(..., description="Nombre de la subcategoría")
+    gastos: float = Field(..., description="Monto total de gastos en pesos")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "categoria": "Luz",
+                "gastos": 8000.0
             }
         }
     )

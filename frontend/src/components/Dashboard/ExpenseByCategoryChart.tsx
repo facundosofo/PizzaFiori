@@ -2,7 +2,7 @@
  * ExpenseByCategoryChart - Grafico de torta para gastos por categoria
  */
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import type { ExpenseByCategory } from '../../services/dashboardService';
 
@@ -12,9 +12,23 @@ interface ExpenseByCategoryChartProps {
 }
 
 const ExpenseByCategoryChart = memo(({ data, height = 300 }: ExpenseByCategoryChartProps) => {
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
   if (!data || data.length === 0) {
     return <div className="chart-container">No hay datos disponibles</div>;
   }
+
+  const toggleCategory = (categoria: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoria)) {
+        newSet.delete(categoria);
+      } else {
+        newSet.add(categoria);
+      }
+      return newSet;
+    });
+  };
 
   const COLORS = [
     '#ef4444',
@@ -129,19 +143,88 @@ const ExpenseByCategoryChart = memo(({ data, height = 300 }: ExpenseByCategoryCh
           <tbody>
             {data.map((item, index) => {
               const percentage = total === 0 ? '0.0' : ((item.gastos / total) * 100).toFixed(1);
+              const hasSubcategories = item.subcategorias && item.subcategorias.length > 0;
+              const isExpanded = expandedCategories.has(item.categoria);
+              
               return (
-                <tr key={item.categoria} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                  <td style={{ padding: '10px 8px', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: COLORS[index % COLORS.length] }} />
-                    {item.categoria}
-                  </td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
-                    {formatCurrency(item.gastos)}
-                  </td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                    {percentage}%
-                  </td>
-                </tr>
+                <>
+                  <tr key={item.categoria} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <td style={{ padding: '10px 8px', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {hasSubcategories ? (
+                        <button
+                          onClick={() => toggleCategory(item.categoria)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: 'var(--color-text-muted)',
+                            fontSize: '12px',
+                            transition: 'transform 0.2s',
+                            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                          }}
+                          aria-label={isExpanded ? 'Colapsar' : 'Expandir'}
+                        >
+                          ▶
+                        </button>
+                      ) : (
+                        <span style={{ width: '12px' }} />
+                      )}
+                      <span style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: COLORS[index % COLORS.length] }} />
+                      {item.categoria}
+                    </td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
+                      {formatCurrency(item.gastos)}
+                    </td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                      {percentage}%
+                    </td>
+                  </tr>
+                  {hasSubcategories && isExpanded && item.subcategorias!.map((subitem) => {
+                    const subPercentage = total === 0 ? '0.0' : ((subitem.gastos / total) * 100).toFixed(1);
+                    return (
+                      <tr 
+                        key={`${item.categoria}-${subitem.categoria}`}
+                        style={{ 
+                          borderBottom: '1px solid var(--color-border)',
+                          backgroundColor: 'var(--color-surface-1)',
+                        }}
+                      >
+                        <td style={{ 
+                          padding: '8px 8px 8px 44px', 
+                          color: 'var(--color-text-muted)', 
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}>
+                          <span style={{ color: 'var(--color-text-muted)' }}>└</span>
+                          {subitem.categoria}
+                        </td>
+                        <td style={{ 
+                          padding: '8px 8px', 
+                          textAlign: 'right', 
+                          color: 'var(--color-text-muted)', 
+                          fontSize: '12px',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {formatCurrency(subitem.gastos)}
+                        </td>
+                        <td style={{ 
+                          padding: '8px 8px', 
+                          textAlign: 'right', 
+                          color: 'var(--color-text-muted)', 
+                          fontSize: '12px',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {subPercentage}%
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </>
               );
             })}
           </tbody>

@@ -175,7 +175,7 @@ const DashboardOverview = () => {
 
   const fetchExpensesByCategory = useCallback(async () => {
     try {
-      const expenses = await getExpensesByCategory(8, expenseCategoryTimeFilter);
+      const expenses = await getExpensesByCategory(8, expenseCategoryTimeFilter, true); // true para incluir subcategorías
       setExpensesByCategory(expenses);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar gastos por categoria';

@@ -71,6 +71,12 @@ export interface YearlyExpense {
 export interface ExpenseByCategory {
   categoria: string;
   gastos: number;
+  subcategorias?: ExpenseSubcategory[];
+}
+
+export interface ExpenseSubcategory {
+  categoria: string;
+  gastos: number;
 }
 
 export interface Category {
@@ -249,15 +255,19 @@ export const getExpensesByMonth = async (
 /**
  * Obtener gastos por categoria
  * 
- * GET /api/dashboard/expenses/by-category?limit={limit}&time_filter={time_filter}
+ * GET /api/dashboard/expenses/by-category?limit={limit}&time_filter={time_filter}&include_subcategories={includeSubcategories}
  */
 export const getExpensesByCategory = async (
   limit: number = 8,
-  timeFilter?: TimeFilter
+  timeFilter?: TimeFilter,
+  includeSubcategories: boolean = false
 ): Promise<ExpenseByCategory[]> => {
   const params = new URLSearchParams({ limit: String(limit) });
   if (timeFilter) {
     params.set('time_filter', timeFilter);
+  }
+  if (includeSubcategories) {
+    params.set('include_subcategories', 'true');
   }
   const url = `/dashboard/expenses/by-category?${params.toString()}`;
   return fetchJson(url);
