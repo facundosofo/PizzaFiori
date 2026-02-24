@@ -12,11 +12,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   getDashboardData,
+  getExpensesByMonth,
   getSalesByCategory,
   getTopProducts,
   getWeekdayRevenue,
   getCategories,
   type DashboardData,
+  type MonthlyExpense,
   type ProductSort,
   type WeekdayRevenue,
   type TimeFilter,
@@ -25,12 +27,15 @@ import RevenueChart from '../components/Dashboard/RevenueChart';
 import SalesByCategoryChart from '../components/Dashboard/SalesByCategoryChart';
 import TopProductsTable from '../components/Dashboard/TopProductsTable';
 import WeekdayChart from '../components/Dashboard/WeekdayChart';
+import ExpenseByMonthChart from '../components/Dashboard/ExpenseByMonthChart';
 import ErrorAlert from '../components/shared/ErrorAlert';
 import PeriodSelector, { type Period } from '../components/shared/PeriodSelector';
 import TimeFilterSelector, { type TimeFilterOption } from '../components/shared/TimeFilterSelector';
 import MetricSelector, { type Metric } from '../components/shared/MetricSelector';
 import WeekdayMetricSelector, { type WeekdayMetric } from '../components/shared/WeekdayMetricSelector';
 import CategorySelector from '../components/shared/CategorySelector';
+import { ChartColumnIncreasingIcon, ChartLineIcon } from '../components/shared/Icons';
+import { getGastosCategorias } from '../services/gastosCategoriasService';
 import '../styles/dashboard.css';
 import '../styles/shared/page-header.css';
 
@@ -42,6 +47,7 @@ const DashboardOverview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>('monthly');
   const [revenueMetric, setRevenueMetric] = useState<Metric>('ingresos');
   const [salesByCategoryTimeFilter, setSalesByCategoryTimeFilter] = useState<TimeFilter>('last_year');
@@ -49,6 +55,11 @@ const DashboardOverview = () => {
   const [topProductsSort, setTopProductsSort] = useState<ProductSort>('top');
   const [topProductsCategory, setTopProductsCategory] = useState<string>('');
   const [topProductsLimit, setTopProductsLimit] = useState<number>(5);
+
+  const [expensesByMonth, setExpensesByMonth] = useState<MonthlyExpense[]>([]);
+  const [expensesMonthlyLoading, setExpensesMonthlyLoading] = useState(false);
+  const [expenseMonthlyCategory, setExpenseMonthlyCategory] = useState<string>('');
+  const [expenseMonthlyChartType, setExpenseMonthlyChartType] = useState<'bar' | 'area'>('area');
   
   // Estados para el gráfico de weekday revenue
   const [weekdayMetric, setWeekdayMetric] = useState<WeekdayMetric>('items');
@@ -73,9 +84,10 @@ const DashboardOverview = () => {
       setLoading(true);
       
       // Cargar datos del dashboard y categorías en paralelo
-      const [dashboardData, categoriesData] = await Promise.all([
+      const [dashboardData, categoriesData, expenseCategoriesData] = await Promise.all([
         getDashboardData(),
         getCategories(),
+        getGastosCategorias(),
       ]);
       
       setData(dashboardData);
@@ -83,6 +95,15 @@ const DashboardOverview = () => {
       // Usar las categorías del endpoint de categorías
       const categories = categoriesData.map(c => c.nombre).sort();
       setAvailableCategories(categories);
+
+      const expenseCategoryNames = Array.from(
+        new Set(
+          expenseCategoriesData
+            .filter(c => c.padre_id == null)
+            .map(c => c.nombre)
+        )
+      ).sort();
+      setExpenseCategories(expenseCategoryNames);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar el dashboard';
       setError(`Error al cargar dashboard: ${errorMessage}`);
@@ -129,6 +150,19 @@ const DashboardOverview = () => {
     }
   }, [weekdayCategory, weekdayTimeFilter]);
 
+  const fetchExpensesByMonth = useCallback(async () => {
+    try {
+      setExpensesMonthlyLoading(true);
+      const expenses = await getExpensesByMonth(12, expenseMonthlyCategory || undefined);
+      setExpensesByMonth(expenses);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar gastos por mes';
+      setError(`Error al cargar gastos por mes: ${errorMessage}`);
+    } finally {
+      setExpensesMonthlyLoading(false);
+    }
+  }, [expenseMonthlyCategory]);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -144,6 +178,10 @@ const DashboardOverview = () => {
   useEffect(() => {
     fetchWeekdayRevenue();
   }, [fetchWeekdayRevenue]);
+
+  useEffect(() => {
+    fetchExpensesByMonth();
+  }, [fetchExpensesByMonth]);
 
   useEffect(() => {
     const saleEventKey = 'pizza_fiori:sale_created_at';
@@ -259,9 +297,84 @@ const DashboardOverview = () => {
   );
 
   const renderGastosTab = () => (
-    <div className="dashboard-placeholder">
-      <h2>Tab Gastos</h2>
-      <p>Contenido para análisis detallado de gastos</p>
+    <div className="charts-grid">
+      <div className="chart-section chart-main">
+        <div className="section-header">
+          <h2 className="chart-title">Gastos por mes</h2>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px', height: '36px' }}>
+              <button
+                onClick={() => setExpenseMonthlyChartType('bar')}
+                aria-label="Cambiar a barras"
+                title="Barras"
+                style={{
+                  padding: '8px 12px',
+                  height: '36px',
+                  background: expenseMonthlyChartType === 'bar' ? 'var(--color-accent)' : 'transparent',
+                  color: expenseMonthlyChartType === 'bar' ? '#ffffff' : 'var(--color-text-muted)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '13px',
+                  fontWeight: expenseMonthlyChartType === 'bar' ? '600' : '500',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ChartColumnIncreasingIcon size={18} />
+              </button>
+              <button
+                onClick={() => setExpenseMonthlyChartType('area')}
+                aria-label="Cambiar a linea"
+                title="Linea"
+                style={{
+                  padding: '8px 12px',
+                  height: '36px',
+                  background: expenseMonthlyChartType === 'area' ? 'var(--color-accent)' : 'transparent',
+                  color: expenseMonthlyChartType === 'area' ? '#ffffff' : 'var(--color-text-muted)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '13px',
+                  fontWeight: expenseMonthlyChartType === 'area' ? '600' : '500',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ChartLineIcon size={18} />
+              </button>
+            </div>
+            <CategorySelector
+              categories={expenseCategories}
+              selectedCategory={expenseMonthlyCategory}
+              onCategoryChange={setExpenseMonthlyCategory}
+            />
+          </div>
+        </div>
+        {expensesMonthlyLoading ? (
+          <div
+            style={{
+              height: '300px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            Cargando...
+          </div>
+        ) : (
+          <ExpenseByMonthChart
+            data={expensesByMonth}
+            height={350}
+            chartType={expenseMonthlyChartType}
+          />
+        )}
+      </div>
     </div>
   );
 

@@ -6,6 +6,9 @@ from app.application.product_service import ProductService
 from app.application.offer_service import OfferService
 from app.application.sale_service import SaleService
 from app.application.dashboard_service import DashboardService
+from app.application.sales_analytics_service import SalesAnalyticsService
+from app.application.product_analytics_service import ProductAnalyticsService
+from app.application.expense_analytics_service import ExpenseAnalyticsService
 from app.application.user_service import UserService
 from app.application.report_service import ReportService
 from app.application.expense_category_service import ExpenseCategoryService
@@ -79,6 +82,24 @@ class Container(containers.DeclarativeContainer):
 
     dashboard_service = providers.Factory(
         DashboardService,
+        uow=unit_of_work,
+        logger=logging,
+    )
+
+    sales_analytics_service = providers.Factory(
+        SalesAnalyticsService,
+        uow=unit_of_work,
+        logger=logging,
+    )
+
+    product_analytics_service = providers.Factory(
+        ProductAnalyticsService,
+        uow=unit_of_work,
+        logger=logging,
+    )
+
+    expense_analytics_service = providers.Factory(
+        ExpenseAnalyticsService,
         uow=unit_of_work,
         logger=logging,
     )

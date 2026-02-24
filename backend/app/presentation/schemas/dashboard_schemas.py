@@ -111,3 +111,18 @@ class WeekdayRevenueResponse(BaseModel):
             }
         }
     )
+
+
+class GastosPorMesResponse(BaseModel):
+    """Respuesta para gastos agrupados por mes."""
+    mes: str = Field(..., description="Nombre del mes (Ene 2026, Feb 2026, etc)")
+    gastos: float = Field(..., description="Monto total de gastos en pesos")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "mes": "Feb 2026",
+                "gastos": 32000.0
+            }
+        }
+    )

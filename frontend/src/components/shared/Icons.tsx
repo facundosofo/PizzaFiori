@@ -5,6 +5,8 @@ import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
+  ChartColumnIncreasing,
+  ChartLine,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -87,6 +89,11 @@ export const Columns3CogIcon = (props: IconProps) => renderLucideIcon(Columns3Co
 export const FolderTreeIcon = (props: IconProps) => renderLucideIcon(FolderTree, props);
 
 export const ClockIcon = (props: IconProps) => renderLucideIcon(Clock, props);
+
+export const ChartColumnIncreasingIcon = (props: IconProps) =>
+  renderLucideIcon(ChartColumnIncreasing, props);
+
+export const ChartLineIcon = (props: IconProps) => renderLucideIcon(ChartLine, props);
 
 export const PizzaIcon = ({
   size = 28,

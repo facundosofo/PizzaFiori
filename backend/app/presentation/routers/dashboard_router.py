@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from dependency_injector.wiring import inject, Provide
 from typing import List
 
+from app.application.sales_analytics_service import SalesAnalyticsService
+from app.application.product_analytics_service import ProductAnalyticsService
+from app.application.expense_analytics_service import ExpenseAnalyticsService
 from app.application.dashboard_service import DashboardService
 from app.containers import Container
 from app.presentation.schemas.dashboard_schemas import (
@@ -9,6 +12,7 @@ from app.presentation.schemas.dashboard_schemas import (
     ProductoDestacadoResponse,
     VentasPorCategoriaResponse,
     WeekdayRevenueResponse,
+    GastosPorMesResponse,
     TipoPeriodo,
     FiltroTiempo,
 )
@@ -39,7 +43,7 @@ async def get_revenue(
         description="Tipo de período: daily, monthly, yearly"
     ),
     limit: int = Query(30, ge=1, le=365, description="Cantidad de registros a devolver"),
-    service: DashboardService = Depends(Provide[Container.dashboard_service]),
+    service: SalesAnalyticsService = Depends(Provide[Container.sales_analytics_service]),
 ):
     """
     Obtiene datos de revenue agrupados por el período especificado.
@@ -71,7 +75,7 @@ async def get_revenue(
 @inject
 async def get_weekday_revenue(
     category: str | None = Query(None, description="Filtrar por categoría (opcional)"),
-    service: DashboardService = Depends(Provide[Container.dashboard_service]),
+    service: SalesAnalyticsService = Depends(Provide[Container.sales_analytics_service]),
 ):
     """
     Obtiene promedio de ventas por día de semana ajustado al horario de negocio (datos históricos).
@@ -110,7 +114,7 @@ async def get_top_products(
     ),
     sort: str = Query("top", description="Orden: 'top' (más vendidos) o 'bottom' (menos vendidos)"),
     category: str | None = Query(None, description="Filtrar por categoría (opcional)"),
-    service: DashboardService = Depends(Provide[Container.dashboard_service]),
+    service: ProductAnalyticsService = Depends(Provide[Container.product_analytics_service]),
 ):
     """
     Obtiene los N productos más o menos vendidos ordenados según el parámetro sort.
@@ -125,6 +129,35 @@ async def get_top_products(
             detail=result.error
         )
     
+    return result.value
+
+
+@router.get(
+    "/expenses/monthly",
+    response_model=List[GastosPorMesResponse],
+    summary="Obtener gastos por mes",
+    description="Devuelve el monto total de gastos agrupado por mes.",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_expenses_by_month(
+    limit: int = Query(12, ge=1, le=36, description="Cantidad de meses a devolver"),
+    category: str | None = Query(None, description="Filtrar por categoría de gasto (opcional)"),
+    service: ExpenseAnalyticsService = Depends(Provide[Container.expense_analytics_service]),
+):
+    """
+    Obtiene el total de gastos por mes, con filtro opcional por categoría.
+    """
+    result = await service.get_expenses_by_month(limit=limit, category=category)
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
     return result.value
 
 
@@ -144,7 +177,7 @@ async def get_sales_by_category(
         FiltroTiempo.HISTORICO,
         description="Filtro de tiempo: today (hoy), last_7_days (últimos 7 días), last_month (últimos 30 días), last_year (últimos 12 meses), all_time (histórico)"
     ),
-    service: DashboardService = Depends(Provide[Container.dashboard_service]),
+    service: SalesAnalyticsService = Depends(Provide[Container.sales_analytics_service]),
 ):
     """
     Obtiene cantidad vendida por categoria.

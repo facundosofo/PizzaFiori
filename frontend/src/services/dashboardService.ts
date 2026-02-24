@@ -58,6 +58,11 @@ export interface WeekdayRevenue {
   promedio_cantidad: number;
 }
 
+export interface MonthlyExpense {
+  mes: string;
+  gastos: number;
+}
+
 export interface Category {
   id: number;
   nombre: string;
@@ -191,6 +196,23 @@ export const getWeekdayRevenue = async (
   }
   const query = params.toString();
   const url = `/dashboard/revenue/weekday${query ? `?${query}` : ''}`;
+  return fetchJson(url);
+};
+
+/**
+ * Obtener gastos por mes
+ * 
+ * GET /api/dashboard/expenses/monthly?limit={limit}&category={category}
+ */
+export const getExpensesByMonth = async (
+  limit: number = 12,
+  category?: string
+): Promise<MonthlyExpense[]> => {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (category) {
+    params.set('category', category);
+  }
+  const url = `/dashboard/expenses/monthly?${params.toString()}`;
   return fetchJson(url);
 };
 
