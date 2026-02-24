@@ -62,6 +62,8 @@ const translateEntityType = (entityType: string): string => {
     Offer: "Oferta",
     Sale: "Venta",
     User: "Usuario",
+    Expense: "Gasto",
+    ExpenseCategory: "Categoría Gasto",
   };
   return translations[entityType] || entityType;
 };

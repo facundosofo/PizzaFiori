@@ -70,7 +70,7 @@ class ExpenseCategoryService:
                 if self.audit_service:
                     await self.audit_service.log_creation(
                         username=username,
-                        entity_type="ExpenseCategory",
+                        entity_type="Categoría Gasto",
                         entity=categoria,
                     )
 
@@ -192,7 +192,7 @@ class ExpenseCategoryService:
                     old_cat = ExpenseCategory(**old_categoria_dict)
                     await self.audit_service.log_update(
                         username=username,
-                        entity_type="ExpenseCategory",
+                        entity_type="Categoría Gasto",
                         old_entity=old_cat,
                         new_entity=categoria,
                     )
@@ -232,7 +232,7 @@ class ExpenseCategoryService:
                 if self.audit_service:
                     await self.audit_service.log_deletion(
                         username=username,
-                        entity_type="ExpenseCategory",
+                        entity_type="Categoría Gasto",
                         entity=categoria,
                     )
 

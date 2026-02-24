@@ -71,7 +71,7 @@ class ExpenseService:
                 if self.audit_service:
                     await self.audit_service.log_creation(
                         username=username,
-                        entity_type="Expense",
+                        entity_type="Gasto",
                         entity=gasto,
                     )
 
@@ -214,7 +214,7 @@ class ExpenseService:
                     old_gast = Expense(**old_gasto_dict)
                     await self.audit_service.log_update(
                         username=username,
-                        entity_type="Expense",
+                        entity_type="Gasto",
                         old_entity=old_gast,
                         new_entity=gasto,
                     )
@@ -254,7 +254,7 @@ class ExpenseService:
                 if self.audit_service:
                     await self.audit_service.log_deletion(
                         username=username,
-                        entity_type="Expense",
+                        entity_type="Gasto",
                         entity=gasto,
                     )
 
