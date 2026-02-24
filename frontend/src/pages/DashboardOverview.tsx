@@ -50,6 +50,7 @@ const DashboardOverview = () => {
   const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>('monthly');
   const [revenueMetric, setRevenueMetric] = useState<Metric>('ingresos');
+  const [revenueChartType, setRevenueChartType] = useState<'bar' | 'area'>('area');
   const [salesByCategoryTimeFilter, setSalesByCategoryTimeFilter] = useState<TimeFilter>('last_year');
   const [topProductsTimeFilter, setTopProductsTimeFilter] = useState<TimeFilter>('last_year');
   const [topProductsSort, setTopProductsSort] = useState<ProductSort>('top');
@@ -229,7 +230,7 @@ const DashboardOverview = () => {
       <div className="chart-section chart-main">
         <div className="section-header">
           <h2 className="chart-title">Ventas por período</h2>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', width: '100%' }}>
             <MetricSelector 
               selectedMetric={revenueMetric} 
               onMetricChange={setRevenueMetric} 
@@ -238,6 +239,53 @@ const DashboardOverview = () => {
               selectedPeriod={revenuePeriod} 
               onPeriodChange={setRevenuePeriod} 
             />
+            <span style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)' }} />
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px', height: '36px' }}>
+              <button
+                onClick={() => setRevenueChartType('area')}
+                aria-label="Cambiar a linea"
+                title="Linea"
+                style={{
+                  padding: '8px 12px',
+                  height: '36px',
+                  background: revenueChartType === 'area' ? 'var(--color-accent)' : 'transparent',
+                  color: revenueChartType === 'area' ? '#ffffff' : 'var(--color-text-muted)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '13px',
+                  fontWeight: revenueChartType === 'area' ? '600' : '500',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ChartLineIcon size={18} />
+              </button>
+              <button
+                onClick={() => setRevenueChartType('bar')}
+                aria-label="Cambiar a barras"
+                title="Barras"
+                style={{
+                  padding: '8px 12px',
+                  height: '36px',
+                  background: revenueChartType === 'bar' ? 'var(--color-accent)' : 'transparent',
+                  color: revenueChartType === 'bar' ? '#ffffff' : 'var(--color-text-muted)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '13px',
+                  fontWeight: revenueChartType === 'bar' ? '600' : '500',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ChartColumnIncreasingIcon size={18} />
+              </button>
+            </div>
           </div>
         </div>
         <RevenueChart 
@@ -246,6 +294,7 @@ const DashboardOverview = () => {
           yearlyData={data?.yearlyRevenue || []}
           selectedPeriod={revenuePeriod}
           selectedMetric={revenueMetric}
+          chartType={revenueChartType}
           height={350} 
         />
       </div>
@@ -301,30 +350,14 @@ const DashboardOverview = () => {
       <div className="chart-section chart-main">
         <div className="section-header">
           <h2 className="chart-title">Gastos por mes</h2>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', width: '100%' }}>
+            <CategorySelector
+              categories={expenseCategories}
+              selectedCategory={expenseMonthlyCategory}
+              onCategoryChange={setExpenseMonthlyCategory}
+            />
+            <span style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)' }} />
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px', height: '36px' }}>
-              <button
-                onClick={() => setExpenseMonthlyChartType('bar')}
-                aria-label="Cambiar a barras"
-                title="Barras"
-                style={{
-                  padding: '8px 12px',
-                  height: '36px',
-                  background: expenseMonthlyChartType === 'bar' ? 'var(--color-accent)' : 'transparent',
-                  color: expenseMonthlyChartType === 'bar' ? '#ffffff' : 'var(--color-text-muted)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '13px',
-                  fontWeight: expenseMonthlyChartType === 'bar' ? '600' : '500',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <ChartColumnIncreasingIcon size={18} />
-              </button>
               <button
                 onClick={() => setExpenseMonthlyChartType('area')}
                 aria-label="Cambiar a linea"
@@ -347,12 +380,29 @@ const DashboardOverview = () => {
               >
                 <ChartLineIcon size={18} />
               </button>
+              <button
+                onClick={() => setExpenseMonthlyChartType('bar')}
+                aria-label="Cambiar a barras"
+                title="Barras"
+                style={{
+                  padding: '8px 12px',
+                  height: '36px',
+                  background: expenseMonthlyChartType === 'bar' ? 'var(--color-accent)' : 'transparent',
+                  color: expenseMonthlyChartType === 'bar' ? '#ffffff' : 'var(--color-text-muted)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '13px',
+                  fontWeight: expenseMonthlyChartType === 'bar' ? '600' : '500',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ChartColumnIncreasingIcon size={18} />
+              </button>
             </div>
-            <CategorySelector
-              categories={expenseCategories}
-              selectedCategory={expenseMonthlyCategory}
-              onCategoryChange={setExpenseMonthlyCategory}
-            />
           </div>
         </div>
         {expensesMonthlyLoading ? (
