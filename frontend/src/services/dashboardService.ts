@@ -63,6 +63,11 @@ export interface MonthlyExpense {
   gastos: number;
 }
 
+export interface ExpenseByCategory {
+  categoria: string;
+  gastos: number;
+}
+
 export interface Category {
   id: number;
   nombre: string;
@@ -213,6 +218,23 @@ export const getExpensesByMonth = async (
     params.set('category', category);
   }
   const url = `/dashboard/expenses/monthly?${params.toString()}`;
+  return fetchJson(url);
+};
+
+/**
+ * Obtener gastos por categoria
+ * 
+ * GET /api/dashboard/expenses/by-category?limit={limit}&time_filter={time_filter}
+ */
+export const getExpensesByCategory = async (
+  limit: number = 8,
+  timeFilter?: TimeFilter
+): Promise<ExpenseByCategory[]> => {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (timeFilter) {
+    params.set('time_filter', timeFilter);
+  }
+  const url = `/dashboard/expenses/by-category?${params.toString()}`;
   return fetchJson(url);
 };
 

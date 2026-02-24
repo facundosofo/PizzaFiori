@@ -13,11 +13,13 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   getDashboardData,
   getExpensesByMonth,
+  getExpensesByCategory,
   getSalesByCategory,
   getTopProducts,
   getWeekdayRevenue,
   getCategories,
   type DashboardData,
+  type ExpenseByCategory,
   type MonthlyExpense,
   type ProductSort,
   type WeekdayRevenue,
@@ -28,6 +30,7 @@ import SalesByCategoryChart from '../components/Dashboard/SalesByCategoryChart';
 import TopProductsTable from '../components/Dashboard/TopProductsTable';
 import WeekdayChart from '../components/Dashboard/WeekdayChart';
 import ExpenseByMonthChart from '../components/Dashboard/ExpenseByMonthChart';
+import ExpenseByCategoryChart from '../components/Dashboard/ExpenseByCategoryChart';
 import ErrorAlert from '../components/shared/ErrorAlert';
 import PeriodSelector, { type Period } from '../components/shared/PeriodSelector';
 import TimeFilterSelector, { type TimeFilterOption } from '../components/shared/TimeFilterSelector';
@@ -58,9 +61,11 @@ const DashboardOverview = () => {
   const [topProductsLimit, setTopProductsLimit] = useState<number>(5);
 
   const [expensesByMonth, setExpensesByMonth] = useState<MonthlyExpense[]>([]);
+  const [expensesByCategory, setExpensesByCategory] = useState<ExpenseByCategory[]>([]);
   const [expensesMonthlyLoading, setExpensesMonthlyLoading] = useState(false);
   const [expenseMonthlyCategory, setExpenseMonthlyCategory] = useState<string>('');
   const [expenseMonthlyChartType, setExpenseMonthlyChartType] = useState<'bar' | 'area'>('area');
+  const [expenseCategoryTimeFilter, setExpenseCategoryTimeFilter] = useState<TimeFilter>('last_month');
   
   // Estados para el gráfico de weekday revenue
   const [weekdayMetric, setWeekdayMetric] = useState<WeekdayMetric>('items');
@@ -164,6 +169,16 @@ const DashboardOverview = () => {
     }
   }, [expenseMonthlyCategory]);
 
+  const fetchExpensesByCategory = useCallback(async () => {
+    try {
+      const expenses = await getExpensesByCategory(8, expenseCategoryTimeFilter);
+      setExpensesByCategory(expenses);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar gastos por categoria';
+      setError(`Error al cargar gastos por categoria: ${errorMessage}`);
+    }
+  }, [expenseCategoryTimeFilter]);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -183,6 +198,10 @@ const DashboardOverview = () => {
   useEffect(() => {
     fetchExpensesByMonth();
   }, [fetchExpensesByMonth]);
+
+  useEffect(() => {
+    fetchExpensesByCategory();
+  }, [fetchExpensesByCategory]);
 
   useEffect(() => {
     const saleEventKey = 'pizza_fiori:sale_created_at';
@@ -424,6 +443,20 @@ const DashboardOverview = () => {
             chartType={expenseMonthlyChartType}
           />
         )}
+      </div>
+      <div className="chart-section chart-secondary chart-span-rows">
+        <div className="section-header">
+          <h2 className="chart-title">Gastos por categoria</h2>
+          <TimeFilterSelector
+            value={expenseCategoryTimeFilter}
+            onChange={setExpenseCategoryTimeFilter}
+            options={[
+              { value: 'last_month', label: 'Mes actual', description: 'Últimos 30 días' },
+              { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+            ]}
+          />
+        </div>
+        <ExpenseByCategoryChart data={expensesByCategory} height={300} />
       </div>
     </div>
   );

@@ -126,3 +126,18 @@ class GastosPorMesResponse(BaseModel):
             }
         }
     )
+
+
+class GastosPorCategoriaResponse(BaseModel):
+    """Respuesta para gastos agrupados por categoria."""
+    categoria: str = Field(..., description="Nombre de la categoria")
+    gastos: float = Field(..., description="Monto total de gastos en pesos")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "categoria": "Servicios",
+                "gastos": 18000.0
+            }
+        }
+    )

@@ -13,6 +13,7 @@ from app.presentation.schemas.dashboard_schemas import (
     VentasPorCategoriaResponse,
     WeekdayRevenueResponse,
     GastosPorMesResponse,
+    GastosPorCategoriaResponse,
     TipoPeriodo,
     FiltroTiempo,
 )
@@ -151,6 +152,38 @@ async def get_expenses_by_month(
     Obtiene el total de gastos por mes, con filtro opcional por categoría.
     """
     result = await service.get_expenses_by_month(limit=limit, category=category)
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
+    return result.value
+
+
+@router.get(
+    "/expenses/by-category",
+    response_model=List[GastosPorCategoriaResponse],
+    summary="Obtener gastos por categoria",
+    description="Devuelve el monto total de gastos agrupado por categoria.",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_expenses_by_category(
+    limit: int = Query(8, ge=1, le=50, description="Cantidad maxima de categorias"),
+    time_filter: FiltroTiempo = Query(
+        FiltroTiempo.ULTIMO_ANO,
+        description="Filtro de tiempo: today (hoy), last_7_days (últimos 7 días), last_month (últimos 30 días), last_year (últimos 12 meses), all_time (histórico)"
+    ),
+    service: ExpenseAnalyticsService = Depends(Provide[Container.expense_analytics_service]),
+):
+    """
+    Obtiene gastos agrupados por categoria (padres incluyen subcategorias).
+    """
+    result = await service.get_expenses_by_category(limit=limit, time_filter=time_filter)
 
     if result.error:
         raise HTTPException(

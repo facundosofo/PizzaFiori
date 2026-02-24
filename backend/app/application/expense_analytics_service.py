@@ -3,15 +3,17 @@ Expense Analytics Service - Análisis de gastos
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List
 
 import structlog
 from sqlalchemy import select, func, extract, and_
+from sqlalchemy.orm import aliased
 
 from app.domain.models.expense import Expense
 from app.domain.models.expense_category import ExpenseCategory
 from app.domain.unit_of_work import AbstractUnitOfWork
+from app.presentation.schemas.dashboard_schemas import FiltroTiempo
 
 
 @dataclass
@@ -53,6 +55,47 @@ class ExpenseAnalyticsService:
                 error=f"Error al obtener gastos por mes: {str(e)}",
                 status_code=500,
             )
+
+    async def get_expenses_by_category(
+        self,
+        limit: int = 8,
+        time_filter: FiltroTiempo = FiltroTiempo.ULTIMO_ANO,
+    ) -> ServiceResult:
+        """Obtiene gastos agregados por categoria (padres incluyen subcategorias)."""
+        try:
+            async with self.uow:
+                self.logger.info(
+                    "Getting expenses by category",
+                    limit=limit,
+                    time_filter=time_filter,
+                )
+                result = await self._get_expenses_by_category_data(
+                    limit=limit,
+                    time_filter=time_filter,
+                )
+                return ServiceResult(value=result)
+        except Exception as e:
+            self.logger.error("Error obteniendo gastos por categoria", error=str(e))
+            return ServiceResult(
+                error=f"Error al obtener gastos por categoria: {str(e)}",
+                status_code=500,
+            )
+
+    def _get_start_date_for_time_filter(
+        self,
+        time_filter: FiltroTiempo,
+    ) -> datetime | None:
+        now = datetime.now()
+
+        if time_filter == FiltroTiempo.HOY:
+            return now.replace(hour=0, minute=0, second=0, microsecond=0)
+        if time_filter == FiltroTiempo.ULTIMOS_7_DIAS:
+            return now - timedelta(days=7)
+        if time_filter == FiltroTiempo.ULTIMO_MES:
+            return now - timedelta(days=30)
+        if time_filter == FiltroTiempo.ULTIMO_ANO:
+            return now - timedelta(days=365)
+        return None
 
     async def _get_monthly_expenses_data(
         self,
@@ -153,3 +196,47 @@ class ExpenseAnalyticsService:
                 current_month += 1
 
         return results
+
+    async def _get_expenses_by_category_data(
+        self,
+        limit: int,
+        time_filter: FiltroTiempo,
+    ) -> List[dict]:
+        parent_category = aliased(ExpenseCategory)
+        category_name = func.coalesce(parent_category.nombre, ExpenseCategory.nombre)
+        start_date = self._get_start_date_for_time_filter(time_filter)
+
+        query = select(
+            category_name.label("categoria"),
+            func.sum(Expense.monto).label("total_gastos"),
+        ).select_from(
+            Expense
+        ).join(
+            ExpenseCategory,
+            Expense.categoria_gasto_id == ExpenseCategory.id,
+        ).outerjoin(
+            parent_category,
+            ExpenseCategory.padre_id == parent_category.id,
+        ).where(
+            Expense.activo.is_(True)
+        )
+
+        if start_date is not None:
+            query = query.where(Expense.fecha_pago >= start_date)
+
+        query = query.group_by(
+            category_name
+        ).order_by(
+            func.sum(Expense.monto).desc()
+        ).limit(limit)
+
+        result = await self.uow.session.execute(query)
+        rows = result.fetchall()
+
+        return [
+            {
+                "categoria": row.categoria or "Sin categoria",
+                "gastos": float(row.total_gastos or 0),
+            }
+            for row in rows
+        ]
