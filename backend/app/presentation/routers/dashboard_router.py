@@ -14,6 +14,7 @@ from app.presentation.schemas.dashboard_schemas import (
     WeekdayRevenueResponse,
     GastosPorMesResponse,
     GastosPorCategoriaResponse,
+    GastosPorAnoResponse,
     TipoPeriodo,
     FiltroTiempo,
 )
@@ -123,6 +124,44 @@ async def get_top_products(
     Los datos se basan en el historial completo de ventas o según el filtro de tiempo seleccionado.
     """
     result = await service.get_top_products(limit=limit, time_filter=time_filter, sort=sort, category=category)
+    
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+    
+    return result.value
+
+
+@router.get(
+    "/expenses",
+    response_model=List[GastosPorMesResponse | GastosPorAnoResponse],
+    summary="Obtener gastos por período",
+    description="Devuelve gastos agrupados por período (mensual o anual).",
+    responses={
+        400: {"description": "Período inválido"},
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_expenses(
+    period: TipoPeriodo = Query(
+        TipoPeriodo.MENSUAL,
+        description="Tipo de período: monthly (mensual), yearly (anual)"
+    ),
+    limit: int = Query(12, ge=1, le=36, description="Cantidad de registros a devolver"),
+    category: str | None = Query(None, description="Filtrar por categoría de gasto (opcional)"),
+    service: ExpenseAnalyticsService = Depends(Provide[Container.expense_analytics_service]),
+):
+    """
+    Obtiene datos de gastos agrupados por el período especificado.
+    
+    **Períodos disponibles:**
+    - `monthly`: Últimos 12 meses (default)
+    - `yearly`: Últimos 5 años
+    """
+    result = await service.get_expenses_by_period(period=period, limit=limit, category=category)
     
     if result.error:
         raise HTTPException(

@@ -1,13 +1,13 @@
 /**
- * ExpenseByMonthChart - Grafico de barras para gastos por mes
+ * ExpenseByMonthChart - Grafico de barras para gastos por período (mes o año)
  */
 
 import { memo } from 'react';
 import ChartWrapper from '../shared/ChartWrapper';
-import type { MonthlyExpense } from '../../services/dashboardService';
+import type { MonthlyExpense, YearlyExpense } from '../../services/dashboardService';
 
 interface ExpenseByMonthChartProps {
-  data: MonthlyExpense[];
+  data: MonthlyExpense[] | YearlyExpense[];
   height?: number;
   chartType?: 'bar' | 'area';
 }
@@ -36,14 +36,17 @@ const ExpenseByMonthChart = memo(({ data, height = 300, chartType = 'bar' }: Exp
     return `$${value.toFixed(0)}`;
   };
 
+  // Normalizar los datos para que funcionen con monthly o yearly
+  const normalizedData = data.map((item) => ({
+    ...item,
+    displayLabel: 'mes' in item ? item.mes : item.año,
+  }));
+
   return (
     <div className="chart-container">
       <ChartWrapper
         type={chartType}
-        data={data.map((item) => ({
-          ...item,
-          displayLabel: item.mes,
-        }))}
+        data={normalizedData}
         xAxisKey="displayLabel"
         series={[
           {

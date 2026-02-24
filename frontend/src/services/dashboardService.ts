@@ -63,6 +63,11 @@ export interface MonthlyExpense {
   gastos: number;
 }
 
+export interface YearlyExpense {
+  año: string;
+  gastos: number;
+}
+
 export interface ExpenseByCategory {
   categoria: string;
   gastos: number;
@@ -202,6 +207,26 @@ export const getWeekdayRevenue = async (
   const query = params.toString();
   const url = `/dashboard/revenue/weekday${query ? `?${query}` : ''}`;
   return fetchJson(url);
+};
+
+/**
+ * Obtener gastos según período
+ * 
+ * GET /api/dashboard/expenses?period={period}&limit={limit}&category={category}
+ */
+export const getExpensesByPeriod = async (
+  period: Period,
+  limit?: number,
+  category?: string
+): Promise<MonthlyExpense[] | YearlyExpense[]> => {
+  const params = new URLSearchParams({ period });
+  if (limit) {
+    params.set('limit', String(limit));
+  }
+  if (category) {
+    params.set('category', category);
+  }
+  return fetchJson(`/dashboard/expenses?${params.toString()}`);
 };
 
 /**

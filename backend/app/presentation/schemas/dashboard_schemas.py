@@ -141,3 +141,18 @@ class GastosPorCategoriaResponse(BaseModel):
             }
         }
     )
+
+
+class GastosPorAnoResponse(BaseModel):
+    """Respuesta para gastos agrupados por año."""
+    año: str = Field(..., description="Año (2024, 2025, etc)")
+    gastos: float = Field(..., description="Monto total de gastos en pesos")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "año": "2025",
+                "gastos": 450000.0
+            }
+        }
+    )
