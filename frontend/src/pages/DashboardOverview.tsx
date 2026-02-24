@@ -31,11 +31,13 @@ import TimeFilterSelector, { type TimeFilterOption } from '../components/shared/
 import MetricSelector, { type Metric } from '../components/shared/MetricSelector';
 import WeekdayMetricSelector, { type WeekdayMetric } from '../components/shared/WeekdayMetricSelector';
 import CategorySelector from '../components/shared/CategorySelector';
-import * as Icons from '../components/shared/Icons';
 import '../styles/dashboard.css';
 import '../styles/shared/page-header.css';
 
+type DashboardTab = 'general' | 'balance' | 'ventas' | 'gastos' | 'productos';
+
 const DashboardOverview = () => {
+  const [activeTab, setActiveTab] = useState<DashboardTab>('general');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,6 +172,180 @@ const DashboardOverview = () => {
     };
   }, [fetchDashboardData, fetchSalesByCategory, fetchTopProducts, fetchWeekdayRevenue]);
 
+  const renderGeneralTab = () => (
+    <div className="dashboard-placeholder">
+      <h2>Bienvenido al Dashboard</h2>
+      <p>Selecciona una pestaña para ver el análisis detallado</p>
+    </div>
+  );
+
+  const renderBalanceTab = () => (
+    <div className="dashboard-placeholder">
+      <h2>Tab Balance</h2>
+      <p>Contenido para análisis de balance (ingresos vs gastos)</p>
+    </div>
+  );
+
+  const renderVentasTab = () => (
+    <div className="charts-grid">
+      <div className="chart-section chart-main">
+        <div className="section-header">
+          <h2 className="chart-title">Ventas por período</h2>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <MetricSelector 
+              selectedMetric={revenueMetric} 
+              onMetricChange={setRevenueMetric} 
+            />
+            <PeriodSelector 
+              selectedPeriod={revenuePeriod} 
+              onPeriodChange={setRevenuePeriod} 
+            />
+          </div>
+        </div>
+        <RevenueChart 
+          dailyData={data?.dailyRevenue || []}
+          monthlyData={data?.monthlyRevenue || []}
+          yearlyData={data?.yearlyRevenue || []}
+          selectedPeriod={revenuePeriod}
+          selectedMetric={revenueMetric}
+          height={350} 
+        />
+      </div>
+
+      <div className="chart-section chart-secondary chart-span-rows">
+        <div className="section-header">
+          <h2 className="chart-title">Ventas por categoria</h2>
+          <TimeFilterSelector
+            value={salesByCategoryTimeFilter}
+            onChange={setSalesByCategoryTimeFilter}
+          />
+        </div>
+        <SalesByCategoryChart data={data?.salesByCategory || []} height={300} />
+      </div>
+
+      <div className="chart-section chart-main">
+        <div className="section-header">
+          <h2 className="chart-title">Promedio de Ventas por Día de Semana</h2>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <WeekdayMetricSelector 
+              selectedMetric={weekdayMetric} 
+              onMetricChange={setWeekdayMetric} 
+            />
+            <CategorySelector
+              categories={availableCategories}
+              selectedCategory={weekdayCategory}
+              onCategoryChange={setWeekdayCategory}
+            />
+            <TimeFilterSelector
+              value={weekdayTimeFilter}
+              onChange={setWeekdayTimeFilter}
+              options={weekdayTimeFilterOptions}
+            />
+          </div>
+        </div>
+        {weekdayLoading ? (
+          <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
+            Cargando...
+          </div>
+        ) : (
+          <WeekdayChart 
+            data={weekdayData}
+            selectedMetric={weekdayMetric}
+            height={300} 
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  const renderGastosTab = () => (
+    <div className="dashboard-placeholder">
+      <h2>Tab Gastos</h2>
+      <p>Contenido para análisis detallado de gastos</p>
+    </div>
+  );
+
+  const renderProductosTab = () => (
+    <div className="table-section">
+      <div className="section-header">
+        <h2 className="section-title">Ranking de productos</h2>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {/* Selector de top de productos */}
+          <select
+            value={topProductsLimit}
+            onChange={(e) => setTopProductsLimit(Number(e.target.value))}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'var(--color-hover)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '500',
+              color: 'var(--color-text-muted)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <option value={5}>Top 5</option>
+            <option value={10}>Top 10</option>
+            <option value={15}>Top 15</option>
+            <option value={20}>Top 20</option>
+          </select>
+
+          {/* Selector de ordenamiento */}
+          <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px' }}>
+            <button
+              onClick={() => setTopProductsSort('top')}
+              style={{
+                padding: '8px 16px',
+                background: topProductsSort === 'top' ? 'var(--color-accent)' : 'transparent',
+                color: topProductsSort === 'top' ? '#ffffff' : 'var(--color-text-muted)',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: topProductsSort === 'top' ? '600' : '500',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Más vendidos
+            </button>
+            <button
+              onClick={() => setTopProductsSort('bottom')}
+              style={{
+                padding: '8px 16px',
+                background: topProductsSort === 'bottom' ? 'var(--color-accent)' : 'transparent',
+                color: topProductsSort === 'bottom' ? '#ffffff' : 'var(--color-text-muted)',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: topProductsSort === 'bottom' ? '600' : '500',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Menos vendidos
+            </button>
+          </div>
+
+          {/* Selector de categoría */}
+          <CategorySelector
+            categories={availableCategories}
+            selectedCategory={topProductsCategory}
+            onCategoryChange={setTopProductsCategory}
+          />
+
+          <TimeFilterSelector
+            value={topProductsTimeFilter}
+            onChange={setTopProductsTimeFilter}
+          />
+        </div>
+      </div>
+      <TopProductsTable 
+        products={data?.topProducts || []}
+      />
+    </div>
+  );
 
   if (loading) {
     return (
@@ -212,176 +388,62 @@ const DashboardOverview = () => {
     <div className="dashboard-container">
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
-        <div className="dashboard-header-info">
-          <div className="info-tooltip">
-            <Icons.InfoIcon className="info-icon" />
-            <div className="tooltip-content">
-              ¿Por qué algunas ventas después de medianoche aparecen en el día anterior?
-              <br />
-              El sistema agrupa las ventas según el horario de trabajo del local (16:00 a 06:00).
-              <br />
-              Las ventas entre 00:00 y 05:59 se asignan al día anterior.
-            </div>
-          </div>
+      </div>
+
+      {/* Pestañas */}
+      <div className="dashboard-tabs-wrapper">
+        <div className="dashboard-tabs">
+          <button
+            className={`dashboard-tab ${activeTab === 'general' ? 'active' : ''}`}
+            onClick={() => setActiveTab('general')}
+          >
+            General
+          </button>
+          <button
+            className={`dashboard-tab ${activeTab === 'balance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('balance')}
+          >
+            Balance
+          </button>
+          <button
+            className={`dashboard-tab ${activeTab === 'ventas' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ventas')}
+          >
+            Ventas
+          </button>
+          <button
+            className={`dashboard-tab ${activeTab === 'gastos' ? 'active' : ''}`}
+            onClick={() => setActiveTab('gastos')}
+          >
+            Gastos
+          </button>
+          <button
+            className={`dashboard-tab ${activeTab === 'productos' ? 'active' : ''}`}
+            onClick={() => setActiveTab('productos')}
+          >
+            Productos
+          </button>
         </div>
       </div>
 
       <div className="dashboard-content">
-          {/* Gráficos principales */}
-          <div className="charts-grid">
-            <div className="chart-section chart-main">
-              <div className="section-header">
-                <h2 className="chart-title">Ventas por período</h2>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <MetricSelector 
-                    selectedMetric={revenueMetric} 
-                    onMetricChange={setRevenueMetric} 
-                  />
-                  <PeriodSelector 
-                    selectedPeriod={revenuePeriod} 
-                    onPeriodChange={setRevenuePeriod} 
-                  />
-                </div>
-              </div>
-              <RevenueChart 
-                dailyData={data.dailyRevenue}
-                monthlyData={data.monthlyRevenue}
-                yearlyData={data.yearlyRevenue}
-                selectedPeriod={revenuePeriod}
-                selectedMetric={revenueMetric}
-                height={350} 
-              />
-            </div>
+        {/* PESTAÑA: GENERAL */}
+        {activeTab === 'general' && renderGeneralTab()}
 
-            <div className="chart-section chart-secondary chart-span-rows chart-span-rows">
-              <div className="section-header">
-                <h2 className="chart-title">Ventas por categoria</h2>
-                <TimeFilterSelector
-                  value={salesByCategoryTimeFilter}
-                  onChange={setSalesByCategoryTimeFilter}
-                />
-              </div>
-              <SalesByCategoryChart data={data.salesByCategory} height={300} />
-            </div>
+        {/* PESTAÑA: BALANCE */}
+        {activeTab === 'balance' && renderBalanceTab()}
 
-            {/* Nuevo: Promedio de Ventas por Día de Semana */}
-            <div className="chart-section chart-main">
-              <div className="section-header">
-                <h2 className="chart-title">Promedio de Ventas por Día de Semana</h2>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <WeekdayMetricSelector 
-                    selectedMetric={weekdayMetric} 
-                    onMetricChange={setWeekdayMetric} 
-                  />
-                  <CategorySelector
-                    categories={availableCategories}
-                    selectedCategory={weekdayCategory}
-                    onCategoryChange={setWeekdayCategory}
-                  />
-                  <TimeFilterSelector
-                    value={weekdayTimeFilter}
-                    onChange={setWeekdayTimeFilter}
-                    options={weekdayTimeFilterOptions}
-                  />
-                </div>
-              </div>
-              {weekdayLoading ? (
-                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
-                  Cargando...
-                </div>
-              ) : (
-                <WeekdayChart 
-                  data={weekdayData}
-                  selectedMetric={weekdayMetric}
-                  height={300} 
-                />
-              )}
-            </div>
-          </div>
+        {/* PESTAÑA: VENTAS */}
+        {activeTab === 'ventas' && renderVentasTab()}
 
-          {/* Tabla de ranking de productos */}
-          <div className="table-section">
-            <div className="section-header">
-              <h2 className="section-title">Ranking de productos</h2>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                {/* Selector de top de productos */}
-                <select
-                  value={topProductsLimit}
-                  onChange={(e) => setTopProductsLimit(Number(e.target.value))}
-                  style={{
-                    padding: '8px 12px',
-                    backgroundColor: 'var(--color-hover)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    color: 'var(--color-text-muted)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <option value={5}>Top 5</option>
-                  <option value={10}>Top 10</option>
-                  <option value={15}>Top 15</option>
-                  <option value={20}>Top 20</option>
-                </select>
+        {/* PESTAÑA: GASTOS */}
+        {activeTab === 'gastos' && renderGastosTab()}
 
-                {/* Selector de ordenamiento */}
-                <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px' }}>
-                  <button
-                    onClick={() => setTopProductsSort('top')}
-                    style={{
-                      padding: '8px 16px',
-                      background: topProductsSort === 'top' ? 'var(--color-accent)' : 'transparent',
-                      color: topProductsSort === 'top' ? '#ffffff' : 'var(--color-text-muted)',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: topProductsSort === 'top' ? '600' : '500',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    Más vendidos
-                  </button>
-                  <button
-                    onClick={() => setTopProductsSort('bottom')}
-                    style={{
-                      padding: '8px 16px',
-                      background: topProductsSort === 'bottom' ? 'var(--color-accent)' : 'transparent',
-                      color: topProductsSort === 'bottom' ? '#ffffff' : 'var(--color-text-muted)',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: topProductsSort === 'bottom' ? '600' : '500',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    Menos vendidos
-                  </button>
-                </div>
-
-                {/* Selector de categoría */}
-                <CategorySelector
-                  categories={availableCategories}
-                  selectedCategory={topProductsCategory}
-                  onCategoryChange={setTopProductsCategory}
-                />
-
-                <TimeFilterSelector
-                  value={topProductsTimeFilter}
-                  onChange={setTopProductsTimeFilter}
-                />
-              </div>
-            </div>
-            <TopProductsTable 
-              products={data.topProducts}
-            />
-          </div>
+        {/* PESTAÑA: PRODUCTOS */}
+        {activeTab === 'productos' && renderProductosTab()}
       </div>
     </div>
   );
-};
+}
 
 export default DashboardOverview;
