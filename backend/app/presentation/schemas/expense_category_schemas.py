@@ -7,13 +7,11 @@ from datetime import datetime
 # ---------------------------
 class GastoCategoriaCreateRequest(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=50)
-    descripcion: Optional[str] = Field(None, max_length=255)
     padre_id: Optional[int] = None
 
 
 class GastoCategoriaUpdateRequest(BaseModel):
     nombre: Optional[str] = Field(None, min_length=1, max_length=50)
-    descripcion: Optional[str] = Field(None, max_length=255)
     padre_id: Optional[int] = None
 
 
@@ -25,7 +23,6 @@ class GastoCategoriaResponse(BaseModel):
 
     id: int
     nombre: str
-    descripcion: Optional[str] = None
     padre_id: Optional[int] = None
     activo: bool
     fecha_creacion: datetime

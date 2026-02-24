@@ -19,8 +19,11 @@ class SqlAlchemyExpenseCategoryRepository(
         super().__init__(session)
 
     async def get_by_parent_id(self, parent_id: Optional[int]) -> List[ExpenseCategory]:
-        """Get all categories with given parent_id (None for root categories)"""
-        query = select(self.model).where(self.model.padre_id == parent_id)
+        """Get all active categories with given parent_id (None for root categories)"""
+        query = select(self.model).where(
+            self.model.padre_id == parent_id,
+            self.model.activo == True
+        ).order_by(self.model.fecha_creacion.asc())
         result = await self.session.execute(query)
         return result.scalars().all()
 
@@ -31,7 +34,11 @@ class SqlAlchemyExpenseCategoryRepository(
         query = (
             select(self.model)
             .where(self.model.id == category_id)
-            .options(selectinload(self.model.subcategorias))
+            .options(
+                selectinload(self.model.subcategorias)
+                .where(self.model.activo == True)
+                .order_by(self.model.fecha_creacion.asc())
+            )
         )
         result = await self.session.execute(query)
         return result.scalars().first()
@@ -41,5 +48,6 @@ class SqlAlchemyExpenseCategoryRepository(
         query = select(self.model)
         if activo is not None:
             query = query.where(self.model.activo == activo)
+        query = query.order_by(self.model.fecha_creacion.asc())
         result = await self.session.execute(query)
         return result.scalars().all()

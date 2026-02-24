@@ -15,7 +15,6 @@ class ExpenseCategory(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     nombre = Column(String(100), nullable=False, index=True)
-    descripcion = Column(String(255), nullable=True)
     padre_id = Column(Integer, ForeignKey("gastos_categorias.id"), nullable=True)
     activo = Column(Boolean, nullable=False, default=True)
     fecha_creacion = Column(DateTime, default=datetime.now, nullable=False)

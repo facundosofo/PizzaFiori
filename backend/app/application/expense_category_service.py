@@ -56,7 +56,6 @@ class ExpenseCategoryService:
 
                 categoria = ExpenseCategory(
                     nombre=categoria_create.nombre,
-                    descripcion=categoria_create.descripcion,
                     padre_id=categoria_create.padre_id,
                     activo=True,
                     fecha_creacion=datetime.now(),
@@ -124,7 +123,7 @@ class ExpenseCategoryService:
             return ServiceResult(value=cached)
 
         async with self.uow as uow:
-            categorias = await uow.expense_category_repo.list()
+            categorias = await uow.expense_category_repo.list_by_active(activo=True)
             
             # Store in cache
             self.cache_service.set(cache_key, categorias)
@@ -163,7 +162,6 @@ class ExpenseCategoryService:
                 old_categoria_dict = {
                     "id": categoria.id,
                     "nombre": categoria.nombre,
-                    "descripcion": categoria.descripcion,
                     "padre_id": categoria.padre_id,
                     "activo": categoria.activo,
                 }

@@ -14,7 +14,6 @@ from app.presentation.schemas.expense_schemas import (
 from app.presentation.routers.dependencies import get_current_user, require_admin
 
 router = APIRouter(
-    prefix="/api",
     tags=["Gastos"],
     dependencies=[Depends(get_current_user)],
 )

@@ -133,19 +133,31 @@ class ExpenseService:
         fecha_hasta: Optional[date] = None,
         categoria_gasto_id: Optional[int] = None,
     ) -> ServiceResult:
-        # Generate cache key based on filters
-        cache_key = f"gastos:filters:{hash(str((fecha_desde, fecha_hasta, categoria_gasto_id)))}"
-
-        # Try cache first
-        cached = self.cache_service.get(cache_key)
-        if cached:
-            return ServiceResult(value=cached)
+        categoria_ids: Optional[List[int]] = None
 
         async with self.uow as uow:
+            if categoria_gasto_id is not None:
+                categoria = await uow.expense_category_repo.get_by_id(categoria_gasto_id)
+                if categoria and categoria.padre_id is None:
+                    subcategorias = await uow.expense_category_repo.get_by_parent_id(
+                        categoria.id
+                    )
+                    categoria_ids = [categoria.id] + [item.id for item in subcategorias]
+                else:
+                    categoria_ids = [categoria_gasto_id]
+
+            categoria_ids_key = tuple(sorted(categoria_ids)) if categoria_ids else None
+            cache_key = f"gastos:filters:{hash(str((fecha_desde, fecha_hasta, categoria_ids_key)))}"
+
+            # Try cache first
+            cached = self.cache_service.get(cache_key)
+            if cached:
+                return ServiceResult(value=cached)
+
             gastos = await uow.expense_repo.list_by_filters(
                 fecha_desde=fecha_desde,
                 fecha_hasta=fecha_hasta,
-                categoria_gasto_id=categoria_gasto_id,
+                categoria_gasto_ids=categoria_ids,
             )
 
             # Store in cache

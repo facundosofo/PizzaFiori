@@ -16,7 +16,7 @@ class Expense(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     categoria_gasto_id = Column(Integer, ForeignKey("gastos_categorias.id"), nullable=False)
-    descripcion = Column(String(500), nullable=True)
+    descripcion = Column(String(255), nullable=True)
     monto = Column(Numeric(12, 2), nullable=False)
     fecha_pago = Column(Date, nullable=False)
     activo = Column(Boolean, nullable=False, default=True)

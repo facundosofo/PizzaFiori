@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 from datetime import date
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,19 +23,23 @@ class SqlAlchemyExpenseRepository(
         self,
         fecha_desde: Optional[date] = None,
         fecha_hasta: Optional[date] = None,
-        categoria_gasto_id: Optional[int] = None,
+        categoria_gasto_ids: Optional[List[int]] = None,
     ) -> List[Expense]:
         """List expenses with optional filters"""
-        query = select(self.model)
+        query = select(self.model).where(self.model.activo.is_(True))
+
+        fecha_pago = func.date(self.model.fecha_pago)
 
         if fecha_desde is not None:
-            query = query.where(self.model.fecha_pago >= fecha_desde)
+            query = query.where(fecha_pago >= fecha_desde)
 
         if fecha_hasta is not None:
-            query = query.where(self.model.fecha_pago <= fecha_hasta)
+            query = query.where(fecha_pago <= fecha_hasta)
 
-        if categoria_gasto_id is not None:
-            query = query.where(self.model.categoria_gasto_id == categoria_gasto_id)
+        if categoria_gasto_ids:
+            query = query.where(self.model.categoria_gasto_id.in_(categoria_gasto_ids))
+
+        query = query.order_by(self.model.fecha_pago.desc(), self.model.id.desc())
 
         result = await self.session.execute(query)
         return result.scalars().all()

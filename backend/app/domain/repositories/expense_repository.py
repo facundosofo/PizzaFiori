@@ -29,7 +29,7 @@ class AbstractExpenseRepository(ABC):
         self,
         fecha_desde: Optional[date] = None,
         fecha_hasta: Optional[date] = None,
-        categoria_gasto_id: Optional[int] = None,
+        categoria_gasto_ids: Optional[List[int]] = None,
     ) -> List[Expense]:
         """List expenses with optional filters"""
         ...
