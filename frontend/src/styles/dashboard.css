@@ -186,6 +186,7 @@
   color: var(--color-text);
   margin: 0 0 20px 0;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .chart-subtitle {
@@ -238,6 +239,7 @@
   color: var(--color-text);
   margin: 0 0 16px 0;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 /* ========== Top Products Table ========== */
