@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 from datetime import datetime, timedelta
 import structlog
-from sqlalchemy import func, select, and_, cast, Date, Numeric, extract
+from sqlalchemy import func, select, and_, cast, Date, Numeric, extract, Integer
 
 from app.domain.models.sale import Sale
 from app.domain.models.sale_item import SaleItem
@@ -355,18 +355,22 @@ class SalesAnalyticsService:
         return results
 
     async def _get_yearly_revenue(self, limit: int) -> List[dict]:
-        """Agregación anual optimizada"""
+        """Agregación anual optimizada - retorna últimos N años completamente, incluyendo años con 0 ingresos"""
         from sqlalchemy import text
 
-        start_date = datetime.now() - timedelta(days=limit * 365)
+        now = datetime.now()
+        current_year = now.year
+        start_year = current_year - (limit - 1)  # Últimos N años incluyendo el actual
         
         adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
+        
+        # Subquery de ventas dentro del rango de años
         sale_subquery = select(
             Sale.id.label("sale_id"),
             extract('year', adjusted_fecha).label("year"),
             Sale.total.label("sale_total")
         ).where(
-            adjusted_fecha >= start_date
+            extract('year', adjusted_fecha) >= start_year
         ).subquery()
         
         direct_items_subquery = select(
@@ -409,6 +413,7 @@ class SalesAnalyticsService:
             SaleItem.venta_id
         ).subquery()
         
+        # Consulta de años con agregación
         query = select(
             sale_subquery.c.year,
             func.sum(sale_subquery.c.sale_total).label("revenue"),
@@ -433,20 +438,33 @@ class SalesAnalyticsService:
             sale_subquery.c.year
         ).order_by(
             sale_subquery.c.year
-        ).limit(limit)
+        )
         
         result = await self.uow.session.execute(query)
         rows = result.fetchall()
         
-        return [
-            {
-                "año": str(row.year),
-                "ingresos": float(row.revenue or 0),
-                "pedidos": int(row.pedidos or 0),
-                "cantidad": int(row.cantidad or 0),
-            }
-            for row in rows
-        ]
+        # Crear diccionario de años con datos
+        year_data = {int(row.year): {
+            "año": str(int(row.year)),
+            "ingresos": float(row.revenue or 0),
+            "pedidos": int(row.pedidos or 0),
+            "cantidad": int(row.cantidad or 0),
+        } for row in rows}
+        
+        # Agregar años faltantes con 0 en ingresos
+        result_list = []
+        for year in range(start_year, current_year + 1):
+            if year in year_data:
+                result_list.append(year_data[year])
+            else:
+                result_list.append({
+                    "año": str(year),
+                    "ingresos": 0.0,
+                    "pedidos": 0,
+                    "cantidad": 0,
+                })
+        
+        return result_list
 
     async def _get_sales_by_category_data(
         self,
