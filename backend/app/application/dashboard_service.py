@@ -636,7 +636,7 @@ class DashboardService:
         offer_query = select(
             SaleItemOfferProduct.producto_nombre.label("name"),
             func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre).label("category"),
-            func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("total_quantity"),
             func.max(ProductPrice.precio).label("price"),
         ).select_from(
             SaleItemOfferProduct
@@ -793,7 +793,7 @@ class DashboardService:
                 Category.nombre,
                 SaleItemOfferProduct.categoria_nombre
             ).label("category"),
-            func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("total_quantity"),
         ).select_from(
             SaleItemOfferProduct
         ).join(
@@ -915,7 +915,7 @@ class DashboardService:
         # PASO 4: Agregación de items en OFERTAS por venta (usando JOIN explícito en lugar de IN)
         offer_items_query = select(
             SaleItem.venta_id,
-            func.sum(SaleItemOfferProduct.cantidad).label("offer_qty")
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("offer_qty")
         ).select_from(SaleItem).join(
             SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
         ).join(

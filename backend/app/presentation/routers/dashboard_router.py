@@ -16,6 +16,7 @@ from app.presentation.schemas.dashboard_schemas import (
     GastosPorCategoriaResponse,
     GastosPorAnoResponse,
     ResumenGastosPeriodoResponse,
+    ResumenProductosResponse,
     TipoPeriodo,
     FiltroTiempo,
 )
@@ -292,6 +293,39 @@ async def get_sales_by_category(
     Se incluyen productos directos y productos de ofertas.
     """
     result = await service.get_sales_by_category(limit=limit, time_filter=time_filter)
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
+    return result.value
+
+
+@router.get(
+    "/products/summary",
+    response_model=ResumenProductosResponse,
+    summary="Obtener resumen de productos destacados",
+    description="Retorna el producto más vendido y el que genera mayor ingreso.",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_products_summary(
+    time_filter: FiltroTiempo = Query(
+        FiltroTiempo.HISTORICO,
+        description="Filtro de tiempo: today, last_7_days, last_month, last_year, all_time"
+    ),
+    service: ProductAnalyticsService = Depends(Provide[Container.product_analytics_service]),
+):
+    """
+    Obtiene dos productos destacados para mostrar en cards:
+    - Producto más vendido: el que tiene mayor cantidad de unidades vendidas
+    - Producto con mayor ingreso: el que genera mayor ingresos (precio x cantidad)
+    """
+    result = await service.get_products_summary(time_filter=time_filter)
 
     if result.error:
         raise HTTPException(

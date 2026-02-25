@@ -116,15 +116,15 @@ class SalesAnalyticsService:
             self.logger.info(f"Filter is HOY, start_date: {result}")
             return result
         elif time_filter == FiltroTiempo.ULTIMOS_7_DIAS:
-            result = now - timedelta(days=7)
+            result = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
             self.logger.info(f"Filter is ULTIMOS_7_DIAS, start_date: {result}")
             return result
         elif time_filter == FiltroTiempo.ULTIMO_MES:
-            result = now - timedelta(days=30)
+            result = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
             self.logger.info(f"Filter is ULTIMO_MES, start_date: {result}")
             return result
         elif time_filter == FiltroTiempo.ULTIMO_ANO:
-            result = now - timedelta(days=365)
+            result = (now - timedelta(days=364)).replace(hour=0, minute=0, second=0, microsecond=0)
             self.logger.info(f"Filter is ULTIMO_ANO, start_date: {result}")
             return result
         else:  # HISTORICO
@@ -511,7 +511,7 @@ class SalesAnalyticsService:
                 Category.nombre,
                 SaleItemOfferProduct.categoria_nombre
             ).label("category"),
-            func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("total_quantity"),
         ).select_from(
             SaleItemOfferProduct
         ).join(

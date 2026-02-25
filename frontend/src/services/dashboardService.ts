@@ -94,6 +94,14 @@ export interface ExpenseSummary {
   categoria_mayor_crecimiento: ExpenseSummaryCategory | null;
 }
 
+export interface ProductSummary {
+  producto_mas_vendido: string;
+  cantidad_mas_vendida: number;
+  promocion_mas_vendida: string | null;
+  cantidad_promocion: number;
+  mes_actual: string;
+}
+
 export interface Category {
   id: number;
   nombre: string;
@@ -294,6 +302,19 @@ export const getExpensesByCategory = async (
     params.set('include_subcategories', 'true');
   }
   const url = `/dashboard/expenses/by-category?${params.toString()}`;
+  return fetchJson(url);
+};
+
+/**
+ * Obtener resumen de productos destacados
+ * 
+ * GET /api/dashboard/products/summary?time_filter={time_filter}
+ */
+export const getProductsSummary = async (
+  timeFilter: TimeFilter = 'all_time'
+): Promise<ProductSummary> => {
+  const params = new URLSearchParams({ time_filter: timeFilter });
+  const url = `/dashboard/products/summary?${params.toString()}`;
   return fetchJson(url);
 };
 

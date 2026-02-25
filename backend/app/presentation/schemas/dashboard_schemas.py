@@ -196,3 +196,14 @@ class ResumenGastosPeriodoResponse(BaseModel):
         None,
         description="Categoría con mayor crecimiento vs mes anterior",
     )
+
+
+class ResumenProductosResponse(BaseModel):
+    """Resumen de productos destacados para cards del dashboard."""
+    producto_mas_vendido: str = Field(..., description="Nombre del producto más vendido")
+    cantidad_mas_vendida: int = Field(..., description="Cantidad vendida del producto más vendido")
+    promocion_mas_vendida: str | None = Field(None, description="Nombre de la oferta/promoción más vendida")
+    cantidad_promocion: int = Field(default=0, description="Cantidad de promociones vendidas")
+    mes_actual: str = Field(..., description="Mes y año actual (ej: 'Febrero 2026')")
+
+

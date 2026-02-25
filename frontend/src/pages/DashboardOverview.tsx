@@ -19,9 +19,11 @@ import {
   getTopProducts,
   getWeekdayRevenue,
   getCategories,
+  getProductsSummary,
   type DashboardData,
   type ExpenseByCategory,
   type ExpenseSummary,
+  type ProductSummary,
   type MonthlyExpense,
   type YearlyExpense,
   type ProductSort,
@@ -67,6 +69,7 @@ const DashboardOverview = () => {
   const [expensesByPeriod, setExpensesByPeriod] = useState<MonthlyExpense[] | YearlyExpense[]>([]);
   const [expensesByCategory, setExpensesByCategory] = useState<ExpenseByCategory[]>([]);
   const [expenseSummary, setExpenseSummary] = useState<ExpenseSummary | null>(null);
+  const [productsSummary, setProductsSummary] = useState<ProductSummary | null>(null);
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [expensePeriod, setExpensePeriod] = useState<Period>('monthly');
   const [expenseCategory, setExpenseCategory] = useState<string>('');
@@ -222,6 +225,16 @@ const DashboardOverview = () => {
     }
   }, []);
 
+  const fetchProductsSummary = useCallback(async () => {
+    try {
+      const summary = await getProductsSummary('last_month');
+      setProductsSummary(summary);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar resumen de productos';
+      setError(`Error al cargar resumen de productos: ${errorMessage}`);
+    }
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -249,6 +262,10 @@ const DashboardOverview = () => {
   useEffect(() => {
     fetchExpensesSummary();
   }, [fetchExpensesSummary]);
+
+  useEffect(() => {
+    fetchProductsSummary();
+  }, [fetchProductsSummary]);
 
   useEffect(() => {
     const saleEventKey = 'pizza_fiori:sale_created_at';
@@ -591,7 +608,62 @@ const DashboardOverview = () => {
   );
 
   const renderProductosTab = () => (
-    <div className="table-section">
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+      }}
+    >
+      {/* Cards de resumen de productos */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '12px',
+          minHeight: '140px',
+        }}
+      >
+        <div
+          style={{
+            background: 'var(--color-surface-2)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '12px',
+            padding: '16px 18px',
+          }}
+        >
+          <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Producto más vendido
+          </div>
+          <div style={{ color: 'var(--color-text)', fontSize: '32px', fontWeight: 700, marginTop: '14px', marginBottom: '12px' }}>
+            {productsSummary?.producto_mas_vendido || '—'}
+          </div>
+          <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '8px' }}>
+            {productsSummary?.mes_actual || ''} • {productsSummary?.cantidad_mas_vendida ? `${productsSummary.cantidad_mas_vendida} unidades` : '—'}
+          </div>
+        </div>
+        <div
+          style={{
+            background: 'var(--color-surface-2)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '12px',
+            padding: '16px 18px',
+          }}
+        >
+          <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Promoción más vendida
+          </div>
+          <div style={{ color: 'var(--color-text)', fontSize: '32px', fontWeight: 700, marginTop: '14px', marginBottom: '12px' }}>
+            {productsSummary?.promocion_mas_vendida || '—'}
+          </div>
+          <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '8px' }}>
+            {productsSummary?.mes_actual || ''} • {productsSummary?.cantidad_promocion ? `${productsSummary.cantidad_promocion} vendidas` : '—'}
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla de ranking */}
+      <div className="table-section">
       <div className="section-header">
         <h2 className="section-title">Ranking de productos</h2>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -669,6 +741,7 @@ const DashboardOverview = () => {
       <TopProductsTable 
         products={data?.topProducts || []}
       />
+      </div>
     </div>
   );
 
