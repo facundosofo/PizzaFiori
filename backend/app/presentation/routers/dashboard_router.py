@@ -15,6 +15,7 @@ from app.presentation.schemas.dashboard_schemas import (
     GastosPorMesResponse,
     GastosPorCategoriaResponse,
     GastosPorAnoResponse,
+    ResumenGastosPeriodoResponse,
     TipoPeriodo,
     FiltroTiempo,
 )
@@ -169,6 +170,31 @@ async def get_expenses(
             detail=result.error
         )
     
+    return result.value
+
+
+@router.get(
+    "/expenses/summary",
+    response_model=ResumenGastosPeriodoResponse,
+    summary="Obtener resumen de gastos",
+    description="Devuelve métricas resumidas de gastos para cards del dashboard.",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_expenses_summary(
+    service: ExpenseAnalyticsService = Depends(Provide[Container.expense_analytics_service]),
+):
+    """Obtiene resumen de gastos para cards del dashboard."""
+    result = await service.get_expenses_summary()
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
     return result.value
 
 

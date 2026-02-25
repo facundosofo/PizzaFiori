@@ -14,12 +14,14 @@ import {
   getDashboardData,
   getExpensesByPeriod,
   getExpensesByCategory,
+  getExpensesSummary,
   getSalesByCategory,
   getTopProducts,
   getWeekdayRevenue,
   getCategories,
   type DashboardData,
   type ExpenseByCategory,
+  type ExpenseSummary,
   type MonthlyExpense,
   type YearlyExpense,
   type ProductSort,
@@ -64,6 +66,7 @@ const DashboardOverview = () => {
 
   const [expensesByPeriod, setExpensesByPeriod] = useState<MonthlyExpense[] | YearlyExpense[]>([]);
   const [expensesByCategory, setExpensesByCategory] = useState<ExpenseByCategory[]>([]);
+  const [expenseSummary, setExpenseSummary] = useState<ExpenseSummary | null>(null);
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [expensePeriod, setExpensePeriod] = useState<Period>('monthly');
   const [expenseCategory, setExpenseCategory] = useState<string>('');
@@ -82,6 +85,32 @@ const DashboardOverview = () => {
     { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
     { value: 'all_time', label: 'Histórico', description: 'Todos los datos' },
   ];
+
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const formatCurrencyOrDash = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return '—';
+    return formatCurrency(value);
+  };
+
+  const formatVariation = (value: number | null, label: string): string => {
+    if (value === null || value === undefined) return `— vs ${label}`;
+    const status = value >= 0 ? 'Aumento' : 'Bajo';
+    const direction = value >= 0 ? '↑' : '↓';
+    return `${status} ${direction} ${Math.abs(value).toFixed(1)}% vs ${label}`;
+  };
+
+  const getVariationColor = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return 'var(--color-text-muted)';
+    return value >= 0 ? 'var(--color-danger, #ef4444)' : 'var(--color-success, #16a34a)';
+  };
 
   const handleCloseError = () => {
     setError(null);
@@ -183,6 +212,16 @@ const DashboardOverview = () => {
     }
   }, [expenseCategoryTimeFilter]);
 
+  const fetchExpensesSummary = useCallback(async () => {
+    try {
+      const summary = await getExpensesSummary();
+      setExpenseSummary(summary);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar resumen de gastos';
+      setError(`Error al cargar resumen de gastos: ${errorMessage}`);
+    }
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -206,6 +245,10 @@ const DashboardOverview = () => {
   useEffect(() => {
     fetchExpensesByCategory();
   }, [fetchExpensesByCategory]);
+
+  useEffect(() => {
+    fetchExpensesSummary();
+  }, [fetchExpensesSummary]);
 
   useEffect(() => {
     const saleEventKey = 'pizza_fiori:sale_created_at';
@@ -369,94 +412,168 @@ const DashboardOverview = () => {
   );
 
   const renderGastosTab = () => (
-    <div className="charts-grid">
-      <div className="chart-section chart-main">
-        <div className="section-header">
-          <h2 className="chart-title">Gastos por período</h2>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', width: '100%' }}>
-            <PeriodSelector
-              selectedPeriod={expensePeriod}
-              onPeriodChange={setExpensePeriod}
-              options={[
-                { value: 'monthly', label: 'Mensual' },
-                { value: 'yearly', label: 'Anual' },
-              ]}
-            />
-            <CategorySelector
-              categories={expenseCategories}
-              selectedCategory={expenseCategory}
-              onCategoryChange={setExpenseCategory}
-            />
-            <span style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)' }} />
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px', height: '36px' }}>
-              <button
-                onClick={() => setExpenseChartType('area')}
-                aria-label="Cambiar a linea"
-                title="Linea"
-                style={{
-                  padding: '8px 12px',
-                  height: '36px',
-                  background: expenseChartType === 'area' ? 'var(--color-accent)' : 'transparent',
-                  color: expenseChartType === 'area' ? '#ffffff' : 'var(--color-text-muted)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '13px',
-                  fontWeight: expenseChartType === 'area' ? '600' : '500',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <ChartLineIcon size={18} />
-              </button>
-              <button
-                onClick={() => setExpenseChartType('bar')}
-                aria-label="Cambiar a barras"
-                title="Barras"
-                style={{
-                  padding: '8px 12px',
-                  height: '36px',
-                  background: expenseChartType === 'bar' ? 'var(--color-accent)' : 'transparent',
-                  color: expenseChartType === 'bar' ? '#ffffff' : 'var(--color-text-muted)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '13px',
-                  fontWeight: expenseChartType === 'bar' ? '600' : '500',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <ChartColumnIncreasingIcon size={18} />
-              </button>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
+        gap: '16px',
+        alignItems: 'stretch',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '12px',
+            minHeight: '140px',
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '16px 18px',
+            }}
+          >
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Resultado mensual
+            </div>
+            <div style={{ color: 'var(--color-text)', fontSize: '32px', fontWeight: 700, marginTop: '14px', marginBottom: '12px' }}>
+              {formatCurrencyOrDash(expenseSummary?.resultado_mensual)}
+            </div>
+            <div style={{ color: getVariationColor(expenseSummary?.variacion_mensual_pct), fontSize: '13px', marginTop: '8px' }}>
+              {formatVariation(expenseSummary?.variacion_mensual_pct ?? null, expenseSummary?.comparacion_mes || 'mes anterior')}
+            </div>
+          </div>
+          <div
+            style={{
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '16px 18px',
+            }}
+          >
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Resultado anual
+            </div>
+            <div style={{ color: 'var(--color-text)', fontSize: '32px', fontWeight: 700, marginTop: '14px', marginBottom: '12px' }}>
+              {formatCurrencyOrDash(expenseSummary?.resultado_anual)}
+            </div>
+            <div style={{ color: getVariationColor(expenseSummary?.variacion_anual_pct), fontSize: '13px', marginTop: '8px' }}>
+              {formatVariation(expenseSummary?.variacion_anual_pct ?? null, expenseSummary?.comparacion_ano?.toString() || 'año anterior')}
+            </div>
+          </div>
+          <div
+            style={{
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '16px 18px',
+            }}
+          >
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Categoría que más creció
+            </div>
+            <div style={{ color: 'var(--color-text)', fontSize: '30px', fontWeight: 700, marginTop: '14px', marginBottom: '12px' }}>
+              {expenseSummary?.categoria_mayor_crecimiento?.categoria || '—'}
+            </div>
+            <div style={{ color: getVariationColor(expenseSummary?.categoria_mayor_crecimiento?.porcentaje), fontSize: '13px', marginTop: '8px' }}>
+              {formatVariation(expenseSummary?.categoria_mayor_crecimiento?.porcentaje ?? null, expenseSummary?.comparacion_mes || 'mes anterior')}
             </div>
           </div>
         </div>
-        {expensesLoading ? (
-          <div
-            style={{
-              height: '300px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-text-muted)',
-            }}
-          >
-            Cargando...
+        <div className="chart-section chart-main" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <div className="section-header">
+            <h2 className="chart-title">Gastos por período</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', width: '100%' }}>
+              <PeriodSelector
+                selectedPeriod={expensePeriod}
+                onPeriodChange={setExpensePeriod}
+                options={[
+                  { value: 'monthly', label: 'Mensual' },
+                  { value: 'yearly', label: 'Anual' },
+                ]}
+              />
+              <CategorySelector
+                categories={expenseCategories}
+                selectedCategory={expenseCategory}
+                onCategoryChange={setExpenseCategory}
+              />
+              <span style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)' }} />
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: 'var(--color-hover)', padding: '4px', borderRadius: '8px', height: '36px' }}>
+                <button
+                  onClick={() => setExpenseChartType('area')}
+                  aria-label="Cambiar a linea"
+                  title="Linea"
+                  style={{
+                    padding: '8px 12px',
+                    height: '36px',
+                    background: expenseChartType === 'area' ? 'var(--color-accent)' : 'transparent',
+                    color: expenseChartType === 'area' ? '#ffffff' : 'var(--color-text-muted)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '13px',
+                    fontWeight: expenseChartType === 'area' ? '600' : '500',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <ChartLineIcon size={18} />
+                </button>
+                <button
+                  onClick={() => setExpenseChartType('bar')}
+                  aria-label="Cambiar a barras"
+                  title="Barras"
+                  style={{
+                    padding: '8px 12px',
+                    height: '36px',
+                    background: expenseChartType === 'bar' ? 'var(--color-accent)' : 'transparent',
+                    color: expenseChartType === 'bar' ? '#ffffff' : 'var(--color-text-muted)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '13px',
+                    fontWeight: expenseChartType === 'bar' ? '600' : '500',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <ChartColumnIncreasingIcon size={18} />
+                </button>
+              </div>
+            </div>
           </div>
-        ) : (
-          <ExpenseByMonthChart
-            data={expensesByPeriod}
-            height={350}
-            chartType={expenseChartType}
-          />
-        )}
+          {expensesLoading ? (
+            <div
+              style={{
+                height: '300px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              Cargando...
+            </div>
+          ) : (
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <ExpenseByMonthChart
+                data={expensesByPeriod}
+                height="100%"
+                chartType={expenseChartType}
+              />
+            </div>
+          )}
+        </div>
       </div>
-      <div className="chart-section chart-secondary chart-span-rows">
+      <div className="chart-section chart-secondary">
         <div className="section-header">
           <h2 className="chart-title">Gastos por categoria</h2>
           <TimeFilterSelector

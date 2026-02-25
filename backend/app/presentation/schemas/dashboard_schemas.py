@@ -176,3 +176,23 @@ class GastosPorAnoResponse(BaseModel):
             }
         }
     )
+
+
+class CategoriaMayorCrecimientoResponse(BaseModel):
+    """Respuesta para la categoría con mayor crecimiento."""
+    categoria: str = Field(..., description="Nombre de la categoría")
+    porcentaje: float | None = Field(None, description="Variación porcentual vs período anterior")
+
+
+class ResumenGastosPeriodoResponse(BaseModel):
+    """Resumen de gastos del período para cards del dashboard."""
+    resultado_mensual: float = Field(..., description="Total de gastos últimos 30 días")
+    variacion_mensual_pct: float | None = Field(None, description="Variación porcentual vs mes anterior")
+    comparacion_mes: str = Field(..., description="Mes contra el cual se compara (ej: 'Enero')")
+    resultado_anual: float = Field(..., description="Total de gastos últimos 12 meses")
+    variacion_anual_pct: float | None = Field(None, description="Variación porcentual vs año anterior")
+    comparacion_ano: int = Field(..., description="Año contra el cual se compara (ej: 2025)")
+    categoria_mayor_crecimiento: CategoriaMayorCrecimientoResponse | None = Field(
+        None,
+        description="Categoría con mayor crecimiento vs mes anterior",
+    )

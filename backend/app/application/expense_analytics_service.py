@@ -121,6 +121,243 @@ class ExpenseAnalyticsService:
                 status_code=500,
             )
 
+    async def get_expenses_summary(self) -> ServiceResult:
+        """Obtiene resumen de gastos para cards del dashboard con comparaciones de períodos equivalentes."""
+        try:
+            async with self.uow:
+                now = datetime.now()
+                
+                # MTD (Month To Date): Comparar febrero 1-25 vs enero 1-25
+                mtd_current = self._get_mtd_range(now)
+                mtd_previous = self._get_previous_month_equivalent(now)
+                
+                # YTD (Year To Date): Comparar 2026 ene 1 - feb 25 vs 2025 ene 1 - feb 25
+                ytd_current = self._get_ytd_range(now)
+                ytd_previous = self._get_previous_year_equivalent(now)
+                
+                # Gastos MTD y YTD
+                monthly_total = await self._get_total_expenses_between(mtd_current[0], mtd_current[1])
+                prev_month_total = await self._get_total_expenses_between(mtd_previous[0], mtd_previous[1])
+                yearly_total = await self._get_total_expenses_between(ytd_current[0], ytd_current[1])
+                prev_year_total = await self._get_total_expenses_between(ytd_previous[0], ytd_previous[1])
+
+                monthly_change = self._calculate_variation_pct(monthly_total, prev_month_total)
+                yearly_change = self._calculate_variation_pct(yearly_total, prev_year_total)
+
+                # Categoría con mayor crecimiento (último mes completo vs mes anterior)
+                last_month = self._get_previous_complete_month(now)
+                current_by_category = await self._get_category_totals_between(mtd_current[0], mtd_current[1])
+                prev_by_category = await self._get_category_totals_between(mtd_previous[0], mtd_previous[1])
+                top_growth = self._get_top_growth_category(current_by_category, prev_by_category)
+
+                # Obtener nombres de períodos para la respuesta
+                month_names = [
+                    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                ]
+                comparacion_mes = month_names[mtd_previous[0].month - 1]
+                comparacion_ano = ytd_previous[0].year
+
+                return ServiceResult(
+                    value={
+                        "resultado_mensual": float(monthly_total),
+                        "variacion_mensual_pct": monthly_change,
+                        "comparacion_mes": comparacion_mes,
+                        "resultado_anual": float(yearly_total),
+                        "variacion_anual_pct": yearly_change,
+                        "comparacion_ano": comparacion_ano,
+                        "categoria_mayor_crecimiento": top_growth,
+                    }
+                )
+        except Exception as e:
+            self.logger.error("Error obteniendo resumen de gastos", error=str(e))
+            return ServiceResult(
+                error=f"Error al obtener resumen de gastos: {str(e)}",
+                status_code=500,
+            )
+
+    def _get_mtd_range(self, date: datetime) -> tuple[datetime, datetime]:
+        """Retorna (1° del mes actual, fecha actual) para MTD."""
+        start = datetime(date.year, date.month, 1)
+        return (start, date)
+
+    def _get_ytd_range(self, date: datetime) -> tuple[datetime, datetime]:
+        """Retorna (1° enero año actual, fecha actual) para YTD."""
+        start = datetime(date.year, 1, 1)
+        return (start, date)
+
+    def _get_previous_month_equivalent(self, date: datetime) -> tuple[datetime, datetime]:
+        """Retorna el rango equivalente del mes anterior (mismo día).
+        
+        Ej: si hoy es 25 de febrero, retorna (1 enero, 25 enero)
+        """
+        # Restar un mes
+        if date.month == 1:
+            prev_year = date.year - 1
+            prev_month = 12
+        else:
+            prev_year = date.year
+            prev_month = date.month - 1
+        
+        start = datetime(prev_year, prev_month, 1)
+        
+        # Si el mes anterior tiene menos días que el día actual, usar último día del mes anterior
+        try:
+            end = datetime(prev_year, prev_month, date.day)
+        except ValueError:
+            # Mes anterior no tiene ese día (ej: 31 enero -> 28/29 febrero)
+            if prev_month == 2:
+                # Febrero: buscar último día
+                end = datetime(prev_year, 3, 1) - timedelta(days=1)
+            else:
+                # Otros meses
+                end = datetime(prev_year, prev_month + 1, 1) - timedelta(days=1)
+        
+        return (start, end)
+
+    def _get_previous_year_equivalent(self, date: datetime) -> tuple[datetime, datetime]:
+        """Retorna el rango equivalente del año anterior (mismo día del mismo mes).
+        
+        Ej: si hoy es 25 febrero 2026, retorna (1 enero 2025, 25 febrero 2025)
+        """
+        start = datetime(date.year - 1, 1, 1)
+        
+        try:
+            end = datetime(date.year - 1, date.month, date.day)
+        except ValueError:
+            # Año anterior no tiene ese día (ej: 29 feb 2024 -> 28 feb 2023)
+            if date.month == 2:
+                end = datetime(date.year - 1, 3, 1) - timedelta(days=1)
+            else:
+                end = datetime(date.year - 1, date.month + 1, 1) - timedelta(days=1)
+        
+        return (start, end)
+
+    def _get_previous_complete_month(self, date: datetime) -> tuple[datetime, datetime]:
+        """Retorna el mes completo anterior.
+        
+        Ej: si hoy es 25 febrero, retorna (1 enero, 31 enero)
+        """
+        if date.month == 1:
+            prev_year = date.year - 1
+            prev_month = 12
+        else:
+            prev_year = date.year
+            prev_month = date.month - 1
+        
+        start = datetime(prev_year, prev_month, 1)
+        # Último día del mes anterior
+        if prev_month == 12:
+            end = datetime(prev_year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end = datetime(prev_year, prev_month + 1, 1) - timedelta(days=1)
+        
+        return (start, end)
+
+    def _calculate_variation_pct(self, current: float, previous: float) -> float | None:
+        if previous == 0:
+            if current == 0:
+                return 0.0
+            return None
+        return ((current - previous) / previous) * 100
+
+    async def _get_total_expenses_between(self, start_date: datetime, end_date: datetime) -> float:
+        query = select(func.coalesce(func.sum(Expense.monto), 0)).select_from(
+            Expense
+        ).join(
+            ExpenseCategory,
+            Expense.categoria_gasto_id == ExpenseCategory.id,
+        ).where(
+            and_(
+                Expense.activo.is_(True),
+                ExpenseCategory.activo.is_(True),
+                Expense.fecha_pago >= start_date,
+                Expense.fecha_pago < end_date,
+            )
+        )
+
+        result = await self.uow.session.execute(query)
+        return float(result.scalar() or 0)
+
+    async def _get_category_totals_between(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> dict[str, float]:
+        query = select(
+            ExpenseCategory.nombre,
+            func.coalesce(func.sum(Expense.monto), 0).label("total_gastos"),
+        ).select_from(
+            Expense
+        ).join(
+            ExpenseCategory,
+            Expense.categoria_gasto_id == ExpenseCategory.id,
+        ).where(
+            and_(
+                Expense.activo.is_(True),
+                ExpenseCategory.activo.is_(True),
+                Expense.fecha_pago >= start_date,
+                Expense.fecha_pago < end_date,
+            )
+        ).group_by(ExpenseCategory.nombre)
+
+        result = await self.uow.session.execute(query)
+        rows = result.fetchall()
+        return {row.nombre: float(row.total_gastos or 0) for row in rows}
+
+    def _get_top_growth_category(
+        self,
+        current: dict[str, float],
+        previous: dict[str, float],
+    ) -> dict | None:
+        if not current and not previous:
+            return None
+
+        categories = set(current.keys()) | set(previous.keys())
+        best_category = None
+        best_change = None
+        best_is_comparable = False
+
+        for category in categories:
+            current_total = current.get(category, 0.0)
+            previous_total = previous.get(category, 0.0)
+            if current_total == 0 and previous_total == 0:
+                continue
+
+            change_pct = self._calculate_variation_pct(current_total, previous_total)
+            is_comparable = change_pct is not None
+
+            if best_category is None:
+                best_category = category
+                best_change = change_pct
+                best_is_comparable = is_comparable
+                continue
+
+            if is_comparable and not best_is_comparable:
+                best_category = category
+                best_change = change_pct
+                best_is_comparable = True
+                continue
+
+            if is_comparable and best_is_comparable and change_pct is not None and best_change is not None:
+                if change_pct > best_change:
+                    best_category = category
+                    best_change = change_pct
+                continue
+
+            if not is_comparable and not best_is_comparable:
+                if current_total > (current.get(best_category, 0.0) if best_category else 0.0):
+                    best_category = category
+                    best_change = change_pct
+
+        if not best_category:
+            return None
+
+        return {
+            "categoria": best_category,
+            "porcentaje": best_change,
+        }
+
     def _get_start_date_for_time_filter(
         self,
         time_filter: FiltroTiempo,

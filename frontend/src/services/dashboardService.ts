@@ -79,6 +79,21 @@ export interface ExpenseSubcategory {
   gastos: number;
 }
 
+export interface ExpenseSummaryCategory {
+  categoria: string;
+  porcentaje: number | null;
+}
+
+export interface ExpenseSummary {
+  resultado_mensual: number;
+  variacion_mensual_pct: number | null;
+  comparacion_mes: string;
+  resultado_anual: number;
+  variacion_anual_pct: number | null;
+  comparacion_ano: number;
+  categoria_mayor_crecimiento: ExpenseSummaryCategory | null;
+}
+
 export interface Category {
   id: number;
   nombre: string;
@@ -213,6 +228,15 @@ export const getWeekdayRevenue = async (
   const query = params.toString();
   const url = `/dashboard/revenue/weekday${query ? `?${query}` : ''}`;
   return fetchJson(url);
+};
+
+/**
+ * Obtener resumen de gastos (cards)
+ *
+ * GET /api/dashboard/expenses/summary
+ */
+export const getExpensesSummary = async (): Promise<ExpenseSummary> => {
+  return fetchJson('/dashboard/expenses/summary');
 };
 
 /**

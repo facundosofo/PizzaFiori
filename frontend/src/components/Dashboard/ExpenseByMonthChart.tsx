@@ -8,7 +8,7 @@ import type { MonthlyExpense, YearlyExpense } from '../../services/dashboardServ
 
 interface ExpenseByMonthChartProps {
   data: MonthlyExpense[] | YearlyExpense[];
-  height?: number;
+  height?: number | string;
   chartType?: 'bar' | 'area';
 }
 
@@ -42,8 +42,13 @@ const ExpenseByMonthChart = memo(({ data, height = 300, chartType = 'bar' }: Exp
     displayLabel: 'mes' in item ? item.mes : item.año,
   }));
 
+  const containerStyle =
+    typeof height === 'string'
+      ? { height, minHeight: '260px' }
+      : { height };
+
   return (
-    <div className="chart-container">
+    <div className="chart-container" style={containerStyle}>
       <ChartWrapper
         type={chartType}
         data={normalizedData}
