@@ -345,25 +345,25 @@ async def get_products_summary(
     "/sales/total",
     response_model=TotalSalesKPIResponse,
     summary="Obtener ventas totales con comparativa",
-    description="Retorna el total de ventas del período seleccionado con comparativa contra período anterior (MoM).",
+    description="Retorna el total de ventas del mes actual (1° hasta hoy) con comparativa contra el mismo período del mes anterior.",
     responses={
         500: {"description": "Error interno del servidor"},
     },
 )
 @inject
 async def get_total_sales(
-    days: int = Query(30, ge=1, le=365, description="Cantidad de días del período actual (default 30)"),
+    days: int = Query(30, ge=1, le=365, description="Ignorado (mantenido por compatibilidad)"),
     service: SalesAnalyticsService = Depends(Provide[Container.sales_analytics_service]),
 ):
     """
-    Obtiene el total de ventas del período seleccionado con comparativa.
+    Obtiene el total de ventas del mes calendario actual con comparativa.
     
     **Lógica de comparativa:**
-    - Compara contra el período anterior inmediato (MoM)
-    - Si no hay datos comparativos, previous será null
+    - Período actual: 1° del mes actual hasta hoy
+    - Período anterior: 1° del mes anterior hasta el mismo día del mes anterior (o último día si mes anterior tiene menos días)
     
     **Parámetros:**
-    - `days`: Cantidad de días que abarca el período (1-365, default 30)
+    - `days`: Ignorado (parámetro mantenido por compatibilidad con clientes anteriores)
     """
     result = await service.get_total_sales_with_comparison(days_in_period=days)
 
@@ -380,25 +380,25 @@ async def get_total_sales(
     "/expenses/total",
     response_model=TotalExpensesKPIResponse,
     summary="Obtener gastos totales con comparativa",
-    description="Retorna el total de gastos del período seleccionado con comparativa contra período anterior (MoM).",
+    description="Retorna el total de gastos del mes actual (1° hasta hoy) con comparativa contra el mismo período del mes anterior.",
     responses={
         500: {"description": "Error interno del servidor"},
     },
 )
 @inject
 async def get_total_expenses(
-    days: int = Query(30, ge=1, le=365, description="Cantidad de días del período actual (default 30)"),
+    days: int = Query(30, ge=1, le=365, description="Ignorado (mantenido por compatibilidad)"),
     service: ExpenseAnalyticsService = Depends(Provide[Container.expense_analytics_service]),
 ):
     """
-    Obtiene el total de gastos del período seleccionado con comparativa.
+    Obtiene el total de gastos del mes calendario actual con comparativa.
     
     **Lógica de comparativa:**
-    - Compara contra el período anterior inmediato (MoM)
-    - Si no hay datos comparativos, previous será null
+    - Período actual: 1° del mes actual hasta hoy
+    - Período anterior: 1° del mes anterior hasta el mismo día del mes anterior (o último día si mes anterior tiene menos días)
     
     **Parámetros:**
-    - `days`: Cantidad de días que abarca el período (1-365, default 30)
+    - `days`: Ignorado (parámetro mantenido por compatibilidad con clientes anteriores)
     """
     result = await service.get_total_expenses_with_comparison(days_in_period=days)
 
@@ -415,31 +415,31 @@ async def get_total_expenses(
     "/balance",
     response_model=BalanceMetricsResponse,
     summary="Obtener métricas de balance completas",
-    description="Retorna todas las métricas de balance: ventas totales, gastos totales, ganancia neta y margen neto.",
+    description="Retorna todas las métricas de balance del mes actual (1° hasta hoy): ventas totales, gastos totales, ganancia neta y margen neto con comparativas contra el mes anterior.",
     responses={
         500: {"description": "Error interno del servidor"},
     },
 )
 @inject
 async def get_balance_metrics(
-    days: int = Query(30, ge=1, le=365, description="Cantidad de días del período actual (default 30)"),
+    days: int = Query(30, ge=1, le=365, description="Ignorado (mantenido por compatibilidad)"),
     service: DashboardService = Depends(Provide[Container.dashboard_service]),
 ):
     """
-    Obtiene todas las métricas de balance del período seleccionado.
+    Obtiene todas las métricas de balance del mes calendario actual.
     
     **Métricas incluidas:**
-    - Ventas totales (con comparativa MoM)
-    - Gastos totales (con comparativa MoM)
+    - Ventas totales (con comparativa MoM mes calendario)
+    - Gastos totales (con comparativa MoM mes calendario)
     - Ganancia neta: ventas - gastos (con comparativa)
     - Margen neto: (ventas - gastos) / ventas * 100 (con diferencia en puntos porcentuales)
     
     **Lógica de comparativa:**
-    - Compara contra el período anterior inmediato (MoM)
-    - Si no hay datos comparativos, previous será null
+    - Período actual: 1° del mes actual hasta hoy
+    - Período anterior: 1° del mes anterior hasta el mismo día del mes anterior (o último día si mes anterior tiene menos días)
     
     **Parámetros:**
-    - `days`: Cantidad de días que abarca el período (1-365, default 30)
+    - `days`: Ignorado (parámetro mantenido por compatibilidad con clientes anteriores)
     """
     result = await service.get_balance_metrics(days_in_period=days)
 

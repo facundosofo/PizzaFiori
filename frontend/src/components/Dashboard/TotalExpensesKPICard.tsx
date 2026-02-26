@@ -2,8 +2,8 @@
  * TotalExpensesKPICard - Card KPI para mostrar gastos totales con comparativa
  * 
  * Muestra:
- * - Total de gastos del período actual
- * - Comparativa contra período anterior (YoY o MoM)
+ * - Total de gastos del mes actual (1° hasta hoy)
+ * - Comparativa contra el mismo período del mes anterior
  * - Variación porcentual e indicador de crecimiento/caída
  * - Para gastos: aumento es negativo (rojo), disminución es positivo (verde)
  */
@@ -13,12 +13,10 @@ import { getTotalExpenses, type TotalExpensesKPI } from '../../services/dashboar
 import ErrorAlert from '../shared/ErrorAlert';
 
 interface TotalExpensesKPICardProps {
-  days?: number;
   onDataLoaded?: (data: TotalExpensesKPI) => void;
 }
 
 const TotalExpensesKPICard = memo(({ 
-  days = 30, 
   onDataLoaded 
 }: TotalExpensesKPICardProps) => {
   const [data, setData] = useState<TotalExpensesKPI | null>(null);
@@ -30,7 +28,7 @@ const TotalExpensesKPICard = memo(({
       try {
         setLoading(true);
         setError(null);
-        const result = await getTotalExpenses(days);
+        const result = await getTotalExpenses();
         setData(result);
         onDataLoaded?.(result);
       } catch (err) {
@@ -41,7 +39,7 @@ const TotalExpensesKPICard = memo(({
     };
 
     loadData();
-  }, [days, onDataLoaded]);
+  }, [onDataLoaded]);
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('es-AR', {

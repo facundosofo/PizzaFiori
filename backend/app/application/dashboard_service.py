@@ -1046,13 +1046,15 @@ class DashboardService:
         Obtiene todas las métricas de balance del período con comparativas.
         
         Calcula:
-        - Ventas totales (con MoM)
-        - Gastos totales (con MoM)
+        - Ventas totales (con MoM mes calendario)
+        - Gastos totales (con MoM mes calendario)
         - Ganancia neta (ventas - gastos)
         - Margen neto ((ventas - gastos) / ventas * 100)
         
+        Compara mes calendario actual (1° hasta hoy) vs mes calendario anterior (1° hasta mismo día).
+        
         Args:
-            days_in_period: Cantidad de días que abarca el período (default 30)
+            days_in_period: Ignorado (mantenido por compatibilidad)
             
         Returns:
             ServiceResult con BalanceMetricsResponse
@@ -1061,13 +1063,31 @@ class DashboardService:
             async with self.uow:
                 now = datetime.now()
                 
-                # Período actual
-                current_start = (now - timedelta(days=days_in_period)).replace(hour=0, minute=0, second=0, microsecond=0)
+                # Período actual: 1° del mes actual hasta hoy
+                current_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 current_end = now
                 
-                # Período comparativo (MoM)
-                mom_start = (current_start - timedelta(days=days_in_period)).replace(hour=0, minute=0, second=0, microsecond=0)
-                mom_end = current_start
+                # Período anterior: 1° del mes anterior hasta el mismo día del mes anterior
+                if now.month == 1:
+                    prev_year = now.year - 1
+                    prev_month = 12
+                else:
+                    prev_year = now.year
+                    prev_month = now.month - 1
+                
+                mom_start = datetime(prev_year, prev_month, 1, 0, 0, 0, 0)
+                try:
+                    mom_end = datetime(prev_year, prev_month, now.day, 23, 59, 59, 999999)
+                except ValueError:
+                    # El mes anterior no tiene el mismo día (e.g., 31 enero -> 28/29 febrero)
+                    if prev_month == 2:
+                        is_leap = (prev_year % 4 == 0 and prev_year % 100 != 0) or (prev_year % 400 == 0)
+                        last_day = 29 if is_leap else 28
+                    elif prev_month in [4, 6, 9, 11]:
+                        last_day = 30
+                    else:
+                        last_day = 31
+                    mom_end = datetime(prev_year, prev_month, last_day, 23, 59, 59, 999999)
                 
                 # Obtener ventas
                 current_sales = await self._get_sales_total_between_dates(current_start, current_end)

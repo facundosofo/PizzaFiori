@@ -2,10 +2,9 @@
  * TotalSalesKPICard - Card KPI para mostrar ventas totales con comparativa
  * 
  * Muestra:
- * - Total de ventas del período actual
- * - Comparativa contra período anterior (YoY o MoM)
+ * - Total de ventas del mes actual (1° hasta hoy)
+ * - Comparativa contra el mismo período del mes anterior
  * - Variación porcentual e indicador de crecimiento/caída
- * - Recalcula automáticamente cuando cambia el período
  */
 
 import { memo, useEffect, useState } from 'react';
@@ -13,12 +12,10 @@ import { getTotalSales, type TotalSalesKPI } from '../../services/dashboardServi
 import ErrorAlert from '../shared/ErrorAlert';
 
 interface TotalSalesKPICardProps {
-  days?: number;
   onDataLoaded?: (data: TotalSalesKPI) => void;
 }
 
 const TotalSalesKPICard = memo(({ 
-  days = 30, 
   onDataLoaded 
 }: TotalSalesKPICardProps) => {
   const [data, setData] = useState<TotalSalesKPI | null>(null);
@@ -30,7 +27,7 @@ const TotalSalesKPICard = memo(({
       try {
         setLoading(true);
         setError(null);
-        const result = await getTotalSales(days);
+        const result = await getTotalSales();
         setData(result);
         onDataLoaded?.(result);
       } catch (err) {
@@ -41,7 +38,7 @@ const TotalSalesKPICard = memo(({
     };
 
     loadData();
-  }, [days, onDataLoaded]);
+  }, [onDataLoaded]);
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('es-AR', {

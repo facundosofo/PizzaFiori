@@ -90,7 +90,6 @@ const DashboardOverview = () => {
   const [weekdayTimeFilter, setWeekdayTimeFilter] = useState<TimeFilter>('last_year');
 
   // Estados para la tab de balance
-  const balanceDays = 30;
   const [balanceMetrics, setBalanceMetrics] = useState<BalanceMetrics | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
 
@@ -249,7 +248,7 @@ const DashboardOverview = () => {
   const fetchBalanceMetrics = useCallback(async () => {
     try {
       setBalanceLoading(true);
-      const metrics = await getBalanceMetrics(balanceDays);
+      const metrics = await getBalanceMetrics();
       setBalanceMetrics(metrics);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar balance';
@@ -257,7 +256,7 @@ const DashboardOverview = () => {
     } finally {
       setBalanceLoading(false);
     }
-  }, [balanceDays]);
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -349,8 +348,8 @@ const DashboardOverview = () => {
       >
         <NetProfitKPICard data={balanceMetrics?.net_profit ?? null} loading={balanceLoading} />
         <NetMarginKPICard data={balanceMetrics?.net_margin ?? null} loading={balanceLoading} />
-        <TotalSalesKPICard days={balanceDays} />
-        <TotalExpensesKPICard days={balanceDays} />
+        <TotalSalesKPICard />
+        <TotalExpensesKPICard />
       </div>
     </div>
   );
