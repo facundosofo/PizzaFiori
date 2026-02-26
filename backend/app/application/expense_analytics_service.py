@@ -685,3 +685,90 @@ class ExpenseAnalyticsService:
         # Ordenar por gastos totales descendente y limitar
         results.sort(key=lambda x: x["gastos"], reverse=True)
         return results[:limit]
+
+    async def get_total_expenses_with_comparison(
+        self,
+        days_in_period: int = 30,
+    ) -> ServiceResult:
+        """
+        Obtiene el total de gastos del período actual con comparativa.
+        
+        Compara contra el período anterior inmediato (MoM).
+        
+        Args:
+            days_in_period: Cantidad de días que abarca el período (default 30)
+            
+        Returns:
+            ServiceResult con TotalExpensesKPIResponse
+        """
+        try:
+            async with self.uow:
+                now = datetime.now()
+                
+                # Período actual: últimos N días
+                current_start = (now - timedelta(days=days_in_period)).replace(hour=0, minute=0, second=0, microsecond=0)
+                current_end = now
+                
+                # Obtener gastos del período actual
+                current_total = await self._get_expenses_total_between_dates(current_start, current_end)
+
+                # MoM (período anterior inmediato de N días)
+                mom_start = (current_start - timedelta(days=days_in_period)).replace(hour=0, minute=0, second=0, microsecond=0)
+                mom_end = current_start
+                mom_total = await self._get_expenses_total_between_dates(mom_start, mom_end)
+
+                comparison_type = None
+                previous_total = None
+                if mom_total is not None and mom_total > 0:
+                    previous_total = mom_total
+                    comparison_type = "MoM"
+                
+                return ServiceResult(
+                    value={
+                        "current": float(current_total or 0),
+                        "previous": float(previous_total) if previous_total else None,
+                        "comparison_type": comparison_type,
+                    }
+                )
+                
+        except Exception as e:
+            self.logger.error(f"Error obteniendo total de gastos con comparativa: {str(e)}")
+            return ServiceResult(
+                error=f"Error al obtener total de gastos: {str(e)}",
+                status_code=500
+            )
+
+    async def _get_expenses_total_between_dates(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> float | None:
+        """
+        Obtiene el total de gastos entre dos fechas.
+        
+        Args:
+            start_date: Fecha de inicio
+            end_date: Fecha de fin
+            
+        Returns:
+            Total de gastos en pesos, o None si no hay datos
+        """
+        try:
+            query = select(
+                func.sum(Expense.monto).label("total_expenses")
+            ).where(
+                and_(
+                    Expense.activo.is_(True),
+                    Expense.fecha_pago >= start_date,
+                    Expense.fecha_pago < end_date
+                )
+            )
+            
+            result = await self.uow.session.execute(query)
+            row = result.scalar_one_or_none()
+            
+            return row if row is not None else 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Error calculando total de gastos entre {start_date} y {end_date}: {str(e)}")
+            return None

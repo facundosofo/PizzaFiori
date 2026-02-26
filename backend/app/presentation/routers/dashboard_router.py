@@ -17,6 +17,11 @@ from app.presentation.schemas.dashboard_schemas import (
     GastosPorAnoResponse,
     ResumenGastosPeriodoResponse,
     ResumenProductosResponse,
+    TotalSalesKPIResponse,
+    TotalExpensesKPIResponse,
+    NetProfitKPIResponse,
+    NetMarginKPIResponse,
+    BalanceMetricsResponse,
     TipoPeriodo,
     FiltroTiempo,
 )
@@ -326,6 +331,117 @@ async def get_products_summary(
     - Producto con mayor ingreso: el que genera mayor ingresos (precio x cantidad)
     """
     result = await service.get_products_summary(time_filter=time_filter)
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
+    return result.value
+
+
+@router.get(
+    "/sales/total",
+    response_model=TotalSalesKPIResponse,
+    summary="Obtener ventas totales con comparativa",
+    description="Retorna el total de ventas del período seleccionado con comparativa contra período anterior (MoM).",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_total_sales(
+    days: int = Query(30, ge=1, le=365, description="Cantidad de días del período actual (default 30)"),
+    service: SalesAnalyticsService = Depends(Provide[Container.sales_analytics_service]),
+):
+    """
+    Obtiene el total de ventas del período seleccionado con comparativa.
+    
+    **Lógica de comparativa:**
+    - Compara contra el período anterior inmediato (MoM)
+    - Si no hay datos comparativos, previous será null
+    
+    **Parámetros:**
+    - `days`: Cantidad de días que abarca el período (1-365, default 30)
+    """
+    result = await service.get_total_sales_with_comparison(days_in_period=days)
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
+    return result.value
+
+
+@router.get(
+    "/expenses/total",
+    response_model=TotalExpensesKPIResponse,
+    summary="Obtener gastos totales con comparativa",
+    description="Retorna el total de gastos del período seleccionado con comparativa contra período anterior (MoM).",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_total_expenses(
+    days: int = Query(30, ge=1, le=365, description="Cantidad de días del período actual (default 30)"),
+    service: ExpenseAnalyticsService = Depends(Provide[Container.expense_analytics_service]),
+):
+    """
+    Obtiene el total de gastos del período seleccionado con comparativa.
+    
+    **Lógica de comparativa:**
+    - Compara contra el período anterior inmediato (MoM)
+    - Si no hay datos comparativos, previous será null
+    
+    **Parámetros:**
+    - `days`: Cantidad de días que abarca el período (1-365, default 30)
+    """
+    result = await service.get_total_expenses_with_comparison(days_in_period=days)
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
+    return result.value
+
+
+@router.get(
+    "/balance",
+    response_model=BalanceMetricsResponse,
+    summary="Obtener métricas de balance completas",
+    description="Retorna todas las métricas de balance: ventas totales, gastos totales, ganancia neta y margen neto.",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_balance_metrics(
+    days: int = Query(30, ge=1, le=365, description="Cantidad de días del período actual (default 30)"),
+    service: DashboardService = Depends(Provide[Container.dashboard_service]),
+):
+    """
+    Obtiene todas las métricas de balance del período seleccionado.
+    
+    **Métricas incluidas:**
+    - Ventas totales (con comparativa MoM)
+    - Gastos totales (con comparativa MoM)
+    - Ganancia neta: ventas - gastos (con comparativa)
+    - Margen neto: (ventas - gastos) / ventas * 100 (con diferencia en puntos porcentuales)
+    
+    **Lógica de comparativa:**
+    - Compara contra el período anterior inmediato (MoM)
+    - Si no hay datos comparativos, previous será null
+    
+    **Parámetros:**
+    - `days`: Cantidad de días que abarca el período (1-365, default 30)
+    """
+    result = await service.get_balance_metrics(days_in_period=days)
 
     if result.error:
         raise HTTPException(

@@ -724,3 +724,89 @@ class SalesAnalyticsService:
             })
             for dow in ordered_days
         ]
+
+    async def get_total_sales_with_comparison(
+        self,
+        days_in_period: int = 30,
+    ) -> ServiceResult:
+        """
+        Obtiene el total de ventas del período actual con comparativa.
+        
+        Compara contra el período anterior inmediato (MoM).
+        
+        Args:
+            days_in_period: Cantidad de días que abarca el período (default 30)
+            
+        Returns:
+            ServiceResult con TotalSalesKPIResponse
+        """
+        try:
+            async with self.uow:
+                now = datetime.now()
+                
+                # Período actual: últimos N días
+                current_start = (now - timedelta(days=days_in_period)).replace(hour=0, minute=0, second=0, microsecond=0)
+                current_end = now
+                
+                # Obtener ventas del período actual
+                current_total = await self._get_sales_total_between_dates(current_start, current_end)
+
+                # MoM (período anterior inmediato de N días)
+                mom_start = (current_start - timedelta(days=days_in_period)).replace(hour=0, minute=0, second=0, microsecond=0)
+                mom_end = current_start
+                mom_total = await self._get_sales_total_between_dates(mom_start, mom_end)
+
+                comparison_type = None
+                previous_total = None
+                if mom_total is not None and mom_total > 0:
+                    previous_total = mom_total
+                    comparison_type = "MoM"
+                
+                return ServiceResult(
+                    value={
+                        "current": float(current_total or 0),
+                        "previous": float(previous_total) if previous_total else None,
+                        "comparison_type": comparison_type,
+                    }
+                )
+                
+        except Exception as e:
+            self.logger.error(f"Error obteniendo total de ventas con comparativa: {str(e)}")
+            return ServiceResult(
+                error=f"Error al obtener total de ventas: {str(e)}",
+                status_code=500
+            )
+
+    async def _get_sales_total_between_dates(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> float | None:
+        """
+        Obtiene el total de ventas entre dos fechas.
+        
+        Args:
+            start_date: Fecha de inicio
+            end_date: Fecha de fin
+            
+        Returns:
+            Total de ventas en pesos, o None si no hay datos
+        """
+        try:
+            query = select(
+                func.sum(Sale.total).label("total_sales")
+            ).where(
+                and_(
+                    Sale.fecha_creacion >= start_date,
+                    Sale.fecha_creacion < end_date
+                )
+            )
+            
+            result = await self.uow.session.execute(query)
+            row = result.scalar_one_or_none()
+            
+            return row if row is not None else 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Error calculando total de ventas entre {start_date} y {end_date}: {str(e)}")
+            return None

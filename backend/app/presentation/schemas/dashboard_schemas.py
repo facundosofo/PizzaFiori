@@ -207,3 +207,87 @@ class ResumenProductosResponse(BaseModel):
     mes_actual: str = Field(..., description="Mes y año actual (ej: 'Febrero 2026')")
 
 
+class TotalSalesKPIResponse(BaseModel):
+    """Respuesta para KPI de Ventas Totales con comparativa."""
+    current: float = Field(..., description="Total de ventas del período actual")
+    previous: float | None = Field(None, description="Total de ventas del período comparativo (anterior)")
+    comparison_type: str | None = Field(None, description="Tipo de comparación: 'YoY', 'MoM', o None si no hay datos comparativos")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "current": 125000.50,
+                "previous": 98500.25,
+                "comparison_type": "YoY"
+            }
+        }
+    )
+
+
+class TotalExpensesKPIResponse(BaseModel):
+    """Respuesta para KPI de Gastos Totales con comparativa."""
+    current: float = Field(..., description="Total de gastos del período actual")
+    previous: float | None = Field(None, description="Total de gastos del período comparativo (anterior)")
+    comparison_type: str | None = Field(None, description="Tipo de comparación: 'YoY', 'MoM', o None si no hay datos comparativos")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "current": 85000.75,
+                "previous": 72000.50,
+                "comparison_type": "MoM"
+            }
+        }
+    )
+
+
+class NetProfitKPIResponse(BaseModel):
+    """Respuesta para KPI de Ganancia Neta con comparativa."""
+    sales: float = Field(..., description="Total de ventas del período actual")
+    expenses: float = Field(..., description="Total de gastos del período actual")
+    net_profit: float = Field(..., description="Ganancia neta (ventas - gastos)")
+    previous_net: float | None = Field(None, description="Ganancia neta del período comparativo")
+    comparison_type: str | None = Field(None, description="Tipo de comparación: 'YoY', 'MoM', o None")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "sales": 125000.50,
+                "expenses": 85000.75,
+                "net_profit": 39999.75,
+                "previous_net": 26499.75,
+                "comparison_type": "MoM"
+            }
+        }
+    )
+
+
+class NetMarginKPIResponse(BaseModel):
+    """Respuesta para KPI de Margen Neto porcentual."""
+    sales: float = Field(..., description="Total de ventas del período actual")
+    expenses: float = Field(..., description="Total de gastos del período actual")
+    margin: float = Field(..., description="Margen neto en porcentaje ((ventas - gastos) / ventas * 100)")
+    previous_margin: float | None = Field(None, description="Margen neto del período comparativo")
+    comparison_type: str | None = Field(None, description="Tipo de comparación: 'YoY', 'MoM', o None")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "sales": 125000.50,
+                "expenses": 85000.75,
+                "margin": 32.0,
+                "previous_margin": 26.9,
+                "comparison_type": "MoM"
+            }
+        }
+    )
+
+
+class BalanceMetricsResponse(BaseModel):
+    """Respuesta para todas las métricas de balance del período."""
+    sales: TotalSalesKPIResponse = Field(..., description="Datos de ventas totales")
+    expenses: TotalExpensesKPIResponse = Field(..., description="Datos de gastos totales")
+    net_profit: NetProfitKPIResponse = Field(..., description="Datos de ganancia neta")
+    net_margin: NetMarginKPIResponse = Field(..., description="Datos de margen neto")
+
+

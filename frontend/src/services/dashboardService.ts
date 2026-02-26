@@ -102,6 +102,41 @@ export interface ProductSummary {
   mes_actual: string;
 }
 
+export interface TotalSalesKPI {
+  current: number;
+  previous: number | null;
+  comparison_type: 'YoY' | 'MoM' | null;
+}
+
+export interface TotalExpensesKPI {
+  current: number;
+  previous: number | null;
+  comparison_type: 'YoY' | 'MoM' | null;
+}
+
+export interface NetProfitKPI {
+  sales: number;
+  expenses: number;
+  net_profit: number;
+  previous_net: number | null;
+  comparison_type: 'YoY' | 'MoM' | null;
+}
+
+export interface NetMarginKPI {
+  sales: number;
+  expenses: number;
+  margin: number;
+  previous_margin: number | null;
+  comparison_type: 'YoY' | 'MoM' | null;
+}
+
+export interface BalanceMetrics {
+  sales: TotalSalesKPI;
+  expenses: TotalExpensesKPI;
+  net_profit: NetProfitKPI;
+  net_margin: NetMarginKPI;
+}
+
 export interface Category {
   id: number;
   nombre: string;
@@ -325,5 +360,51 @@ export const getProductsSummary = async (
  */
 export const getCategories = async (): Promise<Category[]> => {
   const url = '/categorias';
+  return fetchJson(url);
+};
+/**
+ * Obtener ventas totales con comparativa
+ * 
+ * GET /api/dashboard/sales/total?days={days}
+ * 
+ * Retorna el total de ventas del período con comparativa contra:
+ * - Mismo período del año anterior (YoY)
+ * - O período anterior inmediato (MoM) si no hay YoY disponible
+ */
+export const getTotalSales = async (days: number = 30): Promise<TotalSalesKPI> => {
+  const params = new URLSearchParams({ days: String(days) });
+  const url = `/dashboard/sales/total?${params.toString()}`;
+  return fetchJson(url);
+};
+
+/**
+ * Obtener gastos totales con comparativa
+ * 
+ * GET /api/dashboard/expenses/total?days={days}
+ * 
+ * Retorna el total de gastos del período con comparativa contra:
+ * - Mismo período del año anterior (YoY)
+ * - O período anterior inmediato (MoM) si no hay YoY disponible
+ */
+export const getTotalExpenses = async (days: number = 30): Promise<TotalExpensesKPI> => {
+  const params = new URLSearchParams({ days: String(days) });
+  const url = `/dashboard/expenses/total?${params.toString()}`;
+  return fetchJson(url);
+};
+
+/**
+ * Obtener todas las métricas de balance
+ * 
+ * GET /api/dashboard/balance?days={days}
+ * 
+ * Retorna todas las métricas de balance del período:
+ * - Ventas totales
+ * - Gastos totales
+ * - Ganancia neta (ventas - gastos)
+ * - Margen neto ((ventas - gastos) / ventas * 100)
+ */
+export const getBalanceMetrics = async (days: number = 30): Promise<BalanceMetrics> => {
+  const params = new URLSearchParams({ days: String(days) });
+  const url = `/dashboard/balance?${params.toString()}`;
   return fetchJson(url);
 };

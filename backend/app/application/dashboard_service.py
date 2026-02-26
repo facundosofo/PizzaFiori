@@ -1038,3 +1038,151 @@ class DashboardService:
             for dow in ordered_days
         ]
 
+    async def get_balance_metrics(
+        self,
+        days_in_period: int = 30,
+    ) -> ServiceResult:
+        """
+        Obtiene todas las métricas de balance del período con comparativas.
+        
+        Calcula:
+        - Ventas totales (con MoM)
+        - Gastos totales (con MoM)
+        - Ganancia neta (ventas - gastos)
+        - Margen neto ((ventas - gastos) / ventas * 100)
+        
+        Args:
+            days_in_period: Cantidad de días que abarca el período (default 30)
+            
+        Returns:
+            ServiceResult con BalanceMetricsResponse
+        """
+        try:
+            async with self.uow:
+                now = datetime.now()
+                
+                # Período actual
+                current_start = (now - timedelta(days=days_in_period)).replace(hour=0, minute=0, second=0, microsecond=0)
+                current_end = now
+                
+                # Período comparativo (MoM)
+                mom_start = (current_start - timedelta(days=days_in_period)).replace(hour=0, minute=0, second=0, microsecond=0)
+                mom_end = current_start
+                
+                # Obtener ventas
+                current_sales = await self._get_sales_total_between_dates(current_start, current_end)
+                mom_sales = await self._get_sales_total_between_dates(mom_start, mom_end)
+                
+                # Obtener gastos
+                current_expenses = await self._get_expenses_total_between_dates(current_start, current_end)
+                mom_expenses = await self._get_expenses_total_between_dates(mom_start, mom_end)
+                
+                # Determinar tipo de comparación
+                comparison_type = None
+                previous_sales = None
+                previous_expenses = None
+
+                if mom_sales is not None and mom_sales > 0:
+                    previous_sales = mom_sales
+                    previous_expenses = mom_expenses
+                    comparison_type = "MoM"
+                
+                # Calcular métricas actuales
+                net_profit = current_sales - current_expenses
+                margin = ((current_sales - current_expenses) / current_sales * 100) if current_sales > 0 else 0.0
+                
+                # Calcular métricas comparativas
+                previous_net = None
+                previous_margin = None
+                if previous_sales is not None and previous_expenses is not None:
+                    previous_net = previous_sales - previous_expenses
+                    previous_margin = ((previous_sales - previous_expenses) / previous_sales * 100) if previous_sales > 0 else 0.0
+                
+                return ServiceResult(
+                    value={
+                        "sales": {
+                            "current": float(current_sales or 0),
+                            "previous": float(previous_sales) if previous_sales else None,
+                            "comparison_type": comparison_type,
+                        },
+                        "expenses": {
+                            "current": float(current_expenses or 0),
+                            "previous": float(previous_expenses) if previous_expenses else None,
+                            "comparison_type": comparison_type,
+                        },
+                        "net_profit": {
+                            "sales": float(current_sales or 0),
+                            "expenses": float(current_expenses or 0),
+                            "net_profit": float(net_profit),
+                            "previous_net": float(previous_net) if previous_net is not None else None,
+                            "comparison_type": comparison_type,
+                        },
+                        "net_margin": {
+                            "sales": float(current_sales or 0),
+                            "expenses": float(current_expenses or 0),
+                            "margin": float(margin),
+                            "previous_margin": float(previous_margin) if previous_margin is not None else None,
+                            "comparison_type": comparison_type,
+                        },
+                    }
+                )
+                
+        except Exception as e:
+            self.logger.error(f"Error obteniendo métricas de balance: {str(e)}")
+            return ServiceResult(
+                error=f"Error al obtener métricas de balance: {str(e)}",
+                status_code=500
+            )
+
+    async def _get_sales_total_between_dates(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> float:
+        """Obtiene el total de ventas entre dos fechas"""
+        try:
+            query = select(
+                func.sum(Sale.total).label("total_sales")
+            ).where(
+                and_(
+                    Sale.fecha_creacion >= start_date,
+                    Sale.fecha_creacion < end_date
+                )
+            )
+            
+            result = await self.uow.session.execute(query)
+            row = result.scalar_one_or_none()
+            
+            return row if row is not None else 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Error calculando total de ventas: {str(e)}")
+            return 0.0
+
+    async def _get_expenses_total_between_dates(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> float:
+        """Obtiene el total de gastos entre dos fechas"""
+        try:
+            from app.domain.models.expense import Expense
+            
+            query = select(
+                func.sum(Expense.monto).label("total_expenses")
+            ).where(
+                and_(
+                    Expense.activo.is_(True),
+                    Expense.fecha_pago >= start_date,
+                    Expense.fecha_pago < end_date
+                )
+            )
+            
+            result = await self.uow.session.execute(query)
+            row = result.scalar_one_or_none()
+            
+            return row if row is not None else 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Error calculando total de gastos: {str(e)}")
+            return 0.0

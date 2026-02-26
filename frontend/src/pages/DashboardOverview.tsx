@@ -20,6 +20,7 @@ import {
   getWeekdayRevenue,
   getCategories,
   getProductsSummary,
+  getBalanceMetrics,
   type DashboardData,
   type ExpenseByCategory,
   type ExpenseSummary,
@@ -30,6 +31,7 @@ import {
   type WeekdayRevenue,
   type TimeFilter,
   type Period,
+  type BalanceMetrics,
 } from '../services/dashboardService';
 import RevenueChart from '../components/Dashboard/RevenueChart';
 import SalesByCategoryChart from '../components/Dashboard/SalesByCategoryChart';
@@ -37,6 +39,10 @@ import TopProductsTable from '../components/Dashboard/TopProductsTable';
 import WeekdayChart from '../components/Dashboard/WeekdayChart';
 import ExpenseByMonthChart from '../components/Dashboard/ExpenseByMonthChart';
 import ExpenseByCategoryChart from '../components/Dashboard/ExpenseByCategoryChart';
+import TotalSalesKPICard from '../components/Dashboard/TotalSalesKPICard';
+import TotalExpensesKPICard from '../components/Dashboard/TotalExpensesKPICard';
+import NetProfitKPICard from '../components/Dashboard/NetProfitKPICard';
+import NetMarginKPICard from '../components/Dashboard/NetMarginKPICard';
 import ErrorAlert from '../components/shared/ErrorAlert';
 import PeriodSelector from '../components/shared/PeriodSelector';
 import TimeFilterSelector, { type TimeFilterOption } from '../components/shared/TimeFilterSelector';
@@ -82,6 +88,11 @@ const DashboardOverview = () => {
   const [weekdayData, setWeekdayData] = useState<WeekdayRevenue[]>([]);
   const [weekdayLoading, setWeekdayLoading] = useState(false);
   const [weekdayTimeFilter, setWeekdayTimeFilter] = useState<TimeFilter>('last_year');
+
+  // Estados para la tab de balance
+  const balanceDays = 30;
+  const [balanceMetrics, setBalanceMetrics] = useState<BalanceMetrics | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   const weekdayTimeFilterOptions: TimeFilterOption[] = [
     { value: 'last_month', label: 'Último mes', description: 'Últimos 30 días' },
@@ -235,6 +246,19 @@ const DashboardOverview = () => {
     }
   }, []);
 
+  const fetchBalanceMetrics = useCallback(async () => {
+    try {
+      setBalanceLoading(true);
+      const metrics = await getBalanceMetrics(balanceDays);
+      setBalanceMetrics(metrics);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar balance';
+      setError(`Error al cargar balance: ${errorMessage}`);
+    } finally {
+      setBalanceLoading(false);
+    }
+  }, [balanceDays]);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -266,6 +290,11 @@ const DashboardOverview = () => {
   useEffect(() => {
     fetchProductsSummary();
   }, [fetchProductsSummary]);
+
+  useEffect(() => {
+    if (activeTab !== 'balance') return;
+    fetchBalanceMetrics();
+  }, [activeTab, fetchBalanceMetrics]);
 
   useEffect(() => {
     const saleEventKey = 'pizza_fiori:sale_created_at';
@@ -302,9 +331,27 @@ const DashboardOverview = () => {
   );
 
   const renderBalanceTab = () => (
-    <div className="dashboard-placeholder">
-      <h2>Tab Balance</h2>
-      <p>Contenido para análisis de balance (ingresos vs gastos)</p>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+      }}
+    >
+      {/* Cards de resumen */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '12px',
+          minHeight: '140px',
+        }}
+      >
+        <NetProfitKPICard data={balanceMetrics?.net_profit ?? null} loading={balanceLoading} />
+        <NetMarginKPICard data={balanceMetrics?.net_margin ?? null} loading={balanceLoading} />
+        <TotalSalesKPICard days={balanceDays} />
+        <TotalExpensesKPICard days={balanceDays} />
+      </div>
     </div>
   );
 
