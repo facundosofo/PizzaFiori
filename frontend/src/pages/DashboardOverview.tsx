@@ -34,6 +34,8 @@ import {
   type Period,
   type BalanceMetrics,
   type MonthlyBalanceList,
+  type SalesByCategory,
+  type TopProduct,
 } from '../services/dashboardService';
 import RevenueChart from '../components/Dashboard/RevenueChart';
 import SalesByCategoryChart from '../components/Dashboard/SalesByCategoryChart';
@@ -47,6 +49,7 @@ import NetProfitKPICard from '../components/Dashboard/NetProfitKPICard';
 import NetMarginKPICard from '../components/Dashboard/NetMarginKPICard';
 import MonthlyBalanceBarChart from '../components/Dashboard/MonthlyBalanceBarChart';
 import NetMarginLineChart from '../components/Dashboard/NetMarginLineChart';
+import TotalOrdersKPICard from '../components/Dashboard/TotalOrdersKPICard';
 import ErrorAlert from '../components/shared/ErrorAlert';
 import PeriodSelector from '../components/shared/PeriodSelector';
 import TimeFilterSelector, { type TimeFilterOption } from '../components/shared/TimeFilterSelector';
@@ -99,6 +102,20 @@ const DashboardOverview = () => {
   const [monthlyBalanceData, setMonthlyBalanceData] = useState<MonthlyBalanceList | null>(null);
   const [monthlyBalanceLoading, setMonthlyBalanceLoading] = useState(false);
   const [balancePeriod, setBalancePeriod] = useState<Period>('monthly');
+
+  // Estados para el tab General
+  const [generalWeekdayMetric, setGeneralWeekdayMetric] = useState<WeekdayMetric>('ingresos');
+  const [generalBalancePeriod, setGeneralBalancePeriod] = useState<Period>('monthly');
+  const [generalBalanceData, setGeneralBalanceData] = useState<MonthlyBalanceList | null>(null);
+  const [generalBalanceLoading, setGeneralBalanceLoading] = useState(false);
+  const [generalBalanceMetrics, setGeneralBalanceMetrics] = useState<BalanceMetrics | null>(null);
+  const [generalBalanceMetricsLoading, setGeneralBalanceMetricsLoading] = useState(false);
+  const [generalSalesCategoryFilter, setGeneralSalesCategoryFilter] = useState<TimeFilter>('last_month');
+  const [generalSalesByCategory, setGeneralSalesByCategory] = useState<SalesByCategory[]>([]);
+  const [generalExpenseCategoryFilter, setGeneralExpenseCategoryFilter] = useState<TimeFilter>('last_month');
+  const [generalExpensesByCategory, setGeneralExpensesByCategory] = useState<ExpenseByCategory[]>([]);
+  const [generalTopProducts, setGeneralTopProducts] = useState<TopProduct[]>([]);
+  const [generalTopProductsFilter, setGeneralTopProductsFilter] = useState<TimeFilter>('last_year');
 
   const weekdayTimeFilterOptions: TimeFilterOption[] = [
     { value: 'last_month', label: 'Último mes', description: 'Últimos 30 días' },
@@ -278,6 +295,62 @@ const DashboardOverview = () => {
     }
   }, [balancePeriod]);
 
+  const fetchGeneralBalanceMetrics = useCallback(async () => {
+    try {
+      setGeneralBalanceMetricsLoading(true);
+      const metrics = await getBalanceMetrics();
+      setGeneralBalanceMetrics(metrics);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar balance';
+      setError(`Error al cargar balance: ${errorMessage}`);
+    } finally {
+      setGeneralBalanceMetricsLoading(false);
+    }
+  }, []);
+
+  const fetchGeneralBalanceData = useCallback(async () => {
+    try {
+      setGeneralBalanceLoading(true);
+      const result = await getMonthlyBalanceData(generalBalancePeriod);
+      setGeneralBalanceData(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar datos de balance';
+      setError(`Error al cargar datos de balance: ${errorMessage}`);
+    } finally {
+      setGeneralBalanceLoading(false);
+    }
+  }, [generalBalancePeriod]);
+
+  const fetchGeneralSalesByCategory = useCallback(async () => {
+    try {
+      const result = await getSalesByCategory(8, generalSalesCategoryFilter);
+      setGeneralSalesByCategory(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar ventas por categoría';
+      setError(`Error al cargar ventas por categoría: ${errorMessage}`);
+    }
+  }, [generalSalesCategoryFilter]);
+
+  const fetchGeneralExpensesByCategory = useCallback(async () => {
+    try {
+      const result = await getExpensesByCategory(8, generalExpenseCategoryFilter, false);
+      setGeneralExpensesByCategory(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar gastos por categoría';
+      setError(`Error al cargar gastos por categoría: ${errorMessage}`);
+    }
+  }, [generalExpenseCategoryFilter]);
+
+  const fetchGeneralTopProducts = useCallback(async () => {
+    try {
+      const result = await getTopProducts(5, generalTopProductsFilter, 'top');
+      setGeneralTopProducts(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar top productos';
+      setError(`Error al cargar top productos: ${errorMessage}`);
+    }
+  }, [generalTopProductsFilter]);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -317,6 +390,31 @@ const DashboardOverview = () => {
   }, [activeTab, balancePeriod, fetchBalanceMetrics, fetchMonthlyBalanceData]);
 
   useEffect(() => {
+    if (activeTab !== 'general') return;
+    fetchGeneralBalanceMetrics();
+  }, [activeTab, fetchGeneralBalanceMetrics]);
+
+  useEffect(() => {
+    if (activeTab !== 'general') return;
+    fetchGeneralBalanceData();
+  }, [activeTab, fetchGeneralBalanceData]);
+
+  useEffect(() => {
+    if (activeTab !== 'general') return;
+    fetchGeneralSalesByCategory();
+  }, [activeTab, fetchGeneralSalesByCategory]);
+
+  useEffect(() => {
+    if (activeTab !== 'general') return;
+    fetchGeneralExpensesByCategory();
+  }, [activeTab, fetchGeneralExpensesByCategory]);
+
+  useEffect(() => {
+    if (activeTab !== 'general') return;
+    fetchGeneralTopProducts();
+  }, [activeTab, fetchGeneralTopProducts]);
+
+  useEffect(() => {
     const saleEventKey = 'pizza_fiori:sale_created_at';
 
     const handleSaleCreated = async () => {
@@ -344,9 +442,116 @@ const DashboardOverview = () => {
   }, [fetchDashboardData, fetchSalesByCategory, fetchTopProducts, fetchWeekdayRevenue]);
 
   const renderGeneralTab = () => (
-    <div className="dashboard-placeholder">
-      <h2>Bienvenido al Dashboard</h2>
-      <p>Selecciona una pestaña para ver el análisis detallado</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Row 1 — KPI Cards */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '12px',
+          minHeight: '140px',
+        }}
+      >
+        <TotalSalesKPICard />
+        <NetProfitKPICard data={generalBalanceMetrics?.net_profit ?? null} loading={generalBalanceMetricsLoading} />
+        <TotalExpensesKPICard />
+        <TotalOrdersKPICard monthlyRevenue={data?.monthlyRevenue ?? null} />
+      </div>
+
+      {/* Row 2 — WeekdayChart + MonthlyBalanceBarChart (50/50) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className="chart-section">
+          <div className="section-header">
+            <h2 className="chart-title">Ventas por día de semana</h2>
+            <WeekdayMetricSelector
+              selectedMetric={generalWeekdayMetric}
+              onMetricChange={setGeneralWeekdayMetric}
+            />
+          </div>
+          <WeekdayChart data={weekdayData} selectedMetric={generalWeekdayMetric} height={300} />
+        </div>
+
+        <div className="chart-section">
+          <div className="section-header">
+            <h2 className="chart-title">Resultado neto</h2>
+            <PeriodSelector
+              selectedPeriod={generalBalancePeriod}
+              onPeriodChange={setGeneralBalancePeriod}
+              options={[
+                { value: 'monthly', label: 'Mensual' },
+                { value: 'yearly', label: 'Anual' },
+              ]}
+            />
+          </div>
+          {generalBalanceLoading ? (
+            <div
+              style={{
+                height: '300px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              Cargando...
+            </div>
+          ) : generalBalanceData ? (
+            <MonthlyBalanceBarChart
+              data={generalBalanceData.data}
+              currentMonth={generalBalanceData.current_month}
+              height={300}
+            />
+          ) : null}
+        </div>
+      </div>
+
+      {/* Row 3 — Ventas por categoría, Gastos por categoría, Top productos */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <div className="chart-section">
+          <div className="section-header">
+            <h2 className="chart-title">Ventas por categoría</h2>
+            <TimeFilterSelector
+              value={generalSalesCategoryFilter}
+              onChange={setGeneralSalesCategoryFilter}
+              options={[
+                { value: 'last_month', label: 'Mes actual', description: 'Mes calendario actual' },
+                { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+              ]}
+            />
+          </div>
+          <SalesByCategoryChart data={generalSalesByCategory} height={250} />
+        </div>
+
+        <div className="chart-section">
+          <div className="section-header">
+            <h2 className="chart-title">Gastos por categoría</h2>
+            <TimeFilterSelector
+              value={generalExpenseCategoryFilter}
+              onChange={setGeneralExpenseCategoryFilter}
+              options={[
+                { value: 'last_month', label: 'Mes actual', description: 'Últimos 30 días' },
+                { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+              ]}
+            />
+          </div>
+          <ExpenseByCategoryChart data={generalExpensesByCategory} height={250} />
+        </div>
+
+        <div className="chart-section">
+          <div className="section-header">
+            <h2 className="chart-title">Top productos</h2>
+            <TimeFilterSelector
+              value={generalTopProductsFilter}
+              onChange={setGeneralTopProductsFilter}
+              options={[
+                { value: 'last_month', label: 'Mes actual', description: 'Mes calendario actual' },
+                { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+              ]}
+            />
+          </div>
+          <TopProductsTable products={generalTopProducts} />
+        </div>
+      </div>
     </div>
   );
 
