@@ -291,3 +291,37 @@ class BalanceMetricsResponse(BaseModel):
     net_margin: NetMarginKPIResponse = Field(..., description="Datos de margen neto")
 
 
+class MonthlyBalanceDataResponse(BaseModel):
+    """Datos mensuales de vendtas y gastos para gráficos de balance."""
+    month: str = Field(..., description="Nombre del mes (Ene, Feb, etc) para mostrar en eje X")
+    sales: float = Field(..., description="Total de ventas del mes en pesos")
+    expenses: float = Field(..., description="Total de gastos del mes en pesos")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "month": "Sep",
+                "sales": 180000.0,
+                "expenses": 110000.0
+            }
+        }
+    )
+
+
+class MonthlyBalanceListResponse(BaseModel):
+    """Lista de datos mensuales para gráficos de balance (últimos 12 meses dinámicos)."""
+    data: List[MonthlyBalanceDataResponse] = Field(..., description="Lista de datos mensuales ordenados de más antiguo a más reciente")
+    current_month: str = Field(..., description="Nombre del mes actual para su destacado")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "data": [
+                    {"month": "Mar", "sales": 150000.0, "expenses": 95000.0},
+                    {"month": "Abr", "sales": 165000.0, "expenses": 100000.0},
+                ],
+                "current_month": "Feb"
+            }
+        }
+    )
+

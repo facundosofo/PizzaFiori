@@ -22,6 +22,7 @@ from app.presentation.schemas.dashboard_schemas import (
     NetProfitKPIResponse,
     NetMarginKPIResponse,
     BalanceMetricsResponse,
+    MonthlyBalanceListResponse,
     TipoPeriodo,
     FiltroTiempo,
 )
@@ -442,6 +443,47 @@ async def get_balance_metrics(
     - `days`: Ignorado (parámetro mantenido por compatibilidad con clientes anteriores)
     """
     result = await service.get_balance_metrics(days_in_period=days)
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
+    return result.value
+
+
+@router.get(
+    "/balance/monthly",
+    response_model=MonthlyBalanceListResponse,
+    summary="Obtener datos mensuales de balance (últimos 12 meses)",
+    description="Retorna datos mensuales de ventas y gastos para los últimos 12 meses dinámicos, útil para gráficos de balance.",
+    responses={
+        500: {"description": "Error interno del servidor"},
+    },
+)
+@inject
+async def get_monthly_balance_data(
+    period: str = Query("monthly", description="Período de agrupación: 'monthly' (últimos 12 meses) o 'yearly' (últimos 5 años)"),
+    service: DashboardService = Depends(Provide[Container.dashboard_service]),
+):
+    """
+    Obtiene datos de ventas y gastos agrupados por período para gráficos de balance.
+
+    **Parámetros:**
+    - `period`: `monthly` (últimos 12 meses) | `yearly` (últimos 5 años)
+
+    **Formato de datos:**
+    ```json
+    {
+      "data": [
+        { "month": "Mar", "sales": 150000.0, "expenses": 95000.0 }
+      ],
+      "current_month": "Feb"
+    }
+    ```
+    """
+    result = await service.get_monthly_balance_data(period=period)
 
     if result.error:
         raise HTTPException(

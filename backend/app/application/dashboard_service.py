@@ -1154,6 +1154,73 @@ class DashboardService:
                 status_code=500
             )
 
+    async def get_monthly_balance_data(self, period: str = "monthly") -> ServiceResult:
+        """
+        Obtiene datos de ventas y gastos agrupados por período.
+
+        Args:
+            period: "monthly" → últimos 12 meses | "yearly" → últimos 5 años
+
+        Returns:
+            ServiceResult con MonthlyBalanceListResponse
+        """
+        try:
+            async with self.uow:
+                now = datetime.now()
+                data = []
+
+                if period == "yearly":
+                    # Últimos 5 años (de más antiguo a más reciente)
+                    current_year = now.year
+                    for y in range(current_year - 4, current_year + 1):
+                        year_start = datetime(y, 1, 1, 0, 0, 0, 0)
+                        year_end   = datetime(y + 1, 1, 1, 0, 0, 0, 0)
+                        year_sales    = await self._get_sales_total_between_dates(year_start, year_end)
+                        year_expenses = await self._get_expenses_total_between_dates(year_start, year_end)
+                        data.append({
+                            "month": str(y),
+                            "sales": float(year_sales or 0),
+                            "expenses": float(year_expenses or 0),
+                        })
+                    current_month = str(current_year)
+                else:
+                    # Últimos 12 meses (de más antiguo a más reciente)
+                    month_names = [
+                        "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                        "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+                    ]
+                    for i in range(11, -1, -1):
+                        target_date = now - timedelta(days=30 * i)
+                        month_num = target_date.month
+                        year_num  = target_date.year
+                        month_start = datetime(year_num, month_num, 1, 0, 0, 0, 0)
+                        if month_num == 12:
+                            month_end = datetime(year_num + 1, 1, 1, 0, 0, 0, 0)
+                        else:
+                            month_end = datetime(year_num, month_num + 1, 1, 0, 0, 0, 0)
+                        month_sales    = await self._get_sales_total_between_dates(month_start, month_end)
+                        month_expenses = await self._get_expenses_total_between_dates(month_start, month_end)
+                        data.append({
+                            "month": month_names[month_num - 1],
+                            "sales": float(month_sales or 0),
+                            "expenses": float(month_expenses or 0),
+                        })
+                    current_month = month_names[now.month - 1]
+
+                return ServiceResult(
+                    value={
+                        "data": data,
+                        "current_month": current_month,
+                    }
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error obteniendo datos de balance por período: {str(e)}")
+            return ServiceResult(
+                error=f"Error al obtener datos de balance: {str(e)}",
+                status_code=500
+            )
+
     async def _get_sales_total_between_dates(
         self,
         start_date: datetime,

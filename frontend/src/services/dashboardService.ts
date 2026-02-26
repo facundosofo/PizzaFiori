@@ -408,3 +408,26 @@ export const getBalanceMetrics = async (days: number = 30): Promise<BalanceMetri
   const url = `/dashboard/balance?${params.toString()}`;
   return fetchJson(url);
 };
+
+export interface MonthlyBalanceData {
+  month: string;
+  sales: number;
+  expenses: number;
+}
+
+export interface MonthlyBalanceList {
+  data: MonthlyBalanceData[];
+  current_month: string;
+}
+
+/**
+ * Obtener datos de balance agrupados por período
+ *
+ * GET /api/dashboard/balance/monthly?period=monthly|yearly
+ *
+ * - monthly: últimos 12 meses
+ * - yearly:  últimos 5 años
+ */
+export const getMonthlyBalanceData = async (period: Period = 'monthly'): Promise<MonthlyBalanceList> => {
+  return fetchJson(`/dashboard/balance/monthly?period=${period}`);
+};

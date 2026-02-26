@@ -33,7 +33,7 @@ const NetMarginKPICard = memo(({ data, loading = false }: NetMarginKPICardProps)
     const direction = diff >= 0 ? '↑' : '↓';
     const label = comparisonType === 'YoY' ? 'año anterior' : comparisonType === 'MoM' ? 'mes anterior' : 'período anterior';
     
-    return `${direction} ${Math.abs(diff).toFixed(1)} p.p. vs ${label}`;
+    return `${direction} ${Math.abs(diff).toFixed(1)} % vs ${label}`;
   };
 
   const getDifferenceColor = (current: number, previous: number | null): string => {

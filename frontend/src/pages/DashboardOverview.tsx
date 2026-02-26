@@ -21,6 +21,7 @@ import {
   getCategories,
   getProductsSummary,
   getBalanceMetrics,
+  getMonthlyBalanceData,
   type DashboardData,
   type ExpenseByCategory,
   type ExpenseSummary,
@@ -32,6 +33,7 @@ import {
   type TimeFilter,
   type Period,
   type BalanceMetrics,
+  type MonthlyBalanceList,
 } from '../services/dashboardService';
 import RevenueChart from '../components/Dashboard/RevenueChart';
 import SalesByCategoryChart from '../components/Dashboard/SalesByCategoryChart';
@@ -43,6 +45,8 @@ import TotalSalesKPICard from '../components/Dashboard/TotalSalesKPICard';
 import TotalExpensesKPICard from '../components/Dashboard/TotalExpensesKPICard';
 import NetProfitKPICard from '../components/Dashboard/NetProfitKPICard';
 import NetMarginKPICard from '../components/Dashboard/NetMarginKPICard';
+import MonthlyBalanceBarChart from '../components/Dashboard/MonthlyBalanceBarChart';
+import NetMarginLineChart from '../components/Dashboard/NetMarginLineChart';
 import ErrorAlert from '../components/shared/ErrorAlert';
 import PeriodSelector from '../components/shared/PeriodSelector';
 import TimeFilterSelector, { type TimeFilterOption } from '../components/shared/TimeFilterSelector';
@@ -92,6 +96,9 @@ const DashboardOverview = () => {
   // Estados para la tab de balance
   const [balanceMetrics, setBalanceMetrics] = useState<BalanceMetrics | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [monthlyBalanceData, setMonthlyBalanceData] = useState<MonthlyBalanceList | null>(null);
+  const [monthlyBalanceLoading, setMonthlyBalanceLoading] = useState(false);
+  const [balancePeriod, setBalancePeriod] = useState<Period>('monthly');
 
   const weekdayTimeFilterOptions: TimeFilterOption[] = [
     { value: 'last_month', label: 'Último mes', description: 'Últimos 30 días' },
@@ -258,6 +265,19 @@ const DashboardOverview = () => {
     }
   }, []);
 
+  const fetchMonthlyBalanceData = useCallback(async () => {
+    try {
+      setMonthlyBalanceLoading(true);
+      const data = await getMonthlyBalanceData(balancePeriod);
+      setMonthlyBalanceData(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar datos mensuales';
+      setError(`Error al cargar datos mensuales: ${errorMessage}`);
+    } finally {
+      setMonthlyBalanceLoading(false);
+    }
+  }, [balancePeriod]);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -293,7 +313,8 @@ const DashboardOverview = () => {
   useEffect(() => {
     if (activeTab !== 'balance') return;
     fetchBalanceMetrics();
-  }, [activeTab, fetchBalanceMetrics]);
+    fetchMonthlyBalanceData();
+  }, [activeTab, balancePeriod, fetchBalanceMetrics, fetchMonthlyBalanceData]);
 
   useEffect(() => {
     const saleEventKey = 'pizza_fiori:sale_created_at';
@@ -351,6 +372,83 @@ const DashboardOverview = () => {
         <TotalSalesKPICard />
         <TotalExpensesKPICard />
       </div>
+
+      {/* Gráficos de balance */}
+      {monthlyBalanceData && monthlyBalanceData.data.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '16px',
+          }}
+        >
+          {/* Gráfico de barras agrupadas */}
+          <div
+            style={{
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '16px 18px',
+            }}
+          >
+            <div className="section-header">
+              <h2 className="chart-title">Resultado Neto</h2>
+              <PeriodSelector
+                selectedPeriod={balancePeriod}
+                onPeriodChange={setBalancePeriod}
+                options={[
+                  { value: 'monthly', label: 'Mensual' },
+                  { value: 'yearly', label: 'Anual' },
+                ]}
+              />
+            </div>
+            {monthlyBalanceLoading ? (
+              <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
+                Cargando...
+              </div>
+            ) : (
+              <MonthlyBalanceBarChart 
+                data={monthlyBalanceData.data}
+                currentMonth={monthlyBalanceData.current_month}
+                height={350}
+              />
+            )}
+          </div>
+
+          {/* Gráfico de línea del margen neto */}
+          <div
+            style={{
+              background: 'var(--color-surface-2)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '16px 18px',
+            }}
+          >
+            <div className="section-header">
+              <h2 className="chart-title">Evolución del Margen Neto</h2>
+              <PeriodSelector
+                selectedPeriod={balancePeriod}
+                onPeriodChange={setBalancePeriod}
+                options={[
+                  { value: 'monthly', label: 'Mensual' },
+                  { value: 'yearly', label: 'Anual' },
+                ]}
+              />
+            </div>
+            {monthlyBalanceLoading ? (
+              <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
+                Cargando...
+              </div>
+            ) : (
+              <NetMarginLineChart 
+                data={monthlyBalanceData.data}
+                currentMonth={monthlyBalanceData.current_month}
+                height={350}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 

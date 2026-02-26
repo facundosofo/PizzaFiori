@@ -85,7 +85,7 @@ const NetProfitKPICard = memo(({ data, loading = false }: NetProfitKPICardProps)
         }}
       >
         <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          Ganancia Neta
+          Resultado Neto
         </div>
         <div style={{ color: 'var(--color-text)', fontSize: '32px', fontWeight: 700, marginTop: '14px', marginBottom: '12px' }}>
           —
