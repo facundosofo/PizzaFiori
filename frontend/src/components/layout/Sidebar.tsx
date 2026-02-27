@@ -30,11 +30,11 @@ const navItems = [
   { label: "Home", to: "/", icon: Home },
   { label: "Registrar venta", to: "/registrar-venta", icon: ShoppingBasket },
   { label: "Ventas", to: "/ventas", icon: Receipt },
-  { label: "Dashboard", to: "/dashboard", icon: ChartLine },
   { label: "Reportes", to: "/reportes", icon: FileText },
 ];
 
 const adminNavItems = [
+  { label: "Dashboard", to: "/dashboard", icon: ChartLine, adminOnly: true },
   { label: "Ofertas", to: "/ofertas", icon: Tags, adminOnly: true },
   { label: "Productos", to: "/productos", icon: Pizza, adminOnly: true },
   { label: "Categorías", to: "/categorias", icon: FolderTree, adminOnly: true },

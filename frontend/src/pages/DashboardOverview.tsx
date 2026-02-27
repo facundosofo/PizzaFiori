@@ -56,18 +56,33 @@ import TimeFilterSelector, { type TimeFilterOption } from '../components/shared/
 import MetricSelector, { type Metric } from '../components/shared/MetricSelector';
 import WeekdayMetricSelector, { type WeekdayMetric } from '../components/shared/WeekdayMetricSelector';
 import CategorySelector from '../components/shared/CategorySelector';
-import { ChartColumnIncreasingIcon, ChartLineIcon } from '../components/shared/Icons';
+import { ChartColumnIncreasingIcon, ChartLineIcon, ShieldOffIcon } from '../components/shared/Icons';
 import { getGastosCategorias } from '../services/gastosCategoriasService';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/dashboard.css';
 import '../styles/shared/page-header.css';
 
 type DashboardTab = 'general' | 'balance' | 'ventas' | 'gastos' | 'productos';
 
 const DashboardOverview = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [activeTab, setActiveTab] = useState<DashboardTab>('general');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  if (!isAdmin) {
+    return (
+      <div className="user-management-container">
+        <div className="access-denied">
+          <ShieldOffIcon size={64} color="#ef4444" />
+          <h1>Acceso Denegado</h1>
+          <p>Solo los administradores pueden acceder a esta página.</p>
+        </div>
+      </div>
+    );
+  }
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>('monthly');

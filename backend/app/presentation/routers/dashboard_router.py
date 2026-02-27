@@ -26,13 +26,13 @@ from app.presentation.schemas.dashboard_schemas import (
     TipoPeriodo,
     FiltroTiempo,
 )
-from app.presentation.routers.dependencies import get_current_user
+from app.presentation.routers.dependencies import require_admin
 
 
 router = APIRouter(
     prefix="/dashboard",
     tags=["Dashboard"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_admin)],
 )
 
 
