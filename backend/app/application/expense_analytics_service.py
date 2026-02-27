@@ -362,13 +362,11 @@ class ExpenseAnalyticsService:
         self,
         time_filter: FiltroTiempo,
     ) -> datetime | None:
-        now = datetime.now()
-
-        if time_filter == FiltroTiempo.ULTIMO_MES:
-            return now - timedelta(days=30)
-        if time_filter == FiltroTiempo.ULTIMO_ANO:
-            return now - timedelta(days=365)
-        return None
+        """Calcula la fecha de inicio según el filtro de tiempo (períodos calendario)."""
+        from app.application.analytics_utils import get_start_date_for_time_filter
+        result = get_start_date_for_time_filter(time_filter)
+        self.logger.info(f"Filter {time_filter} → start_date: {result}")
+        return result
 
     async def _get_monthly_expenses_data(
         self,

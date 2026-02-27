@@ -53,7 +53,8 @@ const NetMarginLineChart = memo(({
   const rawMin   = Math.min(...margins);
   const rawMax   = Math.max(...margins);
   const pad      = Math.max((rawMax - rawMin) * 0.15, 5);
-  const domainMin = Math.floor((rawMin - pad) / 10) * 10;
+  // Si todos los valores son >= 0 arrancamos en 0 (igual que los demás gráficos)
+  const domainMin = rawMin >= 0 ? 0 : Math.floor((rawMin - pad) / 10) * 10;
   const domainMax = Math.ceil((rawMax  + pad) / 10) * 10;
 
   // Offset [0-1] donde cae el cero dentro del dominio (svg: top=0, bottom=1)

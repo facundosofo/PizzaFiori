@@ -242,11 +242,11 @@ class TotalExpensesKPIResponse(BaseModel):
 
 
 class NetProfitKPIResponse(BaseModel):
-    """Respuesta para KPI de Ganancia Neta con comparativa."""
+    """Respuesta para KPI de Resultado Neto con comparativa."""
     sales: float = Field(..., description="Total de ventas del período actual")
     expenses: float = Field(..., description="Total de gastos del período actual")
-    net_profit: float = Field(..., description="Ganancia neta (ventas - gastos)")
-    previous_net: float | None = Field(None, description="Ganancia neta del período comparativo")
+    net_profit: float = Field(..., description="Resultado neto (ventas - gastos)")
+    previous_net: float | None = Field(None, description="Resultado neto del período comparativo")
     comparison_type: str | None = Field(None, description="Tipo de comparación: 'YoY', 'MoM', o None")
     
     model_config = ConfigDict(
@@ -287,7 +287,7 @@ class BalanceMetricsResponse(BaseModel):
     """Respuesta para todas las métricas de balance del período."""
     sales: TotalSalesKPIResponse = Field(..., description="Datos de ventas totales")
     expenses: TotalExpensesKPIResponse = Field(..., description="Datos de gastos totales")
-    net_profit: NetProfitKPIResponse = Field(..., description="Datos de ganancia neta")
+    net_profit: NetProfitKPIResponse = Field(..., description="Datos de resultado neto")
     net_margin: NetMarginKPIResponse = Field(..., description="Datos de margen neto")
 
 

@@ -105,6 +105,8 @@ const DashboardOverview = () => {
 
   // Estados para el tab General
   const [generalWeekdayMetric, setGeneralWeekdayMetric] = useState<WeekdayMetric>('ingresos');
+  const [generalWeekdayData, setGeneralWeekdayData] = useState<WeekdayRevenue[]>([]);
+  const [generalWeekdayLoading, setGeneralWeekdayLoading] = useState(false);
   const [generalBalancePeriod, setGeneralBalancePeriod] = useState<Period>('monthly');
   const [generalBalanceData, setGeneralBalanceData] = useState<MonthlyBalanceList | null>(null);
   const [generalBalanceLoading, setGeneralBalanceLoading] = useState(false);
@@ -118,8 +120,8 @@ const DashboardOverview = () => {
   const [generalTopProductsFilter, setGeneralTopProductsFilter] = useState<TimeFilter>('last_year');
 
   const weekdayTimeFilterOptions: TimeFilterOption[] = [
-    { value: 'last_month', label: 'Último mes', description: 'Últimos 30 días' },
-    { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+    { value: 'last_month', label: 'Mes actual', description: 'Del 1° del mes hasta hoy' },
+    { value: 'last_year', label: 'Año actual', description: 'Del 1° de enero hasta hoy' },
     { value: 'all_time', label: 'Histórico', description: 'Todos los datos' },
   ];
 
@@ -351,6 +353,19 @@ const DashboardOverview = () => {
     }
   }, [generalTopProductsFilter]);
 
+  const fetchGeneralWeekdayRevenue = useCallback(async () => {
+    try {
+      setGeneralWeekdayLoading(true);
+      const result = await getWeekdayRevenue(undefined, 'last_month');
+      setGeneralWeekdayData(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar promedio por día de semana';
+      setError(`Error al cargar promedio por día de semana (general): ${errorMessage}`);
+    } finally {
+      setGeneralWeekdayLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -415,6 +430,11 @@ const DashboardOverview = () => {
   }, [activeTab, fetchGeneralTopProducts]);
 
   useEffect(() => {
+    if (activeTab !== 'general') return;
+    fetchGeneralWeekdayRevenue();
+  }, [activeTab, fetchGeneralWeekdayRevenue]);
+
+  useEffect(() => {
     const saleEventKey = 'pizza_fiori:sale_created_at';
 
     const handleSaleCreated = async () => {
@@ -452,8 +472,8 @@ const DashboardOverview = () => {
           minHeight: '140px',
         }}
       >
-        <TotalSalesKPICard />
         <NetProfitKPICard data={generalBalanceMetrics?.net_profit ?? null} loading={generalBalanceMetricsLoading} />
+        <TotalSalesKPICard />
         <TotalExpensesKPICard />
         <TotalOrdersKPICard monthlyRevenue={data?.monthlyRevenue ?? null} />
       </div>
@@ -468,7 +488,11 @@ const DashboardOverview = () => {
               onMetricChange={setGeneralWeekdayMetric}
             />
           </div>
-          <WeekdayChart data={weekdayData} selectedMetric={generalWeekdayMetric} height={300} />
+          {generalWeekdayLoading ? (
+              <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>Cargando...</div>
+            ) : (
+              <WeekdayChart data={generalWeekdayData} selectedMetric={generalWeekdayMetric} height={300} />
+            )}
         </div>
 
         <div className="chart-section">
@@ -514,8 +538,8 @@ const DashboardOverview = () => {
               value={generalSalesCategoryFilter}
               onChange={setGeneralSalesCategoryFilter}
               options={[
-                { value: 'last_month', label: 'Mes actual', description: 'Mes calendario actual' },
-                { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+                { value: 'last_month', label: 'Mes actual', description: 'Del 1° del mes hasta hoy' },
+                { value: 'last_year', label: 'Año actual', description: 'Del 1° de enero hasta hoy' },
               ]}
             />
           </div>
@@ -529,8 +553,8 @@ const DashboardOverview = () => {
               value={generalExpenseCategoryFilter}
               onChange={setGeneralExpenseCategoryFilter}
               options={[
-                { value: 'last_month', label: 'Mes actual', description: 'Últimos 30 días' },
-                { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+                { value: 'last_month', label: 'Mes actual', description: 'Del 1° del mes hasta hoy' },
+                { value: 'last_year', label: 'Año actual', description: 'Del 1° de enero hasta hoy' },
               ]}
             />
           </div>
@@ -544,8 +568,8 @@ const DashboardOverview = () => {
               value={generalTopProductsFilter}
               onChange={setGeneralTopProductsFilter}
               options={[
-                { value: 'last_month', label: 'Mes actual', description: 'Mes calendario actual' },
-                { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+                { value: 'last_month', label: 'Mes actual', description: 'Del 1° del mes hasta hoy' },
+                { value: 'last_year', label: 'Año actual', description: 'Del 1° de enero hasta hoy' },
               ]}
             />
           </div>
@@ -572,9 +596,9 @@ const DashboardOverview = () => {
           minHeight: '140px',
         }}
       >
-        <NetProfitKPICard data={balanceMetrics?.net_profit ?? null} loading={balanceLoading} />
-        <NetMarginKPICard data={balanceMetrics?.net_margin ?? null} loading={balanceLoading} />
         <TotalSalesKPICard />
+        <NetMarginKPICard data={balanceMetrics?.net_margin ?? null} loading={balanceLoading} />
+        <NetProfitKPICard data={balanceMetrics?.net_profit ?? null} loading={balanceLoading} />
         <TotalExpensesKPICard />
       </div>
 
@@ -946,8 +970,8 @@ const DashboardOverview = () => {
             value={expenseCategoryTimeFilter}
             onChange={setExpenseCategoryTimeFilter}
             options={[
-              { value: 'last_month', label: 'Mes actual', description: 'Últimos 30 días' },
-              { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+              { value: 'last_month', label: 'Mes actual', description: 'Del 1° del mes hasta hoy' },
+              { value: 'last_year', label: 'Año actual', description: 'Del 1° de enero hasta hoy' },
             ]}
           />
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { formatLocalISO } from "../utils/formatters";
 import { getProductos } from "../services/productsService";
 import { getCategorias } from "../services/categoriasService";
 import ProductCard from "../components/ProductCard";
@@ -73,8 +74,8 @@ const ProductosPage = () => {
       categoria_id: 0,
       imagen: undefined,
       activo: true,
-      fecha_creacion: new Date().toISOString(),
-      fecha_actualizacion: new Date().toISOString(),
+      fecha_creacion: formatLocalISO(new Date()),
+      fecha_actualizacion: formatLocalISO(new Date()),
       precios: [],
     });
     setIsCreating(true);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
+import { formatLocalISO } from "../utils/formatters";
 import { getOfertas } from "../services/ofertasService";
 import { getProductos } from "../services/productsService";
 import { getCategorias } from "../services/categoriasService";
@@ -67,8 +68,8 @@ const OffersPage = () => {
       descripcion: null,
       precio: 0,
       activo: true,
-      fecha_creacion: new Date().toISOString(),
-      fecha_actualizacion: new Date().toISOString(),
+      fecha_creacion: formatLocalISO(new Date()),
+      fecha_actualizacion: formatLocalISO(new Date()),
       productos: [],
     });
     setIsModalOpen(true);

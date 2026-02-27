@@ -5,7 +5,7 @@ import type { SaleItemWithDetails } from "../types/sale_item";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
 import { getSaleById, updateSale } from "../services/salesService";
-import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
+import { formatCurrency, formatDateTimeDisplay, formatLocalISO } from "../utils/formatters";
 import { OfferConfigModal } from "./OfferConfigModal";
 import RadioGroup, { type RadioOption } from "./shared/RadioGroup";
 import SearchableSelect from "./shared/SearchableSelect";
@@ -428,7 +428,7 @@ const SaleEditModal = ({
         ...sale!,
         items: editedItems,
         total: calculateTotal(),
-        fecha_actualizacion: new Date().toISOString(),
+        fecha_actualizacion: formatLocalISO(new Date()),
       };
 
       onSave(updatedSale);

@@ -95,7 +95,7 @@ const TotalOrdersKPICard = memo(({ monthlyRevenue }: TotalOrdersKPICardProps) =>
       </div>
       {ticketPromedio !== null && (
         <div style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>
-          Ticket prom: {formatCurrency(ticketPromedio)}
+          Pedido promedio: {formatCurrency(ticketPromedio)}
         </div>
       )}
     </div>

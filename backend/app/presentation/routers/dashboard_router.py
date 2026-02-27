@@ -416,7 +416,7 @@ async def get_total_expenses(
     "/balance",
     response_model=BalanceMetricsResponse,
     summary="Obtener métricas de balance completas",
-    description="Retorna todas las métricas de balance del mes actual (1° hasta hoy): ventas totales, gastos totales, ganancia neta y margen neto con comparativas contra el mes anterior.",
+    description="Retorna todas las métricas de balance del mes actual (1° hasta hoy): ventas totales, gastos totales, resultado neto y margen neto con comparativas contra el mes anterior.",
     responses={
         500: {"description": "Error interno del servidor"},
     },
@@ -432,7 +432,7 @@ async def get_balance_metrics(
     **Métricas incluidas:**
     - Ventas totales (con comparativa MoM mes calendario)
     - Gastos totales (con comparativa MoM mes calendario)
-    - Ganancia neta: ventas - gastos (con comparativa)
+    - Resultado neto: ventas - gastos (con comparativa)
     - Margen neto: (ventas - gastos) / ventas * 100 (con diferencia en puntos porcentuales)
     
     **Lógica de comparativa:**

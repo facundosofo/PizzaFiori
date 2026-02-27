@@ -114,29 +114,11 @@ class ProductAnalyticsService:
     # === Métodos privados ===
 
     def _get_start_date_for_time_filter(self, time_filter: FiltroTiempo) -> datetime | None:
-        """Calcula la fecha de inicio según el filtro de tiempo"""
-        self.logger.info(f"Calculating start date for time filter: {time_filter}")
-        now = datetime.now()
-        
-        if time_filter == FiltroTiempo.HOY:
-            result = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            self.logger.info(f"Filter is HOY, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMOS_7_DIAS:
-            result = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
-            self.logger.info(f"Filter is ULTIMOS_7_DIAS, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMO_MES:
-            result = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
-            self.logger.info(f"Filter is ULTIMO_MES, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMO_ANO:
-            result = (now - timedelta(days=364)).replace(hour=0, minute=0, second=0, microsecond=0)
-            self.logger.info(f"Filter is ULTIMO_ANO, start_date: {result}")
-            return result
-        else:  # HISTORICO
-            self.logger.info(f"Filter is HISTORICO, no start_date (all time)")
-            return None
+        """Calcula la fecha de inicio según el filtro de tiempo (períodos calendario)."""
+        from app.application.analytics_utils import get_start_date_for_time_filter
+        result = get_start_date_for_time_filter(time_filter)
+        self.logger.info(f"Filter {time_filter} → start_date: {result}")
+        return result
 
     async def _get_top_products_data(
         self,

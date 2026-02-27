@@ -1,8 +1,8 @@
 /**
- * NetProfitKPICard - Card KPI para mostrar ganancia neta
+ * NetProfitKPICard - Card KPI para mostrar resultado neto
  * 
  * Muestra:
- * - Ganancia neta del período (ventas - gastos)
+ * - Resultado neto del período (ventas - gastos)
  * - Comparativa contra período anterior
  * - Variación porcentual
  * - Soporta valores negativos (pérdida)
@@ -110,11 +110,11 @@ const NetProfitKPICard = memo(({ data, loading = false }: NetProfitKPICardProps)
       }}
     >
       <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        {isNegative ? 'Pérdida Neta' : 'Ganancia Neta'}
+        Resultado Neto
       </div>
       <div 
         style={{ 
-          color: isNegative ? 'var(--color-danger, #ef4444)' : 'var(--color-text)', 
+          color: isNegative ? 'var(--color-danger, #ef4444)' : 'var(--color-success, #16a34a)', 
           fontSize: '32px', 
           fontWeight: 700, 
           marginTop: '14px', 

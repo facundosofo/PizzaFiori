@@ -49,6 +49,18 @@ export const formatDateTimeDisplay = (isoString: string): string => {
 };
 
 /**
+ * Format a Date to local ISO datetime string (YYYY-MM-DDTHH:mm:ss) without UTC conversion.
+ * Use this instead of toISOString() to preserve Argentina (server) local time.
+ */
+export const formatLocalISO = (date: Date): string => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+};
+
+/**
  * Format a date string to ISO format for API (YYYY-MM-DD HH:mm:ss)
  */
 export const formatDateAPI = (date: Date): string => {
@@ -61,7 +73,7 @@ export const formatDateAPI = (date: Date): string => {
     const seconds = String(date.getSeconds()).padStart(2, '0');
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   } catch (err) {
-    return date.toISOString();
+    return formatLocalISO(date).replace('T', ' ');
   }
 };
 
@@ -75,7 +87,7 @@ export const formatDateYMD = (date: Date): string => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch (err) {
-    return date.toISOString().split('T')[0];
+    return formatLocalISO(date).split('T')[0];
   }
 };
 

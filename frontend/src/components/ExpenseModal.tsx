@@ -7,7 +7,7 @@ import * as Icons from "./shared/Icons";
 import type { Expense } from "../types/expense";
 import type { ExpenseCategory } from "../types/expense_category";
 import { createGasto, updateGasto } from "../services/gastosService";
-import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
+import { formatCurrency, parseCurrencyInput, formatDateYMD } from "../utils/formatters";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/shared/datepicker-custom.css";
 import "../styles/expense-modal.css";
@@ -176,7 +176,7 @@ const ExpenseModal = ({
       return;
     }
 
-    const fechaFormateada = fechaPago.toISOString().split('T')[0];
+    const fechaFormateada = formatDateYMD(fechaPago);
 
     setLoading(true);
 

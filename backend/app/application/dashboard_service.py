@@ -173,37 +173,19 @@ class DashboardService:
     def _get_start_date_for_time_filter(self, time_filter: FiltroTiempo) -> datetime | None:
         """
         Calcula la fecha de inicio según el filtro de tiempo.
-        
-        Nota: El "shift" real de -6h (ajuste de horario de negocio) lo hace SQL con dateadd().
-        Este método define el rango calendario del filtro. El ajuste temporal se aplica en la query.
-        
-        Returns:
-            datetime | None: Fecha de inicio, None para histórico (sin filtro)
+
+        Delegado en analytics_utils.get_start_date_for_time_filter.
+        Todos los filtros se anclan a períodos calendario (no rolling):
+          - ULTIMO_MES  → 1° del mes actual
+          - ULTIMO_ANO  → 1° de enero del año actual
+          - HOY         → hoy a las 00:00
+          - ULTIMOS_7_DIAS → hace 6 días a las 00:00
+          - HISTORICO   → None
         """
-        self.logger.info(f"Calculating start date for time filter: {time_filter}")
-        now = datetime.now()
-        
-        if time_filter == FiltroTiempo.HOY:
-            # Inicio del rango: hoy desde las 00:00:00
-            # El ajuste de -6h lo hace SQL (dateadd), no Python
-            result = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            self.logger.info(f"Filter is HOY, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMOS_7_DIAS:
-            result = now - timedelta(days=7)
-            self.logger.info(f"Filter is ULTIMOS_7_DIAS, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMO_MES:
-            result = now - timedelta(days=30)
-            self.logger.info(f"Filter is ULTIMO_MES, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMO_ANO:
-            result = now - timedelta(days=365)
-            self.logger.info(f"Filter is ULTIMO_ANO, start_date: {result}")
-            return result
-        else:  # HISTORICO
-            self.logger.info(f"Filter is HISTORICO, no start_date (all time)")
-            return None
+        from app.application.analytics_utils import get_start_date_for_time_filter
+        result = get_start_date_for_time_filter(time_filter)
+        self.logger.info(f"Filter {time_filter} → start_date: {result}")
+        return result
 
 
     async def _get_daily_revenue(self, limit: int) -> List[dict]:
@@ -1048,7 +1030,7 @@ class DashboardService:
         Calcula:
         - Ventas totales (con MoM mes calendario)
         - Gastos totales (con MoM mes calendario)
-        - Ganancia neta (ventas - gastos)
+        - Resultado neto (ventas - gastos)
         - Margen neto ((ventas - gastos) / ventas * 100)
         
         Compara mes calendario actual (1° hasta hoy) vs mes calendario anterior (1° hasta mismo día).
@@ -1240,7 +1222,7 @@ class DashboardService:
             result = await self.uow.session.execute(query)
             row = result.scalar_one_or_none()
             
-            return row if row is not None else 0.0
+            return float(row) if row is not None else 0.0
             
         except Exception as e:
             self.logger.error(f"Error calculando total de ventas: {str(e)}")
@@ -1268,7 +1250,7 @@ class DashboardService:
             result = await self.uow.session.execute(query)
             row = result.scalar_one_or_none()
             
-            return row if row is not None else 0.0
+            return float(row) if row is not None else 0.0
             
         except Exception as e:
             self.logger.error(f"Error calculando total de gastos: {str(e)}")

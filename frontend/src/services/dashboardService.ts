@@ -394,19 +394,17 @@ export const getTotalExpenses = async (days: number = 30): Promise<TotalExpenses
 
 /**
  * Obtener todas las métricas de balance
- * 
- * GET /api/dashboard/balance?days={days}
- * 
- * Retorna todas las métricas de balance del período:
+ *
+ * GET /api/dashboard/balance
+ *
+ * Retorna métricas del mes calendario actual (1° del mes hasta hoy):
  * - Ventas totales
  * - Gastos totales
- * - Ganancia neta (ventas - gastos)
+ * - Resultado neto (ventas - gastos)
  * - Margen neto ((ventas - gastos) / ventas * 100)
  */
-export const getBalanceMetrics = async (days: number = 30): Promise<BalanceMetrics> => {
-  const params = new URLSearchParams({ days: String(days) });
-  const url = `/dashboard/balance?${params.toString()}`;
-  return fetchJson(url);
+export const getBalanceMetrics = async (): Promise<BalanceMetrics> => {
+  return fetchJson('/dashboard/balance');
 };
 
 export interface MonthlyBalanceData {
