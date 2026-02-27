@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from app.domain.repositories.audit_repository import AbstractAuditRepository
-from app.domain.repositories.category_repository import AbstractCategoryRepository
+from app.domain.repositories.product_category_repository import AbstractProductCategoryRepository
 from app.domain.repositories.product_repository import AbstractProductRepository
 from app.domain.repositories.offer_repository import AbstractOfferRepository
 from app.domain.repositories.sale_repository import AbstractSaleRepository
@@ -15,7 +15,7 @@ from app.domain.repositories.expense_repository import AbstractExpenseRepository
 
 class AbstractUnitOfWork(ABC):
     product_repo: AbstractProductRepository
-    category_repo: AbstractCategoryRepository
+    product_category_repo: AbstractProductCategoryRepository
     offer_repo: AbstractOfferRepository
     sale_repo: AbstractSaleRepository
     sequence_repo: AbstractSequenceRepository

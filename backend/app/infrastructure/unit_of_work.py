@@ -7,8 +7,8 @@ from app.infrastructure.database import AsyncSessionLocal
 from app.infrastructure.repositories.audit_repository import (
     SqlAlchemyAuditRepository,
 )
-from app.infrastructure.repositories.category_repository import (
-    SqlAlchemyCategoryRepository,
+from app.infrastructure.repositories.product_category_repository import (
+    SqlAlchemyProductCategoryRepository,
 )
 from app.infrastructure.repositories.product_repository import (
     SqlAlchemyProductRepository,
@@ -38,7 +38,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.session_factory = session_factory
         self.session = None
         self.product_repo = None
-        self.category_repo = None
+        self.product_category_repo = None
         self.offer_repo = None
         self.sale_repo = None
         self.sequence_repo = None
@@ -50,7 +50,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     async def __aenter__(self):
         self.session = self.session_factory()
         self.product_repo = SqlAlchemyProductRepository(self.session)
-        self.category_repo = SqlAlchemyCategoryRepository(self.session)
+        self.product_category_repo = SqlAlchemyProductCategoryRepository(self.session)
         self.offer_repo = SqlAlchemyOfferRepository(self.session)
         self.sale_repo = SqlAlchemySaleRepository(self.session)
         self.sequence_repo = SqlAlchemySequenceRepository(self.session)

@@ -9,7 +9,7 @@ from app.domain.models.sale_item import SaleItem
 from app.domain.models.sale_item_offer_product import SaleItemOfferProduct
 from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
-from app.domain.models.category import Category
+from app.domain.models.product_category import ProductCategory as Category
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.dashboard_schemas import TipoPeriodo, FiltroTiempo
 

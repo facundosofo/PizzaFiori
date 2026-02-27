@@ -1,7 +1,7 @@
 from dependency_injector import containers, providers
 
 from app.application.audit_service import AuditService
-from app.application.category_service import CategoryService
+from app.application.product_category_service import ProductCategoryService
 from app.application.product_service import ProductService
 from app.application.offer_service import OfferService
 from app.application.sale_service import SaleService
@@ -23,7 +23,7 @@ class Container(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(
         modules=[
             "app.presentation.routers.product_router",
-            "app.presentation.routers.category_router",
+            "app.presentation.routers.product_category_router",
             "app.presentation.routers.offer_router",
             "app.presentation.routers.sale_router",
             "app.presentation.routers.dashboard_router",
@@ -57,8 +57,8 @@ class Container(containers.DeclarativeContainer):
         logger=logging,
     )
 
-    category_service = providers.Factory(
-        CategoryService,
+    product_category_service = providers.Factory(
+        ProductCategoryService,
         uow=unit_of_work,
         cache_service=cache_service,
         audit_service=audit_service,

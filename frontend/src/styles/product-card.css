@@ -10,6 +10,35 @@
 
 @import './shared/page-header.css';
 
+/* ===== PAGE HEADER ACTIONS ===== */
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-config {
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-config:hover {
+  background: var(--gradient-card-hover);
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+}
+
 /* ===== CONTENEDOR GENERAL ===== */
 
 /* Contenedor principal de la página de productos con gradiente */

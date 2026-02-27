@@ -1,4 +1,4 @@
-import type { Category } from './category';
+import type { ProductoCategoria } from './product_category';
 import type { ProductPrice } from './product_price';
 import type { OfferItem } from './offer_item';
 
@@ -11,7 +11,7 @@ export interface Product {
   activo: boolean;
   fecha_creacion: string;
   fecha_actualizacion: string;
-  categoria?: Category;
+  categoria?: ProductoCategoria;
   precios?: ProductPrice[];
   ofertas?: OfferItem[];
 }

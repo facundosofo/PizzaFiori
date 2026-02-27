@@ -3,7 +3,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   ChartLine,
   FileText,
-  FolderTree,
   Home,
   LogOut,
   Moon,
@@ -37,7 +36,6 @@ const adminNavItems = [
   { label: "Dashboard", to: "/dashboard", icon: ChartLine, adminOnly: true },
   { label: "Ofertas", to: "/ofertas", icon: Tags, adminOnly: true },
   { label: "Productos", to: "/productos", icon: Pizza, adminOnly: true },
-  { label: "Categorías", to: "/categorias", icon: FolderTree, adminOnly: true },
   { label: "Gastos", to: "/gastos", icon: Wallet, adminOnly: true },
   { label: "Auditoría", to: "/auditoria", icon: FileSearch, adminOnly: true },
   { label: "Gestión Usuarios", to: "/admin/users", icon: Users, adminOnly: true },

@@ -19,9 +19,9 @@
   background: var(--gradient-card);
   border: 2px solid var(--color-border-strong);
   color: var(--color-text);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  padding: 10px 18px;
+  padding: 12px 24px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;

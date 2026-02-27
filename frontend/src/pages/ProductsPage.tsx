@@ -2,26 +2,28 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { formatLocalISO } from "../utils/formatters";
 import { getProductos } from "../services/productsService";
-import { getCategorias } from "../services/categoriasService";
+import { getProductosCategorias } from "../services/productosCategoriasService";
 import ProductCard from "../components/ProductCard";
 import ProductModal from "../components/ProductModal";
+import ProductosCategoryConfigModal from "../components/ProductosCategoryConfigModal";
 import SkeletonLoader from "../components/shared/SkeletonLoader";
 import ErrorAlert from "../components/shared/ErrorAlert";
 import * as Icons from "../components/shared/Icons";
 import type { Product } from "../types/product";
-import type { Category } from "../types/category";
+import type { ProductoCategoria } from "../types/product_category";
 import "../styles/product-card.css";
 
 const ProductosPage = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [productos, setProductos] = useState<Product[]>([]);
-  const [categorias, setCategorias] = useState<Category[]>([]);
+  const [categorias, setCategorias] = useState<ProductoCategoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<number>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
   const [newProduct, setNewProduct] = useState<Product | null>(null);
+  const [showCategoryConfig, setShowCategoryConfig] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,7 +31,7 @@ const ProductosPage = () => {
         setError(null);
         const [prods, cats] = await Promise.all([
           getProductos(),
-          getCategorias(true),
+          getProductosCategorias(true),
         ]);
 
         if (!prods || prods.length === 0) {
@@ -127,15 +129,34 @@ const ProductosPage = () => {
     <div className="productos-container">
       <div className="page-header">
         <h1 className="page-title">Productos</h1>
-        <button
-          className="btn-create-product"
-          onClick={handleCreateClick}
-        >
-          <Icons.PlusIcon size={16} /> Nuevo Producto
-        </button>
+        <div className="page-header-actions">
+          <button
+            className="btn-create-product"
+            onClick={handleCreateClick}
+          >
+            <Icons.PlusIcon size={16} /> Nuevo Producto
+          </button>
+          <button
+            className="btn-config"
+            onClick={() => setShowCategoryConfig(true)}
+          >
+            <Icons.FolderTreeIcon size={16} />
+            Categorías
+          </button>
+        </div>
       </div>
 
       <ErrorAlert message={error} onClose={() => setError(null)} />
+
+      <ProductosCategoryConfigModal
+        isOpen={showCategoryConfig}
+        onClose={() => setShowCategoryConfig(false)}
+        categorias={categorias}
+        onRefresh={async () => {
+          const cats = await getProductosCategorias(true);
+          setCategorias(cats || []);
+        }}
+      />
 
       {newProduct && (
         <ProductModal

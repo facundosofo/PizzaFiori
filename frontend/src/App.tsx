@@ -6,10 +6,9 @@ import UserProfilePage from "./pages/UserProfilePage";
 import UserManagementPage from "./pages/UserManagementPage";
 import { HomePage } from "./pages/HomePage";
 import ProductosPage from "./pages/ProductsPage";
+import OffersPage from "./pages/OffersPage";
 import SalesPage from "./pages/SalesPage";
 import SalesCreatePage from "./pages/SalesCreate";
-import OffersPage from "./pages/OffersPage";
-import CategoriesPage from "./pages/CategoriesPage";
 import DashboardOverview from "./pages/DashboardOverview";
 import AppLayout from "./components/layout/AppLayout";
 import ReportsPage from "./pages/ReportsPage";
@@ -34,7 +33,6 @@ function App() {
           >
             <Route path="/" element={<HomePage />} />
             <Route path="/productos" element={<ProductosPage />} />
-            <Route path="/categorias" element={<CategoriesPage />} />
             <Route path="/ofertas" element={<OffersPage />} />
             <Route path="/ventas" element={<SalesPage />} />
             <Route path="/registrar-venta" element={<SalesCreatePage />} />

@@ -4,7 +4,7 @@ import MultiSelect, { type MultiSelectItem } from "./shared/MultiSelect";
 import SearchableSelect, { type SelectOption } from "./shared/SearchableSelect";
 import * as Icons from './shared/Icons';
 import type { Product } from "../types/product";
-import type { Category } from "../types/category";
+import type { ProductoCategoria } from "../types/product_category";
 import type { OfferItemRequest } from "../types/offer_item";
 import "../styles/offer-item-form.css";
 import "../styles/shared/add-button.css";
@@ -13,7 +13,7 @@ type TipoOfferItem = "producto" | "categoria" | "opciones";
 
 interface OfferItemFormProps {
   productos: Product[];
-  categorias: Category[];
+  categorias: ProductoCategoria[];
   onAdd: (item: OfferItemRequest) => void;
   onCancel: () => void;
 }

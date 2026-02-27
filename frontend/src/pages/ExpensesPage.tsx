@@ -284,15 +284,15 @@ const ExpensesPage = () => {
       <header className="page-header">
         <h1 className="page-title">Gastos</h1>
         <div className="page-header-actions">
+          <button className="btn-new-sale" onClick={handleCreateClick}>
+            <Icons.PlusIcon size={16} /> Cargar gasto
+          </button>
           <button
             className="btn-config"
             onClick={() => setShowCategoryConfig(true)}
           >
             <Icons.FolderTreeIcon size={16} />
             Categorías
-          </button>
-          <button className="btn-new-sale" onClick={handleCreateClick}>
-            <Icons.PlusIcon size={16} /> Cargar gasto
           </button>
         </div>
       </header>

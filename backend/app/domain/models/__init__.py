@@ -5,7 +5,7 @@ Import all models here to ensure SQLAlchemy can resolve relationships.
 
 from app.domain.models.base import Base
 from app.domain.models.audit_log import AuditLog
-from app.domain.models.category import Category
+from app.domain.models.product_category import ProductCategory
 from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
 from app.domain.models.offer import Offer
@@ -20,7 +20,7 @@ from app.domain.models.expense import Expense
 __all__ = [
     "Base",
     "AuditLog",
-    "Category",
+    "ProductCategory",
     "Product",
     "ProductPrice",
     "Offer",

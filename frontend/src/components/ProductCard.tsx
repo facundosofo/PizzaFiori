@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import type { Product } from "../types/product";
-import type { Category } from "../types/category";
+import type { ProductoCategoria } from "../types/product_category";
 import type { Offer } from "../types/offer";
 import ProductModal from "./ProductModal";
 import ErrorAlert from "./shared/ErrorAlert";
@@ -19,7 +19,7 @@ interface ProductCardProps {
   producto: Product;
   onProductUpdate?: (producto: Product) => void;
   onProductDelete?: (productoId: number) => void;
-  categorias?: Category[];
+  categorias?: ProductoCategoria[];
 }
 
 const ProductCard = ({

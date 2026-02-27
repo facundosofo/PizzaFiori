@@ -60,7 +60,7 @@ class ProductService:
                 # Validar que la categoría existe
                 categoria_nombre = None
                 if producto_create.categoria_id:
-                    categoria = await uow.category_repo.get_by_id(producto_create.categoria_id)
+                    categoria = await uow.product_category_repo.get_by_id(producto_create.categoria_id)
                     if not categoria:
                         return ServiceResult(error="Categoría no encontrada", status_code=404)
                     categoria_nombre = categoria.nombre
