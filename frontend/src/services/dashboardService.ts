@@ -140,7 +140,7 @@ export interface BalanceMetrics {
 export interface Category {
   id: number;
   nombre: string;
-  descripcion: string | null;
+  activo: boolean;
 }
 
 export type Period = 'daily' | 'monthly' | 'yearly';
@@ -356,10 +356,10 @@ export const getProductsSummary = async (
 /**
  * Obtener todas las categorías
  * 
- * GET /api/categorias
+ * GET /api/productos-categorias
  */
 export const getCategories = async (): Promise<Category[]> => {
-  const url = '/categorias';
+  const url = '/productos-categorias';
   return fetchJson(url);
 };
 /**
