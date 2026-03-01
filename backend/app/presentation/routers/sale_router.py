@@ -87,6 +87,19 @@ async def get_sales(
 
 
 @router.get(
+    "/anios-disponibles",
+    response_model=list[int],
+    summary="Años con ventas",
+    description="Retorna la lista de años que tienen al menos una venta registrada.",
+)
+@inject
+async def get_available_years(
+    service: SaleService = Depends(Provide[Container.sale_service]),
+):
+    return await service.get_available_years()
+
+
+@router.get(
     "/{sale_id}",
     response_model=SaleResponse,
     summary="Obtener una venta por ID",
@@ -174,6 +187,7 @@ async def delete_sale(
 
 
 @router.get(
+
     "/reporte/pdf",
     summary="Generar reporte de ventas en PDF",
     description="Genera un reporte PDF con el listado de ventas en el rango seleccionado.",

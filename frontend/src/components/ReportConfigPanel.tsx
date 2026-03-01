@@ -1,8 +1,9 @@
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
 import { Calendar, Moon, Sun, RotateCcw, FileText } from "lucide-react";
-import type { ReportMode, ReportRequest } from "../services/reportService";
+import type { ReportMode, ReportRequest, ReportType, DateRangeMode } from "../services/reportService";
+import { getAvailableYears } from "../services/reportService";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/shared/datepicker-custom.css";
 import "../styles/sales-filters.css";
@@ -42,6 +43,21 @@ const DateRangeInput = forwardRef<HTMLButtonElement, DateRangeInputProps>(
 
 DateRangeInput.displayName = "DateRangeInput";
 
+const REPORT_TYPES: { key: ReportType; label: string }[] = [
+  { key: "general", label: "General" },
+  { key: "balance", label: "Balance" },
+  { key: "ventas", label: "Ventas" },
+  { key: "costo", label: "Costo" },
+];
+
+const MONTHS = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+const currentYear = new Date().getFullYear();
+const FALLBACK_YEARS = [currentYear];
+
 const ReportConfigPanel = ({
   config,
   onChange,
@@ -50,6 +66,46 @@ const ReportConfigPanel = ({
   loading,
   validationMessage,
 }: ReportConfigPanelProps) => {
+  const [availableYears, setAvailableYears] = useState<number[]>(FALLBACK_YEARS);
+
+  // Refs para acceder a los valores actuales sin re-disparar el efecto
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const configRef = useRef(config);
+  configRef.current = config;
+
+  useEffect(() => {
+    getAvailableYears()
+      .then((years) => {
+        if (years.length > 0) {
+          const minYear = Math.min(...years);
+          const range = Array.from(
+            { length: currentYear - minYear + 1 },
+            (_, i) => minYear + i
+          );
+          setAvailableYears(range);
+          // Si el año seleccionado está fuera del rango, seleccionar el más reciente
+          if (configRef.current.selectedYear < minYear) {
+            onChangeRef.current({ ...configRef.current, selectedYear: currentYear });
+          }
+        }
+      })
+      .catch(() => { /* mantiene FALLBACK_YEARS */ });
+  }, []);
+  const handleTypeChange = (type: ReportType) => {
+    const newMode: DateRangeMode =
+      type === "ventas"
+        ? config.dateRangeMode
+        : config.dateRangeMode === "rango"
+        ? "mes"
+        : config.dateRangeMode;
+    onChange({ ...config, reportType: type, dateRangeMode: newMode });
+  };
+
+  const handleDateModeChange = (mode: DateRangeMode) => {
+    onChange({ ...config, dateRangeMode: mode });
+  };
+
   const handleRangeChange = (range: [Date | null, Date | null]) => {
     const [dateFrom, dateTo] = range;
     onChange({ ...config, dateFrom, dateTo });
@@ -83,6 +139,19 @@ const ReportConfigPanel = ({
     { key: "detalleVentas" as const, title: "Detalle de ventas" },
   ];
 
+  const isVentas = config.reportType === "ventas";
+
+  const dateModes: { key: DateRangeMode; label: string }[] = isVentas
+    ? [
+        { key: "rango", label: "Rango de fechas" },
+        { key: "mes", label: "Mes específico" },
+        { key: "anio", label: "Año completo" },
+      ]
+    : [
+        { key: "mes", label: "Mes específico" },
+        { key: "anio", label: "Año completo" },
+      ];
+
   return (
     <section className="rcp">
       <div className="rcp-header">
@@ -99,7 +168,6 @@ const ReportConfigPanel = ({
               handleModeChange(config.mode === "dark" ? "light" : "dark")
             }
           />
-
           <span className="rcp-track" aria-hidden="true">
             <span title="Modo claro">
               <Sun size={14} className="rcp-icon-sun" />
@@ -112,54 +180,149 @@ const ReportConfigPanel = ({
         </label>
       </div>
 
-      <div className="rcp-row">
-        <div className="rcp-field filter-group filter-group-range">
-          <label>Rango de fechas</label>
-          <DatePicker
-            selectsRange
-            startDate={config.dateFrom}
-            endDate={config.dateTo}
-            onChange={(update) => handleRangeChange(update as [Date | null, Date | null])}
-            onCalendarClose={handleCalendarClose}
-            dateFormat="dd/MM/yyyy"
-            maxDate={new Date()}
-            placeholderText="Seleccionar Desde - Hasta"
-            calendarClassName="custom-calendar"
-            showMonthDropdown
-            showYearDropdown
-            dropdownMode="select"
-            popperPlacement="bottom-start"
-            autoComplete="off"
-            monthsShown={1}
-            locale="es"
-            formatWeekDay={(day) => day.charAt(0).toUpperCase()}
-            customInput={
-              <DateRangeInput placeholder="Seleccionar Desde - Hasta" />
-            }
-          />
-          {validationMessage && (
-            <p className="rcp-validation">{validationMessage}</p>
-          )}
-        </div>
-
-      </div>
-
-      <div className="rcp-sections-block filter-group">
-        <label>Secciones</label>
-        <div className="rcp-toggles">
-          {sections.map((section) => (
+      {/* Tipo de reporte */}
+      <div className="rcp-type-tabs-wrapper">
+        <div className="rcp-type-tabs">
+          {REPORT_TYPES.map(({ key, label }) => (
             <button
-              key={section.key}
+              key={key}
               type="button"
-              className={`rcp-toggle-row ${config.sections[section.key] ? "is-on" : ""}`}
-              onClick={() => handleToggleSection(section.key)}
+              className={`rcp-type-tab ${config.reportType === key ? "active" : ""}`}
+              onClick={() => handleTypeChange(key)}
             >
-              <span className="rcp-switch" aria-hidden="true" />
-              <span className="rcp-toggle-name">{section.title}</span>
+              {label}
             </button>
           ))}
         </div>
       </div>
+
+      {/* Modo de periodo */}
+      <div className="rcp-field filter-group">
+        <label>Periodo</label>
+        <div className="rcp-date-mode-selector">
+          {dateModes.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              className={`rcp-date-mode-pill ${config.dateRangeMode === key ? "active" : ""}`}
+              onClick={() => handleDateModeChange(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Inputs de fecha según modo */}
+      <div className="rcp-row">
+        {config.dateRangeMode === "rango" && (
+          <div className="rcp-field filter-group filter-group-range">
+            <label>Rango de fechas</label>
+            <DatePicker
+              selectsRange
+              startDate={config.dateFrom}
+              endDate={config.dateTo}
+              onChange={(update) => handleRangeChange(update as [Date | null, Date | null])}
+              onCalendarClose={handleCalendarClose}
+              dateFormat="dd/MM/yyyy"
+              maxDate={new Date()}
+              placeholderText="Seleccionar Desde - Hasta"
+              calendarClassName="custom-calendar"
+              showMonthDropdown
+              showYearDropdown
+              dropdownMode="select"
+              popperPlacement="bottom-start"
+              autoComplete="off"
+              monthsShown={1}
+              locale="es"
+              formatWeekDay={(day) => day.charAt(0).toUpperCase()}
+              customInput={
+                <DateRangeInput placeholder="Seleccionar Desde - Hasta" />
+              }
+            />
+            {validationMessage && (
+              <p className="rcp-validation">{validationMessage}</p>
+            )}
+          </div>
+        )}
+
+        {config.dateRangeMode === "mes" && (
+          <div className="rcp-field filter-group">
+            <label>Mes y año</label>
+            <div className="rcp-month-year-selector">
+              <select
+                className="rcp-select"
+                value={config.selectedMonth}
+                onChange={(e) =>
+                  onChange({ ...config, selectedMonth: Number(e.target.value) })
+                }
+              >
+                {MONTHS.map((name, i) => (
+                  <option key={i} value={i}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="rcp-select"
+                value={config.selectedYear}
+                onChange={(e) =>
+                  onChange({ ...config, selectedYear: Number(e.target.value) })
+                }
+              >
+                {availableYears.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {config.dateRangeMode === "anio" && (
+          <div className="rcp-field filter-group">
+            <label>Año</label>
+            <select
+              className="rcp-select"
+              value={config.selectedYear}
+              onChange={(e) =>
+                onChange({ ...config, selectedYear: Number(e.target.value) })
+              }
+            >
+              {availableYears.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Secciones */}
+      {isVentas ? (
+        <div className="rcp-sections-block filter-group">
+          <label>Secciones</label>
+          <div className="rcp-toggles">
+            {sections.map((section) => (
+              <button
+                key={section.key}
+                type="button"
+                className={`rcp-toggle-row ${config.sections[section.key] ? "is-on" : ""}`}
+                onClick={() => handleToggleSection(section.key)}
+              >
+                <span className="rcp-switch" aria-hidden="true" />
+                <span className="rcp-toggle-name">{section.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="rcp-coming-soon">
+          <span className="rcp-coming-soon-text">Secciones disponibles próximamente</span>
+        </div>
+      )}
 
       <div className="rcp-actions">
         <button
@@ -172,19 +335,22 @@ const ReportConfigPanel = ({
           <RotateCcw size={16} />
           Restablecer
         </button>
-        <button
-          type="button"
-          className="rcp-btn-generate"
-          onClick={onSubmit}
-          disabled={loading || Boolean(validationMessage)}
-        >
-          {loading ? (
-            <span className="rcp-spinner" />
-          ) : (
+        {isVentas ? (
+          <button
+            type="button"
+            className="rcp-btn-generate"
+            onClick={onSubmit}
+            disabled={loading || Boolean(validationMessage)}
+          >
+            {loading ? <span className="rcp-spinner" /> : <FileText size={16} />}
+            {loading ? "Generando..." : "Generar reporte"}
+          </button>
+        ) : (
+          <button type="button" className="rcp-btn-generate rcp-btn-soon" disabled>
             <FileText size={16} />
-          )}
-          {loading ? "Generando..." : "Generar reporte"}
-        </button>
+            Próximamente
+          </button>
+        )}
       </div>
     </section>
   );

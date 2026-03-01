@@ -81,10 +81,27 @@ class ProductAnalyticsService:
                 most_sold_offer = await self._get_most_sold_offer(start_date)
                 
                 if not most_sold:
-                    return ServiceResult(
-                        error="No hay datos de productos disponibles",
-                        status_code=404
+                    # Sin datos para el período solicitado: reintentar con histórico completo
+                    self.logger.warning(
+                        f"No hay datos para time_filter={time_filter}, reintentando con histórico completo"
                     )
+                    most_sold = await self._get_most_sold_product(None)
+                    most_sold_offer = await self._get_most_sold_offer(None)
+                
+                if not most_sold:
+                    # Base de datos vacía: devolver respuesta vacía con 200
+                    now = datetime.now()
+                    month_names = [
+                        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                    ]
+                    return ServiceResult(value={
+                        "producto_mas_vendido": "Sin datos",
+                        "cantidad_mas_vendida": 0,
+                        "promocion_mas_vendida": None,
+                        "cantidad_promocion": 0,
+                        "mes_actual": f"{month_names[now.month - 1]} {now.year}",
+                    })
                 
                 # Obtener mes actual
                 now = datetime.now()

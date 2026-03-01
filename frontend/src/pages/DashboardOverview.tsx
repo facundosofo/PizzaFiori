@@ -281,8 +281,10 @@ const DashboardOverview = () => {
       const summary = await getProductsSummary('last_month');
       setProductsSummary(summary);
     } catch (err) {
+      // No propagar al error global para no bloquear el dashboard completo.
+      // Las cards de resumen mostrarán '—' cuando no haya datos.
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar resumen de productos';
-      setError(`Error al cargar resumen de productos: ${errorMessage}`);
+      console.warn('fetchProductsSummary:', errorMessage);
     }
   }, []);
 

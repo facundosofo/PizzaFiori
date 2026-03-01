@@ -2,6 +2,8 @@ import api from "./http";
 import { formatDateYMD } from "../utils/formatters";
 
 export type ReportMode = "light" | "dark";
+export type ReportType = "general" | "balance" | "ventas" | "costo";
+export type DateRangeMode = "rango" | "mes" | "anio";
 
 export type ReportSections = {
   resumenPeriodo: boolean;
@@ -12,8 +14,12 @@ export type ReportSections = {
 };
 
 export type ReportRequest = {
+  reportType: ReportType;
+  dateRangeMode: DateRangeMode;
   dateFrom: Date | null;
   dateTo: Date | null;
+  selectedMonth: number;
+  selectedYear: number;
   mode: ReportMode;
   sections: ReportSections;
 };
@@ -46,12 +52,26 @@ export const generateSalesReport = async (request: ReportRequest): Promise<Repor
     mostrar_detalle_ventas: String(request.sections.detalleVentas),
   };
 
-  if (request.dateFrom) {
-    params.fecha_desde = formatDateYMD(request.dateFrom);
+  let dateFrom: Date | null = null;
+  let dateTo: Date | null = null;
+
+  if (request.dateRangeMode === "rango") {
+    dateFrom = request.dateFrom;
+    dateTo = request.dateTo;
+  } else if (request.dateRangeMode === "mes") {
+    dateFrom = new Date(request.selectedYear, request.selectedMonth, 1);
+    dateTo = new Date(request.selectedYear, request.selectedMonth + 1, 0);
+  } else if (request.dateRangeMode === "anio") {
+    dateFrom = new Date(request.selectedYear, 0, 1);
+    dateTo = new Date(request.selectedYear, 11, 31);
   }
 
-  if (request.dateTo) {
-    params.fecha_hasta = formatDateYMD(request.dateTo);
+  if (dateFrom) {
+    params.fecha_desde = formatDateYMD(dateFrom);
+  }
+
+  if (dateTo) {
+    params.fecha_hasta = formatDateYMD(dateTo);
   }
 
   const response = await api.get<Blob>("/ventas/reporte/pdf", {
@@ -62,4 +82,9 @@ export const generateSalesReport = async (request: ReportRequest): Promise<Repor
   const filename = parseFilenameFromHeader(response.headers["content-disposition"]);
 
   return { blob: response.data, filename };
+};
+
+export const getAvailableYears = async (): Promise<number[]> => {
+  const response = await api.get<number[]>("/ventas/anios-disponibles");
+  return response.data;
 };

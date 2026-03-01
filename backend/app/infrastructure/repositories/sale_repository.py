@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 from datetime import datetime
 
-from sqlalchemy import select, func, text, cast, Date
+from sqlalchemy import select, func, text, cast, Date, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -97,3 +97,14 @@ class SqlAlchemySaleRepository(
         
         result = await self.session.execute(query)
         return result.scalar() or 0
+
+    async def get_distinct_years(self) -> List[int]:
+        """Retorna los años con ventas registradas, usando la fecha de negocio (-6h)."""
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
+        year_expr = extract("year", adjusted_fecha)
+        query = (
+            select(func.distinct(year_expr))
+            .order_by(year_expr.asc())
+        )
+        result = await self.session.execute(query)
+        return [int(r) for r in result.scalars().all()]

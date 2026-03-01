@@ -7,8 +7,12 @@ import type { ReportRequest } from "../services/reportService";
 import "../styles/reports.css";
 
 const buildDefaultConfig = (): ReportRequest => ({
+  reportType: "ventas",
+  dateRangeMode: "rango",
   dateFrom: null,
   dateTo: null,
+  selectedMonth: new Date().getMonth(),
+  selectedYear: new Date().getFullYear(),
   mode: "light",
   sections: {
     resumenPeriodo: true,
@@ -25,8 +29,10 @@ const ReportsPage = () => {
   const { generateReport, loading, error, clearError } = useGenerateReport();
 
   const validationMessage = useMemo(() => {
+    if (config.reportType !== "ventas") return null;
+    if (config.dateRangeMode !== "rango") return null;
     return validateDateRange(config.dateFrom, config.dateTo);
-  }, [config.dateFrom, config.dateTo]);
+  }, [config.reportType, config.dateRangeMode, config.dateFrom, config.dateTo]);
 
   const handleGenerate = async () => {
     if (validationMessage) return;
