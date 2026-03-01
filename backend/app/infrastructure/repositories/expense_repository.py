@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models.expense import Expense
+from app.domain.models.expense_category import ExpenseCategory
 from app.domain.repositories.expense_repository import AbstractExpenseRepository
 from app.infrastructure.repositories.base import BaseRepository
 
@@ -58,5 +59,28 @@ class SqlAlchemyExpenseRepository(
         query = select(self.model)
         if activo is not None:
             query = query.where(self.model.activo == activo)
+        result = await self.session.execute(query)
+        return result.scalars().all()
+
+    async def list_for_report(
+        self,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+    ) -> List[Expense]:
+        """Lista gastos con categoría eager-loaded para generación de reportes."""
+        query = (
+            select(self.model)
+            .where(self.model.activo.is_(True))
+            .options(
+                selectinload(self.model.categoria_gasto)
+                .selectinload(ExpenseCategory.padre_categoria)
+            )
+        )
+        fecha_pago = func.date(self.model.fecha_pago)
+        if fecha_desde is not None:
+            query = query.where(fecha_pago >= fecha_desde)
+        if fecha_hasta is not None:
+            query = query.where(fecha_pago <= fecha_hasta)
+        query = query.order_by(self.model.fecha_pago.asc(), self.model.id.asc())
         result = await self.session.execute(query)
         return result.scalars().all()

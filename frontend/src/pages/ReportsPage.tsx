@@ -20,6 +20,10 @@ const buildDefaultConfig = (): ReportRequest => ({
     resumenCategoria: true,
     resumenProductos: true,
     detalleVentas: true,
+    costoResumenPeriodo: true,
+    costoResumenCategoria: true,
+    costoResumenMes: true,
+    costoDetalleCostos: true,
   },
 });
 

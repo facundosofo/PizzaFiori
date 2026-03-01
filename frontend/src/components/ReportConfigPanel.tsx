@@ -140,6 +140,16 @@ const ReportConfigPanel = ({
   ];
 
   const isVentas = config.reportType === "ventas";
+  const isCosto = config.reportType === "costo";
+
+  const costSections = [
+    { key: "costoResumenPeriodo" as const, title: "Resumen del período" },
+    ...(config.dateRangeMode === "anio"
+      ? [{ key: "costoResumenMes" as const, title: "Resumen por mes" }]
+      : []),
+    { key: "costoResumenCategoria" as const, title: "Resumen por categoría" },
+    { key: "costoDetalleCostos" as const, title: "Detalle de costos" },
+  ];
 
   const dateModes: { key: DateRangeMode; label: string }[] = isVentas
     ? [
@@ -318,6 +328,23 @@ const ReportConfigPanel = ({
             ))}
           </div>
         </div>
+      ) : isCosto ? (
+        <div className="rcp-sections-block filter-group">
+          <label>Secciones</label>
+          <div className="rcp-toggles">
+            {costSections.map((section) => (
+              <button
+                key={section.key}
+                type="button"
+                className={`rcp-toggle-row ${config.sections[section.key] ? "is-on" : ""}`}
+                onClick={() => handleToggleSection(section.key)}
+              >
+                <span className="rcp-switch" aria-hidden="true" />
+                <span className="rcp-toggle-name">{section.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="rcp-coming-soon">
           <span className="rcp-coming-soon-text">Secciones disponibles próximamente</span>
@@ -335,7 +362,7 @@ const ReportConfigPanel = ({
           <RotateCcw size={16} />
           Restablecer
         </button>
-        {isVentas ? (
+        {isVentas || isCosto ? (
           <button
             type="button"
             className="rcp-btn-generate"

@@ -1,25 +1,20 @@
 import { useCallback, useState } from "react";
 import axios from "axios";
 import {
+  generateCostsReport,
   generateSalesReport,
   type ReportRequest,
 } from "../services/reportService";
 import { formatDateYMD } from "../utils/formatters";
 
 const buildFallbackFilename = (request: ReportRequest): string => {
+  const type = request.reportType === "costo" ? "costos" : "ventas";
   if (request.dateFrom && request.dateTo) {
-    return `reporte_ventas_${formatDateYMD(request.dateFrom)}_${formatDateYMD(request.dateTo)}.pdf`;
+    return `reporte_${type}_${formatDateYMD(request.dateFrom)}_${formatDateYMD(request.dateTo)}.pdf`;
   }
-
-  if (request.dateFrom) {
-    return `reporte_ventas_desde_${formatDateYMD(request.dateFrom)}.pdf`;
-  }
-
-  if (request.dateTo) {
-    return `reporte_ventas_hasta_${formatDateYMD(request.dateTo)}.pdf`;
-  }
-
-  return "reporte_ventas.pdf";
+  if (request.dateFrom) return `reporte_${type}_desde_${formatDateYMD(request.dateFrom)}.pdf`;
+  if (request.dateTo)   return `reporte_${type}_hasta_${formatDateYMD(request.dateTo)}.pdf`;
+  return `reporte_${type}.pdf`;
 };
 
 const extractErrorMessage = async (error: unknown): Promise<string> => {
@@ -27,7 +22,7 @@ const extractErrorMessage = async (error: unknown): Promise<string> => {
     const status = error.response?.status;
 
     if (status === 404) {
-      return "No hay ventas en el periodo seleccionado.";
+      return "No hay datos en el período seleccionado.";
     }
 
     if (status === 500) {
@@ -78,7 +73,9 @@ export const useGenerateReport = () => {
     setError(null);
 
     try {
-      const { blob, filename } = await generateSalesReport(request);
+      const { blob, filename } = request.reportType === "costo"
+        ? await generateCostsReport(request)
+        : await generateSalesReport(request);
       const fileNameToUse = filename ?? buildFallbackFilename(request);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");

@@ -39,6 +39,14 @@ class AbstractExpenseRepository(ABC):
         ...
 
     @abstractmethod
+    async def list_for_report(
+        self,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+    ) -> List[Expense]:
+        ...
+
+    @abstractmethod
     async def refresh(
         self,
         expense: Expense,
