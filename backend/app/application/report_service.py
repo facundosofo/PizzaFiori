@@ -1380,6 +1380,303 @@ class ReportService:
         ]))
         return t
 
+    # ── Reporte de Balance ────────────────────────────────────────────────────
+
+    async def generate_balance_report(
+        self,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+        modo: str = "light",
+        mostrar_resumen_periodo: bool = True,
+        mostrar_resumen_mes: bool = False,
+    ) -> ReportResult:
+        try:
+            self.logger.info("Generando reporte de balance", fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
+            async with self.uow as uow:
+                from datetime import time, timedelta
+                fecha_desde_dt = (
+                    datetime.combine(fecha_desde, time.min) + timedelta(hours=6)
+                    if fecha_desde else None
+                )
+                fecha_hasta_dt = (
+                    datetime.combine(fecha_hasta, time.max) + timedelta(hours=6)
+                    if fecha_hasta else None
+                )
+                sales = await uow.sale_repo.list(
+                    skip=0, limit=10_000,
+                    fecha_desde=fecha_desde_dt,
+                    fecha_hasta=fecha_hasta_dt,
+                )
+                expenses = await uow.expense_repo.list_for_report(
+                    fecha_desde=fecha_desde,
+                    fecha_hasta=fecha_hasta,
+                )
+            if not sales and not expenses:
+                return ReportResult(error="No hay datos en el período seleccionado", status_code=404)
+            total_ingresos = sum(s.total for s in sales) if sales else Decimal("0")
+            total_gastos   = sum(e.monto for e in expenses) if expenses else Decimal("0")
+            resultado_neto = total_ingresos - total_gastos
+            margen_neto    = float(resultado_neto / total_ingresos * 100) if total_ingresos > 0 else 0.0
+            pdf_bytes = await self._create_balance_pdf(
+                sales, expenses,
+                total_ingresos, total_gastos, resultado_neto, margen_neto,
+                fecha_desde, fecha_hasta, modo,
+                mostrar_resumen_periodo, mostrar_resumen_mes,
+            )
+            self.logger.info("Reporte de balance OK")
+            return ReportResult(pdf_bytes=pdf_bytes)
+        except Exception as e:
+            self.logger.error("Error reporte balance", error=str(e), exc_info=True)
+            return ReportResult(error=str(e), status_code=500)
+
+    async def _create_balance_pdf(
+        self,
+        sales: List[Sale],
+        expenses: List[Expense],
+        total_ingresos: Decimal,
+        total_gastos: Decimal,
+        resultado_neto: Decimal,
+        margen_neto: float,
+        fecha_desde: Optional[date],
+        fecha_hasta: Optional[date],
+        modo: str = "light",
+        mostrar_resumen_periodo: bool = True,
+        mostrar_resumen_mes: bool = False,
+    ) -> bytes:
+        buffer = BytesIO()
+        w, h = A4
+        TOP_PAD = HEADER_H + 0.5 * cm
+        BOT_PAD = FOOTER_H + 0.5 * cm
+
+        def on_page(canvas, doc):
+            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte de Balance")
+
+        styles = self._styles(modo)
+        content_w = w - 2 * MARGIN
+
+        # Pass 1: contar páginas
+        count_buf = BytesIO()
+        count_doc = BaseDocTemplate(
+            count_buf, pagesize=A4,
+            rightMargin=MARGIN, leftMargin=MARGIN,
+            topMargin=TOP_PAD, bottomMargin=BOT_PAD,
+        )
+        count_frame = Frame(
+            MARGIN, BOT_PAD, w - 2 * MARGIN, h - TOP_PAD - BOT_PAD,
+            id="main", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
+        )
+        count_doc.addPageTemplates([PageTemplate(id="count_bal", frames=[count_frame])])
+        flowables_count = self._build_balance_story(
+            sales, expenses,
+            total_ingresos, total_gastos, resultado_neto, margen_neto,
+            fecha_desde, fecha_hasta, styles, content_w, modo,
+            mostrar_resumen_periodo, mostrar_resumen_mes,
+        )
+        count_doc.build(flowables_count)
+        total_pages = count_doc.page
+        count_buf.close()
+
+        # Pass 2: render real
+        def on_page_real(canvas, doc):
+            doc._pagecount = total_pages
+            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte de Balance")
+
+        doc2 = BaseDocTemplate(
+            buffer, pagesize=A4,
+            rightMargin=MARGIN, leftMargin=MARGIN,
+            topMargin=TOP_PAD, bottomMargin=BOT_PAD,
+        )
+        frame2 = Frame(
+            MARGIN, BOT_PAD, w - 2 * MARGIN, h - TOP_PAD - BOT_PAD,
+            id="main", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
+        )
+        doc2.addPageTemplates([PageTemplate(id="balance2", frames=[frame2], onPage=on_page_real)])
+        flowables_real = self._build_balance_story(
+            sales, expenses,
+            total_ingresos, total_gastos, resultado_neto, margen_neto,
+            fecha_desde, fecha_hasta, styles, content_w, modo,
+            mostrar_resumen_periodo, mostrar_resumen_mes,
+        )
+        doc2.build(flowables_real)
+        buffer.seek(0)
+        return buffer.read()
+
+    def _build_balance_story(
+        self,
+        sales: List[Sale],
+        expenses: List[Expense],
+        total_ingresos: Decimal,
+        total_gastos: Decimal,
+        resultado_neto: Decimal,
+        margen_neto: float,
+        fecha_desde: Optional[date],
+        fecha_hasta: Optional[date],
+        styles: dict,
+        content_w: float,
+        modo: str,
+        mostrar_resumen_periodo: bool = True,
+        mostrar_resumen_mes: bool = False,
+    ) -> list:
+        elements: list = []
+        elements.append(Spacer(1, 0.4 * cm))
+        elements.append(Paragraph("Reporte de Balance", styles["title"]))
+        elements.append(Paragraph(self._format_periodo(fecha_desde, fecha_hasta), styles["subtitle"]))
+        elements.append(Spacer(1, 0.5 * cm))
+        elements.append(HRFlowable(width=content_w, thickness=0.5, color=styles["section"].textColor))
+        elements.append(Spacer(1, 0.4 * cm))
+
+        if mostrar_resumen_periodo:
+            elements.append(Paragraph("Resumen del período", styles["section"]))
+            elements.append(Spacer(1, 0.25 * cm))
+            elements.append(self._balance_kpi_table(
+                total_ingresos, total_gastos, resultado_neto, margen_neto, content_w, modo,
+            ))
+            elements.append(Spacer(1, 0.5 * cm))
+
+        if mostrar_resumen_mes:
+            elements.append(Paragraph("Resumen por mes", styles["section"]))
+            elements.append(Spacer(1, 0.25 * cm))
+            elements.append(self._balance_month_table(sales, expenses, styles, content_w, modo))
+            elements.append(Spacer(1, 0.5 * cm))
+
+        return elements
+
+    def _balance_kpi_table(
+        self,
+        total_ingresos: Decimal,
+        total_gastos: Decimal,
+        resultado_neto: Decimal,
+        margen_neto: float,
+        content_w: float,
+        modo: str,
+    ) -> Table:
+        s = self._styles(modo)
+        colors_ = get_theme_colors(modo)
+        red_color   = colors.HexColor("#ef4444")
+        pos_color   = colors_["GREEN_BASE"]
+        neto_color  = pos_color if resultado_neto >= 0 else red_color
+        margen_color = pos_color if margen_neto >= 0 else red_color
+
+        # Smaller font so wide numbers fit in content_w/4 cells
+        kpi_val_sm = ParagraphStyle(
+            "rpt_kval_bal",
+            parent=s["kpi_val"],
+            fontSize=13,
+            leading=16,
+        )
+
+        def card(label: str, value: str, val_color=None) -> list:
+            base = ParagraphStyle(
+                "rpt_kval_bal_col",
+                parent=kpi_val_sm,
+                textColor=val_color,
+            ) if val_color is not None else kpi_val_sm
+            return [Paragraph(value, base), Paragraph(label, s["kpi_lbl"])]
+
+        data = [[
+            card("Ingresos Totales", f"${float(total_ingresos):,.2f}"),
+            card("Gastos Totales",   f"${float(total_gastos):,.2f}"),
+            card("Resultado Neto",   f"${float(resultado_neto):,.2f}", neto_color),
+            card("Margen Neto",      f"{margen_neto:.1f}%",           margen_color),
+        ]]
+        cw = content_w / 4
+        t  = Table(data, colWidths=[cw, cw, cw, cw], rowHeights=[1.4 * cm])
+        bg_color = colors_["BG_RAISED"] if modo == "dark" else colors_["BG_MAIN"]
+        t.setStyle(TableStyle([
+            ("BACKGROUND",    (0, 0), (-1, -1), bg_color),
+            ("LINEABOVE",     (0, 0), (0, 0),   2.5, colors_["GREEN_BASE"]),
+            ("LINEABOVE",     (1, 0), (1, 0),   2.5, colors_["GREEN_BASE"]),
+            ("LINEABOVE",     (2, 0), (2, 0),   2.5, colors_["GREEN_BASE"]),
+            ("LINEABOVE",     (3, 0), (3, 0),   2.5, colors_["GREEN_BASE"]),
+            ("LINEAFTER",     (0, 0), (2, 0),   0.5, colors_["BORDER_MAIN"]),
+            ("BOX",           (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+            ("TOPPADDING",    (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        return t
+
+    def _balance_month_table(
+        self,
+        sales: List[Sale],
+        expenses: List[Expense],
+        styles: dict,
+        content_w: float,
+        modo: str,
+    ) -> Table:
+        from collections import defaultdict
+        import datetime as dt_mod
+        MONTH_NAMES = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+        ]
+        monthly_sales: dict = defaultdict(lambda: Decimal("0"))
+        for s in sales:
+            m = (s.fecha_creacion - dt_mod.timedelta(hours=6)).month
+            monthly_sales[m] += s.total
+        monthly_exp: dict = defaultdict(lambda: Decimal("0"))
+        for e in expenses:
+            m = e.fecha_pago.month
+            monthly_exp[m] += e.monto
+        all_months = sorted(set(monthly_sales.keys()) | set(monthly_exp.keys()))
+        colors_ = get_theme_colors(modo)
+        red_color   = colors.HexColor("#ef4444")
+        green_color = colors_["GREEN_BASE"]
+        headers = [
+            Paragraph("Mes",       styles["th"]),
+            Paragraph("Ingresos",  styles["th"]),
+            Paragraph("Gastos",    styles["th"]),
+            Paragraph("Resultado", styles["th"]),
+            Paragraph("Margen %",  styles["th"]),
+        ]
+        rows = [headers]
+        for m in all_months:
+            ingresos  = float(monthly_sales.get(m, Decimal("0")))
+            gastos    = float(monthly_exp.get(m, Decimal("0")))
+            resultado = ingresos - gastos
+            margen    = (resultado / ingresos * 100) if ingresos > 0 else 0.0
+            res_color    = green_color if resultado >= 0 else red_color
+            margen_color = green_color if margen    >= 0 else red_color
+            res_style = ParagraphStyle(
+                "rpt_bal_res", parent=styles["td_money"], textColor=res_color, alignment=TA_RIGHT,
+            )
+            margen_style = ParagraphStyle(
+                "rpt_bal_mg", parent=styles["td_money"], textColor=margen_color, alignment=TA_RIGHT,
+            )
+            rows.append([
+                Paragraph(MONTH_NAMES[m - 1],  styles["td_item"]),
+                Paragraph(f"${ingresos:,.2f}",  styles["td_money"]),
+                Paragraph(f"${gastos:,.2f}",    styles["td_money"]),
+                Paragraph(f"${resultado:,.2f}", res_style),
+                Paragraph(f"{margen:.1f}%",     margen_style),
+            ])
+        col_widths = [content_w * r for r in (0.22, 0.21, 0.21, 0.22, 0.14)]
+        t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
+            ("LINEBELOW",      (0, 0), (-1, 0),  1.5, colors_["GREEN_BASE"]),
+            ("TOPPADDING",     (0, 0), (-1, 0),  8),
+            ("BOTTOMPADDING",  (0, 0), (-1, 0),  8),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors_["BG_MAIN"], colors_["BG_SECOND"]]),
+            ("TOPPADDING",     (0, 1), (-1, -1), 4),
+            ("BOTTOMPADDING",  (0, 1), (-1, -1), 4),
+            ("LINEBELOW",      (0, 1), (-1, -2), 0.3, colors_["BORDER_SUB"]),
+            ("BOX",            (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (0, 0), (0, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (1, 0), (1, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (2, 0), (2, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (3, 0), (3, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
+            ("ALIGN",          (0, 1), (0, -1),  "LEFT"),
+            ("ALIGN",          (1, 1), (4, -1),  "RIGHT"),
+            ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING",    (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
+        ]))
+        return t
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Helper de decoración (fuera de la clase para evitar self en callback)

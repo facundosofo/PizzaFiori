@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import Response
 from dependency_injector.wiring import inject, Provide
 from typing import List
+from datetime import date
 
+from app.application.report_service import ReportService
 from app.application.sales_analytics_service import SalesAnalyticsService
 from app.application.product_analytics_service import ProductAnalyticsService
 from app.application.expense_analytics_service import ExpenseAnalyticsService
@@ -410,6 +413,56 @@ async def get_total_expenses(
         )
 
     return result.value
+
+
+@router.get(
+    "/balance/reporte/pdf",
+    summary="Generar reporte de balance en PDF",
+    description="Genera un reporte PDF con el balance de ingresos y gastos en el rango seleccionado.",
+    responses={
+        200: {"description": "PDF generado", "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}},
+        404: {"description": "No hay datos en el período seleccionado"},
+        500: {"description": "Error al generar el reporte"},
+    },
+)
+@inject
+async def generate_balance_report(
+    fecha_desde: date | None = Query(None, description="Fecha inicial (YYYY-MM-DD)"),
+    fecha_hasta: date | None = Query(None, description="Fecha final (YYYY-MM-DD)"),
+    modo: str = Query("light", description="Modo de color: 'dark' o 'light'"),
+    mostrar_resumen_periodo: bool = Query(True),
+    mostrar_resumen_mes: bool = Query(False),
+    report_service: ReportService = Depends(Provide[Container.report_service]),
+):
+    if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="fecha_desde debe ser menor o igual a fecha_hasta",
+        )
+    result = await report_service.generate_balance_report(
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        modo=modo,
+        mostrar_resumen_periodo=mostrar_resumen_periodo,
+        mostrar_resumen_mes=mostrar_resumen_mes,
+    )
+    if result.error:
+        raise HTTPException(status_code=result.status_code, detail=result.error)
+
+    if fecha_desde and fecha_hasta:
+        filename = f"reporte_balance_{fecha_desde}_{fecha_hasta}.pdf"
+    elif fecha_desde:
+        filename = f"reporte_balance_desde_{fecha_desde}.pdf"
+    elif fecha_hasta:
+        filename = f"reporte_balance_hasta_{fecha_hasta}.pdf"
+    else:
+        filename = "reporte_balance.pdf"
+
+    return Response(
+        content=result.pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get(

@@ -17,6 +17,9 @@ export type ReportSections = {
   costoResumenCategoria: boolean;
   costoResumenMes: boolean;
   costoDetalleCostos: boolean;
+  // Balance
+  balanceResumenPeriodo: boolean;
+  balanceResumenMes: boolean;
 };
 
 export type ReportRequest = {
@@ -120,6 +123,35 @@ export const generateCostsReport = async (request: ReportRequest): Promise<Repor
   if (dateTo)   params.fecha_hasta = formatDateYMD(dateTo);
 
   const response = await api.get<Blob>("/gastos/reporte/pdf", {
+    params,
+    responseType: "blob",
+  });
+  const filename = parseFilenameFromHeader(response.headers["content-disposition"]);
+  return { blob: response.data, filename };
+};
+
+export const generateBalanceReport = async (request: ReportRequest): Promise<ReportFile> => {
+  const params: Record<string, string> = {
+    modo: request.mode,
+    mostrar_resumen_periodo: String(request.sections.balanceResumenPeriodo),
+    mostrar_resumen_mes:     String(request.dateRangeMode === "anio" && request.sections.balanceResumenMes),
+  };
+
+  let dateFrom: Date | null = null;
+  let dateTo: Date | null = null;
+
+  if (request.dateRangeMode === "mes") {
+    dateFrom = new Date(request.selectedYear, request.selectedMonth, 1);
+    dateTo   = new Date(request.selectedYear, request.selectedMonth + 1, 0);
+  } else if (request.dateRangeMode === "anio") {
+    dateFrom = new Date(request.selectedYear, 0, 1);
+    dateTo   = new Date(request.selectedYear, 11, 31);
+  }
+
+  if (dateFrom) params.fecha_desde = formatDateYMD(dateFrom);
+  if (dateTo)   params.fecha_hasta = formatDateYMD(dateTo);
+
+  const response = await api.get<Blob>("/dashboard/balance/reporte/pdf", {
     params,
     responseType: "blob",
   });
