@@ -17,6 +17,7 @@ const buildDefaultConfig = (): ReportRequest => ({
   sections: {
     resumenPeriodo: true,
     resumenDia: true,
+    resumenMes: true,
     resumenCategoria: true,
     resumenProductos: true,
     detalleVentas: true,

@@ -222,6 +222,7 @@ class ReportService:
         modo: str = "light",
         mostrar_resumen_periodo: bool = True,
         mostrar_resumen_dia: bool = True,
+        mostrar_resumen_mes: bool = False,
         mostrar_resumen_categoria: bool = True,
         mostrar_resumen_productos: bool = True,
         mostrar_detalle_ventas: bool = True,
@@ -260,6 +261,7 @@ class ReportService:
                 modo,
                 mostrar_resumen_periodo,
                 mostrar_resumen_dia,
+                mostrar_resumen_mes,
                 mostrar_resumen_categoria,
                 mostrar_resumen_productos,
                 mostrar_detalle_ventas,
@@ -297,6 +299,7 @@ class ReportService:
         modo: str = "dark",
         mostrar_resumen_periodo: bool = True,
         mostrar_resumen_dia: bool = True,
+        mostrar_resumen_mes: bool = False,
         mostrar_resumen_categoria: bool = True,
         mostrar_resumen_productos: bool = True,
         mostrar_detalle_ventas: bool = True,
@@ -338,6 +341,7 @@ class ReportService:
             styles, content_w, modo,
             mostrar_resumen_periodo,
             mostrar_resumen_dia,
+            mostrar_resumen_mes,
             mostrar_resumen_categoria,
             mostrar_resumen_productos,
             mostrar_detalle_ventas,
@@ -383,6 +387,7 @@ class ReportService:
         styles, content_w, modo: str = "dark",
         mostrar_resumen_periodo: bool = True,
         mostrar_resumen_dia: bool = True,
+        mostrar_resumen_mes: bool = False,
         mostrar_resumen_categoria: bool = True,
         mostrar_resumen_productos: bool = True,
         mostrar_detalle_ventas: bool = True,
@@ -421,6 +426,13 @@ class ReportService:
             elements.append(Paragraph("Resumen por Día", styles["section"]))
             elements.append(Spacer(1, 0.15 * cm))
             elements.append(self._daily_summary_table(sales, styles, content_w, modo))
+            elements.append(Spacer(1, 0.5 * cm))
+
+        # Resumen por Mes
+        if mostrar_resumen_mes:
+            elements.append(Paragraph("Resumen por Mes", styles["section"]))
+            elements.append(Spacer(1, 0.15 * cm))
+            elements.append(self._monthly_summary_table(sales, styles, content_w, modo))
             elements.append(Spacer(1, 0.5 * cm))
         
         """
@@ -744,6 +756,66 @@ class ReportService:
             ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
         ]))
         return t
+
+    def _monthly_summary_table(self, sales: List[Sale], styles: dict, content_w: float, modo: str) -> Table:
+        from collections import defaultdict
+        import datetime as dt_mod
+        MONTH_NAMES = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+        ]
+        monthly = defaultdict(lambda: {"ventas": 0, "productos": 0, "ingresos": Decimal("0")})
+        for sale in sales:
+            m = (sale.fecha_creacion - dt_mod.timedelta(hours=6)).month  # 1-12
+            monthly[m]["ventas"] += 1
+            monthly[m]["ingresos"] += sale.total
+            for item in sale.items:
+                if item.oferta_id and item.oferta_productos_snapshot:
+                    for prod in item.oferta_productos_snapshot:
+                        monthly[m]["productos"] += prod.cantidad * item.cantidad
+                else:
+                    monthly[m]["productos"] += item.cantidad
+        sorted_months = sorted(monthly.keys())
+        headers = [
+            Paragraph("Mes",                styles["th"]),
+            Paragraph("Total de Ventas",    styles["th"]),
+            Paragraph("Productos Vendidos", styles["th"]),
+            Paragraph("Ingresos Totales",   styles["th"]),
+        ]
+        rows = [headers]
+        for m in sorted_months:
+            data = monthly[m]
+            rows.append([
+                Paragraph(MONTH_NAMES[m - 1],               styles["td_item"]),
+                Paragraph(str(data["ventas"]),               styles["td"]),
+                Paragraph(str(data["productos"]),            styles["td"]),
+                Paragraph(f"${float(data['ingresos']):,.2f}", styles["td_money"]),
+            ])
+        col_widths = [content_w * r for r in (0.25, 0.22, 0.28, 0.25)]
+        colors_ = get_theme_colors(modo)
+        t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
+            ("LINEBELOW",      (0, 0), (-1, 0),  1.5, colors_["GREEN_BASE"]),
+            ("TOPPADDING",     (0, 0), (-1, 0),  8),
+            ("BOTTOMPADDING",  (0, 0), (-1, 0),  8),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors_["BG_MAIN"], colors_["BG_SECOND"]]),
+            ("TOPPADDING",     (0, 1), (-1, -1), 4),
+            ("BOTTOMPADDING",  (0, 1), (-1, -1), 4),
+            ("LINEBELOW",      (0, 1), (-1, -2), 0.3, colors_["BORDER_SUB"]),
+            ("BOX",            (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (0, 0), (0, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (1, 0), (1, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (2, 0), (2, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
+            ("ALIGN",          (0, 1), (0, -1),  "LEFT"),
+            ("ALIGN",          (3, 1), (3, -1),  "RIGHT"),
+            ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING",    (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
+        ]))
+        return t
+
     # ── Tabla de ventas ──────────────────────────────────────────────────────
 
     def _sales_table(self, sales: List[Sale], styles: dict, content_w: float) -> Table:

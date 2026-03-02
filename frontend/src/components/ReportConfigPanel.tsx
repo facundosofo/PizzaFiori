@@ -103,7 +103,12 @@ const ReportConfigPanel = ({
   };
 
   const handleDateModeChange = (mode: DateRangeMode) => {
-    onChange({ ...config, dateRangeMode: mode });
+    const updatedSections = { ...config.sections };
+    if (mode === "anio") {
+      updatedSections.resumenMes = true;
+      updatedSections.costoResumenMes = true;
+    }
+    onChange({ ...config, dateRangeMode: mode, sections: updatedSections });
   };
 
   const handleRangeChange = (range: [Date | null, Date | null]) => {
@@ -133,7 +138,9 @@ const ReportConfigPanel = ({
 
   const sections = [
     { key: "resumenPeriodo" as const, title: "Resumen del periodo" },
-    { key: "resumenDia" as const, title: "Resumen por dia" },
+    ...(config.dateRangeMode === "anio"
+      ? [{ key: "resumenMes" as const, title: "Resumen por mes" }]
+      : [{ key: "resumenDia" as const, title: "Resumen por dia" }]),
     { key: "resumenCategoria" as const, title: "Resumen por categoria" },
     { key: "resumenProductos" as const, title: "Resumen de productos vendidos" },
     { key: "detalleVentas" as const, title: "Detalle de ventas" },

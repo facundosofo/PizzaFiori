@@ -8,6 +8,7 @@ export type DateRangeMode = "rango" | "mes" | "anio";
 export type ReportSections = {
   resumenPeriodo: boolean;
   resumenDia: boolean;
+  resumenMes: boolean;
   resumenCategoria: boolean;
   resumenProductos: boolean;
   detalleVentas: boolean;
@@ -51,7 +52,8 @@ export const generateSalesReport = async (request: ReportRequest): Promise<Repor
   const params: Record<string, string> = {
     modo: request.mode,
     mostrar_resumen_periodo: String(request.sections.resumenPeriodo),
-    mostrar_resumen_dia: String(request.sections.resumenDia),
+    mostrar_resumen_dia: String(request.dateRangeMode !== "anio" && request.sections.resumenDia),
+    mostrar_resumen_mes: String(request.dateRangeMode === "anio" && request.sections.resumenMes),
     mostrar_resumen_categoria: String(request.sections.resumenCategoria),
     mostrar_resumen_productos: String(request.sections.resumenProductos),
     mostrar_detalle_ventas: String(request.sections.detalleVentas),
