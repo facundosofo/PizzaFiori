@@ -45,7 +45,6 @@ DateRangeInput.displayName = "DateRangeInput";
 
 const REPORT_TYPES: { key: ReportType; label: string }[] = [
   { key: "general", label: "General" },
-  { key: "balance", label: "Balance" },
   { key: "ventas", label: "Ventas" },
   { key: "costo", label: "Costo" },
 ];
@@ -99,7 +98,15 @@ const ReportConfigPanel = ({
         : config.dateRangeMode === "rango"
         ? "mes"
         : config.dateRangeMode;
-    onChange({ ...config, reportType: type, dateRangeMode: newMode });
+    const updatedSections = { ...config.sections };
+    if (type === "general") {
+      updatedSections.generalResumenPeriodo = true;
+      updatedSections.generalResumenMes = true;
+      updatedSections.generalResumenCategoriaVentas = true;
+      updatedSections.generalResumenProductos = true;
+      updatedSections.generalResumenCategoriaGastos = true;
+    }
+    onChange({ ...config, reportType: type, dateRangeMode: newMode, sections: updatedSections });
   };
 
   const handleDateModeChange = (mode: DateRangeMode) => {
@@ -107,7 +114,7 @@ const ReportConfigPanel = ({
     if (mode === "anio") {
       updatedSections.resumenMes = true;
       updatedSections.costoResumenMes = true;
-      updatedSections.balanceResumenMes = true;
+      updatedSections.generalResumenMes = true;
     }
     onChange({ ...config, dateRangeMode: mode, sections: updatedSections });
   };
@@ -149,7 +156,7 @@ const ReportConfigPanel = ({
 
   const isVentas = config.reportType === "ventas";
   const isCosto = config.reportType === "costo";
-  const isBalance = config.reportType === "balance";
+  const isGeneral = config.reportType === "general";
 
   const costSections = [
     { key: "costoResumenPeriodo" as const, title: "Resumen del período" },
@@ -160,11 +167,14 @@ const ReportConfigPanel = ({
     { key: "costoDetalleCostos" as const, title: "Detalle de costos" },
   ];
 
-  const balanceSections = [
-    { key: "balanceResumenPeriodo" as const, title: "Resumen del período" },
+  const generalSections = [
+    { key: "generalResumenPeriodo" as const, title: "Balance del período" },
     ...(config.dateRangeMode === "anio"
-      ? [{ key: "balanceResumenMes" as const, title: "Resumen por mes" }]
+      ? [{ key: "generalResumenMes" as const, title: "Balance por mes" }]
       : []),
+    { key: "generalResumenCategoriaVentas" as const, title: "Ventas por categoría" },
+    { key: "generalResumenProductos" as const, title: "Productos vendidos" },
+    { key: "generalResumenCategoriaGastos" as const, title: "Costos por categoría" },
   ];
 
   const dateModes: { key: DateRangeMode; label: string }[] = isVentas
@@ -361,11 +371,11 @@ const ReportConfigPanel = ({
             ))}
           </div>
         </div>
-      ) : isBalance ? (
+      ) : isGeneral ? (
         <div className="rcp-sections-block filter-group">
           <label>Secciones</label>
           <div className="rcp-toggles">
-            {balanceSections.map((section) => (
+            {generalSections.map((section) => (
               <button
                 key={section.key}
                 type="button"
@@ -395,7 +405,7 @@ const ReportConfigPanel = ({
           <RotateCcw size={16} />
           Restablecer
         </button>
-        {isVentas || isCosto || isBalance ? (
+        {isVentas || isCosto || isGeneral ? (
           <button
             type="button"
             className="rcp-btn-generate"

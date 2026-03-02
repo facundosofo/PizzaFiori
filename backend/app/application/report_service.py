@@ -1382,16 +1382,19 @@ class ReportService:
 
     # ── Reporte de Balance ────────────────────────────────────────────────────
 
-    async def generate_balance_report(
+    async def generate_general_report(
         self,
         fecha_desde: Optional[date] = None,
         fecha_hasta: Optional[date] = None,
         modo: str = "light",
         mostrar_resumen_periodo: bool = True,
         mostrar_resumen_mes: bool = False,
+        mostrar_resumen_categoria_ventas: bool = True,
+        mostrar_resumen_productos: bool = True,
+        mostrar_resumen_categoria_costos: bool = True,
     ) -> ReportResult:
         try:
-            self.logger.info("Generando reporte de balance", fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
+            self.logger.info("Generando reporte general", fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
             async with self.uow as uow:
                 from datetime import time, timedelta
                 fecha_desde_dt = (
@@ -1417,19 +1420,20 @@ class ReportService:
             total_gastos   = sum(e.monto for e in expenses) if expenses else Decimal("0")
             resultado_neto = total_ingresos - total_gastos
             margen_neto    = float(resultado_neto / total_ingresos * 100) if total_ingresos > 0 else 0.0
-            pdf_bytes = await self._create_balance_pdf(
+            pdf_bytes = await self._create_general_pdf(
                 sales, expenses,
                 total_ingresos, total_gastos, resultado_neto, margen_neto,
                 fecha_desde, fecha_hasta, modo,
                 mostrar_resumen_periodo, mostrar_resumen_mes,
+                mostrar_resumen_categoria_ventas, mostrar_resumen_productos, mostrar_resumen_categoria_costos,
             )
-            self.logger.info("Reporte de balance OK")
+            self.logger.info("Reporte general OK")
             return ReportResult(pdf_bytes=pdf_bytes)
         except Exception as e:
-            self.logger.error("Error reporte balance", error=str(e), exc_info=True)
+            self.logger.error("Error reporte general", error=str(e), exc_info=True)
             return ReportResult(error=str(e), status_code=500)
 
-    async def _create_balance_pdf(
+    async def _create_general_pdf(
         self,
         sales: List[Sale],
         expenses: List[Expense],
@@ -1442,6 +1446,9 @@ class ReportService:
         modo: str = "light",
         mostrar_resumen_periodo: bool = True,
         mostrar_resumen_mes: bool = False,
+        mostrar_resumen_categoria_ventas: bool = True,
+        mostrar_resumen_productos: bool = True,
+        mostrar_resumen_categoria_costos: bool = True,
     ) -> bytes:
         buffer = BytesIO()
         w, h = A4
@@ -1449,7 +1456,7 @@ class ReportService:
         BOT_PAD = FOOTER_H + 0.5 * cm
 
         def on_page(canvas, doc):
-            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte de Balance")
+            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte General")
 
         styles = self._styles(modo)
         content_w = w - 2 * MARGIN
@@ -1465,12 +1472,13 @@ class ReportService:
             MARGIN, BOT_PAD, w - 2 * MARGIN, h - TOP_PAD - BOT_PAD,
             id="main", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
         )
-        count_doc.addPageTemplates([PageTemplate(id="count_bal", frames=[count_frame])])
-        flowables_count = self._build_balance_story(
+        count_doc.addPageTemplates([PageTemplate(id="count_gen", frames=[count_frame])])
+        flowables_count = self._build_general_story(
             sales, expenses,
             total_ingresos, total_gastos, resultado_neto, margen_neto,
             fecha_desde, fecha_hasta, styles, content_w, modo,
             mostrar_resumen_periodo, mostrar_resumen_mes,
+            mostrar_resumen_categoria_ventas, mostrar_resumen_productos, mostrar_resumen_categoria_costos,
         )
         count_doc.build(flowables_count)
         total_pages = count_doc.page
@@ -1479,7 +1487,7 @@ class ReportService:
         # Pass 2: render real
         def on_page_real(canvas, doc):
             doc._pagecount = total_pages
-            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte de Balance")
+            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte General")
 
         doc2 = BaseDocTemplate(
             buffer, pagesize=A4,
@@ -1490,18 +1498,19 @@ class ReportService:
             MARGIN, BOT_PAD, w - 2 * MARGIN, h - TOP_PAD - BOT_PAD,
             id="main", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
         )
-        doc2.addPageTemplates([PageTemplate(id="balance2", frames=[frame2], onPage=on_page_real)])
-        flowables_real = self._build_balance_story(
+        doc2.addPageTemplates([PageTemplate(id="general2", frames=[frame2], onPage=on_page_real)])
+        flowables_real = self._build_general_story(
             sales, expenses,
             total_ingresos, total_gastos, resultado_neto, margen_neto,
             fecha_desde, fecha_hasta, styles, content_w, modo,
             mostrar_resumen_periodo, mostrar_resumen_mes,
+            mostrar_resumen_categoria_ventas, mostrar_resumen_productos, mostrar_resumen_categoria_costos,
         )
         doc2.build(flowables_real)
         buffer.seek(0)
         return buffer.read()
 
-    def _build_balance_story(
+    def _build_general_story(
         self,
         sales: List[Sale],
         expenses: List[Expense],
@@ -1516,10 +1525,13 @@ class ReportService:
         modo: str,
         mostrar_resumen_periodo: bool = True,
         mostrar_resumen_mes: bool = False,
+        mostrar_resumen_categoria_ventas: bool = True,
+        mostrar_resumen_productos: bool = True,
+        mostrar_resumen_categoria_costos: bool = True,
     ) -> list:
         elements: list = []
         elements.append(Spacer(1, 0.4 * cm))
-        elements.append(Paragraph("Reporte de Balance", styles["title"]))
+        elements.append(Paragraph("Reporte General", styles["title"]))
         elements.append(Paragraph(self._format_periodo(fecha_desde, fecha_hasta), styles["subtitle"]))
         elements.append(Spacer(1, 0.5 * cm))
         elements.append(HRFlowable(width=content_w, thickness=0.5, color=styles["section"].textColor))
@@ -1528,7 +1540,7 @@ class ReportService:
         if mostrar_resumen_periodo:
             elements.append(Paragraph("Resumen del período", styles["section"]))
             elements.append(Spacer(1, 0.25 * cm))
-            elements.append(self._balance_kpi_table(
+            elements.append(self._general_kpi_table(
                 total_ingresos, total_gastos, resultado_neto, margen_neto, content_w, modo,
             ))
             elements.append(Spacer(1, 0.5 * cm))
@@ -1536,12 +1548,30 @@ class ReportService:
         if mostrar_resumen_mes:
             elements.append(Paragraph("Resumen por mes", styles["section"]))
             elements.append(Spacer(1, 0.25 * cm))
-            elements.append(self._balance_month_table(sales, expenses, styles, content_w, modo))
+            elements.append(self._general_month_table(sales, expenses, styles, content_w, modo))
+            elements.append(Spacer(1, 0.5 * cm))
+
+        if mostrar_resumen_categoria_ventas:
+            elements.append(Paragraph("Ventas por categoría", styles["section"]))
+            elements.append(Spacer(1, 0.25 * cm))
+            elements.append(self._category_summary_table(sales, styles, content_w))
+            elements.append(Spacer(1, 0.5 * cm))
+
+        if mostrar_resumen_productos:
+            elements.append(Paragraph("Productos vendidos", styles["section"]))
+            elements.append(Spacer(1, 0.25 * cm))
+            elements.append(self._grouped_items_table(sales, styles, content_w))
+            elements.append(Spacer(1, 0.5 * cm))
+
+        if mostrar_resumen_categoria_costos:
+            elements.append(Paragraph("Costos por categoría", styles["section"]))
+            elements.append(Spacer(1, 0.25 * cm))
+            elements.append(self._costs_category_table(expenses, styles, content_w, modo))
             elements.append(Spacer(1, 0.5 * cm))
 
         return elements
 
-    def _balance_kpi_table(
+    def _general_kpi_table(
         self,
         total_ingresos: Decimal,
         total_gastos: Decimal,
@@ -1598,7 +1628,7 @@ class ReportService:
         ]))
         return t
 
-    def _balance_month_table(
+    def _general_month_table(
         self,
         sales: List[Sale],
         expenses: List[Expense],

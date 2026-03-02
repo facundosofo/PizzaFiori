@@ -416,8 +416,8 @@ async def get_total_expenses(
 
 
 @router.get(
-    "/balance/reporte/pdf",
-    summary="Generar reporte de balance en PDF",
+    "/general/reporte/pdf",
+    summary="Generar reporte general en PDF",
     description="Genera un reporte PDF con el balance de ingresos y gastos en el rango seleccionado.",
     responses={
         200: {"description": "PDF generado", "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}},
@@ -426,12 +426,15 @@ async def get_total_expenses(
     },
 )
 @inject
-async def generate_balance_report(
+async def generate_general_report(
     fecha_desde: date | None = Query(None, description="Fecha inicial (YYYY-MM-DD)"),
     fecha_hasta: date | None = Query(None, description="Fecha final (YYYY-MM-DD)"),
     modo: str = Query("light", description="Modo de color: 'dark' o 'light'"),
     mostrar_resumen_periodo: bool = Query(True),
     mostrar_resumen_mes: bool = Query(False),
+    mostrar_resumen_categoria_ventas: bool = Query(True),
+    mostrar_resumen_productos: bool = Query(True),
+    mostrar_resumen_categoria_costos: bool = Query(True),
     report_service: ReportService = Depends(Provide[Container.report_service]),
 ):
     if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
@@ -439,24 +442,27 @@ async def generate_balance_report(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="fecha_desde debe ser menor o igual a fecha_hasta",
         )
-    result = await report_service.generate_balance_report(
+    result = await report_service.generate_general_report(
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta,
         modo=modo,
         mostrar_resumen_periodo=mostrar_resumen_periodo,
         mostrar_resumen_mes=mostrar_resumen_mes,
+        mostrar_resumen_categoria_ventas=mostrar_resumen_categoria_ventas,
+        mostrar_resumen_productos=mostrar_resumen_productos,
+        mostrar_resumen_categoria_costos=mostrar_resumen_categoria_costos,
     )
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
 
     if fecha_desde and fecha_hasta:
-        filename = f"reporte_balance_{fecha_desde}_{fecha_hasta}.pdf"
+        filename = f"reporte_general_{fecha_desde}_{fecha_hasta}.pdf"
     elif fecha_desde:
-        filename = f"reporte_balance_desde_{fecha_desde}.pdf"
+        filename = f"reporte_general_desde_{fecha_desde}.pdf"
     elif fecha_hasta:
-        filename = f"reporte_balance_hasta_{fecha_hasta}.pdf"
+        filename = f"reporte_general_hasta_{fecha_hasta}.pdf"
     else:
-        filename = "reporte_balance.pdf"
+        filename = "reporte_general.pdf"
 
     return Response(
         content=result.pdf_bytes,

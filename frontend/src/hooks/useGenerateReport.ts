@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import axios from "axios";
 import {
-  generateBalanceReport,
+  generateGeneralReport,
   generateCostsReport,
   generateSalesReport,
   type ReportRequest,
@@ -9,7 +9,7 @@ import {
 import { formatDateYMD } from "../utils/formatters";
 
 const buildFallbackFilename = (request: ReportRequest): string => {
-  const type = request.reportType === "costo" ? "costos" : request.reportType === "balance" ? "balance" : "ventas";
+  const type = request.reportType === "costo" ? "costos" : request.reportType === "general" ? "general" : "ventas";
   if (request.dateFrom && request.dateTo) {
     return `reporte_${type}_${formatDateYMD(request.dateFrom)}_${formatDateYMD(request.dateTo)}.pdf`;
   }
@@ -77,8 +77,8 @@ export const useGenerateReport = () => {
       const { blob, filename } =
         request.reportType === "costo"
           ? await generateCostsReport(request)
-          : request.reportType === "balance"
-            ? await generateBalanceReport(request)
+          : request.reportType === "general"
+            ? await generateGeneralReport(request)
             : await generateSalesReport(request);
       const fileNameToUse = filename ?? buildFallbackFilename(request);
       const url = window.URL.createObjectURL(blob);

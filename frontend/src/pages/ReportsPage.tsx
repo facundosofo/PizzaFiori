@@ -25,8 +25,11 @@ const buildDefaultConfig = (): ReportRequest => ({
     costoResumenCategoria: true,
     costoResumenMes: true,
     costoDetalleCostos: true,
-    balanceResumenPeriodo: true,
-    balanceResumenMes: true,
+    generalResumenPeriodo: true,
+    generalResumenMes: true,
+    generalResumenCategoriaVentas: true,
+    generalResumenProductos: true,
+    generalResumenCategoriaGastos: true,
   },
 });
 

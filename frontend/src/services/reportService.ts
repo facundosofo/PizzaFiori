@@ -2,7 +2,7 @@ import api from "./http";
 import { formatDateYMD } from "../utils/formatters";
 
 export type ReportMode = "light" | "dark";
-export type ReportType = "general" | "balance" | "ventas" | "costo";
+export type ReportType = "general" | "ventas" | "costo";
 export type DateRangeMode = "rango" | "mes" | "anio";
 
 export type ReportSections = {
@@ -17,9 +17,12 @@ export type ReportSections = {
   costoResumenCategoria: boolean;
   costoResumenMes: boolean;
   costoDetalleCostos: boolean;
-  // Balance
-  balanceResumenPeriodo: boolean;
-  balanceResumenMes: boolean;
+  // Balance → ahora General
+  generalResumenPeriodo: boolean;
+  generalResumenMes: boolean;
+  generalResumenCategoriaVentas: boolean;
+  generalResumenProductos: boolean;
+  generalResumenCategoriaGastos: boolean;
 };
 
 export type ReportRequest = {
@@ -130,11 +133,14 @@ export const generateCostsReport = async (request: ReportRequest): Promise<Repor
   return { blob: response.data, filename };
 };
 
-export const generateBalanceReport = async (request: ReportRequest): Promise<ReportFile> => {
+export const generateGeneralReport = async (request: ReportRequest): Promise<ReportFile> => {
   const params: Record<string, string> = {
     modo: request.mode,
-    mostrar_resumen_periodo: String(request.sections.balanceResumenPeriodo),
-    mostrar_resumen_mes:     String(request.dateRangeMode === "anio" && request.sections.balanceResumenMes),
+    mostrar_resumen_periodo: String(request.sections.generalResumenPeriodo),
+    mostrar_resumen_mes:              String(request.dateRangeMode === "anio" && request.sections.generalResumenMes),
+    mostrar_resumen_categoria_ventas: String(request.sections.generalResumenCategoriaVentas),
+    mostrar_resumen_productos:        String(request.sections.generalResumenProductos),
+    mostrar_resumen_categoria_costos: String(request.sections.generalResumenCategoriaGastos),
   };
 
   let dateFrom: Date | null = null;
@@ -151,7 +157,7 @@ export const generateBalanceReport = async (request: ReportRequest): Promise<Rep
   if (dateFrom) params.fecha_desde = formatDateYMD(dateFrom);
   if (dateTo)   params.fecha_hasta = formatDateYMD(dateTo);
 
-  const response = await api.get<Blob>("/dashboard/balance/reporte/pdf", {
+  const response = await api.get<Blob>("/dashboard/general/reporte/pdf", {
     params,
     responseType: "blob",
   });
