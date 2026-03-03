@@ -58,7 +58,7 @@ class OfferService:
                                 status_code=404,
                             )
                     elif item.categoria_id is not None:
-                        categoria = await uow.category_repo.get_by_id(item.categoria_id)
+                        categoria = await uow.product_category_repo.get_by_id(item.categoria_id)
                         if not categoria:
                             return ServiceResult(
                                 error=f"Categoría {item.categoria_id} no encontrada",
@@ -232,7 +232,7 @@ class OfferService:
                                     status_code=404,
                                 )
                         elif item.categoria_id is not None:
-                            categoria = await uow.category_repo.get_by_id(item.categoria_id)
+                            categoria = await uow.product_category_repo.get_by_id(item.categoria_id)
                             if not categoria:
                                 return ServiceResult(
                                     error=f"Categoría {item.categoria_id} no encontrada",

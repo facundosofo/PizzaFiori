@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
+import { formatLocalISO } from "../utils/formatters";
 import { getOfertas } from "../services/ofertasService";
 import { getProductos } from "../services/productsService";
-import { getCategorias } from "../services/categoriasService";
+import { getProductosCategorias } from "../services/productosCategoriasService";
 import OfferCard from "../components/OfferCard";
 import OfferModal from "../components/OfferModal";
 import SkeletonLoader from "../components/shared/SkeletonLoader";
@@ -11,7 +12,7 @@ import ErrorAlert from "../components/shared/ErrorAlert";
 import * as Icons from "../components/shared/Icons";
 import type { Offer } from "../types/offer";
 import type { Product } from "../types/product";
-import type { Category } from "../types/category";
+import type { ProductoCategoria } from "../types/product_category";
 import "../styles/offers-page.css";
 
 const OffersPage = () => {
@@ -19,7 +20,7 @@ const OffersPage = () => {
   const isAdmin = user?.role === 'ADMIN';
   const [ofertas, setOfertas] = useState<Offer[]>([]);
   const [productos, setProductos] = useState<Product[]>([]);
-  const [categorias, setCategorias] = useState<Category[]>([]);
+  const [categorias, setCategorias] = useState<ProductoCategoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,7 +35,7 @@ const OffersPage = () => {
       const [offersData, productsData, categoriasData] = await Promise.all([
         getOfertas(true),
         getProductos(),
-        getCategorias(true),
+        getProductosCategorias(true),
       ]);
 
       setOfertas(offersData || []);
@@ -67,8 +68,8 @@ const OffersPage = () => {
       descripcion: null,
       precio: 0,
       activo: true,
-      fecha_creacion: new Date().toISOString(),
-      fecha_actualizacion: new Date().toISOString(),
+      fecha_creacion: formatLocalISO(new Date()),
+      fecha_actualizacion: formatLocalISO(new Date()),
       productos: [],
     });
     setIsModalOpen(true);

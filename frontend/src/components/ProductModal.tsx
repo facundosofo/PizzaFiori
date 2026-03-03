@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import type { Product } from "../types/product";
-import type { Category } from "../types/category";
+import type { ProductoCategoria } from "../types/product_category";
 import * as Icons from './shared/Icons';
 import ConfirmDialog from "./shared/ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
@@ -17,7 +17,7 @@ interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave?: (producto: Product) => void;
-  categorias?: Category[];
+  categorias?: ProductoCategoria[];
 }
 
 const ProductModal = ({

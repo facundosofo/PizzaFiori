@@ -4,7 +4,6 @@ import {
   Boxes,
   ChartLine,
   FileText,
-  FolderTree,
   Home,
   LogOut,
   Moon,
@@ -12,6 +11,7 @@ import {
   Pizza,
   ShoppingBasket,
   Sun,
+  Wallet,
   Receipt,
   FileSearch,
   Tags,
@@ -30,15 +30,18 @@ const navItems = [
   { label: "Home", to: "/", icon: Home },
   { label: "Registrar venta", to: "/registrar-venta", icon: ShoppingBasket },
   { label: "Ventas", to: "/ventas", icon: Receipt },
-  { label: "Stock", to: "/stock", icon: Boxes },
-  { label: "Dashboard", to: "/dashboard", icon: ChartLine },
-  { label: "Reportes", to: "/reportes", icon: FileText },
+<<<<<<< HEAD
+  { label: "Stock", to: "/stock", icon: Boxes }
+=======
+>>>>>>> develop
 ];
 
 const adminNavItems = [
   { label: "Ofertas", to: "/ofertas", icon: Tags, adminOnly: true },
   { label: "Productos", to: "/productos", icon: Pizza, adminOnly: true },
-  { label: "Categorías", to: "/categorias", icon: FolderTree, adminOnly: true },
+  { label: "Gastos", to: "/gastos", icon: Wallet, adminOnly: true },
+  { label: "Dashboard", to: "/dashboard", icon: ChartLine, adminOnly: true },
+  { label: "Reportes", to: "/reportes", icon: FileText, adminOnly: true },
   { label: "Auditoría", to: "/auditoria", icon: FileSearch, adminOnly: true },
   { label: "Gestión Usuarios", to: "/admin/users", icon: Users, adminOnly: true },
 ];

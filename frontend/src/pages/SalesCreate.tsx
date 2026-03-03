@@ -11,11 +11,11 @@ import ErrorAlert from '../components/shared/ErrorAlert';
 import SkeletonLoader from '../components/shared/SkeletonLoader';
 import * as Icons from '../components/shared/Icons';
 import { getProductos } from '../services/productsService';
-import { getCategorias } from '../services/categoriasService';
+import { getProductosCategorias } from '../services/productosCategoriasService';
 import { getOfertas } from '../services/ofertasService';
 import { createSale } from '../services/salesService';
 import type { Product } from '../types/product';
-import type { Category } from '../types/category';
+import type { ProductoCategoria } from '../types/product_category';
 import type { Offer } from '../types/offer';
 import type { CartItem, CartProductItem, CartOfferItem, CartPizzaMitadMitadItem } from '../types/cart';
 import type { SaleItemRequest } from '../types/sale_item';
@@ -26,7 +26,7 @@ export const SalesCreatePage: React.FC = () => {
 
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ProductoCategoria[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export const SalesCreatePage: React.FC = () => {
 
       const [productsData, categoriesData, offersData] = await Promise.all([
         getProductos(),
-        getCategorias(true),
+        getProductosCategorias(true),
         getOfertas(),
       ]);
 

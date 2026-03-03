@@ -87,6 +87,19 @@ async def get_sales(
 
 
 @router.get(
+    "/anios-disponibles",
+    response_model=list[int],
+    summary="Años con ventas",
+    description="Retorna la lista de años que tienen al menos una venta registrada.",
+)
+@inject
+async def get_available_years(
+    service: SaleService = Depends(Provide[Container.sale_service]),
+):
+    return await service.get_available_years()
+
+
+@router.get(
     "/{sale_id}",
     response_model=SaleResponse,
     summary="Obtener una venta por ID",
@@ -174,9 +187,11 @@ async def delete_sale(
 
 
 @router.get(
+
     "/reporte/pdf",
     summary="Generar reporte de ventas en PDF",
     description="Genera un reporte PDF con el listado de ventas en el rango seleccionado.",
+    dependencies=[Depends(require_admin)],
     responses={
         200: {
             "description": "Reporte PDF generado exitosamente",
@@ -197,6 +212,7 @@ async def generate_sales_report(
     modo: str = Query("light", description="Modo de color del reporte: 'dark' o 'light'"),
     mostrar_resumen_periodo: bool = Query(True, description="Incluir sección 'Resumen del Período'"),
     mostrar_resumen_dia: bool = Query(True, description="Incluir sección 'Resumen por Día'"),
+    mostrar_resumen_mes: bool = Query(False, description="Incluir sección 'Resumen por Mes'"),
     mostrar_resumen_categoria: bool = Query(True, description="Incluir sección 'Resumen por Categoría'"),
     mostrar_resumen_productos: bool = Query(True, description="Incluir sección 'Resumen de Productos Vendidos'"),
     mostrar_detalle_ventas: bool = Query(True, description="Incluir sección 'Detalle de Ventas'"),
@@ -219,6 +235,7 @@ async def generate_sales_report(
         modo=modo,
         mostrar_resumen_periodo=mostrar_resumen_periodo,
         mostrar_resumen_dia=mostrar_resumen_dia,
+        mostrar_resumen_mes=mostrar_resumen_mes,
         mostrar_resumen_categoria=mostrar_resumen_categoria,
         mostrar_resumen_productos=mostrar_resumen_productos,
         mostrar_detalle_ventas=mostrar_detalle_ventas,

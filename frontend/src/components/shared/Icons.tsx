@@ -5,6 +5,8 @@ import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
+  ChartColumnIncreasing,
+  ChartLine,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -24,6 +26,8 @@ import {
   ShieldOff,
   ShoppingCart,
   Trash2,
+  Columns3Cog,
+  FolderTree,
   X,
 } from "lucide-react";
 
@@ -80,7 +84,16 @@ export const ChevronRightIcon = (props: IconProps) => renderLucideIcon(ChevronRi
 
 export const ShoppingCartIcon = (props: IconProps) => renderLucideIcon(ShoppingCart, props);
 
+export const Columns3CogIcon = (props: IconProps) => renderLucideIcon(Columns3Cog, props);
+
+export const FolderTreeIcon = (props: IconProps) => renderLucideIcon(FolderTree, props);
+
 export const ClockIcon = (props: IconProps) => renderLucideIcon(Clock, props);
+
+export const ChartColumnIncreasingIcon = (props: IconProps) =>
+  renderLucideIcon(ChartColumnIncreasing, props);
+
+export const ChartLineIcon = (props: IconProps) => renderLucideIcon(ChartLine, props);
 
 export const PizzaIcon = ({
   size = 28,

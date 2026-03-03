@@ -1,5 +1,5 @@
 from .models.user import User
-from .models.category import Category
+from .models.product_category import ProductCategory
 from .models.product import Product
 from .models.product_price import ProductPrice
 from .models.offer import Offer

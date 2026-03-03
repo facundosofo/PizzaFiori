@@ -10,6 +10,8 @@ from fastapi import FastAPI
 
 from app.main import app as application, container
 from app.containers import Container
+from app.presentation.middleware.jwt_middleware import JWTMiddleware
+from app.presentation.routers.dependencies import get_current_user, require_admin
 from tests.helpers import (
     build_category_model,
     build_product_model,
@@ -21,8 +23,8 @@ from tests.helpers import (
 # ==================== Mock Repository Fixtures ====================
 
 @pytest.fixture
-def mock_category_repo():
-    """Mock category repository with common return values."""
+def mock_product_category_repo():
+    """Mock product category repository with common return values."""
     repo = AsyncMock()
     
     # Default behaviors
@@ -96,7 +98,7 @@ def mock_sequence_repo():
 # ==================== Mock Unit of Work Fixture ====================
 
 @pytest.fixture
-def mock_uow(mock_category_repo, mock_product_repo, mock_offer_repo, mock_sale_repo, mock_sequence_repo):
+def mock_uow(mock_product_category_repo, mock_product_repo, mock_offer_repo, mock_sale_repo, mock_sequence_repo):
     """
     Mock Unit of Work with all repositories.
     Configured as async context manager.
@@ -104,7 +106,7 @@ def mock_uow(mock_category_repo, mock_product_repo, mock_offer_repo, mock_sale_r
     uow = AsyncMock()
     
     # Attach repositories
-    uow.category_repo = mock_category_repo
+    uow.product_category_repo = mock_product_category_repo
     uow.product_repo = mock_product_repo
     uow.offer_repo = mock_offer_repo
     uow.sale_repo = mock_sale_repo
@@ -154,8 +156,18 @@ def mock_logger():
 # ==================== Mock Application Service Fixtures ====================
 
 @pytest.fixture
-def mock_category_service():
-    """Mock CategoryService for router tests."""
+def mock_cache_service():
+    """Mock CacheService — always returns None (cache miss) and ignores writes."""
+    cache = MagicMock()
+    cache.get = MagicMock(return_value=None)   # Always miss — no cached data
+    cache.set = MagicMock(return_value=None)
+    cache.invalidate = MagicMock(return_value=None)
+    return cache
+
+
+@pytest.fixture
+def mock_product_category_service():
+    """Mock ProductCategoryService for router tests."""
     service = MagicMock()
     
     # ServiceResult mock with default values
@@ -168,7 +180,7 @@ def mock_category_service():
     service.get_all = AsyncMock(return_value=[])
     service.get_by_id = AsyncMock(return_value=result)
     service.update = AsyncMock(return_value=result)
-    service.delete = AsyncMock(return_value=result)
+    service.deactivate = AsyncMock(return_value=result)
     
     return service
 
@@ -256,29 +268,46 @@ def mock_dashboard_service():
 # ==================== HTTP Client Fixture ====================
 
 @pytest.fixture
-async def async_client(mock_category_service, mock_product_service, mock_offer_service, mock_sale_service, mock_dashboard_service):
+async def async_client(mock_cache_service, mock_product_category_service, mock_product_service, mock_offer_service, mock_sale_service, mock_dashboard_service):
     """
     Async HTTP client for testing API endpoints.
     Uses container overrides to inject mocked services.
+    Bypasses JWT middleware by mocking it with a test admin user.
     """
+    # Mock admin user for all tests
+    mock_admin_user = {"id": 1, "username": "admin_test", "role": "ADMIN"}
+
+    async def mock_jwt_dispatch(self, request, call_next):
+        """Bypass JWT validation in tests — always authenticate as admin."""
+        request.state.current_user = mock_admin_user
+        return await call_next(request)
+
     # Override services in the dependency-injector container
-    container.category_service.override(mock_category_service)
+    container.cache_service.override(mock_cache_service)
+    container.product_category_service.override(mock_product_category_service)
     container.product_service.override(mock_product_service)
     container.offer_service.override(mock_offer_service)
     container.sale_service.override(mock_sale_service)
     container.dashboard_service.override(mock_dashboard_service)
-    
+
+    # Override auth dependencies so get_current_user / require_admin always succeed
+    application.dependency_overrides[get_current_user] = lambda: mock_admin_user
+    application.dependency_overrides[require_admin] = lambda: mock_admin_user
+
     try:
-        transport = ASGITransport(app=application, raise_app_exceptions=False)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            yield client
+        with patch.object(JWTMiddleware, 'dispatch', mock_jwt_dispatch):
+            transport = ASGITransport(app=application, raise_app_exceptions=False)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                yield client
     finally:
         # Reset overrides after test
-        container.category_service.reset_override()
+        container.cache_service.reset_override()
+        container.product_category_service.reset_override()
         container.product_service.reset_override()
         container.offer_service.reset_override()
         container.sale_service.reset_override()
         container.dashboard_service.reset_override()
+        application.dependency_overrides.clear()
 
 
 # ==================== Reusable Model Fixtures ====================

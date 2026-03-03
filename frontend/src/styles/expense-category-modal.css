@@ -1,0 +1,214 @@
+/* ExpenseCategoryModal - Siguiendo guía UX */
+/* 60% neutrales, 30% blanco/gris, 8% verde, 2% rojo */
+
+.expense-category-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  backdrop-filter: blur(4px);
+}
+
+.expense-category-modal {
+  position: relative;
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.2);
+  z-index: 1101;
+  display: flex;
+  flex-direction: column;
+}
+
+.expense-category-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.expense-category-modal-title {
+  color: var(--color-text);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.expense-category-modal-eyebrow {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.expense-category-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(239, 68, 68, 0.8);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expense-category-modal-close:hover {
+  background: var(--color-danger);
+  transform: scale(1.1) rotate(90deg);
+}
+
+.expense-category-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.expense-category-form-label {
+  display: block;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.expense-category-form-input,
+.expense-category-form-textarea,
+.expense-category-form-select {
+  width: 100%;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: var(--color-text);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.expense-category-form-input:focus,
+.expense-category-form-textarea:focus,
+.expense-category-form-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+  background: var(--color-bg-2);
+}
+
+.expense-category-form-input::placeholder,
+.expense-category-form-textarea::placeholder,
+.expense-category-form-select::placeholder {
+  color: var(--color-text-muted);
+}
+
+.expense-category-parent-display {
+  width: 100%;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: var(--color-text);
+  font-size: 1rem;
+  font-family: inherit;
+  opacity: 0.85;
+}
+
+.expense-category-form-input:disabled,
+.expense-category-form-textarea:disabled,
+.expense-category-form-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.expense-category-form-textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.expense-form-hint {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.35rem;
+  color: var(--color-text-muted);
+}
+
+.expense-category-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+.expense-category-modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.2rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.expense-category-btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.expense-category-btn.cancel {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.expense-category-btn.cancel:hover {
+  background: var(--color-surface-3);
+}
+
+.expense-category-btn.save {
+  background: var(--gradient-accent);
+  color: white;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+}
+
+.expense-category-btn.save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+}
+
+.expense-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
