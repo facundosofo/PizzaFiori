@@ -191,6 +191,7 @@ async def delete_sale(
     "/reporte/pdf",
     summary="Generar reporte de ventas en PDF",
     description="Genera un reporte PDF con el listado de ventas en el rango seleccionado.",
+    dependencies=[Depends(require_admin)],
     responses={
         200: {
             "description": "Reporte PDF generado exitosamente",

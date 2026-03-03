@@ -29,14 +29,14 @@ const navItems = [
   { label: "Home", to: "/", icon: Home },
   { label: "Registrar venta", to: "/registrar-venta", icon: ShoppingBasket },
   { label: "Ventas", to: "/ventas", icon: Receipt },
-  { label: "Reportes", to: "/reportes", icon: FileText },
 ];
 
 const adminNavItems = [
-  { label: "Dashboard", to: "/dashboard", icon: ChartLine, adminOnly: true },
   { label: "Ofertas", to: "/ofertas", icon: Tags, adminOnly: true },
   { label: "Productos", to: "/productos", icon: Pizza, adminOnly: true },
   { label: "Gastos", to: "/gastos", icon: Wallet, adminOnly: true },
+  { label: "Dashboard", to: "/dashboard", icon: ChartLine, adminOnly: true },
+  { label: "Reportes", to: "/reportes", icon: FileText, adminOnly: true },
   { label: "Auditoría", to: "/auditoria", icon: FileSearch, adminOnly: true },
   { label: "Gestión Usuarios", to: "/admin/users", icon: Users, adminOnly: true },
 ];

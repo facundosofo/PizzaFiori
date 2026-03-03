@@ -72,6 +72,7 @@ async def get_gastos(
     "/gastos/reporte/pdf",
     summary="Generar reporte de costos en PDF",
     description="Genera un reporte PDF con el resumen de costos en el rango seleccionado.",
+    dependencies=[Depends(require_admin)],
     responses={
         200: {"description": "PDF generado", "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}},
         404: {"description": "No hay costos en el período seleccionado"},

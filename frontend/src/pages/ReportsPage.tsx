@@ -4,6 +4,8 @@ import ErrorAlert from "../components/shared/ErrorAlert";
 import { validateDateRange } from "../utils/formatters";
 import useGenerateReport from "../hooks/useGenerateReport";
 import type { ReportRequest } from "../services/reportService";
+import { ShieldOffIcon } from "../components/shared/Icons";
+import { useAuth } from "../contexts/AuthContext";
 import "../styles/reports.css";
 
 const buildDefaultConfig = (): ReportRequest => ({
@@ -34,6 +36,8 @@ const buildDefaultConfig = (): ReportRequest => ({
 });
 
 const ReportsPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [config, setConfig] = useState<ReportRequest>(buildDefaultConfig());
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { generateReport, loading, error, clearError } = useGenerateReport();
@@ -43,6 +47,18 @@ const ReportsPage = () => {
     if (config.dateRangeMode !== "rango") return null;
     return validateDateRange(config.dateFrom, config.dateTo);
   }, [config.reportType, config.dateRangeMode, config.dateFrom, config.dateTo]);
+
+  if (!isAdmin) {
+    return (
+      <div className="user-management-container">
+        <div className="access-denied">
+          <ShieldOffIcon size={64} color="#ef4444" />
+          <h1>Acceso Denegado</h1>
+          <p>Solo los administradores pueden acceder a esta página.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleGenerate = async () => {
     if (validationMessage) return;
