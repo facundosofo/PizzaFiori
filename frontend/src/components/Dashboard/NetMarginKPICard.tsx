@@ -25,13 +25,19 @@ const NetMarginKPICard = memo(({ data, loading = false }: NetMarginKPICardProps)
     return formatPercentage(value);
   };
 
+  const getPrevMonthName = (): string => {
+    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const now = new Date();
+    return MESES[now.getMonth() === 0 ? 11 : now.getMonth() - 1];
+  };
+
   const formatMarginDifference = (current: number, previous: number | null, comparisonType: 'YoY' | 'MoM' | null): string => {
     if (previous === null) return 'Sin datos comparativos';
     
     // Diferencia en puntos porcentuales (no variación relativa)
     const diff = current - previous;
     const direction = diff >= 0 ? '↑' : '↓';
-    const label = comparisonType === 'YoY' ? 'año anterior' : comparisonType === 'MoM' ? 'mes anterior' : 'período anterior';
+    const label = comparisonType === 'YoY' ? String(new Date().getFullYear() - 1) : comparisonType === 'MoM' ? getPrevMonthName() : 'período anterior';
     
     return `${direction} ${Math.abs(diff).toFixed(1)} % vs ${label}`;
   };

@@ -1049,7 +1049,7 @@ class DashboardService:
                 current_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 current_end = now
                 
-                # Período anterior: 1° del mes anterior hasta el mismo día del mes anterior
+                # Período anterior: mes calendario anterior completo (día 1 hasta último día)
                 if now.month == 1:
                     prev_year = now.year - 1
                     prev_month = 12
@@ -1058,18 +1058,8 @@ class DashboardService:
                     prev_month = now.month - 1
                 
                 mom_start = datetime(prev_year, prev_month, 1, 0, 0, 0, 0)
-                try:
-                    mom_end = datetime(prev_year, prev_month, now.day, 23, 59, 59, 999999)
-                except ValueError:
-                    # El mes anterior no tiene el mismo día (e.g., 31 enero -> 28/29 febrero)
-                    if prev_month == 2:
-                        is_leap = (prev_year % 4 == 0 and prev_year % 100 != 0) or (prev_year % 400 == 0)
-                        last_day = 29 if is_leap else 28
-                    elif prev_month in [4, 6, 9, 11]:
-                        last_day = 30
-                    else:
-                        last_day = 31
-                    mom_end = datetime(prev_year, prev_month, last_day, 23, 59, 59, 999999)
+                # Fin del mes anterior = inicio del mes actual (exclusivo en la query)
+                mom_end = current_start
                 
                 # Obtener ventas
                 current_sales = await self._get_sales_total_between_dates(current_start, current_end)
@@ -1079,51 +1069,43 @@ class DashboardService:
                 current_expenses = await self._get_expenses_total_between_dates(current_start, current_end)
                 mom_expenses = await self._get_expenses_total_between_dates(mom_start, mom_end)
                 
-                # Determinar tipo de comparación
-                comparison_type = None
-                previous_sales = None
-                previous_expenses = None
-
-                if mom_sales is not None and mom_sales > 0:
-                    previous_sales = mom_sales
-                    previous_expenses = mom_expenses
-                    comparison_type = "MoM"
+                # Siempre comparar contra el mes anterior (0 es un valor válido)
+                previous_sales = mom_sales
+                previous_expenses = mom_expenses
+                comparison_type = "MoM"
                 
                 # Calcular métricas actuales
                 net_profit = current_sales - current_expenses
                 margin = ((current_sales - current_expenses) / current_sales * 100) if current_sales > 0 else 0.0
                 
                 # Calcular métricas comparativas
-                previous_net = None
-                previous_margin = None
-                if previous_sales is not None and previous_expenses is not None:
-                    previous_net = previous_sales - previous_expenses
-                    previous_margin = ((previous_sales - previous_expenses) / previous_sales * 100) if previous_sales > 0 else 0.0
+                previous_net = previous_sales - previous_expenses
+                previous_margin = ((previous_sales - previous_expenses) / previous_sales * 100) if previous_sales > 0 else 0.0
                 
                 return ServiceResult(
                     value={
                         "sales": {
                             "current": float(current_sales or 0),
-                            "previous": float(previous_sales) if previous_sales else None,
+                            "previous": float(previous_sales),
                             "comparison_type": comparison_type,
                         },
                         "expenses": {
                             "current": float(current_expenses or 0),
-                            "previous": float(previous_expenses) if previous_expenses else None,
+                            "previous": float(previous_expenses),
                             "comparison_type": comparison_type,
                         },
                         "net_profit": {
                             "sales": float(current_sales or 0),
                             "expenses": float(current_expenses or 0),
                             "net_profit": float(net_profit),
-                            "previous_net": float(previous_net) if previous_net is not None else None,
+                            "previous_net": float(previous_net),
                             "comparison_type": comparison_type,
                         },
                         "net_margin": {
                             "sales": float(current_sales or 0),
                             "expenses": float(current_expenses or 0),
                             "margin": float(margin),
-                            "previous_margin": float(previous_margin) if previous_margin is not None else None,
+                            "previous_margin": float(previous_margin),
                             "comparison_type": comparison_type,
                         },
                     }
@@ -1171,10 +1153,17 @@ class DashboardService:
                         "Ene", "Feb", "Mar", "Abr", "May", "Jun",
                         "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
                     ]
+                    seen_months: set = set()
                     for i in range(11, -1, -1):
-                        target_date = now - timedelta(days=30 * i)
-                        month_num = target_date.month
-                        year_num  = target_date.year
+                        # Aritmética de calendario real: retroceder i meses desde el mes actual
+                        month_offset = now.month - 1 - i  # índice base-0, puede ser negativo
+                        year_num  = now.year + month_offset // 12
+                        month_num = month_offset % 12 + 1
+                        # Evitar duplicados ante cualquier desajuste inesperado
+                        key = (year_num, month_num)
+                        if key in seen_months:
+                            continue
+                        seen_months.add(key)
                         month_start = datetime(year_num, month_num, 1, 0, 0, 0, 0)
                         if month_num == 12:
                             month_end = datetime(year_num + 1, 1, 1, 0, 0, 0, 0)

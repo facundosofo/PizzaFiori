@@ -743,33 +743,19 @@ class SalesAnalyticsService:
                     prev_month = now.month - 1
                 
                 mom_start = datetime(prev_year, prev_month, 1, 0, 0, 0, 0)
-                try:
-                    mom_end = datetime(prev_year, prev_month, now.day, 23, 59, 59, 999999)
-                except ValueError:
-                    # El mes anterior no tiene el mismo día (e.g., 31 enero -> 28/29 febrero)
-                    # Usar el último día del mes anterior
-                    if prev_month == 2:
-                        # Febrero: verificar año bisiesto
-                        is_leap = (prev_year % 4 == 0 and prev_year % 100 != 0) or (prev_year % 400 == 0)
-                        last_day = 29 if is_leap else 28
-                    elif prev_month in [4, 6, 9, 11]:
-                        last_day = 30
-                    else:
-                        last_day = 31
-                    mom_end = datetime(prev_year, prev_month, last_day, 23, 59, 59, 999999)
+                # Fin del mes anterior = inicio del mes actual (mes anterior completo)
+                mom_end = current_start
                 
                 mom_total = await self._get_sales_total_between_dates(mom_start, mom_end)
 
-                comparison_type = None
-                previous_total = None
-                if mom_total is not None and mom_total > 0:
-                    previous_total = mom_total
-                    comparison_type = "MoM"
+                # Siempre comparar contra el mes anterior (0 es un valor válido)
+                previous_total = mom_total
+                comparison_type = "MoM"
                 
                 return ServiceResult(
                     value={
                         "current": float(current_total or 0),
-                        "previous": float(previous_total) if previous_total else None,
+                        "previous": float(previous_total),
                         "comparison_type": comparison_type,
                     }
                 )

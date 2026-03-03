@@ -54,11 +54,17 @@ const TotalSalesKPICard = memo(({
     return formatCurrency(value);
   };
 
+  const getPrevMonthName = (): string => {
+    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const now = new Date();
+    return MESES[now.getMonth() === 0 ? 11 : now.getMonth() - 1];
+  };
+
   const formatVariation = (value: number | null, comparisonType: 'YoY' | 'MoM' | null): string => {
     if (value === null) return 'Sin datos comparativos';
     const status = value >= 0 ? 'Aumento' : 'Bajo';
     const direction = value >= 0 ? '↑' : '↓';
-    const label = comparisonType === 'YoY' ? 'año anterior' : comparisonType === 'MoM' ? 'mes anterior' : 'período anterior';
+    const label = comparisonType === 'YoY' ? String(new Date().getFullYear() - 1) : comparisonType === 'MoM' ? getPrevMonthName() : 'período anterior';
     return `${status} ${direction} ${Math.abs(value).toFixed(1)}% vs ${label}`;
   };
 

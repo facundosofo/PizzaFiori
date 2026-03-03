@@ -127,13 +127,13 @@ class ExpenseAnalyticsService:
             async with self.uow:
                 now = datetime.now()
                 
-                # MTD (Month To Date): Comparar febrero 1-25 vs enero 1-25
+                # MTD (Month To Date): mes actual hasta hoy vs mes anterior completo
                 mtd_current = self._get_mtd_range(now)
-                mtd_previous = self._get_previous_month_equivalent(now)
+                mtd_previous = self._get_previous_complete_month(now)
                 
-                # YTD (Year To Date): Comparar 2026 ene 1 - feb 25 vs 2025 ene 1 - feb 25
+                # YTD (Year To Date): acumulado año actual vs año anterior completo
                 ytd_current = self._get_ytd_range(now)
-                ytd_previous = self._get_previous_year_equivalent(now)
+                ytd_previous = self._get_previous_complete_year(now)
                 
                 # Gastos MTD y YTD
                 monthly_total = await self._get_total_expenses_between(mtd_current[0], mtd_current[1])
@@ -252,6 +252,16 @@ class ExpenseAnalyticsService:
         else:
             end = datetime(prev_year, prev_month + 1, 1) - timedelta(days=1)
         
+        return (start, end)
+
+    def _get_previous_complete_year(self, date: datetime) -> tuple[datetime, datetime]:
+        """Retorna el año calendario completo anterior.
+
+        Ej: si hoy es 2 marzo 2026, retorna (1 enero 2025, 1 enero 2026)
+        """
+        prev_year = date.year - 1
+        start = datetime(prev_year, 1, 1)
+        end = datetime(date.year, 1, 1)  # exclusivo en la query (< end)
         return (start, end)
 
     def _calculate_variation_pct(self, current: float, previous: float) -> float | None:
@@ -720,33 +730,19 @@ class ExpenseAnalyticsService:
                     prev_month = now.month - 1
                 
                 mom_start = datetime(prev_year, prev_month, 1, 0, 0, 0, 0)
-                try:
-                    mom_end = datetime(prev_year, prev_month, now.day, 23, 59, 59, 999999)
-                except ValueError:
-                    # El mes anterior no tiene el mismo día (e.g., 31 enero -> 28/29 febrero)
-                    # Usar el último día del mes anterior
-                    if prev_month == 2:
-                        # Febrero: verificar año bisiesto
-                        is_leap = (prev_year % 4 == 0 and prev_year % 100 != 0) or (prev_year % 400 == 0)
-                        last_day = 29 if is_leap else 28
-                    elif prev_month in [4, 6, 9, 11]:
-                        last_day = 30
-                    else:
-                        last_day = 31
-                    mom_end = datetime(prev_year, prev_month, last_day, 23, 59, 59, 999999)
+                # Fin del mes anterior = inicio del mes actual (mes anterior completo)
+                mom_end = current_start
                 
                 mom_total = await self._get_expenses_total_between_dates(mom_start, mom_end)
 
-                comparison_type = None
-                previous_total = None
-                if mom_total is not None and mom_total > 0:
-                    previous_total = mom_total
-                    comparison_type = "MoM"
+                # Siempre comparar contra el mes anterior (0 es un valor válido)
+                previous_total = mom_total
+                comparison_type = "MoM"
                 
                 return ServiceResult(
                     value={
                         "current": float(current_total or 0),
-                        "previous": float(previous_total) if previous_total else None,
+                        "previous": float(previous_total),
                         "comparison_type": comparison_type,
                     }
                 )

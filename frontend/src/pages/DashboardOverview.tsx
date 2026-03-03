@@ -613,9 +613,9 @@ const DashboardOverview = () => {
           minHeight: '140px',
         }}
       >
+        <NetProfitKPICard data={balanceMetrics?.net_profit ?? null} loading={balanceLoading} />
         <TotalSalesKPICard />
         <NetMarginKPICard data={balanceMetrics?.net_margin ?? null} loading={balanceLoading} />
-        <NetProfitKPICard data={balanceMetrics?.net_profit ?? null} loading={balanceLoading} />
         <TotalExpensesKPICard />
       </div>
 

@@ -47,10 +47,16 @@ const TotalOrdersKPICard = memo(({ monthlyRevenue }: TotalOrdersKPICardProps) =>
     return value >= 0 ? 'var(--color-success, #16a34a)' : 'var(--color-danger, #ef4444)';
   };
 
+  const getPrevMonthName = (): string => {
+    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const now = new Date();
+    return MESES[now.getMonth() === 0 ? 11 : now.getMonth() - 1];
+  };
+
   const formatVariation = (value: number | null): string => {
     if (value === null) return 'Sin datos comparativos';
     const direction = value >= 0 ? '↑' : '↓';
-    return `${value >= 0 ? 'Aumento' : 'Bajo'} ${direction} ${Math.abs(value).toFixed(1)}% vs mes anterior`;
+    return `${value >= 0 ? 'Aumento' : 'Bajo'} ${direction} ${Math.abs(value).toFixed(1)}% vs ${getPrevMonthName()}`;
   };
 
   return (
