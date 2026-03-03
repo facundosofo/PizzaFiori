@@ -66,7 +66,8 @@ Las queries de ventas aplican un ajuste de **`−6 horas`** sobre `fecha_creacio
 | **Endpoint** | `GET /api/dashboard/sales/total` |
 | **Servicio** | `SalesAnalyticsService.get_total_sales_with_comparison()` |
 | **Período actual** | Del **1° del mes calendario actual** hasta hoy |
-| **Período comparación** | Del **1° del mes anterior** hasta el mismo día del mes anterior (MoM) |
+| **Período comparación** | **Mes anterior completo** (día 1 hasta último día del mes anterior, MoM) |
+| **Label comparación** | Muestra el nombre real del mes anterior (ej: "vs Febrero"), calculado en el frontend |
 
 ---
 
@@ -77,7 +78,8 @@ Las queries de ventas aplican un ajuste de **`−6 horas`** sobre `fecha_creacio
 | **Endpoint** | `GET /api/dashboard/expenses/total` |
 | **Servicio** | `ExpenseAnalyticsService.get_total_expenses_with_comparison()` |
 | **Período actual** | Del **1° del mes calendario actual** hasta hoy |
-| **Período comparación** | Del **1° del mes anterior** hasta el mismo día del mes anterior (MoM) |
+| **Período comparación** | **Mes anterior completo** (día 1 hasta último día del mes anterior, MoM) |
+| **Label comparación** | Muestra el nombre real del mes anterior (ej: "vs Febrero"), calculado en el frontend |
 
 ---
 
@@ -86,8 +88,10 @@ Las queries de ventas aplican un ajuste de **`−6 horas`** sobre `fecha_creacio
 | Atributo | Detalle |
 |---|---|
 | **Fuente de datos** | Recibe `BalanceMetrics.net_profit` desde el componente padre |
-| **Período** | Mes calendario actual (1° hasta hoy), comparado con mismo período mes anterior |
+| **Período** | Mes calendario actual (1° hasta hoy) |
+| **Período comparación** | **Mes anterior completo** (MoM) |
 | **Cálculo** | `ventas − gastos` del período (resultado neto) |
+| **Label comparación** | Muestra el nombre real del mes anterior (ej: "vs Febrero") |
 
 ---
 
@@ -97,7 +101,9 @@ Las queries de ventas aplican un ajuste de **`−6 horas`** sobre `fecha_creacio
 |---|---|
 | **Fuente de datos** | Recibe `BalanceMetrics.net_margin` desde el componente padre |
 | **Período** | Mes calendario actual (1° hasta hoy) |
+| **Período comparación** | **Mes anterior completo** (MoM) |
 | **Cálculo** | `(ventas − gastos) / ventas × 100` |
+| **Label comparación** | Muestra el nombre real del mes anterior (ej: "vs Febrero") |
 
 ---
 
@@ -107,6 +113,21 @@ Las queries de ventas aplican un ajuste de **`−6 horas`** sobre `fecha_creacio
 |---|---|
 | **Fuente de datos** | Recibe `monthlyRevenue` (últimos 12 meses) — no hace llamada propia |
 | **Período mostrado** | Suma de pedidos del mes actual dentro del array mensual |
+| **Label comparación** | Muestra el nombre real del mes anterior (ej: "vs Febrero") |
+
+---
+
+### 2.6 Cards de resumen de Gastos (Tab Gastos)
+
+Las tres cards del tab Gastos (`Resultado mensual`, `Resultado anual`, `Categoría que más creció`) consumen `GET /api/dashboard/expenses/summary` → `ExpenseAnalyticsService.get_expenses_summary()`.
+
+| Card | Período actual | Período comparación |
+|---|---|---|
+| **Resultado mensual** | MTD: 1° del mes actual hasta hoy | **Mes anterior completo** (día 1 hasta último día) |
+| **Resultado anual** | YTD: 1° de enero hasta hoy | **Año anterior completo** (1° enero – 31 dic del año anterior) |
+| **Categoría que más creció** | MTD por categoría | Mes anterior completo por categoría |
+
+El label de comparación viene directamente del backend (`comparacion_mes`, `comparacion_ano`) y muestra el nombre del mes/año real (ej: "vs Febrero", "vs 2025").
 
 ---
 
@@ -263,7 +284,19 @@ El gráfico diario de ventas usa una ventana rolling de 30 días tanto en el bac
 
 ### 7.2 `getBalanceMetrics` — endpoint sin parámetros
 
-`GET /api/dashboard/balance` no acepta parámetros de período. El backend siempre calcula el mes calendario actual (1° hasta hoy) y lo compara contra el mes anterior (mismo rango de días). El frontend no envía ningún parámetro.
+`GET /api/dashboard/balance` no acepta parámetros de período. El backend siempre calcula el mes calendario actual (1° hasta hoy) y lo compara contra el **mes anterior completo** (día 1 hasta último día del mes pasado). El frontend no envía ningún parámetro.
+
+### 7.3 Aritmética de meses en `get_monthly_balance_data`
+
+El loop de 12 meses usa aritmética de calendario real en lugar de `timedelta(days=30 * i)`. Esto evita que meses de diferente longitud generen duplicados o saltos en el eje X (ej: enero apareciendo dos veces cuando el mes tiene 31 días). La fórmula correcta:
+
+```python
+month_offset = now.month - 1 - i
+year_num  = now.year + month_offset // 12
+month_num = month_offset % 12 + 1
+```
+
+Un set `seen_months` defensivo descarta cualquier duplicado residual antes de retornar los datos.
 
 ---
 
