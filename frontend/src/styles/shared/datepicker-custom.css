@@ -18,6 +18,14 @@
   cursor: pointer !important;
   min-width: 100px !important;
   transition: all 0.2s ease !important;
+  /* Tells the browser's native dropdown renderer to use a dark palette
+     so options inherit a dark background — prevents white-on-white text */
+  color-scheme: dark;
+}
+
+[data-theme="light"] .react-datepicker__month-select,
+[data-theme="light"] .react-datepicker__year-select {
+  color-scheme: light;
 }
 
 /* Capitalizar el select del mes */
@@ -47,10 +55,12 @@
               0 0 12px rgba(255, 255, 255, 0.18) !important;
 }
 
-/* Opciones dentro de los selects */
+/* Opciones dentro de los selects.
+   NOTA: los navegadores solo aceptan background-color (no gradientes)
+   en elementos <option>. Usar color sólido para evitar fallback blanco. */
 .react-datepicker__month-select option,
 .react-datepicker__year-select option {
-  background: var(--color-surface-2) !important;
+  background-color: var(--color-surface-2) !important;
   color: var(--color-text) !important;
   padding: 10px !important;
   font-weight: 500 !important;
@@ -58,13 +68,14 @@
 
 .react-datepicker__month-select option:hover,
 .react-datepicker__year-select option:hover {
-  background: var(--color-hover) !important;
+  background-color: var(--color-surface-3) !important;
   color: var(--color-text) !important;
 }
 
 .react-datepicker__month-select option:checked,
 .react-datepicker__year-select option:checked {
-  background: var(--gradient-card) !important;
+  /* Gradientes no funcionan en <option>; usar color sólido */
+  background-color: var(--color-surface-3) !important;
   color: var(--color-text) !important;
   font-weight: 700 !important;
 }
