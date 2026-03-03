@@ -30,10 +30,7 @@ const navItems = [
   { label: "Home", to: "/", icon: Home },
   { label: "Registrar venta", to: "/registrar-venta", icon: ShoppingBasket },
   { label: "Ventas", to: "/ventas", icon: Receipt },
-<<<<<<< HEAD
   { label: "Stock", to: "/stock", icon: Boxes }
-=======
->>>>>>> develop
 ];
 
 const adminNavItems = [
