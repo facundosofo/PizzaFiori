@@ -16,10 +16,8 @@ export interface TimeFilterOption {
 }
 
 export const TIME_FILTER_OPTIONS: TimeFilterOption[] = [
-  { value: 'today', label: 'Hoy', description: 'Ventas de hoy' },
-  { value: 'last_7_days', label: 'Últimos 7 días', description: 'Últimos 7 días' },
-  { value: 'last_month', label: 'Último mes', description: 'Últimos 30 días' },
-  { value: 'last_year', label: 'Último año', description: 'Últimos 12 meses' },
+  { value: 'last_month', label: 'Mes actual', description: 'Del 1° del mes hasta hoy' },
+  { value: 'last_year', label: 'Año actual', description: 'Del 1° de enero hasta hoy' },
   { value: 'all_time', label: 'Histórico', description: 'Todos los datos' },
 ];
 

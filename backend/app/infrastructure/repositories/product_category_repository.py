@@ -4,21 +4,21 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.models.category import Category
-from app.domain.repositories.category_repository import AbstractCategoryRepository
+from app.domain.models.product_category import ProductCategory
+from app.domain.repositories.product_category_repository import AbstractProductCategoryRepository
 from app.infrastructure.repositories.base import BaseRepository
 
 
-class SqlAlchemyCategoryRepository(
-    BaseRepository[Category], AbstractCategoryRepository
+class SqlAlchemyProductCategoryRepository(
+    BaseRepository[ProductCategory], AbstractProductCategoryRepository
 ):
-    model = Category
+    model = ProductCategory
 
     def __init__(self, session: AsyncSession):
         super().__init__(session)
 
-    async def list_by_active(self, activo: Optional[bool] = None) -> List[Category]:
-        """Lista categorías con filtro opcional por estado activo."""
+    async def list_by_active(self, activo: Optional[bool] = None) -> List[ProductCategory]:
+        """Lista categorías de productos con filtro opcional por estado activo."""
         query = select(self.model)
         if activo is not None:
             query = query.where(self.model.activo == activo)

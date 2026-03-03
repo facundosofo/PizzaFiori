@@ -4,8 +4,8 @@ from datetime import datetime
 
 from app.domain.models.base import Base
 
-class Category(Base):
-    __tablename__ = "Categorias"
+class ProductCategory(Base):
+    __tablename__ = "productos_categorias"
 
     id = Column(Integer, primary_key=True)
     nombre = Column(String(50), unique=True, index=True, nullable=False)
@@ -24,4 +24,4 @@ class Category(Base):
     )
 
     def __repr__(self):
-        return f"<Category(id={self.id}, nombre={self.nombre})>"
+        return f"<ProductCategory(id={self.id}, nombre={self.nombre})>"

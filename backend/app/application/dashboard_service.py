@@ -9,7 +9,7 @@ from app.domain.models.sale_item import SaleItem
 from app.domain.models.sale_item_offer_product import SaleItemOfferProduct
 from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
-from app.domain.models.category import Category
+from app.domain.models.product_category import ProductCategory as Category
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.dashboard_schemas import TipoPeriodo, FiltroTiempo
 
@@ -173,37 +173,19 @@ class DashboardService:
     def _get_start_date_for_time_filter(self, time_filter: FiltroTiempo) -> datetime | None:
         """
         Calcula la fecha de inicio según el filtro de tiempo.
-        
-        Nota: El "shift" real de -6h (ajuste de horario de negocio) lo hace SQL con dateadd().
-        Este método define el rango calendario del filtro. El ajuste temporal se aplica en la query.
-        
-        Returns:
-            datetime | None: Fecha de inicio, None para histórico (sin filtro)
+
+        Delegado en analytics_utils.get_start_date_for_time_filter.
+        Todos los filtros se anclan a períodos calendario (no rolling):
+          - ULTIMO_MES  → 1° del mes actual
+          - ULTIMO_ANO  → 1° de enero del año actual
+          - HOY         → hoy a las 00:00
+          - ULTIMOS_7_DIAS → hace 6 días a las 00:00
+          - HISTORICO   → None
         """
-        self.logger.info(f"Calculating start date for time filter: {time_filter}")
-        now = datetime.now()
-        
-        if time_filter == FiltroTiempo.HOY:
-            # Inicio del rango: hoy desde las 00:00:00
-            # El ajuste de -6h lo hace SQL (dateadd), no Python
-            result = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            self.logger.info(f"Filter is HOY, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMOS_7_DIAS:
-            result = now - timedelta(days=7)
-            self.logger.info(f"Filter is ULTIMOS_7_DIAS, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMO_MES:
-            result = now - timedelta(days=30)
-            self.logger.info(f"Filter is ULTIMO_MES, start_date: {result}")
-            return result
-        elif time_filter == FiltroTiempo.ULTIMO_ANO:
-            result = now - timedelta(days=365)
-            self.logger.info(f"Filter is ULTIMO_ANO, start_date: {result}")
-            return result
-        else:  # HISTORICO
-            self.logger.info(f"Filter is HISTORICO, no start_date (all time)")
-            return None
+        from app.application.analytics_utils import get_start_date_for_time_filter
+        result = get_start_date_for_time_filter(time_filter)
+        self.logger.info(f"Filter {time_filter} → start_date: {result}")
+        return result
 
 
     async def _get_daily_revenue(self, limit: int) -> List[dict]:
@@ -636,7 +618,7 @@ class DashboardService:
         offer_query = select(
             SaleItemOfferProduct.producto_nombre.label("name"),
             func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre).label("category"),
-            func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("total_quantity"),
             func.max(ProductPrice.precio).label("price"),
         ).select_from(
             SaleItemOfferProduct
@@ -793,7 +775,7 @@ class DashboardService:
                 Category.nombre,
                 SaleItemOfferProduct.categoria_nombre
             ).label("category"),
-            func.sum(SaleItemOfferProduct.cantidad).label("total_quantity"),
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("total_quantity"),
         ).select_from(
             SaleItemOfferProduct
         ).join(
@@ -915,7 +897,7 @@ class DashboardService:
         # PASO 4: Agregación de items en OFERTAS por venta (usando JOIN explícito en lugar de IN)
         offer_items_query = select(
             SaleItem.venta_id,
-            func.sum(SaleItemOfferProduct.cantidad).label("offer_qty")
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("offer_qty")
         ).select_from(SaleItem).join(
             SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
         ).join(
@@ -1038,3 +1020,227 @@ class DashboardService:
             for dow in ordered_days
         ]
 
+    async def get_balance_metrics(
+        self,
+        days_in_period: int = 30,
+    ) -> ServiceResult:
+        """
+        Obtiene todas las métricas de balance del período con comparativas.
+        
+        Calcula:
+        - Ventas totales (con MoM mes calendario)
+        - Gastos totales (con MoM mes calendario)
+        - Resultado neto (ventas - gastos)
+        - Margen neto ((ventas - gastos) / ventas * 100)
+        
+        Compara mes calendario actual (1° hasta hoy) vs mes calendario anterior (1° hasta mismo día).
+        
+        Args:
+            days_in_period: Ignorado (mantenido por compatibilidad)
+            
+        Returns:
+            ServiceResult con BalanceMetricsResponse
+        """
+        try:
+            async with self.uow:
+                now = datetime.now()
+                
+                # Período actual: 1° del mes actual hasta hoy
+                current_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                current_end = now
+                
+                # Período anterior: mes calendario anterior completo (día 1 hasta último día)
+                if now.month == 1:
+                    prev_year = now.year - 1
+                    prev_month = 12
+                else:
+                    prev_year = now.year
+                    prev_month = now.month - 1
+                
+                mom_start = datetime(prev_year, prev_month, 1, 0, 0, 0, 0)
+                # Fin del mes anterior = inicio del mes actual (exclusivo en la query)
+                mom_end = current_start
+                
+                # Obtener ventas
+                current_sales = await self._get_sales_total_between_dates(current_start, current_end)
+                mom_sales = await self._get_sales_total_between_dates(mom_start, mom_end)
+                
+                # Obtener gastos
+                current_expenses = await self._get_expenses_total_between_dates(current_start, current_end)
+                mom_expenses = await self._get_expenses_total_between_dates(mom_start, mom_end)
+                
+                # Siempre comparar contra el mes anterior (0 es un valor válido)
+                previous_sales = mom_sales
+                previous_expenses = mom_expenses
+                comparison_type = "MoM"
+                
+                # Calcular métricas actuales
+                net_profit = current_sales - current_expenses
+                margin = ((current_sales - current_expenses) / current_sales * 100) if current_sales > 0 else 0.0
+                
+                # Calcular métricas comparativas
+                previous_net = previous_sales - previous_expenses
+                previous_margin = ((previous_sales - previous_expenses) / previous_sales * 100) if previous_sales > 0 else 0.0
+                
+                return ServiceResult(
+                    value={
+                        "sales": {
+                            "current": float(current_sales or 0),
+                            "previous": float(previous_sales),
+                            "comparison_type": comparison_type,
+                        },
+                        "expenses": {
+                            "current": float(current_expenses or 0),
+                            "previous": float(previous_expenses),
+                            "comparison_type": comparison_type,
+                        },
+                        "net_profit": {
+                            "sales": float(current_sales or 0),
+                            "expenses": float(current_expenses or 0),
+                            "net_profit": float(net_profit),
+                            "previous_net": float(previous_net),
+                            "comparison_type": comparison_type,
+                        },
+                        "net_margin": {
+                            "sales": float(current_sales or 0),
+                            "expenses": float(current_expenses or 0),
+                            "margin": float(margin),
+                            "previous_margin": float(previous_margin),
+                            "comparison_type": comparison_type,
+                        },
+                    }
+                )
+                
+        except Exception as e:
+            self.logger.error(f"Error obteniendo métricas de balance: {str(e)}")
+            return ServiceResult(
+                error=f"Error al obtener métricas de balance: {str(e)}",
+                status_code=500
+            )
+
+    async def get_monthly_balance_data(self, period: str = "monthly") -> ServiceResult:
+        """
+        Obtiene datos de ventas y gastos agrupados por período.
+
+        Args:
+            period: "monthly" → últimos 12 meses | "yearly" → últimos 5 años
+
+        Returns:
+            ServiceResult con MonthlyBalanceListResponse
+        """
+        try:
+            async with self.uow:
+                now = datetime.now()
+                data = []
+
+                if period == "yearly":
+                    # Últimos 5 años (de más antiguo a más reciente)
+                    current_year = now.year
+                    for y in range(current_year - 4, current_year + 1):
+                        year_start = datetime(y, 1, 1, 0, 0, 0, 0)
+                        year_end   = datetime(y + 1, 1, 1, 0, 0, 0, 0)
+                        year_sales    = await self._get_sales_total_between_dates(year_start, year_end)
+                        year_expenses = await self._get_expenses_total_between_dates(year_start, year_end)
+                        data.append({
+                            "month": str(y),
+                            "sales": float(year_sales or 0),
+                            "expenses": float(year_expenses or 0),
+                        })
+                    current_month = str(current_year)
+                else:
+                    # Últimos 12 meses (de más antiguo a más reciente)
+                    month_names = [
+                        "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                        "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+                    ]
+                    seen_months: set = set()
+                    for i in range(11, -1, -1):
+                        # Aritmética de calendario real: retroceder i meses desde el mes actual
+                        month_offset = now.month - 1 - i  # índice base-0, puede ser negativo
+                        year_num  = now.year + month_offset // 12
+                        month_num = month_offset % 12 + 1
+                        # Evitar duplicados ante cualquier desajuste inesperado
+                        key = (year_num, month_num)
+                        if key in seen_months:
+                            continue
+                        seen_months.add(key)
+                        month_start = datetime(year_num, month_num, 1, 0, 0, 0, 0)
+                        if month_num == 12:
+                            month_end = datetime(year_num + 1, 1, 1, 0, 0, 0, 0)
+                        else:
+                            month_end = datetime(year_num, month_num + 1, 1, 0, 0, 0, 0)
+                        month_sales    = await self._get_sales_total_between_dates(month_start, month_end)
+                        month_expenses = await self._get_expenses_total_between_dates(month_start, month_end)
+                        data.append({
+                            "month": month_names[month_num - 1],
+                            "sales": float(month_sales or 0),
+                            "expenses": float(month_expenses or 0),
+                        })
+                    current_month = month_names[now.month - 1]
+
+                return ServiceResult(
+                    value={
+                        "data": data,
+                        "current_month": current_month,
+                    }
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error obteniendo datos de balance por período: {str(e)}")
+            return ServiceResult(
+                error=f"Error al obtener datos de balance: {str(e)}",
+                status_code=500
+            )
+
+    async def _get_sales_total_between_dates(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> float:
+        """Obtiene el total de ventas entre dos fechas"""
+        try:
+            query = select(
+                func.sum(Sale.total).label("total_sales")
+            ).where(
+                and_(
+                    Sale.fecha_creacion >= start_date,
+                    Sale.fecha_creacion < end_date
+                )
+            )
+            
+            result = await self.uow.session.execute(query)
+            row = result.scalar_one_or_none()
+            
+            return float(row) if row is not None else 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Error calculando total de ventas: {str(e)}")
+            return 0.0
+
+    async def _get_expenses_total_between_dates(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> float:
+        """Obtiene el total de gastos entre dos fechas"""
+        try:
+            from app.domain.models.expense import Expense
+            
+            query = select(
+                func.sum(Expense.monto).label("total_expenses")
+            ).where(
+                and_(
+                    Expense.activo.is_(True),
+                    Expense.fecha_pago >= start_date,
+                    Expense.fecha_pago < end_date
+                )
+            )
+            
+            result = await self.uow.session.execute(query)
+            row = result.scalar_one_or_none()
+            
+            return float(row) if row is not None else 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Error calculando total de gastos: {str(e)}")
+            return 0.0

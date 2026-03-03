@@ -3,13 +3,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .presentation.routers.product_router import router as product_router
-from .presentation.routers.category_router import router as category_router
+from .presentation.routers.product_category_router import router as product_category_router
 from .presentation.routers.offer_router import router as offer_router
 from .presentation.routers.sale_router import router as sale_router
 from .presentation.routers.dashboard_router import router as dashboard_router
 from .presentation.routers.auth_router import router as auth_router
 from .presentation.routers.user_router import router as user_router
 from .presentation.routers.audit_router import router as audit_router
+from .presentation.routers.expense_category_router import router as expense_category_router
+from .presentation.routers.expense_router import router as expense_router
 from app.domain import *
 from app.containers import Container
 from app.infrastructure.middleware.http_logging_middleware import HttpLoggingMiddleware
@@ -52,11 +54,13 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(product_router)
-app.include_router(category_router)
+app.include_router(product_category_router)
 app.include_router(offer_router)
 app.include_router(sale_router)
 app.include_router(dashboard_router)
 app.include_router(audit_router)
+app.include_router(expense_category_router)
+app.include_router(expense_router)
 
 # Ruta raíz opcional
 @app.get("/")

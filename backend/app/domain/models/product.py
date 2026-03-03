@@ -15,14 +15,14 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     sku = Column(String(50), unique=True, nullable=False, index=True)
     nombre = Column(String(50), nullable=False)
-    categoria_id = Column(Integer, ForeignKey("Categorias.id"), nullable=True)
+    categoria_id = Column(Integer, ForeignKey("productos_categorias.id"), nullable=True)
     imagen = Column(String(255), nullable=True)
     activo = Column(Boolean, nullable=False, default=True)
     fecha_creacion = Column(DateTime, default=datetime.now)
     fecha_actualizacion = Column(DateTime, default=datetime.now)
 
     categoria = relationship(
-        "Category",
+        "ProductCategory",
         back_populates="productos"
     )
 

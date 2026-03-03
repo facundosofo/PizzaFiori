@@ -18,6 +18,7 @@ interface RevenueChartProps {
   selectedPeriod: Period;
   selectedMetric: Metric;
   height?: number;
+  chartType?: 'area' | 'bar';
 }
 
 const RevenueChart = memo(({ 
@@ -26,7 +27,8 @@ const RevenueChart = memo(({
   yearlyData,
   selectedPeriod,
   selectedMetric,
-  height = 350 
+  height = 350,
+  chartType = 'area',
 }: RevenueChartProps) => {
 
   // Formatear valores según métrica seleccionada
@@ -184,7 +186,7 @@ const RevenueChart = memo(({
   return (
     <div className="chart-container">
       <ChartWrapper
-        type="area"
+        type={chartType}
         data={getData()}
         xAxisKey="displayLabel"
         series={[

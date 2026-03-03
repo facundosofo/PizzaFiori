@@ -58,7 +58,8 @@ def test_get_start_date_for_time_filter(mock_uow, mock_logger):
     service = DashboardService(uow=mock_uow, logger=mock_logger)
     fixed_now = datetime(2026, 2, 10, 15, 30, 0)
 
-    with patch("app.application.dashboard_service.datetime") as mock_datetime:
+    # Patch in analytics_utils where datetime.now() is actually called
+    with patch("app.application.analytics_utils.datetime") as mock_datetime:
         mock_datetime.now.return_value = fixed_now
 
         start_today = service._get_start_date_for_time_filter(FiltroTiempo.HOY)
@@ -67,10 +68,11 @@ def test_get_start_date_for_time_filter(mock_uow, mock_logger):
         start_year = service._get_start_date_for_time_filter(FiltroTiempo.ULTIMO_ANO)
         start_all = service._get_start_date_for_time_filter(FiltroTiempo.HISTORICO)
 
-    assert start_today == datetime(2026, 2, 10, 0, 0, 0)
-    assert start_7_days == datetime(2026, 2, 3, 15, 30, 0)
-    assert start_month == datetime(2026, 1, 11, 15, 30, 0)
-    assert start_year == datetime(2025, 2, 10, 15, 30, 0)
+    # Calendar-anchored periods (not rolling):
+    assert start_today == datetime(2026, 2, 10, 0, 0, 0)          # hoy a las 00:00
+    assert start_7_days == datetime(2026, 2, 4, 0, 0, 0)           # hace 6 días a las 00:00
+    assert start_month == datetime(2026, 2, 1, 0, 0, 0)            # 1° del mes actual
+    assert start_year == datetime(2026, 1, 1, 0, 0, 0)             # 1° de enero del año actual
     assert start_all is None
 
 

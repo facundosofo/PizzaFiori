@@ -8,8 +8,8 @@ Esta guía te ayudará a configurar y ejecutar el proyecto PizzaFiori en tu ento
 
 - **Python 3.9+** (recomendado 3.11 o superior)
 - **Node.js 18+** y npm (o yarn)
-- **SQL Server** (cualquier versión reciente) o SQL Server Express
-- **ODBC Driver 17 for SQL Server** (o superior)
+- **PostgreSQL 16+**
+- **mkcert** (para certificados SSL de desarrollo)
 - **Git** (opcional, para clonar el repositorio)
 
 ### Verificar Instalaciones
@@ -29,40 +29,50 @@ npm --version
 
 ## 🗄️ Configuración de Base de Datos
 
-### 1. Instalar SQL Server
+### 1. Instalar PostgreSQL
 
-Si no tienes SQL Server instalado:
+Si no tienes PostgreSQL instalado:
 
-1. Descarga **SQL Server Express** (gratuito) desde: https://www.microsoft.com/sql-server/sql-server-downloads
-2. Instala siguiendo el asistente
-3. Durante la instalación, configura la autenticación mixta (Windows + SQL Server)
+1. Descarga **PostgreSQL 16+** desde: https://www.postgresql.org/download/
+2. Instala siguiendo el asistente (guarda la contraseña del superusuario `postgres`)
+3. Asegúrate de que el servicio esté corriendo (puerto 5432 por defecto)
 
-### 2. Instalar ODBC Driver
+### 2. Crear la Base de Datos y el Usuario
 
-1. Descarga **ODBC Driver 17 for SQL Server** desde: https://docs.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server
-2. Instala el driver
-3. Verifica la instalación ejecutando:
-   ```bash
-   odbcinst -q -d
-   ```
-   Debe mostrar el driver instalado.
-
-### 3. Crear la Base de Datos
-
-1. Abre **SQL Server Management Studio (SSMS)** o usa **sqlcmd**
-2. Conéctate al servidor SQL Server
-3. Ejecuta el siguiente comando para crear la base de datos:
-
-```sql
-CREATE DATABASE PizzaFiori;
-GO
-```
-
-O usando sqlcmd desde la terminal:
+Abre una terminal como superusuario de PostgreSQL y ejecuta:
 
 ```bash
-sqlcmd -S localhost -Q "CREATE DATABASE PizzaFiori"
+# Conectarse como superusuario
+psql -U postgres
 ```
+
+Dentro de `psql`:
+
+```sql
+-- Crear usuario de la aplicación
+CREATE USER pizzafiori_user WITH PASSWORD 'tu_contraseña_segura';
+
+-- Crear la base de datos
+CREATE DATABASE pizzafiori OWNER pizzafiori_user;
+
+-- Salir
+\q
+```
+
+O en una sola línea desde la terminal:
+
+```bash
+psql -U postgres -c "CREATE USER pizzafiori_user WITH PASSWORD 'tu_contraseña_segura';"
+psql -U postgres -c "CREATE DATABASE pizzafiori OWNER pizzafiori_user;"
+```
+
+### 3. Verificar la Conexión
+
+```bash
+psql -U pizzafiori_user -d pizzafiori -h localhost
+```
+
+Si se conecta sin errores, la base de datos está lista.
 
 ## 🔧 Configuración del Backend
 
@@ -98,20 +108,54 @@ Crea un archivo `.env` en el directorio `backend/` con el siguiente contenido:
 app_name=PizzaFiori
 env=development
 debug=true
+
+# Base de datos PostgreSQL
 db_host=localhost
-db_name=PizzaFiori
-db_driver={ODBC Driver 17 for SQL Server}
+db_port=5432
+db_name=pizzafiori
+db_user=pizzafiori_user
+db_password=tu_contraseña_segura
+
 api_port=8000
 log_dir=logs
 log_file=app.log
+
+# JWT (requerido)
+JWT_SECRET=cambia_esto_por_un_secreto_largo_y_aleatorio
+
+# SSL (desarrollo local)
+SSL_KEY_FILE=.\certs\localhost+2-key.pem
+SSL_CERT_FILE=.\certs\localhost+2.pem
 ```
 
 **Notas importantes:**
-- `db_host`: Cambia `localhost` si tu SQL Server está en otro servidor
-- `db_driver`: Verifica el nombre exacto del driver con `odbcinst -q -d`
-- Si usas autenticación SQL Server en lugar de Windows Authentication, necesitarás modificar la cadena de conexión en `database.py`
+- `db_host` / `db_port`: Cambia los valores si PostgreSQL corre en otro servidor o puerto
+- `db_user` / `db_password`: Usa las credenciales creadas en el paso anterior
+- `JWT_SECRET`: Genera un valor aleatorio largo (mínimo 32 caracteres). Puedes usar `python -c "import secrets; print(secrets.token_hex(32))"`
+- `SSL_KEY_FILE` / `SSL_CERT_FILE`: Apuntan a los certificados en `backend/certs/` (ver paso 5)
 
-### 5. Ejecutar Migraciones
+### 5. Configurar Certificados SSL
+
+El backend y el frontend corren sobre **HTTPS** en desarrollo. Los certificados ya están incluidos en `backend/certs/`.
+
+Si necesitas regenerarlos, instala `mkcert` y ejecuta desde el directorio `backend/certs/`:
+
+```bash
+# Instalar mkcert (solo una vez por máquina)
+# Windows (con Chocolatey)
+choco install mkcert
+
+# Instalar la CA local (solo una vez)
+mkcert -install
+
+# Generar certificados para localhost
+cd backend\certs
+mkcert localhost 127.0.0.1 ::1
+```
+
+Esto genera `localhost+2-key.pem` y `localhost+2.pem` en el directorio `certs/`.
+
+### 6. Ejecutar Migraciones
 
 Las migraciones crean las tablas en la base de datos:
 
@@ -126,9 +170,9 @@ alembic current
 alembic downgrade -1
 ```
 
-### 6. Verificar la Conexión
+### 7. Verificar la Conexión a la Base de Datos
 
-Antes de ejecutar el servidor, verifica que la conexión a la base de datos funciona:
+Antes de ejecutar el servidor, verifica que la conexión a PostgreSQL funciona:
 
 ```bash
 python -c "from app.infrastructure.database import engine; import asyncio; asyncio.run(engine.connect())"
@@ -136,20 +180,30 @@ python -c "from app.infrastructure.database import engine; import asyncio; async
 
 Si no hay errores, la conexión está correcta.
 
-### 7. Ejecutar el Servidor Backend
+### 8. Ejecutar el Servidor Backend
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 \
+  --ssl-keyfile .\certs\localhost+2-key.pem \
+  --ssl-certfile .\certs\localhost+2.pem
 ```
 
-El servidor estará disponible en: **http://localhost:8000**
+En Windows (PowerShell):
 
-### 8. Verificar el Backend
+```powershell
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 `
+  --ssl-keyfile .\certs\localhost+2-key.pem `
+  --ssl-certfile .\certs\localhost+2.pem
+```
 
-- Abre tu navegador en: http://localhost:8000
+El servidor estará disponible en: **https://localhost:8000**
+
+### 9. Verificar el Backend
+
+- Abre tu navegador en: https://localhost:8000
 - Deberías ver: `{"mensaje": "API PizzaFiori funcionando"}`
-- Documentación interactiva: http://localhost:8000/docs
-- Esquema alternativo: http://localhost:8000/redoc
+- Documentación interactiva: https://localhost:8000/docs
+- Esquema alternativo: https://localhost:8000/redoc
 
 ## 🎨 Configuración del Frontend
 
@@ -170,10 +224,14 @@ npm install
 Crea un archivo `.env` en el directorio `frontend/` con:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=https://localhost:8000
+
+# Certificados SSL para el servidor de desarrollo
+VITE_CERT_KEY_PATH=../backend/certs/localhost+2-key.pem
+VITE_CERT_PATH=../backend/certs/localhost+2.pem
 ```
 
-**Nota:** Asegúrate de que la URL coincida con la del backend.
+**Nota:** Los certificados son los mismos que usa el backend. Si los regeneraste, las rutas deben apuntar al nuevo archivo.
 
 ### 4. Ejecutar el Servidor de Desarrollo
 
@@ -181,12 +239,13 @@ VITE_API_BASE_URL=http://localhost:8000
 npm run dev
 ```
 
-El frontend estará disponible en: **http://localhost:5173**
+El frontend estará disponible en: **https://localhost:5173**
 
 ### 5. Verificar el Frontend
 
-- Abre tu navegador en: http://localhost:5173
+- Abre tu navegador en: https://localhost:5173
 - Deberías ver la página principal de PizzaFiori
+- Si el navegador muestra advertencia de certificado, acepta la excepción (solo ocurre si no ejecutaste `mkcert -install`)
 
 ## ✅ Verificación Completa
 
@@ -194,34 +253,34 @@ El frontend estará disponible en: **http://localhost:5173**
 
 - [ ] Python 3.9+ instalado
 - [ ] Node.js 18+ instalado
-- [ ] SQL Server instalado y ejecutándose
-- [ ] ODBC Driver instalado
-- [ ] Base de datos `PizzaFiori` creada
+- [ ] PostgreSQL instalado y ejecutándose
+- [ ] Base de datos y usuario PostgreSQL creados
+- [ ] Certificados SSL generados en `backend/certs/`
 - [ ] Entorno virtual de Python creado y activado
 - [ ] Dependencias del backend instaladas
-- [ ] Archivo `.env` del backend configurado
+- [ ] Archivo `.env` del backend configurado (incluyendo `JWT_SECRET` y vars SSL)
 - [ ] Migraciones aplicadas correctamente
-- [ ] Backend ejecutándose en http://localhost:8000
+- [ ] Backend ejecutándose en https://localhost:8000
 - [ ] Dependencias del frontend instaladas
 - [ ] Archivo `.env` del frontend configurado
-- [ ] Frontend ejecutándose en http://localhost:5173
+- [ ] Frontend ejecutándose en https://localhost:5173
 
 ## 🐛 Solución de Problemas Comunes
 
-### Error: "No se puede conectar a SQL Server"
+### Error: "No se puede conectar a PostgreSQL"
 
 **Posibles causas:**
-1. SQL Server no está ejecutándose
-   - **Solución:** Inicia el servicio SQL Server desde "Servicios" de Windows
+1. PostgreSQL no está ejecutándose
+   - **Solución:** Inicia el servicio PostgreSQL desde "Servicios" de Windows o ejecuta `pg_ctl start`
 
-2. Nombre del servidor incorrecto
-   - **Solución:** Verifica el nombre del servidor en `db_host` del `.env`
+2. Credenciales incorrectas
+   - **Solución:** Verifica `db_user` y `db_password` en el archivo `.env`
 
-3. ODBC Driver no encontrado
-   - **Solución:** Verifica el nombre exacto del driver con `odbcinst -q -d`
+3. Base de datos o usuario no creados
+   - **Solución:** Ejecuta nuevamente los comandos `psql` de la sección "Configuración de Base de Datos"
 
-4. Autenticación incorrecta
-   - **Solución:** Si usas autenticación SQL Server, modifica `database.py` para incluir usuario y contraseña
+4. Puerto incorrecto
+   - **Solución:** Verifica que `db_port=5432` en el `.env` (o el puerto que configuraste en PostgreSQL)
 
 ### Error: "ModuleNotFoundError" en Python
 
@@ -262,11 +321,12 @@ alembic upgrade head
 
 Si ves errores de CORS al hacer peticiones desde el frontend:
 
-1. Verifica que `VITE_API_BASE_URL` en el frontend apunta al backend correcto
+1. Verifica que `VITE_API_BASE_URL` en el frontend apunta a `https://localhost:8000`
 2. Verifica que el backend tiene configurado CORS en `main.py`:
    ```python
-   allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"]
+   allow_origins=["https://localhost:5173"]
    ```
+3. Asegúrate de que tanto el backend como el frontend corren sobre **HTTPS** (no mezcles HTTP y HTTPS)
 
 ### Error: "Port already in use"
 
@@ -293,8 +353,10 @@ uvicorn app.main:app --reload --port 8001
 venv\Scripts\activate  # Windows
 source venv/bin/activate  # Linux/Mac
 
-# Ejecutar servidor
-uvicorn app.main:app --reload
+# Ejecutar servidor con SSL (Windows PowerShell)
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 `
+  --ssl-keyfile .\certs\localhost+2-key.pem `
+  --ssl-certfile .\certs\localhost+2.pem
 
 # Crear nueva migración
 alembic revision --autogenerate -m "descripción"
@@ -332,9 +394,9 @@ Para producción, considera:
    - Usar credenciales seguras para la base de datos
 
 2. **Base de datos:**
-   - Usar una instancia de SQL Server dedicada
-   - Configurar backups automáticos
-   - Usar conexiones encriptadas
+   - Usar una instancia de PostgreSQL dedicada
+   - Configurar backups automáticos con `pg_dump`
+   - Usar conexiones encriptadas (SSL en PostgreSQL)
 
 3. **Seguridad:**
    - Configurar HTTPS
@@ -363,4 +425,4 @@ Si encuentras problemas:
 
 ---
 
-**Última actualización:** Enero 2026
+**Última actualización:** Marzo 2026

@@ -41,3 +41,7 @@ class AbstractSaleRepository(ABC):
         attribute_names: Optional[list] = None,
     ) -> None:
         ...
+
+    @abstractmethod
+    async def get_distinct_years(self) -> List[int]:
+        ...

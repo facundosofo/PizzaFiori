@@ -5,7 +5,7 @@ import Badge from "./shared/Badge";
 import OfferItemForm from "./OfferItemForm";
 import type { Offer } from "../types/offer";
 import type { Product } from "../types/product";
-import type { Category } from "../types/category";
+import type { ProductoCategoria } from "../types/product_category";
 import type { OfferItemRequest } from "../types/offer_item";
 import { createOffer, updateOffer } from "../services/ofertasService";
 import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
@@ -20,7 +20,7 @@ interface OfferModalProps {
   onClose: () => void;
   onSave?: (oferta: Offer) => void;
   productos: Product[];
-  categorias: Category[];
+  categorias: ProductoCategoria[];
 }
 
 const OfferModal = ({

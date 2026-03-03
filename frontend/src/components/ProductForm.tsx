@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Product } from "../types/product";
+import { formatLocalISO } from "../utils/formatters";
 import "../styles/shared/forms.css";
 import "../styles/product-form.css";
 import env from "../config/env";
@@ -80,8 +81,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
         categoria_id: parseInt(categoria),
         imagen: producto?.imagen,
         activo: producto?.activo ?? true,
-        fecha_creacion: producto?.fecha_creacion || new Date().toISOString(),
-        fecha_actualizacion: new Date().toISOString(),
+        fecha_creacion: producto?.fecha_creacion || formatLocalISO(new Date()),
+        fecha_actualizacion: formatLocalISO(new Date()),
         sku: ""
       };
 

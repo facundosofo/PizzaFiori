@@ -18,7 +18,7 @@ class OfferItem(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     oferta_id = Column(Integer, ForeignKey("Ofertas.id"), nullable=False)
-    categoria_id = Column(Integer, ForeignKey("Categorias.id"), nullable=True)
+    categoria_id = Column(Integer, ForeignKey("productos_categorias.id"), nullable=True)
     cantidad = Column(Integer, nullable=False, default=1)
 
     oferta = relationship(
@@ -34,7 +34,7 @@ class OfferItem(Base):
     )
 
     categoria = relationship(
-        "Category",
+        "ProductCategory",
         back_populates="oferta_items",
         lazy="selectin"
     )

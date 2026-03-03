@@ -2,35 +2,38 @@ from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Query
 from dependency_injector.wiring import inject, Provide
 from typing import List, Optional
 
-from app.application.category_service import CategoryService, ServiceResult
+from app.application.product_category_service import ProductCategoryService, ServiceResult
 from app.infrastructure.cache.cache_service import CacheService
 from app.containers import Container
-from app.presentation.schemas.category_schemas import CategoriaCreateRequest, CategoriaUpdateRequest, CategoriaResponse
+from app.presentation.schemas.product_category_schemas import (
+    ProductoCategoriaCreateRequest,
+    ProductoCategoriaUpdateRequest,
+    ProductoCategoriaResponse,
+)
 from app.presentation.routers.dependencies import get_current_user, require_admin
 
 router = APIRouter(
-    prefix="/categorias",
-    tags=["Categorías"],
+    prefix="/productos-categorias",
+    tags=["Productos Categorias"],
     dependencies=[Depends(get_current_user)],
 )
 
 
 @router.post(
     "/",
-    response_model=CategoriaResponse,
+    response_model=ProductoCategoriaResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Crear una categoría",
+    summary="Crear una categoría de producto",
     description="Crea una nueva categoría de productos.",
-    responses={400: {"description": "Datos inválidos de la categoría"}, 403: {"description": "Admin access required"}}
+    responses={400: {"description": "Datos inválidos"}, 403: {"description": "Admin access required"}}
 )
 @inject
-async def create_categoria(
+async def create_producto_categoria(
     request: Request,
-    categoria: CategoriaCreateRequest = Body(..., description="Datos de la categoría a crear"),
+    categoria: ProductoCategoriaCreateRequest = Body(..., description="Datos de la categoría a crear"),
     admin_user: dict = Depends(require_admin),
-    service: CategoryService = Depends(Provide[Container.category_service])
+    service: ProductCategoryService = Depends(Provide[Container.product_category_service])
 ):
-    
     result: ServiceResult = await service.create(
         categoria,
         username=admin_user["username"],
@@ -42,81 +45,73 @@ async def create_categoria(
 
 @router.get(
     "/",
-    response_model=List[CategoriaResponse],
-    summary="Obtener todas las categorías",
+    response_model=List[ProductoCategoriaResponse],
+    summary="Obtener todas las categorías de productos",
     description="Devuelve la lista de todas las categorías con filtro opcional por estado activo.",
 )
 @inject
-async def get_categorias(
+async def get_productos_categorias(
     activo: Optional[bool] = Query(None, description="Filtrar por estado activo (true/false). Si no se especifica, devuelve todas."),
-    service: CategoryService = Depends(Provide[Container.category_service]),
+    service: ProductCategoryService = Depends(Provide[Container.product_category_service]),
     cache_service: CacheService = Depends(Provide[Container.cache_service])
 ):
-    # Generate cache key based on query parameters
-    cache_key = f"categoria_list_act_{activo}"
-    
-    # Try to get from cache
+    cache_key = f"producto_categoria_list_act_{activo}"
+
     cached = cache_service.get(cache_key)
     if cached is not None:
         return cached.copy()
-    
-    # If not cached, fetch from database with parameters
+
     categorias = await service.get_all(activo=activo)
-    
-    # Convert ORM objects to Pydantic schemas and cache
-    response_data = [CategoriaResponse.model_validate(c) for c in categorias]
+
+    response_data = [ProductoCategoriaResponse.model_validate(c) for c in categorias]
     cache_service.set(cache_key, response_data)
-    
+
     return response_data
 
 
 @router.get(
     "/{categoria_id}",
-    response_model=CategoriaResponse,
-    summary="Obtener una categoría por ID",
+    response_model=ProductoCategoriaResponse,
+    summary="Obtener una categoría de producto por ID",
     description="Devuelve una categoría específica por su ID.",
     responses={404: {"description": "Categoría no encontrada"}}
 )
 @inject
-async def get_categoria(
+async def get_producto_categoria(
     categoria_id: int = Path(..., ge=1, description="ID único de la categoría"),
-    service: CategoryService = Depends(Provide[Container.category_service]),
+    service: ProductCategoryService = Depends(Provide[Container.product_category_service]),
     cache_service: CacheService = Depends(Provide[Container.cache_service])
 ):
-    # Generate cache key based on category ID
-    cache_key = f"categoria_{categoria_id}"
-    
-    # Try to get from cache
+    cache_key = f"producto_categoria_{categoria_id}"
+
     cached = cache_service.get(cache_key)
     if cached is not None:
         return cached.copy() if isinstance(cached, dict) else cached
-    
-    # If not cached, fetch from database
+
     result: ServiceResult = await service.get_by_id(categoria_id)
     if result.error:
         raise HTTPException(status_code=result.status_code, detail=result.error)
-    
-    # Convert ORM object to Pydantic schema and cache
-    response_data = CategoriaResponse.model_validate(result.value)
+
+    response_data = ProductoCategoriaResponse.model_validate(result.value)
     cache_service.set(cache_key, response_data)
-    
+
     return response_data
 
 
 @router.put(
     "/{categoria_id}",
-    response_model=CategoriaResponse,
-    summary="Actualizar una categoría",
+    response_model=ProductoCategoriaResponse,
+    summary="Actualizar una categoría de producto",
     description="Actualiza los campos de una categoría existente.",
     responses={404: {"description": "Categoría no encontrada"}, 403: {"description": "Admin access required"}}
 )
 @inject
-async def update_categoria(
+async def update_producto_categoria(
     request: Request,
     categoria_id: int = Path(..., ge=1, description="ID de la categoría a actualizar"),
-    categoria: CategoriaUpdateRequest = Body(..., description="Campos a actualizar"),
+    categoria: ProductoCategoriaUpdateRequest = Body(..., description="Campos a actualizar"),
     admin_user: dict = Depends(require_admin),
-    service: CategoryService = Depends(Provide[Container.category_service])
+    service: ProductCategoryService = Depends(Provide[Container.product_category_service])
 ):
     result: ServiceResult = await service.update(
         categoria_id,
@@ -130,22 +125,21 @@ async def update_categoria(
 
 @router.patch(
     "/{categoria_id}/desactivar",
-    response_model=CategoriaResponse,
-    summary="Desactivar una categoría",
-    description="Cambia el estado activo de una categoría.",
+    response_model=ProductoCategoriaResponse,
+    summary="Desactivar una categoría de producto",
+    description="Desactiva la categoría y sus productos/ofertas asociados en cascada.",
     responses={
         404: {"description": "Categoría no encontrada"},
         403: {"description": "Admin access required"}
     }
 )
 @inject
-async def deactivate_categoria(
+async def deactivate_producto_categoria(
     request: Request,
     categoria_id: int = Path(..., ge=1, description="ID único de la categoría"),
     admin_user: dict = Depends(require_admin),
-    service: CategoryService = Depends(Provide[Container.category_service])
+    service: ProductCategoryService = Depends(Provide[Container.product_category_service])
 ):
-  
     result: ServiceResult = await service.deactivate(
         categoria_id,
         username=admin_user["username"]

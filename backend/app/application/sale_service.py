@@ -537,6 +537,19 @@ class SaleService:
             )
             return 0
 
+    async def get_available_years(self) -> List[int]:
+        """Retorna los años que tienen ventas registradas."""
+        try:
+            async with self.uow as uow:
+                return await uow.sale_repo.get_distinct_years()
+        except Exception as e:
+            self.logger.error(
+                "Error al obtener años disponibles",
+                error=str(e),
+                exc_info=True,
+            )
+            return []
+
     async def update(
         self, 
         sale_id: int, 
