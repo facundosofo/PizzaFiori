@@ -6,7 +6,7 @@ import type { ReportMode, ReportRequest, ReportType, DateRangeMode } from "../se
 import { getAvailableYears } from "../services/reportService";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/shared/datepicker-custom.css";
-import "../styles/sales-filters.css";
+import "../styles/shared/filter-bar.css";
 
 registerLocale("es", es);
 

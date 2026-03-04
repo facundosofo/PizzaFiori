@@ -1,9 +1,10 @@
-import { forwardRef, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
-import { Calendar } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import * as Icons from "../components/shared/Icons";
+import DateRangeInput from "../components/shared/DateRangeInput";
+import FilterBar from "../components/shared/FilterBar";
 import ErrorAlert from "../components/shared/ErrorAlert";
 import ConfirmDialog from "../components/shared/ConfirmDialog";
 import ExpenseModal from "../components/ExpenseModal";
@@ -18,28 +19,6 @@ import "../styles/shared/datepicker-custom.css";
 import "../styles/expenses.css";
 
 registerLocale("es", es);
-
-type DateRangeInputProps = {
-  value?: string;
-  onClick?: () => void;
-  placeholder?: string;
-};
-
-const DateRangeInput = forwardRef<HTMLButtonElement, DateRangeInputProps>(
-  ({ value, onClick, placeholder }, ref) => (
-    <button
-      type="button"
-      className="filter-date-input filter-date-input-icon"
-      onClick={onClick}
-      ref={ref}
-    >
-      <Calendar size={16} className="filter-date-icon" />
-      <span className="filter-date-label">{value || placeholder}</span>
-    </button>
-  )
-);
-
-DateRangeInput.displayName = "DateRangeInput";
 
 const ExpensesPage = () => {
   const { user } = useAuth();
@@ -62,6 +41,14 @@ const ExpensesPage = () => {
   const [dateFrom, dateTo] = dateRange;
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("");
   const [subcategoriaFiltro, setSubcategoriaFiltro] = useState<string>("");
+
+  // Applied filters (only applied on Search click)
+  const [appliedFilters, setAppliedFilters] = useState({
+    dateFrom: null as Date | null,
+    dateTo: null as Date | null,
+    categoriaFiltro: "",
+    subcategoriaFiltro: "",
+  });
 
   const categoriasActivas = useMemo(
     () => categorias.filter((item) => item.activo),
@@ -123,17 +110,15 @@ const ExpensesPage = () => {
       setLoading(true);
       setError(null);
 
+      const catId = appliedFilters.subcategoriaFiltro
+        ? Number(appliedFilters.subcategoriaFiltro)
+        : appliedFilters.categoriaFiltro
+          ? Number(appliedFilters.categoriaFiltro)
+          : null;
+
       const [categoriasData, gastosData] = await Promise.all([
         getGastosCategorias(),
-        getGastos(
-          dateFrom,
-          dateTo,
-          subcategoriaFiltro
-            ? Number(subcategoriaFiltro)
-            : categoriaFiltro
-              ? Number(categoriaFiltro)
-              : null
-        ),
+        getGastos(appliedFilters.dateFrom, appliedFilters.dateTo, catId),
       ]);
 
       setCategorias(categoriasData || []);
@@ -148,11 +133,11 @@ const ExpensesPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [dateFrom, dateTo, categoriaFiltro, subcategoriaFiltro]);
+  }, [appliedFilters]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [dateFrom, dateTo, categoriaFiltro, subcategoriaFiltro]);
+  }, [appliedFilters]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -165,6 +150,29 @@ const ExpensesPage = () => {
       const today = new Date();
       setDateRange([dateFrom, today]);
     }
+  };
+
+  const handleSearch = () => {
+    setAppliedFilters({
+      dateFrom,
+      dateTo,
+      categoriaFiltro,
+      subcategoriaFiltro,
+    });
+    setCurrentPage(1);
+  };
+
+  const handleClear = () => {
+    setDateRange([null, null]);
+    setCategoriaFiltro("");
+    setSubcategoriaFiltro("");
+    setAppliedFilters({
+      dateFrom: null,
+      dateTo: null,
+      categoriaFiltro: "",
+      subcategoriaFiltro: "",
+    });
+    setCurrentPage(1);
   };
 
   const handlePrevPage = () => {
@@ -336,88 +344,71 @@ const ExpensesPage = () => {
         onCancel={() => setShowDeleteConfirm(false)}
       />
 
-      <section className="expenses-filters">
-        <div className="expenses-filters-row">
-          <div className="filter-group filter-group-range">
-            <label htmlFor="date-range">Rango de fechas</label>
-            <DatePicker
-              id="date-range"
-              selectsRange={true}
-              startDate={dateFrom}
-              endDate={dateTo}
-              onChange={(update) => {
-                setDateRange(update as [Date | null, Date | null]);
-              }}
-              onCalendarClose={handleCalendarClose}
-              dateFormat="dd/MM/yyyy"
-              maxDate={new Date()}
-              placeholderText="Seleccionar Desde - Hasta"
-              calendarClassName="custom-calendar"
-              showMonthDropdown
-              showYearDropdown
-              dropdownMode="select"
-              popperPlacement="bottom-start"
-              autoComplete="off"
-              monthsShown={1}
-              locale="es"
-              formatWeekDay={(day) => day.charAt(0).toUpperCase()}
-              customInput={<DateRangeInput placeholder="Seleccionar Desde - Hasta" />}
-            />
-          </div>
+      <FilterBar onSearch={handleSearch} onClear={handleClear}>
+        <div className="filter-group filter-group-range">
+          <label htmlFor="date-range">Rango de fechas</label>
+          <DatePicker
+            id="date-range"
+            selectsRange={true}
+            startDate={dateFrom}
+            endDate={dateTo}
+            onChange={(update) => {
+              setDateRange(update as [Date | null, Date | null]);
+            }}
+            onCalendarClose={handleCalendarClose}
+            dateFormat="dd/MM/yyyy"
+            maxDate={new Date()}
+            placeholderText="Seleccionar Desde - Hasta"
+            calendarClassName="custom-calendar"
+            showMonthDropdown
+            showYearDropdown
+            dropdownMode="select"
+            popperPlacement="bottom-start"
+            autoComplete="off"
+            monthsShown={1}
+            locale="es"
+            formatWeekDay={(day) => day.charAt(0).toUpperCase()}
+            customInput={<DateRangeInput placeholder="Seleccionar Desde - Hasta" />}
+          />
+        </div>
 
+        <div className="filter-group">
+          <label>Categoria</label>
+          <select
+            className="filter-select"
+            value={categoriaFiltro}
+            onChange={(e) => {
+              setCategoriaFiltro(e.target.value);
+              setSubcategoriaFiltro("");
+            }}
+          >
+            <option value="">Todas</option>
+            {categoriasPadre.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {subcategoriasDisponibles.length > 0 && (
           <div className="filter-group">
-            <label>Categoria</label>
+            <label>Subcategoria</label>
             <select
               className="filter-select"
-              value={categoriaFiltro}
-              onChange={(e) => {
-                setCategoriaFiltro(e.target.value);
-                setSubcategoriaFiltro("");
-              }}
+              value={subcategoriaFiltro}
+              onChange={(e) => setSubcategoriaFiltro(e.target.value)}
             >
               <option value="">Todas</option>
-              {categoriasPadre.map((item) => (
+              {subcategoriasDisponibles.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.nombre}
                 </option>
               ))}
             </select>
           </div>
-
-          {subcategoriasDisponibles.length > 0 && (
-            <div className="filter-group">
-              <label>Subcategoria</label>
-              <select
-                className="filter-select"
-                value={subcategoriaFiltro}
-                onChange={(e) => setSubcategoriaFiltro(e.target.value)}
-              >
-                <option value="">Todas</option>
-                {subcategoriasDisponibles.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="filter-actions">
-            <button
-              className="filter-btn clear"
-              onClick={() => {
-                setDateRange([null, null]);
-                setCategoriaFiltro("");
-                setSubcategoriaFiltro("");
-              }}
-              title="Limpiar filtros"
-            >
-              <Icons.XIcon size={18} />
-              <span>Limpiar</span>
-            </button>
-          </div>
-        </div>
-      </section>
+        )}
+      </FilterBar>
 
       <div className="expenses-table">
         {loading ? (

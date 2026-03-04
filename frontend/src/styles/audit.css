@@ -1,4 +1,5 @@
 @import './shared/page-header.css';
+@import './shared/filter-bar.css';
 
 .audit-container {
   width: 100%;
@@ -62,138 +63,6 @@
   color: var(--color-text-muted);
   font-size: 1.1rem;
   margin: 0;
-}
-
-.audit-filters {
-  background: var(--gradient-card);
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
-  padding: 20px 25px;
-  margin-bottom: 25px;
-  box-shadow: var(--shadow-card), 0 0 0 1px var(--color-border);
-}
-
-.audit-filters-row {
-  display: flex;
-  gap: 14px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.audit-filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.audit-filter-group label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-text);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.audit-filter-date-input {
-  padding: 10px 12px;
-  background: var(--gradient-card);
-  border: 2px solid var(--color-border-strong);
-  border-radius: 10px;
-  color: var(--color-text);
-  font-size: 0.95rem;
-  font-weight: 500;
-  font-family: inherit;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  text-transform: capitalize;
-}
-
-.audit-filter-date-input:hover {
-  border-color: var(--color-border-strong);
-  background: var(--gradient-card-hover);
-}
-
-.audit-filter-date-icon {
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.audit-filter-date-label {
-  color: inherit;
-}
-
-.audit-filter-input,
-.audit-filter-select {
-  padding: 9px 12px;
-  border-radius: 8px;
-  border: 2px solid var(--color-border-strong);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-}
-
-.audit-filter-input:focus,
-.audit-filter-select:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-}
-
-.audit-filter-select {
-  cursor: pointer;
-  appearance: none;
-  background: var(--color-surface-2);
-}
-
-.audit-filter-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  align-self: end;
-  margin-left: auto;
-}
-
-.audit-filter-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border: 2px solid;
-}
-
-.audit-filter-btn.search {
-  background: var(--gradient-accent);
-  border-color: var(--color-accent);
-  color: #fff;
-}
-
-.audit-filter-btn.search:hover {
-  box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
-  transform: translateY(-2px);
-}
-
-.audit-filter-btn.clear {
-  background: transparent;
-  border-color: rgba(239, 68, 68, 0.4);
-  color: var(--color-danger);
-}
-
-.audit-filter-btn.clear:hover {
-  background: var(--color-danger-bg);
-  border-color: var(--color-danger);
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
-  transform: translateY(-2px);
 }
 
 .audit-table {
@@ -470,14 +339,6 @@
 }
 
 @media (max-width: 1200px) {
-  .audit-filters-row {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .audit-filter-actions {
-    justify-content: flex-start;
-  }
-
   .audit-table-header,
   .audit-table-row {
     grid-template-columns: 16% 14% 12% 8% 10% 1fr 50px;

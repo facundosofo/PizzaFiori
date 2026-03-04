@@ -1,13 +1,14 @@
-import { forwardRef, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
-import { Calendar } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import type { AuditLog } from "../services/auditService";
 import { searchAuditLogs } from "../services/auditService";
 import userManagementService from "../services/userManagementService";
 import type { User } from "../services/userService";
 import { formatDateTimeDisplay, validateDateRange } from "../utils/formatters";
+import DateRangeInput from "../components/shared/DateRangeInput";
+import FilterBar from "../components/shared/FilterBar";
 import ErrorAlert from "../components/shared/ErrorAlert";
 import SkeletonLoader from "../components/shared/SkeletonLoader";
 import * as Icons from "../components/shared/Icons";
@@ -16,28 +17,6 @@ import "../styles/shared/datepicker-custom.css";
 import "../styles/audit.css";
 
 registerLocale("es", es);
-
-type DateRangeInputProps = {
-  value?: string;
-  onClick?: () => void;
-  placeholder?: string;
-};
-
-const DateRangeInput = forwardRef<HTMLButtonElement, DateRangeInputProps>(
-  ({ value, onClick, placeholder }, ref) => (
-    <button
-      type="button"
-      className="audit-filter-date-input"
-      onClick={onClick}
-      ref={ref}
-    >
-      <Calendar size={16} className="audit-filter-date-icon" />
-      <span className="audit-filter-date-label">{value || placeholder}</span>
-    </button>
-  )
-);
-
-DateRangeInput.displayName = "DateRangeInput";
 
 const ENTITY_OPTIONS = [
   { label: "Todas", value: "" },
@@ -352,119 +331,106 @@ const AuditPage = () => {
         <h1 className="page-title">Auditoria</h1>
       </div>
 
-      <div className="audit-filters">
-        <div className="audit-filters-row">
-          <div className="audit-filter-group audit-filter-group-range">
-            <label htmlFor="audit-date-range">Rango de fechas</label>
-            <DatePicker
-              id="audit-date-range"
-              selectsRange={true}
-              startDate={dateFrom}
-              endDate={dateTo}
-              onChange={(update) => {
-                setDateRange(update as [Date | null, Date | null]);
-              }}
-              onCalendarClose={() => {
-                if (dateFrom && !dateTo) {
-                  setDateRange([dateFrom, today]);
-                }
-              }}
-              dateFormat="dd/MM/yyyy"
-              maxDate={today}
-              placeholderText="Seleccionar Desde - Hasta"
-              calendarClassName="custom-calendar"
-              showMonthDropdown
-              showYearDropdown
-              dropdownMode="select"
-              popperPlacement="bottom-start"
-              autoComplete="off"
-              monthsShown={1}
-              locale="es"
-              formatWeekDay={(day) => day.charAt(0).toUpperCase()}
-              customInput={<DateRangeInput placeholder="Seleccionar Desde - Hasta" />}
-            />
-          </div>
-
-          <div className="audit-filter-group">
-            <label htmlFor="audit-username">Usuario</label>
-            <select
-              id="audit-username"
-              className="audit-filter-select"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-            >
-              <option value="">Todos</option>
-              {userOptions.map((option) => (
-                <option key={option.id} value={option.username}>
-                  {option.username} - {option.first_name} {option.last_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="audit-filter-group">
-            <label htmlFor="audit-entity">Entidad</label>
-            <select
-              id="audit-entity"
-              className="audit-filter-select"
-              value={entityType}
-              onChange={(event) => setEntityType(event.target.value)}
-            >
-              {ENTITY_OPTIONS.map((option) => (
-                <option key={option.label} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="audit-filter-group">
-            <label htmlFor="audit-action">Accion</label>
-            <select
-              id="audit-action"
-              className="audit-filter-select"
-              value={action}
-              onChange={(event) => setAction(event.target.value)}
-            >
-              {ACTION_OPTIONS.map((option) => (
-                <option key={option.label} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="audit-filter-group audit-filter-group-limit">
-            <label htmlFor="audit-limit">Mostrar</label>
-            <select
-              id="audit-limit"
-              className="audit-filter-select"
-              value={limit}
-              onChange={(event) => {
-                setLimit(Number(event.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              {[10, 25, 50, 100].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="audit-filter-actions">
-            <button className="audit-filter-btn search" onClick={handleSearch}>
-              <Icons.SearchIcon size={18} />
-              <span>Buscar</span>
-            </button>
-            <button className="audit-filter-btn clear" onClick={handleClear}>
-              <Icons.XIcon size={18} />
-              <span>Limpiar</span>
-            </button>
-          </div>
+      <FilterBar onSearch={handleSearch} onClear={handleClear} error={error}>
+        <div className="filter-group filter-group-range">
+          <label htmlFor="audit-date-range">Rango de fechas</label>
+          <DatePicker
+            id="audit-date-range"
+            selectsRange={true}
+            startDate={dateFrom}
+            endDate={dateTo}
+            onChange={(update) => {
+              setDateRange(update as [Date | null, Date | null]);
+            }}
+            onCalendarClose={() => {
+              if (dateFrom && !dateTo) {
+                setDateRange([dateFrom, today]);
+              }
+            }}
+            dateFormat="dd/MM/yyyy"
+            maxDate={today}
+            placeholderText="Seleccionar Desde - Hasta"
+            calendarClassName="custom-calendar"
+            showMonthDropdown
+            showYearDropdown
+            dropdownMode="select"
+            popperPlacement="bottom-start"
+            autoComplete="off"
+            monthsShown={1}
+            locale="es"
+            formatWeekDay={(day) => day.charAt(0).toUpperCase()}
+            customInput={<DateRangeInput placeholder="Seleccionar Desde - Hasta" />}
+          />
         </div>
-      </div>
+
+        <div className="filter-group">
+          <label htmlFor="audit-username">Usuario</label>
+          <select
+            id="audit-username"
+            className="filter-select"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          >
+            <option value="">Todos</option>
+            {userOptions.map((option) => (
+              <option key={option.id} value={option.username}>
+                {option.username} - {option.first_name} {option.last_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="audit-entity">Entidad</label>
+          <select
+            id="audit-entity"
+            className="filter-select"
+            value={entityType}
+            onChange={(event) => setEntityType(event.target.value)}
+          >
+            {ENTITY_OPTIONS.map((option) => (
+              <option key={option.label} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="audit-action">Accion</label>
+          <select
+            id="audit-action"
+            className="filter-select"
+            value={action}
+            onChange={(event) => setAction(event.target.value)}
+          >
+            {ACTION_OPTIONS.map((option) => (
+              <option key={option.label} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="audit-limit">Mostrar</label>
+          <select
+            id="audit-limit"
+            className="filter-select"
+            value={limit}
+            onChange={(event) => {
+              setLimit(Number(event.target.value));
+              setCurrentPage(1);
+            }}
+          >
+            {[10, 25, 50, 100].map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </div>
+      </FilterBar>
 
       <ErrorAlert message={error} onClose={() => setError(null)} />
 
