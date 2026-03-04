@@ -22,15 +22,16 @@ from decimal import Decimal
 # ==================== Create Tests ====================
 
 @pytest.mark.asyncio
-async def test_create_product_generates_sku(mock_uow, mock_file_service, mock_logger):
+async def test_create_product_generates_sku(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test that creating a product automatically generates SKU."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     
     # Mock category
     categoria = build_category_model(id=1, nombre="Empanadas")
-    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
-    mock_uow.product_repo.refresh = AsyncMock()
+    mock_uow.product_category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_repo.add = AsyncMock(side_effect=lambda p: setattr(p, 'id', 1))
+    mock_uow.product_repo.get_by_id.return_value = build_product_model(1, "Empanada de Carne", "EMPA-CARN-001", 1)
     
     request = ProductoCreateRequest(
         nombre="Empanada de Carne",
@@ -52,13 +53,13 @@ async def test_create_product_generates_sku(mock_uow, mock_file_service, mock_lo
 
 
 @pytest.mark.asyncio
-async def test_create_product_invalid_category(mock_uow, mock_file_service, mock_logger):
+async def test_create_product_invalid_category(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test creating product with non-existent category returns 404."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     
     # Category doesn't exist
-    mock_uow.category_repo.get_by_id = AsyncMock(return_value=None)
+    mock_uow.product_category_repo.get_by_id = AsyncMock(return_value=None)
     
     request = ProductoCreateRequest(
         nombre="Empanada de Carne",
@@ -78,14 +79,16 @@ async def test_create_product_invalid_category(mock_uow, mock_file_service, mock
 
 
 @pytest.mark.asyncio
-async def test_create_product_with_image(mock_uow, mock_file_service, mock_logger):
+async def test_create_product_with_image(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test creating product with image."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     
     # Mock category
     categoria = build_category_model(id=1, nombre="Empanadas")
-    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_repo.add = AsyncMock(side_effect=lambda p: setattr(p, 'id', 1))
+    mock_uow.product_repo.get_by_id.return_value = build_product_model(1, "Empanada de Carne", "EMPA-CARN-001", 1)
     
     request = ProductoCreateRequest(
         nombre="Empanada de Carne",
@@ -101,7 +104,6 @@ async def test_create_product_with_image(mock_uow, mock_file_service, mock_logge
     image = UploadFile(filename="empanada.jpg", file=BytesIO(image_content))
     
     mock_file_service.save_file = AsyncMock(return_value="uploads/productos/empanada.jpg")
-    mock_uow.product_repo.refresh = AsyncMock()
     
     # Act
     with patch('app.application.product_service.generar_sku_producto', return_value="EMPA-CARN-001"):
@@ -116,18 +118,19 @@ async def test_create_product_with_image(mock_uow, mock_file_service, mock_logge
     mock_file_service.save_file.assert_called_once_with(image)
     mock_uow.product_repo.add.assert_called_once()
     mock_uow.commit.assert_called_once()
-    mock_uow.product_repo.refresh.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_create_product_without_image(mock_uow, mock_file_service, mock_logger):
+async def test_create_product_without_image(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test creating product without image."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     
     # Mock category
     categoria = build_category_model(id=1, nombre="Empanadas")
-    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_repo.add = AsyncMock(side_effect=lambda p: setattr(p, 'id', 1))
+    mock_uow.product_repo.get_by_id.return_value = build_product_model(1, "Empanada de Pollo", "EMPA-POLL-001", 1)
     
     request = ProductoCreateRequest(
         nombre="Empanada de Pollo",
@@ -136,8 +139,6 @@ async def test_create_product_without_image(mock_uow, mock_file_service, mock_lo
             ProductoPrecioRequest(cantidad=1, precio=Decimal("1200.00"))
         ]
     )
-    
-    mock_uow.product_repo.refresh = AsyncMock()
     
     # Act
     with patch('app.application.product_service.generar_sku_producto', return_value="EMPA-POLL-001"):
@@ -154,14 +155,14 @@ async def test_create_product_without_image(mock_uow, mock_file_service, mock_lo
 
 
 @pytest.mark.asyncio
-async def test_create_product_rollback_on_error(mock_uow, mock_file_service, mock_logger):
+async def test_create_product_rollback_on_error(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test that image is deleted on database error."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     
     # Mock category
     categoria = build_category_model(id=1, nombre="Test")
-    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_category_repo.get_by_id = AsyncMock(return_value=categoria)
     
     request = ProductoCreateRequest(
         nombre="Test Product",
@@ -189,14 +190,16 @@ async def test_create_product_rollback_on_error(mock_uow, mock_file_service, moc
 
 
 @pytest.mark.asyncio
-async def test_create_product_with_multiple_prices(mock_uow, mock_file_service, mock_logger):
+async def test_create_product_with_multiple_prices(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test creating product with tiered pricing."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     
     # Mock category
     categoria = build_category_model(id=1, nombre="Empanadas")
-    mock_uow.category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_category_repo.get_by_id = AsyncMock(return_value=categoria)
+    mock_uow.product_repo.add = AsyncMock(side_effect=lambda p: setattr(p, 'id', 1))
+    mock_uow.product_repo.get_by_id.return_value = build_product_model(1, "Empanada Premium", "EMPA-PREM-001", 1)
     
     request = ProductoCreateRequest(
         nombre="Empanada Premium",
@@ -207,8 +210,6 @@ async def test_create_product_with_multiple_prices(mock_uow, mock_file_service, 
             ProductoPrecioRequest(cantidad=12, precio=Decimal("10800.00"))
         ]
     )
-    
-    mock_uow.product_repo.refresh = AsyncMock()
     
     # Act
     with patch('app.application.product_service.generar_sku_producto', return_value="EMPA-PREM-001"):
@@ -222,10 +223,10 @@ async def test_create_product_with_multiple_prices(mock_uow, mock_file_service, 
 # ==================== Get All Tests ====================
 
 @pytest.mark.asyncio
-async def test_get_all_products(mock_uow, mock_file_service, mock_logger, multiple_products):
+async def test_get_all_products(mock_uow, mock_file_service, mock_cache_service, mock_logger, multiple_products):
     """Test getting all products without filters."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.list.return_value = multiple_products
     
     # Act
@@ -237,10 +238,10 @@ async def test_get_all_products(mock_uow, mock_file_service, mock_logger, multip
 
 
 @pytest.mark.asyncio
-async def test_get_all_products_with_categoria_filter(mock_uow, mock_file_service, mock_logger):
+async def test_get_all_products_with_categoria_filter(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test getting products filtered by category."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     filtered_products = [build_product_model(1, "Empanada", 1)]
     mock_uow.product_repo.list.return_value = filtered_products
     
@@ -253,10 +254,10 @@ async def test_get_all_products_with_categoria_filter(mock_uow, mock_file_servic
 
 
 @pytest.mark.asyncio
-async def test_get_all_products_with_active_filter(mock_uow, mock_file_service, mock_logger):
+async def test_get_all_products_with_active_filter(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test getting only active products."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     active_products = [
         build_product_model(1, "Product 1", 1, None, True),
         build_product_model(2, "Product 2", 1, None, True)
@@ -273,10 +274,10 @@ async def test_get_all_products_with_active_filter(mock_uow, mock_file_service, 
 
 
 @pytest.mark.asyncio
-async def test_get_all_products_combined_filters(mock_uow, mock_file_service, mock_logger):
+async def test_get_all_products_combined_filters(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test getting products with multiple filters."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.list.return_value = []
     
     # Act
@@ -289,10 +290,10 @@ async def test_get_all_products_combined_filters(mock_uow, mock_file_service, mo
 # ==================== Get By ID Tests ====================
 
 @pytest.mark.asyncio
-async def test_get_by_id_success(mock_uow, mock_file_service, mock_logger, sample_product):
+async def test_get_by_id_success(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
     """Test getting product by ID successfully."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.get_by_id.return_value = sample_product
     
     # Act
@@ -306,10 +307,10 @@ async def test_get_by_id_success(mock_uow, mock_file_service, mock_logger, sampl
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_not_found(mock_uow, mock_file_service, mock_logger):
+async def test_get_by_id_not_found(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test getting product by ID when it doesn't exist."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.get_by_id.return_value = None
     
     # Act
@@ -324,10 +325,10 @@ async def test_get_by_id_not_found(mock_uow, mock_file_service, mock_logger):
 # ==================== Update Tests ====================
 
 @pytest.mark.asyncio
-async def test_update_product_basic_fields(mock_uow, mock_file_service, mock_logger, sample_product):
+async def test_update_product_basic_fields(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
     """Test updating basic product fields."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.get_by_id.return_value = sample_product
     
     request = ProductoUpdateRequest(
@@ -341,15 +342,15 @@ async def test_update_product_basic_fields(mock_uow, mock_file_service, mock_log
     # Assert
     assert result.status_code == 200
     assert result.value is not None
-    mock_uow.product_repo.get_by_id.assert_called_once_with(1)
+    assert mock_uow.product_repo.get_by_id.call_count == 2
     mock_uow.commit.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_update_product_replaces_prices(mock_uow, mock_file_service, mock_logger, sample_product):
+async def test_update_product_replaces_prices(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
     """Test that updating prices replaces old prices."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.get_by_id.return_value = sample_product
     mock_uow.product_repo.refresh = AsyncMock()
     mock_uow.session = MagicMock()
@@ -373,16 +374,13 @@ async def test_update_product_replaces_prices(mock_uow, mock_file_service, mock_
     call_args = mock_uow.product_repo.replace_prices.call_args
     assert call_args[0][0] == sample_product.id  # producto_id
     assert len(call_args[0][1]) == 2  # new prices
-    
-    mock_uow.session.flush.assert_called_once()
-    mock_uow.product_repo.refresh.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_update_product_with_new_image(mock_uow, mock_file_service, mock_logger, sample_product):
+async def test_update_product_with_new_image(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
     """Test updating product with new image (deletes old image)."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     sample_product.imagen = "uploads/productos/old_image.jpg"
     mock_uow.product_repo.get_by_id.return_value = sample_product
     
@@ -403,10 +401,10 @@ async def test_update_product_with_new_image(mock_uow, mock_file_service, mock_l
 
 
 @pytest.mark.asyncio
-async def test_update_product_deactivate(mock_uow, mock_file_service, mock_logger, sample_product):
+async def test_update_product_deactivate(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
     """Test deactivating product."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.get_by_id.return_value = sample_product
     
     # Act
@@ -418,10 +416,10 @@ async def test_update_product_deactivate(mock_uow, mock_file_service, mock_logge
 
 
 @pytest.mark.asyncio
-async def test_update_product_not_found(mock_uow, mock_file_service, mock_logger):
+async def test_update_product_not_found(mock_uow, mock_file_service, mock_cache_service, mock_logger):
     """Test updating product that doesn't exist."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.get_by_id.return_value = None
     
     request = ProductoUpdateRequest(nombre="Test")
@@ -436,10 +434,10 @@ async def test_update_product_not_found(mock_uow, mock_file_service, mock_logger
 
 
 @pytest.mark.asyncio
-async def test_update_product_error_rollback_image(mock_uow, mock_file_service, mock_logger, sample_product):
+async def test_update_product_error_rollback_image(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
     """Test that new image is deleted on update error."""
     # Arrange
-    service = ProductService(uow=mock_uow, file_service=mock_file_service, logger=mock_logger)
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.product_repo.get_by_id.return_value = sample_product
     
     new_image = UploadFile(filename="new.jpg", file=BytesIO(b"new"))

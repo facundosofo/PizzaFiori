@@ -1,11 +1,16 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional, Dict
+from pathlib import Path
+
+# Resolve .env relative to the backend/ directory regardless of cwd
+_BACKEND_DIR = Path(__file__).resolve().parent.parent.parent.parent
+_ENV_FILE = _BACKEND_DIR / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(_ENV_FILE),
         env_file_encoding="utf-8"
     )
     

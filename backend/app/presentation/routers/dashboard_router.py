@@ -439,7 +439,7 @@ async def generate_general_report(
 ):
     if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="fecha_desde debe ser menor o igual a fecha_hasta",
         )
     result = await report_service.generate_general_report(

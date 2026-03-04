@@ -19,10 +19,10 @@ from tests.helpers import build_offer_model, build_product_model, build_category
 # ==================== Create Tests ====================
 
 @pytest.mark.asyncio
-async def test_create_offer_success(mock_uow, mock_logger):
+async def test_create_offer_success(mock_uow, mock_cache_service, mock_logger):
     """Test successful offer creation."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     request = OfferCreateRequest(
         nombre="Promo Docena",
@@ -69,9 +69,9 @@ async def test_create_offer_success(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_create_offer_success_with_categoria_item(mock_uow, mock_logger):
+async def test_create_offer_success_with_categoria_item(mock_uow, mock_cache_service, mock_logger):
     """Test successful offer creation with a categoria_id item."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
 
     request = OfferCreateRequest(
         nombre="Promo Empanadas",
@@ -82,7 +82,7 @@ async def test_create_offer_success_with_categoria_item(mock_uow, mock_logger):
         ],
     )
 
-    mock_uow.category_repo.get_by_id.return_value = build_category_model(1, "Empanadas", "Empanadas artesanales")
+    mock_uow.product_category_repo.get_by_id.return_value = build_category_model(1, "Empanadas", "Empanadas artesanales")
 
     async def _add_side_effect(offer):
         offer.id = 2
@@ -95,16 +95,16 @@ async def test_create_offer_success_with_categoria_item(mock_uow, mock_logger):
 
     assert result.status_code == 201
     assert result.error is None
-    mock_uow.category_repo.get_by_id.assert_called_once_with(1)
+    mock_uow.product_category_repo.get_by_id.assert_called_once_with(1)
     mock_uow.product_repo.get_by_id.assert_not_called()
     mock_uow.offer_repo.get_by_id.assert_called_once_with(2)
 
 
 @pytest.mark.asyncio
-async def test_create_offer_product_not_found(mock_uow, mock_logger):
+async def test_create_offer_product_not_found(mock_uow, mock_cache_service, mock_logger):
     """Test creating offer with non-existent product."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     request = OfferCreateRequest(
         nombre="Promo Invalid",
@@ -133,9 +133,9 @@ async def test_create_offer_product_not_found(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_create_offer_categoria_not_found(mock_uow, mock_logger):
+async def test_create_offer_categoria_not_found(mock_uow, mock_cache_service, mock_logger):
     """Test creating offer with non-existent category."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
 
     request = OfferCreateRequest(
         nombre="Promo Categoria Invalid",
@@ -145,22 +145,22 @@ async def test_create_offer_categoria_not_found(mock_uow, mock_logger):
         ]
     )
 
-    mock_uow.category_repo.get_by_id.return_value = None
+    mock_uow.product_category_repo.get_by_id.return_value = None
 
     result = await service.create(request)
 
     assert result.status_code == 404
     assert "Categoría 999 no encontrada" in result.error
-    mock_uow.category_repo.get_by_id.assert_called_once_with(999)
+    mock_uow.product_category_repo.get_by_id.assert_called_once_with(999)
     mock_uow.offer_repo.add.assert_not_called()
     mock_uow.commit.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_create_offer_validates_all_products(mock_uow, mock_logger):
+async def test_create_offer_validates_all_products(mock_uow, mock_cache_service, mock_logger):
     """Test that all products are validated before creation."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     request = OfferCreateRequest(
         nombre="Promo Test",
@@ -191,10 +191,10 @@ async def test_create_offer_validates_all_products(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_create_offer_database_error(mock_uow, mock_logger):
+async def test_create_offer_database_error(mock_uow, mock_cache_service, mock_logger):
     """Test offer creation with database error."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     request = OfferCreateRequest(
         nombre="Test Offer",
@@ -219,10 +219,10 @@ async def test_create_offer_database_error(mock_uow, mock_logger):
 # ==================== Get By ID Tests ====================
 
 @pytest.mark.asyncio
-async def test_get_by_id_success(mock_uow, mock_logger, sample_offer):
+async def test_get_by_id_success(mock_uow, mock_cache_service, mock_logger, sample_offer):
     """Test getting offer by ID successfully."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.return_value = sample_offer
     
     # Act
@@ -236,10 +236,10 @@ async def test_get_by_id_success(mock_uow, mock_logger, sample_offer):
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_not_found(mock_uow, mock_logger):
+async def test_get_by_id_not_found(mock_uow, mock_cache_service, mock_logger):
     """Test getting offer by ID when it doesn't exist."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.return_value = None
     
     # Act
@@ -254,10 +254,10 @@ async def test_get_by_id_not_found(mock_uow, mock_logger):
 # ==================== Get All Tests ====================
 
 @pytest.mark.asyncio
-async def test_get_all_offers(mock_uow, mock_logger):
+async def test_get_all_offers(mock_uow, mock_cache_service, mock_logger):
     """Test getting all offers."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     offers = [
         build_offer_model(1, "Promo 1", None, 10000.0, True),
         build_offer_model(2, "Promo 2", None, 8000.0, True)
@@ -273,10 +273,10 @@ async def test_get_all_offers(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_get_all_offers_active_filter(mock_uow, mock_logger):
+async def test_get_all_offers_active_filter(mock_uow, mock_cache_service, mock_logger):
     """Test getting only active offers."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     active_offers = [build_offer_model(1, "Active", None, 5000.0, True)]
     mock_uow.offer_repo.list.return_value = active_offers
     
@@ -290,10 +290,10 @@ async def test_get_all_offers_active_filter(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_get_all_offers_error(mock_uow, mock_logger):
+async def test_get_all_offers_error(mock_uow, mock_cache_service, mock_logger):
     """Test getting offers with database error returns empty list."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.list.side_effect = Exception("Database error")
     
     # Act
@@ -307,10 +307,10 @@ async def test_get_all_offers_error(mock_uow, mock_logger):
 # ==================== Update Tests ====================
 
 @pytest.mark.asyncio
-async def test_update_offer_basic_fields(mock_uow, mock_logger, sample_offer):
+async def test_update_offer_basic_fields(mock_uow, mock_cache_service, mock_logger, sample_offer):
     """Test updating basic offer fields."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.side_effect = [sample_offer, sample_offer]
     
     request = OfferUpdateRequest(
@@ -330,10 +330,10 @@ async def test_update_offer_basic_fields(mock_uow, mock_logger, sample_offer):
 
 
 @pytest.mark.asyncio
-async def test_update_offer_with_products(mock_uow, mock_logger, sample_offer):
+async def test_update_offer_with_products(mock_uow, mock_cache_service, mock_logger, sample_offer):
     """Test updating offer products calls replace_items."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.side_effect = [sample_offer, sample_offer]
     
     # Import to check isinstance
@@ -368,10 +368,10 @@ async def test_update_offer_with_products(mock_uow, mock_logger, sample_offer):
 
 
 @pytest.mark.asyncio
-async def test_update_offer_product_not_found(mock_uow, mock_logger, sample_offer):
+async def test_update_offer_product_not_found(mock_uow, mock_cache_service, mock_logger, sample_offer):
     """Test updating offer with non-existent product."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.return_value = sample_offer
     
     request = OfferUpdateRequest(
@@ -392,9 +392,9 @@ async def test_update_offer_product_not_found(mock_uow, mock_logger, sample_offe
 
 
 @pytest.mark.asyncio
-async def test_update_offer_categoria_not_found(mock_uow, mock_logger, sample_offer):
+async def test_update_offer_categoria_not_found(mock_uow, mock_cache_service, mock_logger, sample_offer):
     """Test updating offer with non-existent category."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.return_value = sample_offer
 
     request = OfferUpdateRequest(
@@ -403,7 +403,7 @@ async def test_update_offer_categoria_not_found(mock_uow, mock_logger, sample_of
         ]
     )
 
-    mock_uow.category_repo.get_by_id.return_value = None
+    mock_uow.product_category_repo.get_by_id.return_value = None
 
     result = await service.update(1, offer_update=request)
 
@@ -413,9 +413,9 @@ async def test_update_offer_categoria_not_found(mock_uow, mock_logger, sample_of
 
 
 @pytest.mark.asyncio
-async def test_update_offer_with_categoria_item(mock_uow, mock_logger, sample_offer):
+async def test_update_offer_with_categoria_item(mock_uow, mock_cache_service, mock_logger, sample_offer):
     """Test updating offer items with categoria_id validates category and updates offer."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.side_effect = [sample_offer, sample_offer]
 
     request = OfferUpdateRequest(
@@ -424,21 +424,21 @@ async def test_update_offer_with_categoria_item(mock_uow, mock_logger, sample_of
         ]
     )
 
-    mock_uow.category_repo.get_by_id.return_value = build_category_model(1, "Empanadas", "Empanadas artesanales")
+    mock_uow.product_category_repo.get_by_id.return_value = build_category_model(1, "Empanadas", "Empanadas artesanales")
 
     result = await service.update(1, offer_update=request)
 
     assert result.status_code == 200
-    mock_uow.category_repo.get_by_id.assert_called_once_with(1)
+    mock_uow.product_category_repo.get_by_id.assert_called_once_with(1)
     mock_uow.offer_repo.update.assert_called_once()
     mock_uow.commit.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_update_offer_deactivate(mock_uow, mock_logger, sample_offer):
+async def test_update_offer_deactivate(mock_uow, mock_cache_service, mock_logger, sample_offer):
     """Test deactivating offer."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.side_effect = [sample_offer, sample_offer]
     
     request = OfferUpdateRequest()
@@ -453,10 +453,10 @@ async def test_update_offer_deactivate(mock_uow, mock_logger, sample_offer):
 
 
 @pytest.mark.asyncio
-async def test_update_offer_not_found(mock_uow, mock_logger):
+async def test_update_offer_not_found(mock_uow, mock_cache_service, mock_logger):
     """Test updating offer that doesn't exist."""
     # Arrange
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     mock_uow.offer_repo.get_by_id.return_value = None
     
     request = OfferUpdateRequest(nombre="Test")
@@ -473,9 +473,9 @@ async def test_update_offer_not_found(mock_uow, mock_logger):
 # ==================== Duplicate Validation Tests ====================
 
 @pytest.mark.asyncio
-async def test_create_offer_duplicate_producto_items(mock_uow, mock_logger):
+async def test_create_offer_duplicate_producto_items(mock_uow, mock_cache_service, mock_logger):
     """Test creating offer with duplicate producto items fails at schema validation."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     # Assert that creating request with duplicates raises ValidationError
     with pytest.raises(Exception) as exc_info:
@@ -495,9 +495,9 @@ async def test_create_offer_duplicate_producto_items(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_create_offer_duplicate_categoria_items(mock_uow, mock_logger):
+async def test_create_offer_duplicate_categoria_items(mock_uow, mock_cache_service, mock_logger):
     """Test creating offer with duplicate categoria items fails at schema validation."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     with pytest.raises(Exception) as exc_info:
         request = OfferCreateRequest(
@@ -514,9 +514,9 @@ async def test_create_offer_duplicate_categoria_items(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_create_offer_duplicate_opciones_items(mock_uow, mock_logger):
+async def test_create_offer_duplicate_opciones_items(mock_uow, mock_cache_service, mock_logger):
     """Test creating offer with duplicate producto_opciones items fails at schema validation."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     with pytest.raises(Exception) as exc_info:
         request = OfferCreateRequest(
@@ -533,9 +533,9 @@ async def test_create_offer_duplicate_opciones_items(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_update_offer_duplicate_items(mock_uow, mock_logger, sample_offer):
+async def test_update_offer_duplicate_items(mock_uow, mock_cache_service, mock_logger, sample_offer):
     """Test updating offer with duplicate items fails at schema validation."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     mock_uow.offer_repo.get_by_id.return_value = sample_offer
     
@@ -586,9 +586,9 @@ async def test_schema_detects_duplicate_with_same_cantidad():
 # ==================== Deactivate by Product Tests ====================
 
 @pytest.mark.asyncio
-async def test_deactivate_by_product_success(mock_uow, mock_logger):
+async def test_deactivate_by_product_success(mock_uow, mock_cache_service, mock_logger):
     """Test successfully deactivating offers when product is deactivated."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     # Mock repository returns IDs of deactivated offers
     mock_uow.offer_repo.deactivate_by_product.return_value = [1, 3, 5]
@@ -603,9 +603,9 @@ async def test_deactivate_by_product_success(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_deactivate_by_product_no_offers(mock_uow, mock_logger):
+async def test_deactivate_by_product_no_offers(mock_uow, mock_cache_service, mock_logger):
     """Test deactivating product that has no offers."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     # Mock repository returns empty list
     mock_uow.offer_repo.deactivate_by_product.return_value = []
@@ -620,9 +620,9 @@ async def test_deactivate_by_product_no_offers(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_deactivate_by_product_error(mock_uow, mock_logger):
+async def test_deactivate_by_product_error(mock_uow, mock_cache_service, mock_logger):
     """Test error handling when deactivating offers by product."""
-    service = OfferService(uow=mock_uow, logger=mock_logger)
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
     
     # Mock repository raises exception
     mock_uow.offer_repo.deactivate_by_product.side_effect = Exception("Database error")
@@ -633,4 +633,57 @@ async def test_deactivate_by_product_error(mock_uow, mock_logger):
     # Assert - Should return empty list on error
     assert result == []
     mock_uow.commit.assert_not_called()
+
+
+# ==================== Delete Tests ====================
+
+@pytest.mark.asyncio
+async def test_delete_offer_success(mock_uow, mock_cache_service, mock_logger, sample_offer):
+    """Eliminar oferta exitosamente."""
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
+    mock_uow.offer_repo.get_by_id.return_value = sample_offer
+    mock_uow.offer_repo.delete.return_value = True
+
+    result = await service.delete(1)
+
+    assert result.status_code == 204
+    mock_uow.offer_repo.delete.assert_called_once_with(1)
+    mock_uow.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_delete_offer_not_found(mock_uow, mock_cache_service, mock_logger):
+    """Eliminar oferta inexistente retorna 404."""
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
+    mock_uow.offer_repo.get_by_id.return_value = None
+
+    result = await service.delete(999)
+
+    assert result.status_code == 404
+    assert "no encontrada" in result.error
+
+
+@pytest.mark.asyncio
+async def test_delete_offer_delete_failed(mock_uow, mock_cache_service, mock_logger, sample_offer):
+    """Eliminación fallida del repo retorna 500."""
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
+    mock_uow.offer_repo.get_by_id.return_value = sample_offer
+    mock_uow.offer_repo.delete.return_value = False
+
+    result = await service.delete(1)
+
+    assert result.status_code == 500
+    assert "No se pudo eliminar" in result.error
+
+
+@pytest.mark.asyncio
+async def test_delete_offer_exception(mock_uow, mock_cache_service, mock_logger, sample_offer):
+    """Excepción al eliminar oferta retorna 400."""
+    service = OfferService(uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger)
+    mock_uow.offer_repo.get_by_id.return_value = sample_offer
+    mock_uow.offer_repo.delete.side_effect = Exception("constraint")
+
+    result = await service.delete(1)
+
+    assert result.status_code == 400
 

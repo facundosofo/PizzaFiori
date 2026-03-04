@@ -1,10 +1,17 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Any
 from datetime import datetime
 
 
 class AddStockRequest(BaseModel):
-    cantidad: int = Field(..., ne=0, description="Delta de stock (positivo = agregar, negativo = quitar)")
+    cantidad: int = Field(..., description="Delta de stock (positivo = agregar, negativo = quitar)")
+
+    @field_validator("cantidad")
+    @classmethod
+    def cantidad_no_cero(cls, v: int) -> int:
+        if v == 0:
+            raise ValueError("La cantidad no puede ser 0")
+        return v
 
 
 class ConfigureAlertsRequest(BaseModel):

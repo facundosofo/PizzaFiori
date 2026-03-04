@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.application.sale_service import SaleService, ServiceResult
 from app.domain.models.product import Product
-from app.domain.models.category import Category
+from app.domain.models.product_category import ProductCategory as Category
 from app.presentation.schemas.sale_schemas import PizzaMitadMitadRequest
 
 
@@ -24,7 +24,7 @@ class TestPizzaMitadMitadService:
     @pytest.fixture
     def sale_service(self, mock_uow):
         """Sale service instance."""
-        return SaleService(uow=mock_uow)
+        return SaleService(uow=mock_uow, logger=None)
 
     @pytest.fixture
     def pizza_category(self):

@@ -258,8 +258,8 @@ async def test_deactivate_producto_exitoso(async_client: AsyncClient, mock_produ
     assert data["activo"] == False
     
     # Verificar que se llamaron los métodos correctos
-    mock_product_service.update.assert_called_once_with(1, active=False)
-    mock_offer_service.deactivate_by_product.assert_called_once_with(1)
+    mock_product_service.update.assert_called_once_with(1, active=False, username='admin_test', is_logical_delete=True)
+    mock_offer_service.deactivate_by_product.assert_called_once_with(1, username='admin_test')
     data = response.json()
     assert data["activo"] is False
     assert data["ofertas_desactivadas"] == [5, 10]
