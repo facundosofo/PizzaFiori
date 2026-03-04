@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   AlertCircle,
   AlertTriangle,
+  OctagonAlert,
   CheckCircle2,
   ChartColumnIncreasing,
   ChartLine,
@@ -123,6 +124,8 @@ export const ShieldOffIcon = (props: IconProps) =>
 export const KeyIcon = (props: IconProps) => renderLucideIcon(KeyRound, props);
 
 export const AlertCircleIcon = (props: IconProps) => renderLucideIcon(AlertCircle, props);
+
+export const OctagonAlertIcon = (props: IconProps) => renderLucideIcon(OctagonAlert, props);
 
 export const LoaderIcon = (props: IconProps) => renderLucideIcon(Loader, props);
 

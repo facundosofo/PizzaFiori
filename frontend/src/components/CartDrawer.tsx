@@ -26,6 +26,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 }) => {
   const isEmpty = items.length === 0;
 
+  // Calcular cantidad total de items (sumando cantidades y productos dentro de ofertas)
+  const totalItems = items.reduce((acc, item) => {
+    if (item.tipo === 'oferta') {
+      const productosEnOferta = item.productos_seleccionados.reduce((sum, p) => sum + p.cantidad, 0);
+      return acc + productosEnOferta * item.cantidad;
+    }
+    return acc + item.cantidad;
+  }, 0);
+
   return (
     <div className="cart-drawer">
       {/* Header */}
@@ -33,7 +42,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         <div className="cart-drawer-header-main">
           <h2 className="cart-drawer-title">Carrito</h2>
           <p className="cart-drawer-subtitle">
-            {isEmpty ? 'Sin items' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
+            {isEmpty ? 'Sin items' : `${totalItems} ${totalItems === 1 ? 'item' : 'items'}`}
           </p>
         </div>
         {!isEmpty && (

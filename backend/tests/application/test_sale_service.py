@@ -4,7 +4,7 @@ Tests business logic including tiered pricing algorithm with mocked repositories
 """
 
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from decimal import Decimal
 
 from app.application.sale_service import SaleService, ServiceResult
@@ -553,8 +553,9 @@ async def test_update_sale_with_products(mock_uow, mock_logger, sample_sale):
     mock_uow.product_repo.get_by_id.return_value = product
     mock_uow.sale_repo.refresh = AsyncMock()
     
-    # Act
-    result = await service.update(1, request)
+    # Act – patch sale_to_snapshot to avoid SQLAlchemy inspect on MagicMock
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
     
     # Assert
     assert result.status_code == 200
@@ -623,7 +624,8 @@ async def test_update_sale_with_offers_no_validation(mock_uow, mock_logger, samp
     
     # Act - update should succeed even though productos_seleccionados (6) don't match
     # current offer requirements (12), because we don't validate on update
-    result = await service.update(1, request)
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
     
     # Assert
     assert result.status_code == 200
@@ -656,7 +658,8 @@ async def test_update_sale_missing_precio_unitario(mock_uow, mock_logger, sample
     mock_uow.sale_repo.get_by_id.return_value = sample_sale
     
     # Act
-    result = await service.update(1, request)
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
     
     # Assert
     assert result.status_code == 400
@@ -707,7 +710,8 @@ async def test_update_sale_product_not_found(mock_uow, mock_logger, sample_sale)
     mock_uow.product_repo.get_by_id.return_value = None
     
     # Act
-    result = await service.update(1, request)
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
     
     # Assert
     assert result.status_code == 404
@@ -738,9 +742,310 @@ async def test_update_sale_offer_not_found(mock_uow, mock_logger, sample_sale):
     mock_uow.offer_repo.get_by_id.return_value = None
     
     # Act
-    result = await service.update(1, request)
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
     
     # Assert
     assert result.status_code == 404
     assert "Oferta 999 no encontrada" in result.error
     mock_uow.sale_repo.update.assert_not_called()
+
+
+# ==================== Count All Tests ====================
+
+@pytest.mark.asyncio
+async def test_count_all_no_filters(mock_uow, mock_logger):
+    """count_all sin filtros devuelve el conteo total."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.sale_repo.count.return_value = 42
+
+    result = await service.count_all()
+
+    assert result == 42
+    mock_uow.sale_repo.count.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_count_all_with_dates(mock_uow, mock_logger):
+    """count_all convierte date a datetime y pasa los filtros."""
+    from datetime import date, time
+
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.sale_repo.count.return_value = 10
+
+    result = await service.count_all(
+        fecha_desde=date(2026, 1, 1),
+        fecha_hasta=date(2026, 1, 31),
+    )
+
+    assert result == 10
+    call_kwargs = mock_uow.sale_repo.count.call_args[1]
+    assert call_kwargs["fecha_desde"].date() == date(2026, 1, 1)
+    assert call_kwargs["fecha_hasta"].date() == date(2026, 1, 31)
+
+
+@pytest.mark.asyncio
+async def test_count_all_error(mock_uow, mock_logger):
+    """count_all devuelve 0 en caso de error."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.sale_repo.count.side_effect = Exception("db down")
+
+    result = await service.count_all()
+
+    assert result == 0
+
+
+# ==================== Get Available Years Tests ====================
+
+@pytest.mark.asyncio
+async def test_get_available_years_success(mock_uow, mock_logger):
+    """get_available_years devuelve lista de años."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.sale_repo.get_distinct_years.return_value = [2024, 2025, 2026]
+
+    result = await service.get_available_years()
+
+    assert result == [2024, 2025, 2026]
+
+
+@pytest.mark.asyncio
+async def test_get_available_years_error(mock_uow, mock_logger):
+    """get_available_years devuelve lista vacía en caso de error."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.sale_repo.get_distinct_years.side_effect = Exception("fail")
+
+    result = await service.get_available_years()
+
+    assert result == []
+
+
+# ==================== Delete Tests ====================
+
+@pytest.mark.asyncio
+async def test_delete_sale_success(mock_uow, mock_logger, sample_sale):
+    """Eliminar venta exitosamente."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+
+    result = await service.delete(1)
+
+    assert result.status_code == 204
+    mock_uow.sale_repo.delete.assert_called_once_with(1)
+    mock_uow.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_delete_sale_not_found(mock_uow, mock_logger):
+    """Eliminar venta que no existe retorna 404."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.sale_repo.get_by_id.return_value = None
+
+    result = await service.delete(999)
+
+    assert result.status_code == 404
+    assert "no encontrada" in result.error
+
+
+@pytest.mark.asyncio
+async def test_delete_sale_with_audit(mock_uow, mock_logger, sample_sale):
+    """Eliminar venta con auditoría llama audit_service.log_deletion."""
+    mock_audit = AsyncMock()
+    service = SaleService(uow=mock_uow, audit_service=mock_audit, logger=mock_logger)
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+
+    result = await service.delete(1, username="admin")
+
+    assert result.status_code == 204
+    mock_audit.log_deletion.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_delete_sale_error(mock_uow, mock_logger, sample_sale):
+    """Error al eliminar venta retorna 400."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    mock_uow.sale_repo.delete.side_effect = Exception("fk constraint")
+
+    result = await service.delete(1)
+
+    assert result.status_code == 400
+
+
+# ==================== Pizza Helper Tests ====================
+
+def test_es_pizza_by_category():
+    """_es_pizza detecta pizza por categoría."""
+    service = SaleService(uow=AsyncMock(), logger=AsyncMock())
+    producto = build_product_model(
+        id=1, nombre="Muzzarella", categoria_id=1,
+        precios=[build_product_price_model(1, 1, 1, 1500.0)]
+    )
+    producto.categoria = build_category_model(id=1, nombre="Pizzas")
+
+    assert service._es_pizza(producto) is True
+
+
+def test_es_pizza_by_name():
+    """_es_pizza detecta pizza por nombre."""
+    service = SaleService(uow=AsyncMock(), logger=AsyncMock())
+    producto = build_product_model(
+        id=1, nombre="Pizza Napolitana", categoria_id=1,
+        precios=[build_product_price_model(1, 1, 1, 1500.0)]
+    )
+    producto.categoria = None
+
+    assert service._es_pizza(producto) is True
+
+
+def test_es_pizza_not_pizza():
+    """_es_pizza retorna False para no-pizza."""
+    service = SaleService(uow=AsyncMock(), logger=AsyncMock())
+    producto = build_product_model(
+        id=1, nombre="Empanada", categoria_id=2,
+        precios=[build_product_price_model(1, 1, 1, 1200.0)]
+    )
+    producto.categoria = build_category_model(id=2, nombre="Empanadas")
+
+    assert service._es_pizza(producto) is False
+
+
+def test_get_pizza_mitad_mitad_price():
+    """_get_pizza_mitad_mitad_price retorna el precio de la más cara."""
+    service = SaleService(uow=AsyncMock(), logger=AsyncMock())
+    p1 = build_product_model(
+        id=1, nombre="Muzzarella", categoria_id=1,
+        precios=[build_product_price_model(1, 1, 1, 1500.0)]
+    )
+    p2 = build_product_model(
+        id=2, nombre="Napolitana", categoria_id=1,
+        precios=[build_product_price_model(2, 2, 1, 1800.0)]
+    )
+
+    result = service._get_pizza_mitad_mitad_price(p1, p2)
+
+    assert result == Decimal("1800.00")
+
+
+def test_get_pizza_mitad_mitad_price_no_prices():
+    """_get_pizza_mitad_mitad_price retorna None si falta precio."""
+    service = SaleService(uow=AsyncMock(), logger=AsyncMock())
+    p1 = build_product_model(id=1, nombre="Muzzarella", categoria_id=1, precios=[])
+    p2 = build_product_model(
+        id=2, nombre="Napolitana", categoria_id=1,
+        precios=[build_product_price_model(2, 2, 1, 1800.0)]
+    )
+
+    result = service._get_pizza_mitad_mitad_price(p1, p2)
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_validate_pizza_mitad_mitad_success(mock_uow, mock_logger):
+    """_validate_pizza_mitad_mitad retorna None si todo es válido."""
+    from types import SimpleNamespace
+
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    p1 = build_product_model(
+        id=1, nombre="Muzzarella", categoria_id=1,
+        precios=[build_product_price_model(1, 1, 1, 1500.0)]
+    )
+    p1.categoria = build_category_model(id=1, nombre="Pizzas")
+    p1.activo = True
+
+    p2 = build_product_model(
+        id=2, nombre="Napolitana", categoria_id=1,
+        precios=[build_product_price_model(2, 2, 1, 1800.0)]
+    )
+    p2.categoria = build_category_model(id=1, nombre="Pizzas")
+    p2.activo = True
+
+    mock_uow.product_repo.get_by_id.side_effect = lambda pid: {1: p1, 2: p2}[pid]
+
+    pizza_mm = SimpleNamespace(producto_id_izquierda=1, producto_id_derecha=2)
+    result = await service._validate_pizza_mitad_mitad(pizza_mm, mock_uow)
+
+    assert result is None  # None means validation passed
+
+
+@pytest.mark.asyncio
+async def test_validate_pizza_mitad_mitad_product_not_found(mock_uow, mock_logger):
+    """_validate_pizza_mitad_mitad retorna error si producto no existe."""
+    from types import SimpleNamespace
+
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    mock_uow.product_repo.get_by_id.return_value = None
+
+    pizza_mm = SimpleNamespace(producto_id_izquierda=99, producto_id_derecha=100)
+    result = await service._validate_pizza_mitad_mitad(pizza_mm, mock_uow)
+
+    assert result is not None
+    assert result.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_validate_pizza_mitad_mitad_inactive(mock_uow, mock_logger):
+    """_validate_pizza_mitad_mitad retorna error si producto inactivo."""
+    from types import SimpleNamespace
+
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    p1 = build_product_model(id=1, nombre="Muzzarella", categoria_id=1, precios=[])
+    p1.categoria = build_category_model(id=1, nombre="Pizzas")
+    p1.activo = True
+
+    p2 = build_product_model(id=2, nombre="Napolitana", categoria_id=1, precios=[])
+    p2.categoria = build_category_model(id=1, nombre="Pizzas")
+    p2.activo = False
+
+    mock_uow.product_repo.get_by_id.side_effect = lambda pid: {1: p1, 2: p2}[pid]
+
+    pizza_mm = SimpleNamespace(producto_id_izquierda=1, producto_id_derecha=2)
+    result = await service._validate_pizza_mitad_mitad(pizza_mm, mock_uow)
+
+    assert result is not None
+    assert result.status_code == 400
+    assert "activos" in result.error
+
+
+@pytest.mark.asyncio
+async def test_validate_pizza_mitad_mitad_not_pizza(mock_uow, mock_logger):
+    """_validate_pizza_mitad_mitad retorna error si producto no es pizza."""
+    from types import SimpleNamespace
+
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    p1 = build_product_model(id=1, nombre="Empanada", categoria_id=2, precios=[])
+    p1.categoria = build_category_model(id=2, nombre="Empanadas")
+    p1.activo = True
+
+    p2 = build_product_model(id=2, nombre="Napolitana", categoria_id=1, precios=[])
+    p2.categoria = build_category_model(id=1, nombre="Pizzas")
+    p2.activo = True
+
+    mock_uow.product_repo.get_by_id.side_effect = lambda pid: {1: p1, 2: p2}[pid]
+
+    pizza_mm = SimpleNamespace(producto_id_izquierda=1, producto_id_derecha=2)
+    result = await service._validate_pizza_mitad_mitad(pizza_mm, mock_uow)
+
+    assert result is not None
+    assert result.status_code == 400
+    assert "pizzas" in result.error
+
+
+@pytest.mark.asyncio
+async def test_validate_pizza_mitad_mitad_same_product(mock_uow, mock_logger):
+    """_validate_pizza_mitad_mitad retorna error si son el mismo producto."""
+    from types import SimpleNamespace
+
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    p1 = build_product_model(id=1, nombre="Muzzarella", categoria_id=1, precios=[])
+    p1.categoria = build_category_model(id=1, nombre="Pizzas")
+    p1.activo = True
+
+    mock_uow.product_repo.get_by_id.return_value = p1
+
+    pizza_mm = SimpleNamespace(producto_id_izquierda=1, producto_id_derecha=1)
+    result = await service._validate_pizza_mitad_mitad(pizza_mm, mock_uow)
+
+    assert result is not None
+    assert result.status_code == 400
+    assert "diferentes" in result.error

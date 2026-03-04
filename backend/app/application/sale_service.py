@@ -237,6 +237,8 @@ class SaleService:
                     )
 
                 numero_orden_val = f"#ORD-{business_date.strftime('%y%m%d')}-{seq:05d}"
+                # dict para acumular descuentos de stock por categoria: {categoria_id: delta}
+                stock_deductions: dict[int, int] = {}
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
                     precio_unitario = None
@@ -267,6 +269,10 @@ class SaleService:
                         item_nombre = producto.nombre
                         producto_sku = producto.sku
                         item_categoria = producto.categoria.nombre if producto.categoria else 'Sin categoría'
+                        if producto.categoria_id:
+                            stock_deductions[producto.categoria_id] = (
+                                stock_deductions.get(producto.categoria_id, 0) + item.cantidad
+                            )
                     
                     elif item.oferta_id:
                         # Validar que la oferta existe y está activa
@@ -317,6 +323,12 @@ class SaleService:
                                     cantidad=prod_sel.cantidad
                                 )
                                 oferta_productos_snapshot.append(snapshot)
+                                # Acumular descuento de stock para la categoría del producto en la oferta
+                                if producto.categoria_id:
+                                    deduccion_total = prod_sel.cantidad * item.cantidad
+                                    stock_deductions[producto.categoria_id] = (
+                                        stock_deductions.get(producto.categoria_id, 0) + deduccion_total
+                                    )
                     
                     elif item.pizza_mitad_mitad:
                         # Validar y procesar pizza mitad-mitad
@@ -344,6 +356,14 @@ class SaleService:
                         item_nombre = f"Pizza Mitad {nombre1}/{nombre2}"
                         item_categoria = "Pizzas"
                         item_descripcion = f"Pizza Mitad {nombre1}/{nombre2}"
+                        pizza_cat_id = (
+                            producto_izq.categoria_id if producto_izq and producto_izq.categoria_id
+                            else (producto_der.categoria_id if producto_der else None)
+                        )
+                        if pizza_cat_id:
+                            stock_deductions[pizza_cat_id] = (
+                                stock_deductions.get(pizza_cat_id, 0) + item.cantidad
+                            )
                     
                     # Calcular subtotal
                     subtotal = Decimal(str(precio_unitario)) * Decimal(str(item.cantidad))
@@ -376,6 +396,34 @@ class SaleService:
                 )
 
                 await uow.sale_repo.add(sale)
+
+                # Descontar stock por categoria para todos los items de la venta
+                from datetime import datetime as _dt
+                for cat_id, delta in stock_deductions.items():
+                    stock = await uow.stock_repo.get_by_categoria_id(cat_id)
+                    if stock is None:
+                        self.logger.warning(
+                            "Sin registro de stock para categoria, descuento omitido",
+                            categoria_id=cat_id,
+                        )
+                        continue
+                    stock_anterior = stock.cantidad
+                    stock.cantidad = max(0, stock.cantidad - delta)
+                    stock.fecha_actualizacion = _dt.now()
+                    await uow.audit_repo.log_action(
+                        username=username or "sistema",
+                        entity_type="Stock",
+                        entity_id=cat_id,
+                        action="UPDATE",
+                        changes={
+                            "tipo": "VENTA_DESCUENTO",
+                            "cantidad_descontada": delta,
+                            "stock_anterior": stock_anterior,
+                            "stock_nuevo": stock.cantidad,
+                            "numero_orden": numero_orden_val,
+                        },
+                    )
+
                 await uow.commit()
                 await uow.sale_repo.refresh(sale, attribute_names=["items"])
 

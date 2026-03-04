@@ -31,6 +31,9 @@ from app.infrastructure.repositories.expense_category_repository import (
 from app.infrastructure.repositories.expense_repository import (
     SqlAlchemyExpenseRepository,
 )
+from app.infrastructure.repositories.category_stock_repository import (
+    SqlAlchemyCategoryStockRepository,
+)
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
@@ -46,6 +49,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.audit_repo = None
         self.expense_category_repo = None
         self.expense_repo = None
+        self.stock_repo = None
 
     async def __aenter__(self):
         self.session = self.session_factory()
@@ -58,6 +62,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.audit_repo = SqlAlchemyAuditRepository(self.session)
         self.expense_category_repo = SqlAlchemyExpenseCategoryRepository(self.session)
         self.expense_repo = SqlAlchemyExpenseRepository(self.session)
+        self.stock_repo = SqlAlchemyCategoryStockRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):

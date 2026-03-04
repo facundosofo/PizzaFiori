@@ -41,7 +41,6 @@ async def test_create_sale_captures_product_snapshot(mock_uow, mock_logger):
     mock_uow.product_repo.get_by_id = AsyncMock(return_value=producto)
     
     request = SaleCreateRequest(
-        numero_orden="ORD-001",
         items=[
             SaleItemRequest(producto_id=1, cantidad=6)
         ]
@@ -84,7 +83,6 @@ async def test_create_sale_product_without_category(mock_uow, mock_logger):
     mock_uow.product_repo.get_by_id = AsyncMock(return_value=producto)
     
     request = SaleCreateRequest(
-        numero_orden="ORD-002",
         items=[
             SaleItemRequest(producto_id=1, cantidad=1)
         ]
@@ -136,7 +134,6 @@ async def test_create_sale_captures_offer_snapshot(mock_uow, mock_logger):
     mock_uow.product_repo.get_by_id = AsyncMock(side_effect=lambda id: prod1 if id == 1 else prod2)
     
     request = SaleCreateRequest(
-        numero_orden="ORD-003",
         items=[
             SaleItemRequest(
                 oferta_id=1, 
@@ -195,7 +192,6 @@ async def test_create_sale_offer_without_description(mock_uow, mock_logger):
     mock_uow.product_repo.get_by_id = AsyncMock(return_value=prod1)
     
     request = SaleCreateRequest(
-        numero_orden="ORD-004",
         items=[
             SaleItemRequest(
                 oferta_id=1, 
@@ -255,7 +251,6 @@ async def test_create_sale_mixed_products_and_offers(mock_uow, mock_logger):
     mock_uow.offer_repo.get_by_id = AsyncMock(return_value=oferta)
     
     request = SaleCreateRequest(
-        numero_orden="ORD-005",
         items=[
             SaleItemRequest(producto_id=1, cantidad=6),
             SaleItemRequest(

@@ -96,7 +96,8 @@ def test_sale_item_both_null():
     
     errors = exc_info.value.errors()
     assert len(errors) > 0
-    assert any("producto_id o oferta_id" in str(error.get("ctx", {}).get("error", "")).lower() 
+    assert any("producto_id" in str(error.get("ctx", {}).get("error", "")).lower()
+               or "debe especificar" in str(error.get("ctx", {}).get("error", "")).lower()
                for error in errors)
 
 
@@ -114,8 +115,8 @@ def test_sale_item_both_present():
     
     errors = exc_info.value.errors()
     assert len(errors) > 0
-    assert any("mismo tiempo" in str(error.get("ctx", {}).get("error", "")).lower() 
-               or "al mismo tiempo" in str(error.get("ctx", {}).get("error", "")).lower()
+    assert any("solo se puede especificar uno" in str(error.get("ctx", {}).get("error", "")).lower()
+               or "solo uno" in str(error.get("ctx", {}).get("error", "")).lower()
                for error in errors)
 
 

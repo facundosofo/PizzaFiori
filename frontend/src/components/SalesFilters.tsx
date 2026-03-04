@@ -1,43 +1,19 @@
-import { forwardRef, useState } from "react";
+import { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
-import { Calendar } from "lucide-react";
-import * as Icons from './shared/Icons';
+import DateRangeInput from "./shared/DateRangeInput";
+import FilterBar from "./shared/FilterBar";
 import { validateDateRange } from "../utils/formatters";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/sales-filters.css";
 import "../styles/shared/datepicker-custom.css";
 
-// Registrar locale español
-registerLocale('es', es);
+registerLocale("es", es);
+
 interface SalesFiltersProps {
   onFilter: (dateFrom: Date | null, dateTo: Date | null) => void;
   onClear: () => void;
 }
-
-type DateRangeInputProps = {
-  value?: string;
-  onClick?: () => void;
-  placeholder?: string;
-};
-
-const DateRangeInput = forwardRef<HTMLButtonElement, DateRangeInputProps>(
-  ({ value, onClick, placeholder }, ref) => (
-    <button
-      type="button"
-      className="filter-date-input filter-date-input-icon"
-      onClick={onClick}
-      ref={ref}
-    >
-      <Calendar size={16} className="filter-date-icon" />
-      <span className="filter-date-label">
-        {value || placeholder}
-      </span>
-    </button>
-  )
-);
-
-DateRangeInput.displayName = "DateRangeInput";
 
 const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
@@ -111,102 +87,51 @@ const SalesFilters = ({ onFilter, onClear }: SalesFiltersProps) => {
     }
   };
 
-  // Get max date (today) for validation
   const today = new Date();
 
+  const quickFilters = [
+    { label: "Ayer", onClick: () => applyQuickFilter("yesterday"), title: "Filtrar ventas de ayer" },
+    { label: "Hoy", onClick: () => applyQuickFilter("today"), title: "Filtrar ventas de hoy" },
+    { label: "Última semana", onClick: () => applyQuickFilter("week"), title: "Filtrar últimos 7 días" },
+    { label: "Último mes", onClick: () => applyQuickFilter("month"), title: "Filtrar últimos 30 días" },
+  ];
+
   return (
-    <div className="sales-filters">
-      <div className="sales-filters-row">
-        <div className="filter-group filter-group-range">
-          <label htmlFor="date-range">Rango de fechas</label>
-          <DatePicker
-            id="date-range"
-            selectsRange={true}
-            startDate={dateFrom}
-            endDate={dateTo}
-            onChange={(update) => {
-              setDateRange(update as [Date | null, Date | null]);
-            }}
-            onCalendarClose={handleCalendarClose}
-            dateFormat="dd/MM/yyyy"
-            maxDate={today}
-            placeholderText="Seleccionar Desde - Hasta"
-            calendarClassName="custom-calendar"
-            showMonthDropdown
-            showYearDropdown
-            dropdownMode="select"
-            popperPlacement="bottom-start"
-            autoComplete="off"
-            monthsShown={1}
-            locale="es"
-            formatWeekDay={(day) => day.charAt(0).toUpperCase()}
-            customInput={
-              <DateRangeInput placeholder="Seleccionar Desde - Hasta" />
-            }
-          />
-        </div>
-
-        <div className="filter-group quick-filters-group">
-          <label>Filtros rápidos</label>
-          <div className="quick-filters">
-            <button
-              className="quick-filter-btn"
-              onClick={() => applyQuickFilter("yesterday")}
-              title="Filtrar ventas de ayer"
-            >
-              Ayer
-            </button>
-            <button
-              className="quick-filter-btn"
-              onClick={() => applyQuickFilter("today")}
-              title="Filtrar ventas de hoy"
-            >
-              Hoy
-            </button>
-            <button
-              className="quick-filter-btn"
-              onClick={() => applyQuickFilter("week")}
-              title="Filtrar últimos 7 días"
-            >
-              Última semana
-            </button>
-            <button
-              className="quick-filter-btn"
-              onClick={() => applyQuickFilter("month")}
-              title="Filtrar últimos 30 días"
-            >
-              Último mes
-            </button>
-          </div>
-        </div>
-
-        <div className="filter-actions">
-          <button
-            className="filter-btn search"
-            onClick={handleSearch}
-            title="Buscar ventas"
-          >
-            <Icons.SearchIcon size={18} />
-            <span>Buscar</span>
-          </button>
-
-          <button
-            className="filter-btn clear"
-            onClick={handleClear}
-            title="Limpiar filtros"
-          >
-            <Icons.XIcon size={18} />
-            <span>Limpiar</span>
-          </button>
-        </div>
+    <FilterBar
+      onSearch={handleSearch}
+      onClear={handleClear}
+      error={error}
+      quickFilters={quickFilters}
+    >
+      <div className="filter-group filter-group-range">
+        <label htmlFor="date-range">Rango de fechas</label>
+        <DatePicker
+          id="date-range"
+          selectsRange={true}
+          startDate={dateFrom}
+          endDate={dateTo}
+          onChange={(update) => {
+            setDateRange(update as [Date | null, Date | null]);
+          }}
+          onCalendarClose={handleCalendarClose}
+          dateFormat="dd/MM/yyyy"
+          maxDate={today}
+          placeholderText="Seleccionar Desde - Hasta"
+          calendarClassName="custom-calendar"
+          showMonthDropdown
+          showYearDropdown
+          dropdownMode="select"
+          popperPlacement="bottom-start"
+          autoComplete="off"
+          monthsShown={1}
+          locale="es"
+          formatWeekDay={(day) => day.charAt(0).toUpperCase()}
+          customInput={
+            <DateRangeInput placeholder="Seleccionar Desde - Hasta" />
+          }
+        />
       </div>
-
-      {error && (
-        <div className="filter-error">
-          <Icons.WarningIcon size={18} /> {error}
-        </div>
-      )}
-    </div>
+    </FilterBar>
   );
 };
 

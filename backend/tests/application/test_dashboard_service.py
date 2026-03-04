@@ -191,3 +191,103 @@ async def test_get_weekday_revenue_data_orders_and_defaults(mock_uow, mock_logge
     ]
     assert len(with_value) == 1
     assert result[-1]["promedio_ingresos"] == 0.0
+
+
+# ==================== Balance Metrics Tests ====================
+
+@pytest.mark.asyncio
+async def test_get_balance_metrics_success(mock_uow, mock_logger):
+    """get_balance_metrics devuelve ventas, gastos, beneficio neto y margen."""
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+
+    async def fake_sales(start, end):
+        return 250000.0
+
+    async def fake_expenses(start, end):
+        return 95000.0
+
+    with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(side_effect=fake_sales)):
+        with patch.object(service, "_get_expenses_total_between_dates", new=AsyncMock(side_effect=fake_expenses)):
+            result = await service.get_balance_metrics()
+
+    assert result.error is None
+    v = result.value
+    assert v["sales"]["current"] == 250000.0
+    assert v["expenses"]["current"] == 95000.0
+    assert v["net_profit"]["net_profit"] == 155000.0
+    assert v["net_margin"]["margin"] == 62.0
+    assert v["sales"]["comparison_type"] == "MoM"
+
+
+@pytest.mark.asyncio
+async def test_get_balance_metrics_zero_sales(mock_uow, mock_logger):
+    """Con ventas=0 el margen debe ser 0."""
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+
+    with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(return_value=0.0)):
+        with patch.object(service, "_get_expenses_total_between_dates", new=AsyncMock(return_value=100.0)):
+            result = await service.get_balance_metrics()
+
+    assert result.error is None
+    assert result.value["net_margin"]["margin"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_get_balance_metrics_error(mock_uow, mock_logger):
+    """Excepción en get_balance_metrics retorna error 500."""
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+
+    with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(side_effect=Exception("boom"))):
+        result = await service.get_balance_metrics()
+
+    assert result.error is not None
+    assert result.status_code == 500
+
+
+# ==================== Monthly Balance Data Tests ====================
+
+@pytest.mark.asyncio
+async def test_get_monthly_balance_data_monthly(mock_uow, mock_logger):
+    """get_monthly_balance_data en modo monthly retorna 12 meses."""
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+
+    with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(return_value=10000.0)):
+        with patch.object(service, "_get_expenses_total_between_dates", new=AsyncMock(return_value=5000.0)):
+            result = await service.get_monthly_balance_data(period="monthly")
+
+    assert result.error is None
+    assert len(result.value["data"]) == 12
+    assert result.value["data"][0]["sales"] == 10000.0
+    assert result.value["data"][0]["expenses"] == 5000.0
+    assert result.value["current_month"] in [
+        "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+        "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_monthly_balance_data_yearly(mock_uow, mock_logger):
+    """get_monthly_balance_data en modo yearly retorna 5 años."""
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+
+    with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(return_value=120000.0)):
+        with patch.object(service, "_get_expenses_total_between_dates", new=AsyncMock(return_value=80000.0)):
+            result = await service.get_monthly_balance_data(period="yearly")
+
+    assert result.error is None
+    assert len(result.value["data"]) == 5
+    assert result.value["data"][0]["sales"] == 120000.0
+    # current_month is the current year as string
+    assert result.value["current_month"] == str(datetime.now().year)
+
+
+@pytest.mark.asyncio
+async def test_get_monthly_balance_data_error(mock_uow, mock_logger):
+    """Excepción en get_monthly_balance_data retorna error 500."""
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+
+    with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(side_effect=Exception("fail"))):
+        result = await service.get_monthly_balance_data(period="monthly")
+
+    assert result.error is not None
+    assert result.status_code == 500

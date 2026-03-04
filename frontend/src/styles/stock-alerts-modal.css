@@ -1,0 +1,218 @@
+/* StockAlertsModal - Siguiendo guía UX */
+/* 60% neutrales, 30% blanco/gris, 8% verde, 2% rojo */
+
+.stock-alerts-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  backdrop-filter: blur(4px);
+}
+
+.stock-alerts-modal {
+  position: relative;
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.2);
+  z-index: 1101;
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-alerts-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stock-alerts-modal-eyebrow {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.stock-alerts-modal-title {
+  color: var(--color-text);
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.stock-alerts-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(239, 68, 68, 0.8);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stock-alerts-modal-close:hover {
+  background: var(--color-danger);
+  transform: scale(1.1) rotate(90deg);
+}
+
+.stock-alerts-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  display: grid;
+  gap: 1.2rem;
+}
+
+/* Threshold rows (- X + controls) */
+.stock-alerts-threshold-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stock-alerts-threshold-row:last-of-type {
+  border-bottom: none;
+}
+
+.stock-alerts-threshold-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.stock-alerts-threshold-name {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stock-alerts-threshold-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Wider qty input for alert thresholds */
+.alerts-qty-input {
+  width: 72px;
+}
+
+.stock-alerts-preview {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stock-alerts-preview-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.stock-alerts-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.stock-alerts-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+.stock-alerts-modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.stock-alerts-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stock-alerts-btn.save {
+  background: var(--gradient-accent);
+  color: #fff;
+  border: 1px solid var(--color-accent);
+}
+
+.stock-alerts-btn.save:hover:not(:disabled) {
+  background: var(--color-accent-strong);
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.35);
+}
+
+.stock-alerts-btn.cancel {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+}
+
+.stock-alerts-btn.cancel:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.stock-alerts-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stock-alerts-spinner {
+  animation: spin-alerts 1s linear infinite;
+}
+
+@keyframes spin-alerts {
+  to { transform: rotate(360deg); }
+}

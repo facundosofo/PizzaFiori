@@ -8,7 +8,6 @@ from decimal import Decimal
 from typing import Dict, List, Any, Optional
 from unittest.mock import MagicMock
 
-#TODO: Actualiza test Unitarios
 # ==================== Category Builders ====================
 
 def build_category_data(
@@ -357,3 +356,168 @@ def assert_mock_called_once(mock, method_name: str):
     method = getattr(mock, method_name)
     assert method.call_count == 1, \
         f"Expected {method_name} to be called once, but was called {method.call_count} times"
+
+
+# ==================== User Builders ====================
+
+def build_user_data(
+    id: int = 1,
+    username: str = "testuser",
+    email: str = "test@example.com",
+    first_name: str = "Test",
+    last_name: str = "User",
+    role: str = "USER",
+) -> Dict[str, Any]:
+    """Build user data dictionary for testing."""
+    return {
+        "id": id,
+        "username": username,
+        "email": email,
+        "first_name": first_name,
+        "last_name": last_name,
+        "role": role,
+    }
+
+
+def build_user_model(
+    id: int = 1,
+    username: str = "testuser",
+    email: str = "test@example.com",
+    password_hash: str = "$2b$12$fakehash",
+    first_name: str = "Test",
+    last_name: str = "User",
+    role: str = "USER",
+    failed_login_attempts: int = 0,
+    locked_until: Optional[Any] = None,
+) -> MagicMock:
+    """Build mock User model instance."""
+    user = MagicMock()
+    user.id = id
+    user.username = username
+    user.email = email
+    user.password_hash = password_hash
+    user.first_name = first_name
+    user.last_name = last_name
+    user.role = role
+    user.failed_login_attempts = failed_login_attempts
+    user.locked_until = locked_until
+    user.created_at = datetime.now()
+    user.updated_at = datetime.now()
+    return user
+
+
+# ==================== Expense Builders ====================
+
+def build_expense_data(
+    id: int = 1,
+    categoria_gasto_id: int = 1,
+    descripcion: str = "Compra de harina",
+    monto: float = 5000.0,
+    fecha_pago: Optional[Any] = None,
+) -> Dict[str, Any]:
+    """Build expense data dictionary for testing."""
+    from datetime import date as date_type
+    return {
+        "id": id,
+        "categoria_gasto_id": categoria_gasto_id,
+        "descripcion": descripcion,
+        "monto": monto,
+        "fecha_pago": fecha_pago or date_type.today(),
+    }
+
+
+def build_expense_model(
+    id: int = 1,
+    categoria_gasto_id: int = 1,
+    descripcion: str = "Compra de harina",
+    monto: float = 5000.0,
+    fecha_pago: Optional[Any] = None,
+    activo: bool = True,
+) -> MagicMock:
+    """Build mock Expense model instance."""
+    from datetime import date as date_type
+    expense = MagicMock()
+    expense.id = id
+    expense.categoria_gasto_id = categoria_gasto_id
+    expense.descripcion = descripcion
+    expense.monto = Decimal(str(monto))
+    expense.fecha_pago = fecha_pago or date_type.today()
+    expense.activo = activo
+    expense.fecha_creacion = datetime.now()
+    expense.fecha_actualizacion = datetime.now()
+    expense.categoria_gasto = None
+    return expense
+
+
+# ==================== Expense Category Builders ====================
+
+def build_expense_category_data(
+    id: int = 1,
+    nombre: str = "Insumos",
+    padre_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Build expense category data dictionary for testing."""
+    return {
+        "id": id,
+        "nombre": nombre,
+        "padre_id": padre_id,
+    }
+
+
+def build_expense_category_model(
+    id: int = 1,
+    nombre: str = "Insumos",
+    padre_id: Optional[int] = None,
+    activo: bool = True,
+) -> MagicMock:
+    """Build mock ExpenseCategory model instance."""
+    cat = MagicMock()
+    cat.id = id
+    cat.nombre = nombre
+    cat.padre_id = padre_id
+    cat.activo = activo
+    cat.fecha_creacion = datetime.now()
+    cat.fecha_actualizacion = datetime.now()
+    cat.subcategorias = []
+    cat.gastos = []
+    return cat
+
+
+# ==================== Audit Log Builders ====================
+
+def build_audit_log_model(
+    id: int = 1,
+    username: str = "admin",
+    entity_type: str = "Product",
+    entity_id: int = 1,
+    action: str = "CREATE",
+    changes: Optional[Dict] = None,
+) -> MagicMock:
+    """Build mock AuditLog model instance."""
+    log = MagicMock()
+    log.id = id
+    log.timestamp = datetime.now()
+    log.username = username
+    log.entity_type = entity_type
+    log.entity_id = entity_id
+    log.action = action
+    log.changes = changes or {"new": {"id": entity_id}}
+    return log
+
+
+# ==================== Stock Builders ====================
+
+def build_stock_model(
+    categoria_id: int = 1,
+    cantidad: int = 50,
+    umbral_amarillo: Optional[int] = 10,
+    umbral_rojo: Optional[int] = 5,
+) -> MagicMock:
+    """Build mock CategoryStock model instance."""
+    stock = MagicMock()
+    stock.categoria_id = categoria_id
+    stock.cantidad = cantidad
+    stock.umbral_amarillo = umbral_amarillo
+    stock.umbral_rojo = umbral_rojo
+    stock.fecha_actualizacion = datetime.now()
+    return stock

@@ -23,5 +23,11 @@ class ProductCategory(Base):
         back_populates="categoria"
     )
 
+    stock = relationship(
+        "CategoryStock",
+        back_populates="categoria",
+        uselist=False,
+    )
+
     def __repr__(self):
         return f"<ProductCategory(id={self.id}, nombre={self.nombre})>"
