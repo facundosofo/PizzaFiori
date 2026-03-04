@@ -368,8 +368,7 @@
 }
 
 .sidebar.is-collapsed .sidebar-theme {
-  justify-content: center;
-  padding: 8px 6px 12px;
+  display: none;
 }
 
 .sidebar.is-collapsed .sidebar-theme-label {

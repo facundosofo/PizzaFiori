@@ -8,3 +8,4 @@ from .models.sale import Sale
 from .models.sale_item import SaleItem
 from .models.order_daily_sequence import OrderDailySequence
 from .models.sale_item_offer_product import SaleItemOfferProduct
+from .models.category_stock import CategoryStock

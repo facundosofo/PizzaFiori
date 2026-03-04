@@ -14,6 +14,7 @@ import AppLayout from "./components/layout/AppLayout";
 import ReportsPage from "./pages/ReportsPage";
 import AuditPage from "./pages/AuditPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import StockPage from "./pages/StockPage";
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
             <Route path="/reportes" element={<ReportsPage />} />
             <Route path="/auditoria" element={<AuditPage />} />
             <Route path="/gastos" element={<ExpensesPage />} />
+            <Route path="/stock" element={<StockPage />} />
             <Route path="/profile" element={<UserProfilePage />} />
             <Route path="/admin/users" element={<UserManagementPage />} />
           </Route>

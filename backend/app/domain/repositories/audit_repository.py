@@ -68,6 +68,16 @@ class AbstractAuditRepository(ABC):
 
     
     @abstractmethod
+    async def get_by_entity(
+        self,
+        entity_type: str,
+        entity_id: int,
+        limit: int = 50,
+    ) -> List[AuditLog]:
+        """Obtiene registros de auditoría filtrados por tipo y ID de entidad."""
+        ...
+
+    @abstractmethod
     async def count(
         self,
         start_date: Optional[datetime] = None,
