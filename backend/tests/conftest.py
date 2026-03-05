@@ -281,6 +281,7 @@ def mock_product_service():
     service.get_all = AsyncMock(return_value=[])
     service.get_by_id = AsyncMock(return_value=result)
     service.update = AsyncMock(return_value=result)
+    service.bulk_update_prices = AsyncMock(return_value=result)
     
     return service
 

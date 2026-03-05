@@ -7,7 +7,13 @@ from app.application.product_service import ProductService, ServiceResult
 from app.application.offer_service import OfferService
 from app.infrastructure.cache.cache_service import CacheService
 from app.containers import Container
-from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest, ProductoResponse
+from app.presentation.schemas.product_schemas import (
+    ProductoCreateRequest,
+    ProductoUpdateRequest,
+    ProductoResponse,
+    ActualizarPreciosMasivosRequest,
+    ActualizarPreciosMasivosResponse,
+)
 from app.presentation.routers.dependencies import get_current_user, require_admin
 
 router = APIRouter(
@@ -63,6 +69,40 @@ async def create_producto(
         )
 
     return result.value
+
+@router.patch(
+    "/actualizar-precios",
+    response_model=ActualizarPreciosMasivosResponse,
+    summary="Actualizar precios masivamente",
+    description="Aumenta o disminuye los precios de productos activos por monto fijo o porcentaje.",
+    responses={
+        400: {"description": "Datos inválidos o precio resultante <= 0"},
+        403: {"description": "Admin access required"},
+        404: {"description": "No se encontraron productos activos"},
+    }
+)
+@inject
+async def bulk_update_prices(
+    request: Request,
+    body: ActualizarPreciosMasivosRequest,
+    admin_user: dict = Depends(require_admin),
+    service: ProductService = Depends(Provide[Container.product_service]),
+):
+    result: ServiceResult = await service.bulk_update_prices(
+        monto=body.monto,
+        porcentaje=body.porcentaje,
+        categoria_ids=body.categoria_ids,
+        username=admin_user["username"],
+    )
+
+    if result.error:
+        raise HTTPException(
+            status_code=result.status_code,
+            detail=result.error
+        )
+
+    return result.value
+
 
 @router.get(
     "/",

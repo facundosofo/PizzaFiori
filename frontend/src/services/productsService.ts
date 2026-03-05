@@ -1,5 +1,5 @@
 import api from "./http";
-import type { Product } from "../types/product";
+import type { Product, BulkPriceUpdateRequest, BulkPriceUpdateResponse } from "../types/product";
 
 export const createProducto = async (
   data: {
@@ -77,6 +77,21 @@ export const updateProducto = async (
 export const deactivateProducto = async (id: number): Promise<void> => {
   try {
     await api.patch(`/productos/${id}/desactivar`);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+    throw new Error(errorMessage);
+  }
+};
+
+export const actualizarPreciosMasivos = async (
+  data: BulkPriceUpdateRequest
+): Promise<BulkPriceUpdateResponse> => {
+  try {
+    const response = await api.patch<BulkPriceUpdateResponse>(
+      "/productos/actualizar-precios",
+      data
+    );
+    return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     throw new Error(errorMessage);

@@ -11,7 +11,8 @@ from app.presentation.schemas.product_schemas import (
     ProductoPrecioRequest,
     ProductoCreateRequest,
     ProductoUpdateRequest,
-    ProductoResponse
+    ProductoResponse,
+    ActualizarPreciosMasivosRequest,
 )
 
 
@@ -330,3 +331,98 @@ def test_update_producto_none_values():
     assert producto.nombre is None
     assert producto.categoria_id is None
     assert producto.precios is None
+
+
+# ==================== ActualizarPreciosMasivosRequest Tests ====================
+
+def test_bulk_update_con_monto_valido():
+    """Test bulk update with valid fixed amount."""
+    data = {"monto": Decimal("200")}
+    request = ActualizarPreciosMasivosRequest(**data)
+    assert request.monto == Decimal("200")
+    assert request.porcentaje is None
+    assert request.categoria_ids is None
+
+
+def test_bulk_update_con_porcentaje_valido():
+    """Test bulk update with valid percentage."""
+    data = {"porcentaje": Decimal("10")}
+    request = ActualizarPreciosMasivosRequest(**data)
+    assert request.porcentaje == Decimal("10")
+    assert request.monto is None
+
+
+def test_bulk_update_con_categoria():
+    """Test bulk update with category filter."""
+    data = {"monto": Decimal("100"), "categoria_ids": [5, 3]}
+    request = ActualizarPreciosMasivosRequest(**data)
+    assert request.monto == Decimal("100")
+    assert request.categoria_ids == [5, 3]
+
+
+def test_bulk_update_monto_negativo():
+    """Test bulk update with negative amount (decrease)."""
+    data = {"monto": Decimal("-100")}
+    request = ActualizarPreciosMasivosRequest(**data)
+    assert request.monto == Decimal("-100")
+
+
+def test_bulk_update_porcentaje_negativo():
+    """Test bulk update with negative percentage (decrease)."""
+    data = {"porcentaje": Decimal("-5")}
+    request = ActualizarPreciosMasivosRequest(**data)
+    assert request.porcentaje == Decimal("-5")
+
+
+def test_bulk_update_sin_monto_ni_porcentaje_falla():
+    """Test that missing both monto and porcentaje raises error."""
+    data = {}
+    with pytest.raises(ValidationError) as exc_info:
+        ActualizarPreciosMasivosRequest(**data)
+    errors = exc_info.value.errors()
+    assert any("monto" in str(e).lower() or "porcentaje" in str(e).lower() for e in errors)
+
+
+def test_bulk_update_con_ambos_monto_y_porcentaje_falla():
+    """Test that providing both monto and porcentaje raises error."""
+    data = {"monto": Decimal("200"), "porcentaje": Decimal("10")}
+    with pytest.raises(ValidationError) as exc_info:
+        ActualizarPreciosMasivosRequest(**data)
+    errors = exc_info.value.errors()
+    assert len(errors) > 0
+
+
+def test_bulk_update_porcentaje_menos_100_falla():
+    """Test that percentage <= -100 is rejected."""
+    data = {"porcentaje": Decimal("-100")}
+    with pytest.raises(ValidationError) as exc_info:
+        ActualizarPreciosMasivosRequest(**data)
+    errors = exc_info.value.errors()
+    assert len(errors) > 0
+
+
+def test_bulk_update_porcentaje_menos_150_falla():
+    """Test that percentage < -100 is rejected."""
+    data = {"porcentaje": Decimal("-150")}
+    with pytest.raises(ValidationError) as exc_info:
+        ActualizarPreciosMasivosRequest(**data)
+    errors = exc_info.value.errors()
+    assert len(errors) > 0
+
+
+def test_bulk_update_categoria_ids_negativa_falla():
+    """Test that negative categoria_ids values are rejected."""
+    data = {"monto": Decimal("100"), "categoria_ids": [-1, 2]}
+    with pytest.raises(ValidationError) as exc_info:
+        ActualizarPreciosMasivosRequest(**data)
+    errors = exc_info.value.errors()
+    assert len(errors) > 0
+
+
+def test_bulk_update_categoria_ids_vacia_falla():
+    """Test that empty categoria_ids list is rejected."""
+    data = {"monto": Decimal("100"), "categoria_ids": []}
+    with pytest.raises(ValidationError) as exc_info:
+        ActualizarPreciosMasivosRequest(**data)
+    errors = exc_info.value.errors()
+    assert len(errors) > 0

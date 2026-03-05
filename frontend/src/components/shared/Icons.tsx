@@ -29,6 +29,7 @@ import {
   Trash2,
   Columns3Cog,
   FolderTree,
+  TrendingUp,
   X,
 } from "lucide-react";
 
@@ -132,3 +133,5 @@ export const LoaderIcon = (props: IconProps) => renderLucideIcon(Loader, props);
 export const SaveIcon = (props: IconProps) => renderLucideIcon(Save, props);
 
 export const LayersIcon = (props: IconProps) => renderLucideIcon(Layers, props);
+
+export const TrendingUpIcon = (props: IconProps) => renderLucideIcon(TrendingUp, props);

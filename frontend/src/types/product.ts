@@ -15,3 +15,14 @@ export interface Product {
   precios?: ProductPrice[];
   ofertas?: OfferItem[];
 }
+
+export interface BulkPriceUpdateRequest {
+  monto?: number;
+  porcentaje?: number;
+  categoria_ids?: number[];
+}
+
+export interface BulkPriceUpdateResponse {
+  productos_actualizados: number;
+  productos: Product[];
+}

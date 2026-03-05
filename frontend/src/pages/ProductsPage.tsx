@@ -6,6 +6,7 @@ import { getProductosCategorias } from "../services/productosCategoriasService";
 import ProductCard from "../components/ProductCard";
 import ProductModal from "../components/ProductModal";
 import ProductosCategoryConfigModal from "../components/ProductosCategoryConfigModal";
+import BulkPriceUpdateModal from "../components/BulkPriceUpdateModal";
 import SkeletonLoader from "../components/shared/SkeletonLoader";
 import ErrorAlert from "../components/shared/ErrorAlert";
 import * as Icons from "../components/shared/Icons";
@@ -24,6 +25,7 @@ const ProductosPage = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [newProduct, setNewProduct] = useState<Product | null>(null);
   const [showCategoryConfig, setShowCategoryConfig] = useState(false);
+  const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +59,16 @@ const ProductosPage = () => {
   const handleProductUpdate = (updatedProducto: Product) => {
     setProductos((prevProductos) => {
       const updated = prevProductos.map((p) => (p.id === updatedProducto.id ? updatedProducto : p));
+      return updated;
+    });
+  };
+
+  const handleBulkPriceSuccess = (updatedProducts: Product[]) => {
+    setProductos((prevProductos) => {
+      let updated = [...prevProductos];
+      for (const prod of updatedProducts) {
+        updated = updated.map((p) => (p.id === prod.id ? prod : p));
+      }
       return updated;
     });
   };
@@ -138,6 +150,13 @@ const ProductosPage = () => {
           </button>
           <button
             className="btn-config"
+            onClick={() => setShowBulkPriceModal(true)}
+          >
+            <Icons.PesoIcon size={16} />
+            Actualizar Precios
+          </button>
+          <button
+            className="btn-config"
             onClick={() => setShowCategoryConfig(true)}
           >
             <Icons.FolderTreeIcon size={16} />
@@ -156,6 +175,13 @@ const ProductosPage = () => {
           const cats = await getProductosCategorias(true);
           setCategorias(cats || []);
         }}
+      />
+
+      <BulkPriceUpdateModal
+        isOpen={showBulkPriceModal}
+        onClose={() => setShowBulkPriceModal(false)}
+        onSuccess={handleBulkPriceSuccess}
+        categorias={categorias}
       />
 
       {newProduct && (

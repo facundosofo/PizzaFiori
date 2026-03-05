@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
+from decimal import Decimal, ROUND_HALF_UP
 from fastapi import UploadFile
 from datetime import datetime
 import structlog
@@ -295,3 +296,147 @@ class ProductService:
 
             return ServiceResult(error=str(e), status_code=400)
 
+
+    async def bulk_update_prices(
+        self,
+        monto: Optional[Decimal],
+        porcentaje: Optional[Decimal],
+        categoria_ids: Optional[List[int]],
+        username: Optional[str] = None,
+    ) -> ServiceResult:
+        """
+        Actualiza masivamente los precios de productos activos.
+        Aplica monto fijo o porcentaje a todos los precios escalonados.
+        Redondea al entero más cercano.
+        """
+        try:
+            self.logger.info(
+                "Iniciando actualización masiva de precios",
+                monto=str(monto) if monto else None,
+                porcentaje=str(porcentaje) if porcentaje else None,
+                categoria_ids=categoria_ids,
+            )
+
+            # 1. Obtener productos activos (filtrados opcionalmente por categorías)
+            async with self.uow as uow:
+                productos = await uow.product_repo.list(
+                    active=True,
+                )
+
+                # Filtrar por categorías en memoria
+                if categoria_ids:
+                    categoria_ids_set = set(categoria_ids)
+                    productos = [
+                        p for p in productos if p.categoria_id in categoria_ids_set
+                    ]
+
+                if not productos:
+                    return ServiceResult(
+                        error="No se encontraron productos activos para actualizar",
+                        status_code=404,
+                    )
+
+                # 2. Capturar snapshots viejos y calcular nuevos precios
+                old_snapshots = {}
+                updates = {}  # producto_id -> list of new ProductPrice
+
+                for producto in productos:
+                    old_snapshots[producto.id] = [
+                        {"cantidad": p.cantidad, "precio": float(p.precio)}
+                        for p in (producto.precios or [])
+                    ]
+
+                    new_prices = []
+                    for precio in (producto.precios or []):
+                        if monto is not None:
+                            nuevo_precio = precio.precio + monto
+                        else:
+                            nuevo_precio = precio.precio * (1 + porcentaje / Decimal("100"))
+
+                        # Redondear al entero más cercano
+                        nuevo_precio = Decimal(str(nuevo_precio)).quantize(
+                            Decimal("1"), rounding=ROUND_HALF_UP
+                        )
+
+                        if nuevo_precio <= 0:
+                            return ServiceResult(
+                                error=f"El precio del producto '{producto.nombre}' "
+                                      f"(cantidad {precio.cantidad}) resultaría en ${nuevo_precio}, "
+                                      f"que no es válido. El precio debe ser mayor a 0.",
+                                status_code=400,
+                            )
+
+                        new_prices.append(
+                            ProductPrice(
+                                producto_id=producto.id,
+                                cantidad=precio.cantidad,
+                                precio=nuevo_precio,
+                            )
+                        )
+
+                    updates[producto.id] = new_prices
+
+                # 3. Aplicar actualizaciones en una sola transacción
+                for producto_id, new_prices in updates.items():
+                    await uow.product_repo.replace_prices(producto_id, new_prices)
+                    await uow.session.flush()
+
+                # Actualizar fecha_actualizacion de cada producto
+                for producto in productos:
+                    producto.fecha_actualizacion = datetime.now()
+
+                await uow.commit()
+
+            # 4. Recargar productos actualizados
+            async with self.uow as uow:
+                updated_productos = []
+                for producto_id in updates.keys():
+                    producto = await uow.product_repo.get_by_id(producto_id)
+                    if producto:
+                        updated_productos.append(producto)
+
+            # 5. Auditar cada cambio
+            if self.audit_service and username:
+                for producto in updated_productos:
+                    old_precios = old_snapshots.get(producto.id, [])
+                    new_precios = [
+                        {"cantidad": p.cantidad, "precio": float(p.precio)}
+                        for p in (producto.precios or [])
+                    ]
+
+                    if old_precios != new_precios:
+                        diff = {
+                            "precios": {"old": old_precios, "new": new_precios},
+                        }
+                        async with self.uow as uow:
+                            await uow.audit_repo.log_action(
+                                username=username,
+                                entity_type="Product",
+                                entity_id=producto.id,
+                                action="BULK_UPDATE",
+                                changes=diff,
+                            )
+                            await uow.commit()
+
+            # 6. Invalidar cache
+            self.cache_service.invalidate("producto_*")
+
+            self.logger.info(
+                "Actualización masiva de precios completada",
+                productos_actualizados=len(updated_productos),
+            )
+
+            return ServiceResult(
+                value={
+                    "productos_actualizados": len(updated_productos),
+                    "productos": updated_productos,
+                }
+            )
+
+        except Exception as e:
+            self.logger.error(
+                "Error en actualización masiva de precios",
+                error=str(e),
+                exc_info=True,
+            )
+            return ServiceResult(error=str(e), status_code=400)
