@@ -13,6 +13,7 @@ from .presentation.routers.audit_router import router as audit_router
 from .presentation.routers.expense_category_router import router as expense_category_router
 from .presentation.routers.expense_router import router as expense_router
 from .presentation.routers.stock_router import router as stock_router
+from .presentation.routers.health_router import router as health_router
 from app.domain import *
 from app.containers import Container
 from app.infrastructure.middleware.http_logging_middleware import HttpLoggingMiddleware
@@ -63,6 +64,7 @@ app.include_router(audit_router)
 app.include_router(expense_category_router)
 app.include_router(expense_router)
 app.include_router(stock_router)
+app.include_router(health_router)
 
 # Ruta raíz opcional
 @app.get("/")
