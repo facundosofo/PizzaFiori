@@ -298,3 +298,103 @@ async def test_deactivate_producto_no_existente_retorna_404(async_client: AsyncC
     assert response.status_code == 404
     # Verificar que NO se llamó al servicio de ofertas cuando falla el producto
     mock_offer_service.deactivate_by_product.assert_not_called()
+
+
+# --- Tests de actualización masiva de precios ---
+
+@pytest.mark.asyncio
+async def test_bulk_update_prices_con_monto_exitoso(async_client: AsyncClient, mock_product_service):
+    """Actualizar precios masivamente con monto fijo retorna 200"""
+    from tests.helpers import build_product_model
+
+    productos = [
+        build_product_model(id=1, nombre="Empanada de Carne"),
+        build_product_model(id=2, nombre="Empanada de Pollo"),
+    ]
+    mock_product_service.bulk_update_prices.return_value.error = None
+    mock_product_service.bulk_update_prices.return_value.value = {
+        "productos_actualizados": 2,
+        "productos": productos,
+    }
+
+    response = await async_client.patch(
+        "/productos/actualizar-precios",
+        json={"monto": 200},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["productos_actualizados"] == 2
+    assert len(data["productos"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_prices_con_porcentaje_exitoso(async_client: AsyncClient, mock_product_service):
+    """Actualizar precios masivamente con porcentaje retorna 200"""
+    from tests.helpers import build_product_model
+
+    productos = [build_product_model(id=1, nombre="Pizza Muzza")]
+    mock_product_service.bulk_update_prices.return_value.error = None
+    mock_product_service.bulk_update_prices.return_value.value = {
+        "productos_actualizados": 1,
+        "productos": productos,
+    }
+
+    response = await async_client.patch(
+        "/productos/actualizar-precios",
+        json={"porcentaje": 10, "categoria_ids": [1]},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["productos_actualizados"] == 1
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_prices_sin_monto_ni_porcentaje_retorna_422(async_client: AsyncClient):
+    """Actualizar precios sin monto ni porcentaje retorna 422"""
+    response = await async_client.patch(
+        "/productos/actualizar-precios",
+        json={},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_prices_con_ambos_retorna_422(async_client: AsyncClient):
+    """Actualizar precios con monto y porcentaje a la vez retorna 422"""
+    response = await async_client.patch(
+        "/productos/actualizar-precios",
+        json={"monto": 200, "porcentaje": 10},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_prices_sin_productos_retorna_404(async_client: AsyncClient, mock_product_service):
+    """Actualizar precios sin productos encontrados retorna 404"""
+    mock_product_service.bulk_update_prices.return_value.error = "No se encontraron productos activos para actualizar"
+    mock_product_service.bulk_update_prices.return_value.status_code = 404
+
+    response = await async_client.patch(
+        "/productos/actualizar-precios",
+        json={"monto": 200, "categoria_ids": [999]},
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_prices_precio_negativo_retorna_400(async_client: AsyncClient, mock_product_service):
+    """Actualizar precios que resultan en valor negativo retorna 400"""
+    mock_product_service.bulk_update_prices.return_value.error = "El precio del producto 'Empanada' resultaría en $-100"
+    mock_product_service.bulk_update_prices.return_value.status_code = 400
+
+    response = await async_client.patch(
+        "/productos/actualizar-precios",
+        json={"monto": -99999},
+    )
+
+    assert response.status_code == 400

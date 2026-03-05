@@ -90,3 +90,42 @@ class ProductoResponse(BaseModel):
     activo: bool
     fecha_creacion: datetime
     ofertas_desactivadas: Optional[List[int]] = None  # IDs de ofertas desactivadas al desactivar producto
+
+
+# ======================================================
+# Actualización masiva de precios
+# ======================================================
+
+class ActualizarPreciosMasivosRequest(BaseModel):
+    monto: Optional[Decimal] = Field(
+        None,
+        description="Monto fijo a sumar o restar a cada precio (puede ser negativo)"
+    )
+    porcentaje: Optional[Decimal] = Field(
+        None,
+        description="Porcentaje a aumentar o disminuir (ej: 10 = +10%, -5 = -5%)"
+    )
+    categoria_ids: Optional[List[int]] = Field(
+        None,
+        description="Lista de IDs de categorías para filtrar. None = todos los productos activos"
+    )
+
+    @model_validator(mode="after")
+    def validar_monto_o_porcentaje(self):
+        if self.monto is None and self.porcentaje is None:
+            raise ValueError("Debe especificar 'monto' o 'porcentaje'")
+        if self.monto is not None and self.porcentaje is not None:
+            raise ValueError("Solo puede especificar 'monto' o 'porcentaje', no ambos")
+        if self.porcentaje is not None and self.porcentaje <= -100:
+            raise ValueError("El porcentaje no puede ser -100% o menor")
+        if self.categoria_ids is not None:
+            if len(self.categoria_ids) == 0:
+                raise ValueError("La lista de categorías no puede estar vacía")
+            if any(cid <= 0 for cid in self.categoria_ids):
+                raise ValueError("Todos los IDs de categoría deben ser mayores a 0")
+        return self
+
+
+class ActualizarPreciosMasivosResponse(BaseModel):
+    productos_actualizados: int
+    productos: List[ProductoResponse]
