@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     rate_limit_requests: int = 5
     rate_limit_window_seconds: int = 60
     
+    # CORS
+    cors_origins: str = Field(default="https://localhost:5173", alias="CORS_ORIGINS")
+
     # SSL/TLS Configuration
     ssl_key_file: Optional[str] = Field(default=None, alias="SSL_KEY_FILE")
     ssl_cert_file: Optional[str] = Field(default=None, alias="SSL_CERT_FILE")
