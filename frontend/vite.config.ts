@@ -31,6 +31,11 @@ export default defineConfig(({ mode }) => {
       target: apiTarget,
       changeOrigin: true,
       secure: false,
+      bypass: (req: any) => {
+        if (req.headers.accept?.includes('text/html')) {
+          return '/index.html'
+        }
+      },
       configure: (proxyServer: any) => {
         proxyServer.on('proxyRes', (proxyRes: any) => {
           const loc = proxyRes.headers['location']
