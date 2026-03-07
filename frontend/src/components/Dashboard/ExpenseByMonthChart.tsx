@@ -61,7 +61,7 @@ const ExpenseByMonthChart = memo(({ data, height = 300, chartType = 'bar' }: Exp
             labelColor: 'var(--color-text)',
           },
         ]}
-        height={height}
+        height={typeof height === 'string' ? '100%' : height}
         showGrid={true}
         showTooltip={true}
         tooltipFormatter={formatCurrency}

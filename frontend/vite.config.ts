@@ -50,13 +50,17 @@ export default defineConfig(({ mode }) => {
     }
   }
 
+  const httpsConfig = certKeyPath && certPath
+    ? {
+        key: fs.readFileSync(path.resolve(__dirname, certKeyPath)),
+        cert: fs.readFileSync(path.resolve(__dirname, certPath)),
+      }
+    : undefined
+
   return {
     plugins: [react()],
     server: {
-      https: {
-        key: fs.readFileSync(path.resolve(__dirname, certKeyPath)),
-        cert: fs.readFileSync(path.resolve(__dirname, certPath)),
-      },
+      https: httpsConfig,
       host: '0.0.0.0',
       port: 5173,
       proxy,

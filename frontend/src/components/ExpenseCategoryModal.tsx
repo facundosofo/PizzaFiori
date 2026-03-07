@@ -19,7 +19,6 @@ interface ExpenseCategoryModalProps {
 
 const ExpenseCategoryModal = ({
   categoria,
-  categorias,
   isOpen,
   defaultParentId = null,
   onClose,

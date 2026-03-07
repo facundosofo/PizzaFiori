@@ -351,7 +351,7 @@ const ExpenseModal = ({
                 <DatePicker
                   id="expense-fecha"
                   selected={fechaPago}
-                  onChange={(date) => setFechaPago(date)}
+                  onChange={(date: Date | null) => setFechaPago(date)}
                   dateFormat="dd/MM/yyyy"
                   maxDate={new Date()}
                   placeholderText="Seleccionar fecha"

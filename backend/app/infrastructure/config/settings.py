@@ -1,10 +1,16 @@
+import sys as _sys
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional, Dict
 from pathlib import Path
 
-# Resolve .env relative to the backend/ directory regardless of cwd
-_BACKEND_DIR = Path(__file__).resolve().parent.parent.parent.parent
+# Resolve .env relative to the backend/ directory regardless of cwd.
+# When running as a PyInstaller bundle (frozen), __file__ points inside the
+# extraction temp dir; use sys.executable (the .exe) instead.
+if getattr(_sys, 'frozen', False):
+    _BACKEND_DIR = Path(_sys.executable).resolve().parent
+else:
+    _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent.parent
 _ENV_FILE = _BACKEND_DIR / ".env"
 
 

@@ -1,6 +1,5 @@
 import api from "./http";
 import type { Offer, CreateOfferRequest, UpdateOfferRequest } from "../types/offer";
-import type { Product } from "../types/product";
 
 /**
  * Fetch all offers (active or all)

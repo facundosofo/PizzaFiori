@@ -73,7 +73,7 @@ const AuditPage = () => {
   const [limit, setLimit] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalRecords, setTotalRecords] = useState(0);
+  const [_totalRecords, setTotalRecords] = useState(0);
 
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 

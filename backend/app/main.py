@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -66,8 +67,19 @@ app.include_router(expense_router)
 app.include_router(stock_router)
 app.include_router(health_router)
 
-# Ruta raíz opcional
-@app.get("/")
-def root():
-    return {"mensaje": "API PizzaFiori funcionando"}
+# Servir el frontend buildeado (producción) si existe el directorio dist/.
+# Cuando corre como PyInstaller bundle, __file__ está dentro del temp dir de
+# extracción; navegar desde sys.executable (el .exe en backend/) en su lugar.
+import sys as _sys
+if getattr(_sys, 'frozen', False):
+    _FRONTEND_DIST = Path(_sys.executable).resolve().parent.parent / "frontend" / "dist"
+else:
+    _FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "dist"
+if _FRONTEND_DIST.is_dir():
+    from fastapi.staticfiles import StaticFiles as _StaticFiles
+    app.mount("/", _StaticFiles(directory=str(_FRONTEND_DIST), html=True), name="spa")
+else:
+    @app.get("/")
+    def root():
+        return {"mensaje": "API PizzaFiori funcionando"}
 

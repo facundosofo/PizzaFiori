@@ -35,7 +35,7 @@ export interface ChartWrapperProps {
   data: any[];
   xAxisKey: string;
   series: DataSeries[];
-  height?: number | string;
+  height?: number | `${number}%`;
   xAxisLabel?: string;
   yAxisLabel?: string;
   showGrid?: boolean;

@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Offer, OfferItem } from '../types/offer';
 import type { Product } from '../types/product';
-import type { ProductoOpcion } from '../types/offer_item';
 import '../styles/shared/quantity-controls.css';
 import '../styles/offer-config-modal.css';
 import * as Icons from './shared/Icons';
@@ -86,7 +85,6 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
   }, [isOpen, offer.id]);
 
   // Autofocus first qty input when modal opens
-  const modalRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!isOpen) return;
     const t = setTimeout(() => {
