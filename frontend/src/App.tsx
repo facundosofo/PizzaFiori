@@ -1,6 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useZoom } from "./hooks/useZoom";
+
+function ZoomController() {
+  useZoom();
+  return null;
+}
 import LoginPage from "./pages/LoginPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import UserManagementPage from "./pages/UserManagementPage";
@@ -20,6 +26,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ZoomController />
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />

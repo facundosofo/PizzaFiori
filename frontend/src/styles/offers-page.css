@@ -8,7 +8,7 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
 }
 
 /* Botón crear oferta - Verde según guía UX */

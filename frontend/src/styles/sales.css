@@ -11,7 +11,7 @@
   padding: 40px 20px 40px 24px;
   /* inherit global background */
   background: transparent;
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
 }
 
 /* ===== LOADING STATE ===== */

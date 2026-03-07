@@ -45,25 +45,25 @@ const FilterBar = ({
             </div>
           </div>
         )}
+      </div>
 
-        <div className="filter-actions">
-          <button
-            className="filter-btn search"
-            onClick={onSearch}
-            title="Buscar"
-          >
-            <Icons.SearchIcon size={18} />
-            <span>Buscar</span>
-          </button>
-          <button
-            className="filter-btn clear"
-            onClick={onClear}
-            title="Limpiar filtros"
-          >
-            <Icons.XIcon size={18} />
-            <span>Limpiar</span>
-          </button>
-        </div>
+      <div className="filter-actions">
+        <button
+          className="filter-btn search"
+          onClick={onSearch}
+          title="Buscar"
+        >
+          <Icons.SearchIcon size={18} />
+          <span>Buscar</span>
+        </button>
+        <button
+          className="filter-btn clear"
+          onClick={onClear}
+          title="Limpiar filtros"
+        >
+          <Icons.XIcon size={18} />
+          <span>Limpiar</span>
+        </button>
       </div>
 
       {error && (

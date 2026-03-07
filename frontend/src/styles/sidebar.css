@@ -10,7 +10,7 @@
 }
 
 .app-layout {
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
   transition: grid-template-columns 0.2s ease;
@@ -21,7 +21,7 @@
 }
 
 .app-content {
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
   padding: 32px 40px 48px;
   min-width: 0;
 }
@@ -29,7 +29,7 @@
 .sidebar {
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: var(--app-height, 100vh);
   display: flex;
   flex-direction: column;
   background: var(--sidebar-bg);
