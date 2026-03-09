@@ -54,16 +54,32 @@ def _run_migrations() -> None:
 
 
 async def _auto_seed() -> None:
-    """Ejecuta seeds.py en cada startup. Como el seed es idempotente,
-    si los datos ya existen simplemente loguea [SKIP] para cada item."""
-    import sys
+    """Ejecuta el seed inicial solo si el sistema está completamente vacío."""
     import traceback
+    from app.infrastructure.database import AsyncSessionLocal
+    from sqlalchemy import text
+
+    TABLAS = [
+        '"productos_categorias"',
+        '"Productos"',
+        '"Ofertas"',
+        '"gastos_categorias"',
+        '"Usuarios"',
+    ]
 
     try:
-        logger.info("Ejecutando seed inicial (idempotente)...")
+        async with AsyncSessionLocal() as session:
+            for tabla in TABLAS:
+                result = await session.execute(text(f"SELECT 1 FROM {tabla} LIMIT 1"))
+                if result.first() is not None:
+                    logger.info("Seed omitido — datos ya existen en %s.", tabla)
+                    return
+
+        logger.info("Sistema vacío — ejecutando seed inicial...")
         import seeds
         await seeds.main()
         logger.info("Seed completado.")
+
     except Exception as exc:
         tb = traceback.format_exc()
         print(f"\n[AUTO-SEED ERROR] {exc}\n{tb}", file=sys.stderr, flush=True)
