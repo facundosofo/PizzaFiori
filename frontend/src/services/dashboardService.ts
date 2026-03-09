@@ -96,6 +96,7 @@ export interface ExpenseSummary {
 
 export interface ProductSummary {
   producto_mas_vendido: string;
+  categoria_mas_vendida: string;
   cantidad_mas_vendida: number;
   promocion_mas_vendida: string | null;
   cantidad_promocion: number;

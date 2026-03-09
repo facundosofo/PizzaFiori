@@ -64,51 +64,51 @@ CATEGORIAS_PRODUCTO = [
 
 PRODUCTOS_POR_CATEGORIA = {
     "Pizzas": [
-        "Muzzarella",
-        "Napolitana",
-        "Calabresa",
-        "Roquefort",
-        "Provolone",
-        "Palmitos",
-        "Ananá",
-        "Anchoas",
-        "Jamón y Morrones",
-        "Espinaca S. Blanca",
-        "Fugazza (S. Queso)",
-        "Fugazetta",
-        "Capresse",
-        "Crudo y Rúcula",
+        "Pizza Muzzarella",
+        "Pizza Napolitana",
+        "Pizza Calabresa",
+        "Pizza Roquefort",
+        "Pizza Provolone",
+        "Pizza Palmitos",
+        "Pizza Ananá",
+        "Pizza Anchoas",
+        "Pizza Jamón y Morrones",
+        "Pizza Espinaca S. Blanca",
+        "Pizza Fugazza (S. Queso)",
+        "Pizza Fugazetta",
+        "Pizza Caprese",
+        "Pizza Crudo y Rúcula",
         "Pizza Fiori",
         "Faina x Porción",
         "Faina Completa",
     ],
     "Empanadas": [
-        "Carne",
-        "Pollo",
-        "Jamón y Queso",
-        "Humita",
-        "Capresse",
-        "Verdura",
-        "Roqueford",
-        "Cebolla",
+        "Empanada de Carne",
+        "Empanada de Pollo",
+        "Empanada de Jamón y Queso",
+        "Empanada de Humita",
+        "Empanada Caprese",
+        "Empanada de Verdura",
+        "Empanada de Roquefort",
+        "Empanada de Cebolla",
     ],
     "Super Milas": [
-        "Napolitana",
-        "Americana",
-        "Fugazzetta",
-        "Capresse",
+        "Super Mila Napolitana",
+        "Super Mila Americana",
+        "Super Mila Fugazzetta",
+        "Super Mila Caprese",
     ],
     "Sandwich de Mila": [
-        "Completo",
-        "Simple",
+        "Sandwich de Mila Completo",
+        "Sandwich de Mila Simple",
     ],
     "Papas Fritas": [
-        "Completas",
-        "Simples",
+        "Papas Fritas Completas",
+        "Papas Fritas Simples",
     ],
     "Picada": [
-        "Tequeños, Nuggets y Papas Fritas",
-        "Tequeños",
+        "Picada: Tequeños, Nuggets y Papas Fritas",
+        "Picada: Tequeños",
     ],
     "Tartas": [
         "Jamón, Queso y Huevo (ENTERA)",
@@ -143,17 +143,11 @@ USUARIO = {
 
 def generar_sku_unico(nombre: str, categoria_nombre: str, contador: int = 0) -> str:
     """
-    Genera un SKU único usando nombre + categoría para evitar colisiones
-    entre productos con el mismo nombre en distintas categorías.
-    Formato: PROD-{CAT3}{NOMBRE5}{##}-TEMP
+    Genera un SKU legible para un producto.
+    Formato: CAT-CLAVE-00000 (ej: EMP-POLLO-01234)
+    El sufijo aleatorio garantiza unicidad entre llamadas.
     """
-    cat_limpio = normalizar_texto(categoria_nombre.upper())
-    cat_limpio = ''.join(c for c in cat_limpio if c.isalnum())[:3]
-
-    nom_limpio = normalizar_texto(nombre.upper())
-    nom_limpio = ''.join(c for c in nom_limpio if c.isalnum())[:5]
-
-    return f"PROD-{cat_limpio}{nom_limpio}{contador:02d}-TEMP"
+    return generar_sku_producto(nombre, categoria_nombre)
 
 
 # ─── Seed functions ─────────────────────────────────────────────────────────
@@ -227,6 +221,7 @@ async def seed_products(session, categorias: dict[str, ProductCategory]) -> dict
                 producto = Product(
                     sku=sku,
                     nombre=prod_nombre,
+                    imagen=f"uploads/productos/{sku}.jpg",
                     categoria_id=categoria.id,
                     activo=True,
                     fecha_creacion=now,
@@ -262,7 +257,7 @@ async def seed_offers(session, categorias: dict[str, ProductCategory], productos
             "items": [
                 {
                     "tipo": "producto",
-                    "producto_key": "Pizzas::Muzzarella",
+                    "producto_key": "Pizzas::Pizza Muzzarella",
                     "cantidad": 3,
                 },
             ],
@@ -287,15 +282,15 @@ async def seed_offers(session, categorias: dict[str, ProductCategory], productos
                 {
                     "tipo": "opciones",
                     "producto_keys": [
-                        "Pizzas::Jamón y Morrones",
-                        "Pizzas::Napolitana",
-                        "Pizzas::Calabresa",
+                        "Pizzas::Pizza Jamón y Morrones",
+                        "Pizzas::Pizza Napolitana",
+                        "Pizzas::Pizza Calabresa",
                     ],
                     "cantidad": 1,
                 },
                 {
                     "tipo": "producto",
-                    "producto_key": "Pizzas::Muzzarella",
+                    "producto_key": "Pizzas::Pizza Muzzarella",
                     "cantidad": 1,
                 },
                 {
@@ -312,7 +307,7 @@ async def seed_offers(session, categorias: dict[str, ProductCategory], productos
             "items": [
                 {
                     "tipo": "producto",
-                    "producto_key": "Pizzas::Muzzarella",
+                    "producto_key": "Pizzas::Pizza Muzzarella",
                     "cantidad": 1,
                 },
                 {

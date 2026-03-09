@@ -537,7 +537,7 @@ async def async_client(
     try:
         with patch.object(JWTMiddleware, 'dispatch', mock_jwt_dispatch):
             transport = ASGITransport(app=application, raise_app_exceptions=False)
-            async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with AsyncClient(transport=transport, base_url="http://test", follow_redirects=True) as client:
                 yield client
     finally:
         # Reset overrides after test

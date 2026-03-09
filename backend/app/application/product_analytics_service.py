@@ -97,6 +97,7 @@ class ProductAnalyticsService:
                     ]
                     return ServiceResult(value={
                         "producto_mas_vendido": "Sin datos",
+                        "categoria_mas_vendida": "",
                         "cantidad_mas_vendida": 0,
                         "promocion_mas_vendida": None,
                         "cantidad_promocion": 0,
@@ -113,6 +114,7 @@ class ProductAnalyticsService:
                 
                 result = {
                     "producto_mas_vendido": most_sold["nombre"],
+                    "categoria_mas_vendida": most_sold.get("categoria", ""),
                     "cantidad_mas_vendida": most_sold["cantidad"],
                     "promocion_mas_vendida": most_sold_offer["nombre"] if most_sold_offer else None,
                     "cantidad_promocion": most_sold_offer["cantidad"] if most_sold_offer else 0,
@@ -286,7 +288,7 @@ class ProductAnalyticsService:
         ]
 
     async def _get_most_sold_product(self, start_date: datetime | None) -> dict | None:
-        """Obtiene el producto más vendido por cantidad de unidades"""
+        """Obtiene el producto más vendido por cantidad de unidades, incluyendo su categoría."""
         adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         business_date_expr = cast(adjusted_fecha, Date)
         
@@ -299,20 +301,27 @@ class ProductAnalyticsService:
         # QUERY 1: Productos directos
         direct_query = select(
             SaleItem.item_nombre.label("name"),
+            func.coalesce(Category.nombre, SaleItem.item_categoria).label("category"),
             func.sum(SaleItem.cantidad).label("total_quantity"),
         ).select_from(
             SaleItem
         ).join(
             sales_subq, SaleItem.venta_id == sales_subq.c.id
+        ).outerjoin(
+            Product, SaleItem.producto_id == Product.id
+        ).outerjoin(
+            Category, Product.categoria_id == Category.id
         ).where(
             SaleItem.producto_id.isnot(None)
         ).group_by(
-            SaleItem.item_nombre
+            SaleItem.item_nombre,
+            func.coalesce(Category.nombre, SaleItem.item_categoria),
         )
         
         # QUERY 2: Productos en ofertas
         offer_query = select(
             SaleItemOfferProduct.producto_nombre.label("name"),
+            func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre).label("category"),
             func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("total_quantity"),
         ).select_from(
             SaleItemOfferProduct
@@ -320,15 +329,21 @@ class ProductAnalyticsService:
             SaleItem, SaleItemOfferProduct.venta_item_id == SaleItem.id
         ).join(
             sales_subq, SaleItem.venta_id == sales_subq.c.id
+        ).outerjoin(
+            Product, SaleItemOfferProduct.producto_id == Product.id
+        ).outerjoin(
+            Category, Product.categoria_id == Category.id
         ).where(
             SaleItem.oferta_id.isnot(None)
         ).group_by(
-            SaleItemOfferProduct.producto_nombre
+            SaleItemOfferProduct.producto_nombre,
+            func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre),
         )
         
         # QUERY 3: Pizzas mitad/mitad
         mitad_mitad_query = select(
             SaleItem.item_nombre.label("name"),
+            SaleItem.item_categoria.label("category"),
             func.sum(SaleItem.cantidad).label("total_quantity"),
         ).select_from(
             SaleItem
@@ -341,18 +356,21 @@ class ProductAnalyticsService:
                 SaleItem.oferta_id.is_(None)
             )
         ).group_by(
-            SaleItem.item_nombre
+            SaleItem.item_nombre,
+            SaleItem.item_categoria,
         )
         
         # UNION ALL: Combinar las tres queries
         combined_query = union_all(direct_query, offer_query, mitad_mitad_query).alias("combined")
         
-        # AGREGACIÓN FINAL: Agrupar por nombre y ordenar
+        # AGREGACIÓN FINAL: Agrupar por nombre+categoría y ordenar
         final_query = select(
             combined_query.c.name,
+            combined_query.c.category,
             func.sum(combined_query.c.total_quantity).label("total_quantity"),
         ).group_by(
-            combined_query.c.name
+            combined_query.c.name,
+            combined_query.c.category,
         ).order_by(
             func.sum(combined_query.c.total_quantity).desc()
         ).limit(1)
@@ -363,6 +381,7 @@ class ProductAnalyticsService:
         if row:
             return {
                 "nombre": row.name,
+                "categoria": row.category or "",
                 "cantidad": int(row.total_quantity or 0),
             }
         

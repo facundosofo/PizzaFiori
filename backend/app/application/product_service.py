@@ -53,22 +53,22 @@ class ProductService:
                 tiene_imagen=image is not None
             )
             
-            if image:
-                ruta_imagen = await self.file_service.save_file(image)
-                self.logger.debug("Imagen guardada", ruta=ruta_imagen)
-
             async with self.uow as uow:
-                # Validar que la categoría existe
+                # Validar que la categoría existe y generar SKU antes de guardar la imagen
                 categoria_nombre = None
                 if producto_create.categoria_id:
                     categoria = await uow.product_category_repo.get_by_id(producto_create.categoria_id)
                     if not categoria:
                         return ServiceResult(error="Categoría no encontrada", status_code=404)
                     categoria_nombre = categoria.nombre
-                
-                # Generar SKU automáticamente
+
                 sku = generar_sku_producto(producto_create.nombre, categoria_nombre)
-                
+
+            if image:
+                ruta_imagen = await self.file_service.save_file(image, filename_base=sku)
+                self.logger.debug("Imagen guardada", ruta=ruta_imagen)
+
+            async with self.uow as uow:
                 producto = Product(
                     sku=sku,
                     nombre=producto_create.nombre,
@@ -187,9 +187,10 @@ class ProductService:
                 }
 
                 ruta_imagen_vieja = producto.imagen
+                sku_producto = producto.sku
 
                 if image:
-                    ruta_imagen_nueva = await self.file_service.save_file(image)
+                    ruta_imagen_nueva = await self.file_service.save_file(image, filename_base=sku_producto)
                     producto.imagen = ruta_imagen_nueva
                 
                 if producto_update is not None:
@@ -282,7 +283,7 @@ class ProductService:
                             )
                             await uow.commit()
 
-            if image and ruta_imagen_vieja:
+            if image and ruta_imagen_vieja and ruta_imagen_vieja != ruta_imagen_nueva:
                 self.file_service.delete_file(ruta_imagen_vieja)
 
             # Invalidate product cache on write (selective)

@@ -114,8 +114,8 @@ async def test_create_product_with_image(mock_uow, mock_file_service, mock_cache
     assert result.value is not None
     assert result.error is None
     
-    # Verify mock calls
-    mock_file_service.save_file.assert_called_once_with(image)
+    # Verify mock calls — image saved with SKU as filename_base
+    mock_file_service.save_file.assert_called_once_with(image, filename_base="EMPA-CARN-001")
     mock_uow.product_repo.add.assert_called_once()
     mock_uow.commit.assert_called_once()
 
@@ -184,8 +184,8 @@ async def test_create_product_rollback_on_error(mock_uow, mock_file_service, moc
     assert result.status_code == 400
     assert result.error == "Database error"
     
-    # Verify image was deleted on error
-    mock_file_service.save_file.assert_called_once()
+    # Verify image was saved with SKU and then deleted on error
+    mock_file_service.save_file.assert_called_once_with(image, filename_base="TEST-PROD-001")
     mock_file_service.delete_file.assert_called_once_with("uploads/productos/test.jpg")
 
 
@@ -377,15 +377,17 @@ async def test_update_product_replaces_prices(mock_uow, mock_file_service, mock_
 
 
 @pytest.mark.asyncio
-async def test_update_product_with_new_image(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
-    """Test updating product with new image (deletes old image)."""
+async def test_update_product_with_new_image_different_extension(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
+    """Test updating product image with different extension: old file is deleted, new saved with SKU."""
     # Arrange
     service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
-    sample_product.imagen = "uploads/productos/old_image.jpg"
+    sample_product.sku = "EMP-CARNE-12345"
+    sample_product.imagen = "uploads/productos/EMP-CARNE-12345.jpg"
     mock_uow.product_repo.get_by_id.return_value = sample_product
     
-    new_image = UploadFile(filename="new.jpg", file=BytesIO(b"new"))
-    mock_file_service.save_file = AsyncMock(return_value="uploads/productos/new_image.jpg")
+    # Different extension: .jpg -> .png
+    new_image = UploadFile(filename="new.png", file=BytesIO(b"new"))
+    mock_file_service.save_file = AsyncMock(return_value="uploads/productos/EMP-CARNE-12345.png")
     
     # Act
     result = await service.update(1, image=new_image)
@@ -393,11 +395,37 @@ async def test_update_product_with_new_image(mock_uow, mock_file_service, mock_c
     # Assert
     assert result.status_code == 200
     
-    # Verify new image was saved
-    mock_file_service.save_file.assert_called_once_with(new_image)
+    # Verify new image was saved with SKU as filename_base
+    mock_file_service.save_file.assert_called_once_with(new_image, filename_base="EMP-CARNE-12345")
     
-    # Verify old image was deleted
-    mock_file_service.delete_file.assert_called_once_with("uploads/productos/old_image.jpg")
+    # Old path differs from new path -> old file should be deleted
+    mock_file_service.delete_file.assert_called_once_with("uploads/productos/EMP-CARNE-12345.jpg")
+
+
+@pytest.mark.asyncio
+async def test_update_product_with_new_image_same_extension(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
+    """Test updating product image with same extension: file is overwritten, delete_file NOT called."""
+    # Arrange
+    service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
+    sample_product.sku = "EMP-CARNE-12345"
+    sample_product.imagen = "uploads/productos/EMP-CARNE-12345.jpg"
+    mock_uow.product_repo.get_by_id.return_value = sample_product
+    
+    # Same extension: .jpg -> .jpg (overwrite)
+    new_image = UploadFile(filename="new.jpg", file=BytesIO(b"new"))
+    mock_file_service.save_file = AsyncMock(return_value="uploads/productos/EMP-CARNE-12345.jpg")
+    
+    # Act
+    result = await service.update(1, image=new_image)
+    
+    # Assert
+    assert result.status_code == 200
+    
+    # Verify new image was saved with SKU as filename_base
+    mock_file_service.save_file.assert_called_once_with(new_image, filename_base="EMP-CARNE-12345")
+    
+    # Same path -> delete_file must NOT be called (file was overwritten in place)
+    mock_file_service.delete_file.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -441,7 +469,7 @@ async def test_update_product_error_rollback_image(mock_uow, mock_file_service, 
     mock_uow.product_repo.get_by_id.return_value = sample_product
     
     new_image = UploadFile(filename="new.jpg", file=BytesIO(b"new"))
-    mock_file_service.save_file = AsyncMock(return_value="uploads/productos/new_image.jpg")
+    mock_file_service.save_file = AsyncMock(return_value="uploads/productos/EMP-TEST-00001.jpg")
     mock_uow.commit.side_effect = Exception("Database error")
     
     # Act
@@ -450,6 +478,6 @@ async def test_update_product_error_rollback_image(mock_uow, mock_file_service, 
     # Assert
     assert result.status_code == 400
     
-    # Verify new image was deleted on error
+    # Verify new image (SKU-named) was deleted on error
     assert mock_file_service.delete_file.call_count == 1
-    mock_file_service.delete_file.assert_called_with("uploads/productos/new_image.jpg")
+    mock_file_service.delete_file.assert_called_with("uploads/productos/EMP-TEST-00001.jpg")

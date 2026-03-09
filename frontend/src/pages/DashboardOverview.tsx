@@ -1025,9 +1025,14 @@ const DashboardOverview = () => {
           <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             Producto más vendido
           </div>
-          <div style={{ color: 'var(--color-text)', fontSize: '32px', fontWeight: 700, marginTop: '14px', marginBottom: '12px' }}>
+          <div style={{ color: 'var(--color-text)', fontSize: '28px', fontWeight: 700, marginTop: '14px', marginBottom: '4px' }}>
             {productsSummary?.producto_mas_vendido || '—'}
           </div>
+          {productsSummary?.categoria_mas_vendida && (
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginBottom: '8px' }}>
+              {productsSummary.categoria_mas_vendida}
+            </div>
+          )}
           <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '8px' }}>
             {productsSummary?.mes_actual || ''} • {productsSummary?.cantidad_mas_vendida ? `${productsSummary.cantidad_mas_vendida} unidades` : '—'}
           </div>
