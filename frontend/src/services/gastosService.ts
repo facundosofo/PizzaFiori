@@ -37,6 +37,7 @@ export const getGastos = async (
     }
 
     const response = await api.get<Expense[]>("/gastos", { params });
+    if (!Array.isArray(response.data)) return [];
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";

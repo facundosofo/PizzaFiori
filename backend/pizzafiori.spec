@@ -32,25 +32,36 @@ extra_datas, extra_bins, extra_hidden = _collect(
     'psycopg',
     'pydantic',
     'pydantic_settings',
+    'alembic',
+    'matplotlib',
 )
 
 a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=extra_bins,
-    datas=extra_datas,
+    datas=extra_datas + [
+        ('alembic.ini', '.'),
+        ('alembic', 'alembic'),
+    ],
     hiddenimports=extra_hidden + [
         # SQLAlchemy async + psycopg3 dialect
         'sqlalchemy.dialects.postgresql',
         'sqlalchemy.dialects.postgresql.psycopg',
         'sqlalchemy.ext.asyncio',
-        # Alembic (used for migrations — include so alembic can be run from venv,
-        # and so the app doesn't fail if it imports alembic internals)
+        # Alembic — ejecutado programáticamente desde el lifespan de FastAPI
         'alembic',
+        'alembic.config',
+        'alembic.command',
         'alembic.runtime.migration',
+        'alembic.runtime.environment',
         'alembic.operations',
+        'alembic.script',
+        'alembic.util',
         # python-dotenv
         'dotenv',
+        # seeds — bundled como bytecode para que no sea sobreescrito por archivo externo
+        'seeds',
         # App subpackages — dependency-injector wires them dynamically
         'app',
         'app.main',
@@ -64,7 +75,7 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     # Exclude dev/test-only packages to reduce exe size
-    excludes=['pytest', 'coverage', 'pip_audit', 'pygal', 'matplotlib'],
+    excludes=['pytest', 'coverage', 'pip_audit', 'pygal'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

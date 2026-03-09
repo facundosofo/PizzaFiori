@@ -14,7 +14,12 @@ from app.domain import *
 config = context.config
 
 # Interpret the config file for Python logging.
-fileConfig(config.config_file_name)
+# Se usa try/except para no interferir con el logging de uvicorn
+# cuando las migraciones se ejecutan desde el lifespan de la app.
+try:
+    fileConfig(config.config_file_name)
+except Exception:
+    pass
 
 # Target metadata
 target_metadata = Base.metadata

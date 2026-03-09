@@ -79,7 +79,7 @@ export const SalesCreatePage: React.FC = () => {
   // Refetch data when window gains focus (handles updates from other tabs)
   useEffect(() => {
     const handleFocus = () => {
-      fetchData();
+      if (!loading) fetchData();
     };
 
     window.addEventListener('focus', handleFocus);
@@ -87,7 +87,7 @@ export const SalesCreatePage: React.FC = () => {
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [fetchData]);
+  }, [fetchData, loading]);
 
   // Calculate cart total whenever items change
   useEffect(() => {

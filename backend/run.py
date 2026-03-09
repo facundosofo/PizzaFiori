@@ -15,10 +15,11 @@ import os
 from pathlib import Path
 
 # When running as a compiled PyInstaller bundle, change the working directory
-# to the folder containing the .exe so that relative paths (./certs, ./logs,
-# ./uploads) resolve correctly regardless of how the service was launched.
+# to the backend/ folder (parent of dist/) so that relative paths (./certs,
+# ./logs, ./uploads, ./.env) resolve correctly regardless of how the service
+# was launched.
 if getattr(sys, 'frozen', False):
-    os.chdir(Path(sys.executable).parent)
+    os.chdir(Path(sys.executable).parent.parent)
 
 import uvicorn
 from app.infrastructure.config.settings import settings

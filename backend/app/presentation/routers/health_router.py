@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.get("/", status_code=200)
+@router.get("", status_code=200)
 async def health_check():
     """
     GET /health — returns overall system status and database connectivity.

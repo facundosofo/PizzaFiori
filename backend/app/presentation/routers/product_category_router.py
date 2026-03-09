@@ -20,7 +20,7 @@ router = APIRouter(
 
 
 @router.post(
-    "/",
+    "",
     response_model=ProductoCategoriaResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Crear una categoría de producto",
@@ -44,7 +44,7 @@ async def create_producto_categoria(
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[ProductoCategoriaResponse],
     summary="Obtener todas las categorías de productos",
     description="Devuelve la lista de todas las categorías con filtro opcional por estado activo.",

@@ -359,8 +359,9 @@ export const getProductsSummary = async (
  * GET /api/productos-categorias
  */
 export const getCategories = async (): Promise<Category[]> => {
-  const url = '/productos-categorias';
-  return fetchJson(url);
+  const response = await api.get<Category[]>('/productos-categorias');
+  if (!Array.isArray(response.data)) return [];
+  return response.data;
 };
 /**
  * Obtener ventas totales con comparativa

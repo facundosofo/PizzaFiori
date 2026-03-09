@@ -9,6 +9,7 @@ export const getOfertas = async (active?: boolean): Promise<Offer[]> => {
     const response = await api.get<Offer[]>("/ofertas", {
       params: active !== undefined ? { active } : undefined,
     });
+    if (!Array.isArray(response.data)) return [];
     // Ensure precio is a number
     return response.data.map(offer => ({
       ...offer,

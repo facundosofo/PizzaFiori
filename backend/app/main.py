@@ -1,8 +1,12 @@
 import os
+import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.exception_handlers import http_exception_handler
 from .presentation.routers.product_router import router as product_router
 from .presentation.routers.product_category_router import router as product_category_router
 from .presentation.routers.offer_router import router as offer_router
@@ -29,7 +33,80 @@ container.wire()
 logger = container.logging()
 logger.debug("Inicializando PizzaFiori API")
 
-app = FastAPI(title="PizzaFiori API")
+
+def _run_migrations() -> None:
+    """Ejecuta `alembic upgrade head` programáticamente.
+
+    Cuando corre como bundle PyInstaller, los archivos de alembic están en
+    sys._MEIPASS.  En desarrollo se usan las rutas normales del proyecto.
+    """
+    from alembic.config import Config
+    from alembic import command as alembic_command
+
+    if getattr(sys, 'frozen', False):
+        base_dir = Path(sys._MEIPASS)
+    else:
+        base_dir = Path(__file__).resolve().parent.parent
+
+    cfg = Config(str(base_dir / "alembic.ini"))
+    cfg.set_main_option("script_location", str(base_dir / "alembic"))
+    alembic_command.upgrade(cfg, "head")
+
+
+async def _auto_seed() -> None:
+    """Ejecuta seeds.py en cada startup. Como el seed es idempotente,
+    si los datos ya existen simplemente loguea [SKIP] para cada item."""
+    import sys
+    import traceback
+
+    try:
+        logger.info("Ejecutando seed inicial (idempotente)...")
+        import seeds
+        await seeds.main()
+        logger.info("Seed completado.")
+    except Exception as exc:
+        tb = traceback.format_exc()
+        print(f"\n[AUTO-SEED ERROR] {exc}\n{tb}", file=sys.stderr, flush=True)
+        logger.error("Error en auto-seed (la app continua): %s\n%s", exc, tb)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Aplicando migraciones de base de datos...")
+    try:
+        _run_migrations()
+        logger.info("Migraciones aplicadas correctamente.")
+    except Exception as exc:
+        logger.error(f"Error al aplicar migraciones (la app continua): {exc}")
+    await _auto_seed()
+    yield
+
+
+# Calcular ruta del frontend. En bundle PyInstaller el exe vive en
+# C:\PizzaFiori\backend\dist\pizzafiori.exe -> parent*3 = C:\PizzaFiori\
+if getattr(sys, 'frozen', False):
+    _FRONTEND_DIST = Path(sys.executable).resolve().parent.parent.parent / "frontend" / "dist"
+else:
+    _FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "dist"
+
+
+app = FastAPI(title="PizzaFiori API", lifespan=lifespan)
+
+
+@app.exception_handler(HTTPException)
+async def _spa_exception_handler(request: Request, exc: HTTPException):
+    """Para F5 en rutas con auth (401/403): el browser manda Accept: text/html
+    pero sin token. Devolvemos index.html para que React cargue y rediriga a /login.
+    Axios siempre manda Accept: application/json, nunca entra por aqui."""
+    if exc.status_code in (401, 403):
+        accept = request.headers.get("Accept", "")
+        if "text/html" in accept and _FRONTEND_DIST.is_dir():
+            return FileResponse(
+                str(_FRONTEND_DIST / "index.html"),
+                headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+            )
+    return await http_exception_handler(request, exc)
+
 
 # Middleware de JWT (antes de los routers para validar tokens)
 app.add_middleware(JWTMiddleware, logger=get_logger("auth.jwt"))
@@ -67,17 +144,27 @@ app.include_router(expense_router)
 app.include_router(stock_router)
 app.include_router(health_router)
 
-# Servir el frontend buildeado (producción) si existe el directorio dist/.
-# Cuando corre como PyInstaller bundle, __file__ está dentro del temp dir de
-# extracción; navegar desde sys.executable (el .exe en backend/) en su lugar.
-import sys as _sys
-if getattr(_sys, 'frozen', False):
-    _FRONTEND_DIST = Path(_sys.executable).resolve().parent.parent / "frontend" / "dist"
-else:
-    _FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "dist"
 if _FRONTEND_DIST.is_dir():
-    from fastapi.staticfiles import StaticFiles as _StaticFiles
-    app.mount("/", _StaticFiles(directory=str(_FRONTEND_DIST), html=True), name="spa")
+    # Montar los assets estaticos directamente para MIME types correctos
+    _assets_dir = _FRONTEND_DIST / "assets"
+    if _assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="spa-assets")
+    # Catch-all SPA route — se registra DESPUES de todos los routers de API,
+    # por lo que solo captura paths que ningun router reconoce.
+    # Sirve archivos estaticos reales (JS/CSS/imagenes) o index.html para
+    # cualquier ruta de React Router (dashboard, reportes, auditoria, etc.)
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str):
+        # Archivo estatico real: JS, CSS, PNG, SVG, favicon, etc.
+        candidate = (_FRONTEND_DIST / full_path).resolve()
+        dist_root = _FRONTEND_DIST.resolve()
+        if str(candidate).startswith(str(dist_root)) and candidate.is_file():
+            return FileResponse(str(candidate))
+        # Todo lo demas (rutas de React Router) -> index.html
+        return FileResponse(
+            str(_FRONTEND_DIST / "index.html"),
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+        )
 else:
     @app.get("/")
     def root():

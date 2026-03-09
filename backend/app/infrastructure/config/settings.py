@@ -8,7 +8,8 @@ from pathlib import Path
 # When running as a PyInstaller bundle (frozen), __file__ points inside the
 # extraction temp dir; use sys.executable (the .exe) instead.
 if getattr(_sys, 'frozen', False):
-    _BACKEND_DIR = Path(_sys.executable).resolve().parent
+    # sys.executable = backend\dist\pizzafiori.exe  →  .parent.parent = backend\
+    _BACKEND_DIR = Path(_sys.executable).resolve().parent.parent
 else:
     _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent.parent
 _ENV_FILE = _BACKEND_DIR / ".env"
@@ -68,6 +69,13 @@ class Settings(BaseSettings):
     # SSL/TLS Configuration
     ssl_key_file: Optional[str] = Field(default=None, alias="SSL_KEY_FILE")
     ssl_cert_file: Optional[str] = Field(default=None, alias="SSL_CERT_FILE")
+
+    # Seed — credenciales del administrador inicial (leídas del .env)
+    seed_admin_username: Optional[str] = Field(default=None, alias="SEED_ADMIN_USERNAME")
+    seed_admin_email: Optional[str] = Field(default=None, alias="SEED_ADMIN_EMAIL")
+    seed_admin_password: Optional[str] = Field(default=None, alias="SEED_ADMIN_PASSWORD")
+    seed_admin_first_name: Optional[str] = Field(default=None, alias="SEED_ADMIN_FIRST_NAME")
+    seed_admin_last_name: Optional[str] = Field(default=None, alias="SEED_ADMIN_LAST_NAME")
 
 
 settings = Settings()

@@ -51,7 +51,7 @@ const ExpensesPage = () => {
   });
 
   const categoriasActivas = useMemo(
-    () => categorias.filter((item) => item.activo),
+    () => (Array.isArray(categorias) ? categorias : []).filter((item) => item.activo),
     [categorias]
   );
 
@@ -93,7 +93,7 @@ const ExpensesPage = () => {
       return new Date(value).getTime();
     };
 
-    return [...gastos].sort((a, b) => parseFecha(b.fecha_pago) - parseFecha(a.fecha_pago));
+    return (Array.isArray(gastos) ? [...gastos] : []).sort((a, b) => parseFecha(b.fecha_pago) - parseFecha(a.fecha_pago));
   }, [gastos]);
 
   const totalPages = useMemo(() => {
