@@ -33,6 +33,10 @@ class AbstractProductRepository(ABC):
         ...
 
     @abstractmethod
+    async def get_by_ids(self, producto_ids: List[int]) -> List[Product]:
+        ...
+
+    @abstractmethod
     async def refresh(
         self,
         product: Product,

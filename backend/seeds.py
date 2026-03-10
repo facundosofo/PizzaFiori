@@ -79,7 +79,7 @@ PRODUCTOS_POR_CATEGORIA = {
         "Pizza Caprese",
         "Pizza Crudo y Rúcula",
         "Pizza Fiori",
-        "Faina x Porción",
+        "Faina (Porcion)",
         "Faina Completa",
     ],
     "Empanadas": [
@@ -111,9 +111,9 @@ PRODUCTOS_POR_CATEGORIA = {
         "Picada: Tequeños",
     ],
     "Tartas": [
-        "Jamón, Queso y Huevo (ENTERA)",
+        "Jamón, Queso y Huevo",
         "Jamón, Queso y Huevo (PORCION)",
-        "Jamón, Queso, Tomate y Huevo (ENTERA)",
+        "Jamón, Queso, Tomate y Huevo",
         "Jamón, Queso, Tomate y Huevo (PORCION)",
     ],
 }

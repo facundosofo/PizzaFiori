@@ -12,7 +12,7 @@ import app.domain.models  # noqa: F401
 # Format: postgresql+asyncpg://user:password@host:port/database
 DATABASE_URL = f"postgresql+asyncpg://{quote(settings.db_user)}:{quote(settings.db_password)}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
 
-engine = create_async_engine(DATABASE_URL, echo=True, future=True)
+engine = create_async_engine(DATABASE_URL, echo=settings.debug, future=True)
 AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 async def get_db():

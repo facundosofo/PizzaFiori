@@ -136,7 +136,10 @@ class SalesAnalyticsService:
             SaleItem.venta_id,
             func.sum(SaleItem.cantidad).label("direct_qty")
         ).where(
-            SaleItem.producto_id.isnot(None)
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.producto_id.isnot(None),
+            )
         ).group_by(
             SaleItem.venta_id
         ).subquery()
@@ -149,7 +152,10 @@ class SalesAnalyticsService:
         ).join(
             SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
         ).where(
-            SaleItem.oferta_id.isnot(None)
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.oferta_id.isnot(None),
+            )
         ).group_by(
             SaleItem.venta_id
         ).subquery()
@@ -158,7 +164,10 @@ class SalesAnalyticsService:
             SaleItem.venta_id,
             func.sum(SaleItem.cantidad).label("mitad_qty")
         ).where(
-            SaleItem.es_pizza_mitad_mitad == True
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.es_pizza_mitad_mitad == True,
+            )
         ).group_by(
             SaleItem.venta_id
         ).subquery()

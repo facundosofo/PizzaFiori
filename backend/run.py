@@ -21,15 +21,19 @@ from pathlib import Path
 if getattr(sys, 'frozen', False):
     os.chdir(Path(sys.executable).parent.parent)
 
-import uvicorn
+import asyncio
+from hypercorn.config import Config
+from hypercorn.asyncio import serve
 from app.infrastructure.config.settings import settings
 
 if __name__ == '__main__':
-    uvicorn.run(
-        'app.main:app',
-        host='0.0.0.0',
-        port=settings.api_port,
-        ssl_keyfile=settings.ssl_key_file,
-        ssl_certfile=settings.ssl_cert_file,
-        log_level='info',
-    )
+    from app.main import app
+
+    config = Config()
+    config.bind = [f'0.0.0.0:{settings.api_port}']
+    config.keyfile = settings.ssl_key_file
+    config.certfile = settings.ssl_cert_file
+    config.loglevel = 'info'
+    # h2 is advertised automatically via ALPN when the h2 package is installed
+
+    asyncio.run(serve(app, config))

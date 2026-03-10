@@ -380,7 +380,7 @@ class ProductService:
                 # 3. Aplicar actualizaciones en una sola transacción
                 for producto_id, new_prices in updates.items():
                     await uow.product_repo.replace_prices(producto_id, new_prices)
-                    await uow.session.flush()
+                await uow.session.flush()
 
                 # Actualizar fecha_actualizacion de cada producto
                 for producto in productos:
@@ -388,28 +388,24 @@ class ProductService:
 
                 await uow.commit()
 
-            # 4. Recargar productos actualizados
+            # 4. Recargar productos actualizados en una sola query
             async with self.uow as uow:
-                updated_productos = []
-                for producto_id in updates.keys():
-                    producto = await uow.product_repo.get_by_id(producto_id)
-                    if producto:
-                        updated_productos.append(producto)
+                updated_productos = await uow.product_repo.get_by_ids(list(updates.keys()))
 
-            # 5. Auditar cada cambio
+            # 5. Auditar cada cambio en una sola transacción
             if self.audit_service and username:
-                for producto in updated_productos:
-                    old_precios = old_snapshots.get(producto.id, [])
-                    new_precios = [
-                        {"cantidad": p.cantidad, "precio": float(p.precio)}
-                        for p in (producto.precios or [])
-                    ]
+                async with self.uow as uow:
+                    for producto in updated_productos:
+                        old_precios = old_snapshots.get(producto.id, [])
+                        new_precios = [
+                            {"cantidad": p.cantidad, "precio": float(p.precio)}
+                            for p in (producto.precios or [])
+                        ]
 
-                    if old_precios != new_precios:
-                        diff = {
-                            "precios": {"old": old_precios, "new": new_precios},
-                        }
-                        async with self.uow as uow:
+                        if old_precios != new_precios:
+                            diff = {
+                                "precios": {"old": old_precios, "new": new_precios},
+                            }
                             await uow.audit_repo.log_action(
                                 username=username,
                                 entity_type="Product",
@@ -417,7 +413,7 @@ class ProductService:
                                 action="BULK_UPDATE",
                                 changes=diff,
                             )
-                            await uow.commit()
+                    await uow.commit()
 
             # 6. Invalidar cache
             self.cache_service.invalidate("producto_*")

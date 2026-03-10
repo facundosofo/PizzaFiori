@@ -25,7 +25,8 @@ def _collect(*packages):
 
 
 extra_datas, extra_bins, extra_hidden = _collect(
-    'uvicorn',
+    'hypercorn',
+    'h2',
     'fastapi',
     'starlette',
     'dependency_injector',

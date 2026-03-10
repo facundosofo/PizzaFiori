@@ -124,7 +124,7 @@ PizzaFiori/
    pip install -r requirements.txt
    # Configurar variables de entorno (.env)
    alembic upgrade head
-   uvicorn app.main:app --reload
+   hypercorn app.main:app --reload --bind 0.0.0.0:8000
    ```
 
 3. **Configurar el frontend:**

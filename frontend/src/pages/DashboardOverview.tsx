@@ -388,32 +388,39 @@ const DashboardOverview = () => {
   }, [fetchDashboardData]);
 
   useEffect(() => {
+    if (activeTab !== 'ventas') return;
     fetchSalesByCategory();
-  }, [fetchSalesByCategory]);
+  }, [activeTab, fetchSalesByCategory]);
 
   useEffect(() => {
+    if (activeTab !== 'ventas') return;
     fetchTopProducts();
-  }, [fetchTopProducts]);
+  }, [activeTab, fetchTopProducts]);
 
   useEffect(() => {
+    if (activeTab !== 'ventas') return;
     fetchWeekdayRevenue();
-  }, [fetchWeekdayRevenue]);
+  }, [activeTab, fetchWeekdayRevenue]);
 
   useEffect(() => {
+    if (activeTab !== 'gastos') return;
     fetchExpensesByPeriod();
-  }, [fetchExpensesByPeriod]);
+  }, [activeTab, fetchExpensesByPeriod]);
 
   useEffect(() => {
+    if (activeTab !== 'gastos') return;
     fetchExpensesByCategory();
-  }, [fetchExpensesByCategory]);
+  }, [activeTab, fetchExpensesByCategory]);
 
   useEffect(() => {
+    if (activeTab !== 'gastos') return;
     fetchExpensesSummary();
-  }, [fetchExpensesSummary]);
+  }, [activeTab, fetchExpensesSummary]);
 
   useEffect(() => {
+    if (activeTab !== 'productos') return;
     fetchProductsSummary();
-  }, [fetchProductsSummary]);
+  }, [activeTab, fetchProductsSummary]);
 
   useEffect(() => {
     if (activeTab !== 'balance') return;

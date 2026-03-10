@@ -40,7 +40,6 @@ API_PREFIXES = (
     "/docs",
     "/openapi",
     "/redoc",
-    "/uploads",
 )
 
 
@@ -142,6 +141,10 @@ class JWTMiddleware(BaseHTTPMiddleware):
         """Check if the route is public (doesn't require authentication)."""
         # Exact matches for known public API routes
         if path in PUBLIC_ROUTES:
+            return True
+
+        # Static uploads (product images) are public — <img> tags never send auth headers
+        if path.startswith("/uploads"):
             return True
 
         # If path doesn't start with any known API prefix, it's a frontend
