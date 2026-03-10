@@ -81,10 +81,9 @@
 | IMG-PROD-01 | `IMG-PROD-01.png` | Pantalla de Productos con 2-3 categorías expandidas mostrando las tarjetas de productos | La organización en categorías y tarjetas |
 | IMG-PROD-02 | `IMG-PROD-02.png` | Parte superior de la pantalla de Productos con el botón "Nuevo Producto" visible | El botón Nuevo Producto |
 | IMG-PROD-03 | `IMG-PROD-03.png` | Formulario/modal de creación de producto con todos los campos (nombre, categoría, precio, imagen) | Todos los campos del formulario |
-| IMG-PROD-04 | `IMG-PROD-04.png` | Tarjeta de un producto mostrando el indicador de activo/inactivo (toggle) | El toggle de activo/inactivo |
-| IMG-PROD-05 | `IMG-PROD-05.png` | Parte superior de la pantalla con el botón de "Actualizar precios" o "Precios en masa" visible | El botón correspondiente |
-| IMG-PROD-06 | `IMG-PROD-06.png` | Ventana modal de actualización masiva de precios con la lista de productos editables | Los campos de precio editables para varios productos |
-| IMG-PROD-07 | `IMG-PROD-07.png` | Ventana/modal de gestión de categorías de productos (lista de categorías con opciones de editar) | La lista de categorías y los botones de acción |
+| IMG-PROD-05 | `IMG-PROD-04.png` | Parte superior de la pantalla con el botón de "Actualizar precios" o "Precios en masa" visible | El botón correspondiente |
+| IMG-PROD-06 | `IMG-PROD-05.png` | Ventana modal de actualización masiva de precios con la lista de productos editables | Los campos de precio editables para varios productos |
+| IMG-PROD-07 | `IMG-PROD-06.png` | Ventana/modal de gestión de categorías de productos (lista de categorías con opciones de editar) | La lista de categorías y los botones de acción |
 
 ---
 
