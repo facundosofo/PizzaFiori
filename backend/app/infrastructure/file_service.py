@@ -29,8 +29,8 @@ class FileService:
 
         # 4. Determinar nombre de archivo y ruta
         if filename_base:
-            # Nombre basado en SKU: sobreescritura intencional (create/update usan siempre el SKU)
-            filename = f"{filename_base}{file_ext}"
+            # Nombre basado en SKU: siempre .jpg para extension unificada
+            filename = f"{filename_base}.jpg"
             file_path = self.base_path / filename
             mode = "wb"
         else:

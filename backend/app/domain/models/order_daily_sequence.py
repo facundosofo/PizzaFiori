@@ -6,7 +6,7 @@ from app.domain.models.base import Base
 
 
 class OrderDailySequence(Base):
-    __tablename__ = "order_daily_sequence"
+    __tablename__ = "secuencia_pedidos"
 
     business_date = Column(Date, primary_key=True)
     last_value = Column(Integer, nullable=False)

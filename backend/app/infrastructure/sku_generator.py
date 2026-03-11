@@ -64,20 +64,37 @@ def _extraer_clave_nombre(nombre: str) -> str:
         tokens.extend(p.strip() for p in partes if p.strip())
 
     if len(tokens) <= 1:
-        # Un solo término: primeros chars del texto limpio
         texto = tokens[0] if tokens else nombre_sin_prefijo
-        clean = re.sub(r"[^a-zA-Z0-9]", "", texto).upper()
-        base = clean[:max_base]
+        palabras = [re.sub(r"[^a-zA-Z0-9]", "", w).upper() for w in texto.split() if re.sub(r"[^a-zA-Z0-9]", "", w)]
+        n = len(palabras)
+        if n == 0:
+            base = ""
+        elif n == 1:
+            base = palabras[0][:max_base]
+        else:
+            # chars de la 1ra palabra = max_base - (n-1), mínimo 1
+            chars_primera = max(1, max_base - (n - 1))
+            base = palabras[0][:chars_primera]
+            for p in palabras[1:max_base]:
+                base += p[0] if p else ""
+            base = base[:max_base]
     else:
-        # Múltiples ítems: inicial de la primera palabra de cada ítem
-        initials = ""
-        for token in tokens:
+        # Múltiples ítems: misma regla N-tokens, más chars al primero
+        n = len(tokens)
+        chars_primera = max(1, max_base - (n - 1))
+        first_words = tokens[0].split()
+        if first_words:
+            first_clean = re.sub(r"[^a-zA-Z0-9]", "", normalizar_texto(first_words[0])).upper()
+            base = first_clean[:chars_primera]
+        else:
+            base = ""
+        for token in tokens[1:max_base]:
             palabras = token.split()
             if palabras:
                 c = re.sub(r"[^a-zA-Z0-9]", "", normalizar_texto(palabras[0])).upper()
                 if c:
-                    initials += c[0]
-        base = initials[:max_base]
+                    base += c[0]
+        base = base[:max_base]
 
     result = (base + parenth_char)[:5]
     return result or "PROD"

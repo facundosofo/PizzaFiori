@@ -60,6 +60,7 @@ CATEGORIAS_PRODUCTO = [
     "Papas Fritas",
     "Picada",
     "Tartas",
+    "Extras",
 ]
 
 PRODUCTOS_POR_CATEGORIA = {
@@ -115,6 +116,14 @@ PRODUCTOS_POR_CATEGORIA = {
         "Jamón, Queso y Huevo (PORCION)",
         "Jamón, Queso, Tomate y Huevo",
         "Jamón, Queso, Tomate y Huevo (PORCION)",
+    ],
+    "Extras": [
+        "Salsa",
+        "Muzzarella",
+        "Aceitunas Verdes",
+        "Aceitunas Negras",
+        "Jamón",
+        "Huevo Frito",
     ],
 }
 

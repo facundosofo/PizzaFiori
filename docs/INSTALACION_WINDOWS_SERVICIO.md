@@ -138,10 +138,12 @@ Copiar la siguiente estructura en una carpeta limpia y comprimir en un ZIP para 
 ```
 PizzaFiori-entregable\
 ├── backend\
-│   └── dist\
-│       └── pizzafiori.exe   ← ejecutable compilado
+│   ├── dist\
+│   │   └── pizzafiori.exe        ← ejecutable compilado
+│   ├── rename_imagenes.ps1       ← renombrador de imagenes
+│   └── rename_imagenes.bat       ← doble clic para ejecutar
 └── frontend\
-    └── dist\               ← build React (HTML/JS/CSS)
+    └── dist\                     ← build React (HTML/JS/CSS)
 ```
 
 > **No incluir:** `.venv\`, `node_modules\`, código fuente, ni archivos `.env`.
@@ -475,7 +477,54 @@ Luego del reinicio, abrir `https://pizzafiori.com.ar` — debe funcionar sin int
 
 ---
 
-## 🛑 Comandos de gestión del servicio
+## �️ C9 — Cargar imágenes de productos
+
+> Ejecutar **después** de que el servicio haya iniciado al menos una vez.
+> El sistema registra los productos con sus SKUs durante el primer arranque (seed automático).
+
+### C9.1 — Copiar las imágenes
+
+Copiar todos los archivos de imágenes a:
+
+```
+C:\PizzaFiori\backend\uploads\productos\
+```
+
+Los archivos pueden tener cualquier número al final (ej: `PIZ-MUZZA-99999.jpg`). El script del paso siguiente los renombra automáticamente al SKU exacto.
+
+### C9.2 — Ejecutar el renombrador
+
+Hacer doble clic en:
+
+```
+C:\PizzaFiori\backend\rename_imagenes.bat
+```
+
+O desde PowerShell (para previsualizar sin cambiar nada):
+
+```powershell
+cd C:\PizzaFiori\backend
+.\rename_imagenes.ps1 -DryRun   # previsualizar
+.\rename_imagenes.ps1            # aplicar
+```
+
+El script lee las credenciales del `.env`, consulta los SKUs reales desde la base de datos y renombra cada imagen al nombre exacto esperado por el sistema.
+
+Significado de los estados al finalizar:
+
+| Estado | Significado | Acción |
+|---|---|---|
+| `[OK]` | Renombrado correctamente | — |
+| `[SKIP]` | Ya tenía el nombre correcto | — |
+| `[NO ENCONTRADO]` | Producto sin imagen en la carpeta | Copiar la imagen y volver a ejecutar |
+| `[AMBIGUO]` | Más de una imagen con el mismo prefijo | Eliminar la duplicada y volver a ejecutar |
+| `[ADVERTENCIA]` | El archivo destino ya existe con otro origen | Revisar manualmente |
+
+> El script es seguro de ejecutar varias veces — ante cualquier duda no toca nada.
+
+---
+
+## �🛑 Comandos de gestión del servicio
 
 ```powershell
 nssm start PizzaFiori     # Iniciar
