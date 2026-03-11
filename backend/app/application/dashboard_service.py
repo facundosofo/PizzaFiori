@@ -225,7 +225,10 @@ class DashboardService:
             SaleItem.venta_id,
             func.sum(SaleItem.cantidad).label("direct_qty")
         ).where(
-            SaleItem.producto_id.isnot(None)  # Productos directos
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.producto_id.isnot(None),  # Productos directos
+            )
         ).group_by(
             SaleItem.venta_id
         ).subquery()
@@ -239,7 +242,10 @@ class DashboardService:
         ).join(
             SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
         ).where(
-            SaleItem.oferta_id.isnot(None)  # Items de ofertas
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.oferta_id.isnot(None),  # Items de ofertas
+            )
         ).group_by(
             SaleItem.venta_id
         ).subquery()
@@ -249,7 +255,10 @@ class DashboardService:
             SaleItem.venta_id,
             func.sum(SaleItem.cantidad).label("mitad_qty")
         ).where(
-            SaleItem.es_pizza_mitad_mitad == True
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.es_pizza_mitad_mitad == True,
+            )
         ).group_by(
             SaleItem.venta_id
         ).subquery()
@@ -452,16 +461,18 @@ class DashboardService:
         """
         from sqlalchemy import text
 
-        start_date = datetime.now() - timedelta(days=limit * 365)
+        now = datetime.now()
+        current_year = now.year
+        start_year = current_year - (limit - 1)
         
-        # PASO 1: Subconsulta de ventas (pre-filtrado por fecha)
+        # PASO 1: Subconsulta de ventas (pre-filtrado por año calendario)
         adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         sale_subquery = select(
             Sale.id.label("sale_id"),
             extract('year', adjusted_fecha).label("year"),
             Sale.total.label("sale_total")
         ).where(
-            adjusted_fecha >= start_date
+            extract('year', adjusted_fecha) >= start_year
         ).subquery()
         
         # PASO 2: Agregar items DIRECTOS por venta (productos individuales)
@@ -532,19 +543,21 @@ class DashboardService:
             sale_subquery.c.year
         ).order_by(
             sale_subquery.c.year
-        ).limit(limit)
+        )
         
         result = await self.uow.session.execute(query)
         rows = result.fetchall()
         
+        year_data = {int(row.year): row for row in rows}
+        
         return [
             {
-                "año": str(row.year),
-                "ingresos": float(row.revenue or 0),
-                "pedidos": int(row.pedidos or 0),
-                "cantidad": int(row.cantidad or 0),
+                "año": str(year),
+                "ingresos": float(year_data[year].revenue or 0) if year in year_data else 0.0,
+                "pedidos": int(year_data[year].pedidos or 0) if year in year_data else 0,
+                "cantidad": int(year_data[year].cantidad or 0) if year in year_data else 0,
             }
-            for row in rows
+            for year in range(start_year, current_year + 1)
         ]
 
     async def _get_top_products_data(

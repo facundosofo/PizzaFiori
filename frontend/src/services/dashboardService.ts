@@ -96,6 +96,7 @@ export interface ExpenseSummary {
 
 export interface ProductSummary {
   producto_mas_vendido: string;
+  categoria_mas_vendida: string;
   cantidad_mas_vendida: number;
   promocion_mas_vendida: string | null;
   cantidad_promocion: number;
@@ -359,8 +360,9 @@ export const getProductsSummary = async (
  * GET /api/productos-categorias
  */
 export const getCategories = async (): Promise<Category[]> => {
-  const url = '/productos-categorias';
-  return fetchJson(url);
+  const response = await api.get<Category[]>('/productos-categorias');
+  if (!Array.isArray(response.data)) return [];
+  return response.data;
 };
 /**
  * Obtener ventas totales con comparativa

@@ -135,33 +135,21 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
         Returns:
             List[int]: IDs de las ofertas desactivadas
         """
-        # Subquery para encontrar offer_ids que tienen el producto
         subquery = (
             select(OfferItem.oferta_id)
             .join(oferta_item_productos, OfferItem.id == oferta_item_productos.c.oferta_item_id)
             .where(oferta_item_productos.c.producto_id == producto_id)
             .distinct()
         )
-        
-        # Obtener IDs de ofertas activas que serán desactivadas
-        ofertas_query = (
-            select(Offer.id)
-            .where(Offer.id.in_(subquery))
-            .where(Offer.activo == True)
+
+        stmt = (
+            update(Offer)
+            .where(Offer.id.in_(subquery), Offer.activo == True)
+            .values(activo=False)
+            .returning(Offer.id)
         )
-        result = await self.session.execute(ofertas_query)
-        offer_ids = list(result.scalars().all())
-        
-        # Actualizar ofertas activas que contienen el producto
-        if offer_ids:
-            stmt = (
-                update(Offer)
-                .where(Offer.id.in_(offer_ids))
-                .values(activo=False)
-            )
-            await self.session.execute(stmt)
-        
-        return offer_ids
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def deactivate_by_products(self, producto_ids: List[int]) -> List[int]:
         """
@@ -182,21 +170,12 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
             .where(oferta_item_productos.c.producto_id.in_(producto_ids))
             .distinct()
         )
-        
-        ofertas_query = (
-            select(Offer.id)
-            .where(Offer.id.in_(subquery))
-            .where(Offer.activo == True)
+
+        stmt = (
+            update(Offer)
+            .where(Offer.id.in_(subquery), Offer.activo == True)
+            .values(activo=False)
+            .returning(Offer.id)
         )
-        result = await self.session.execute(ofertas_query)
-        offer_ids = list(result.scalars().all())
-        
-        if offer_ids:
-            stmt = (
-                update(Offer)
-                .where(Offer.id.in_(offer_ids))
-                .values(activo=False)
-            )
-            await self.session.execute(stmt)
-        
-        return offer_ids
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

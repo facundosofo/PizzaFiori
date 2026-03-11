@@ -9,6 +9,7 @@ import type {
 export const getAllStocks = async (): Promise<CategoryStock[]> => {
   try {
     const response = await api.get<CategoryStock[]>("/stock");
+    if (!Array.isArray(response.data)) return [];
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";

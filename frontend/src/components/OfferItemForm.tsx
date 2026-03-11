@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import RadioGroup, { type RadioOption } from "./shared/RadioGroup";
 import MultiSelect, { type MultiSelectItem } from "./shared/MultiSelect";
-import SearchableSelect, { type SelectOption } from "./shared/SearchableSelect";
+import SearchableSelect from "./shared/SearchableSelect";
 import * as Icons from './shared/Icons';
 import type { Product } from "../types/product";
 import type { ProductoCategoria } from "../types/product_category";

@@ -24,7 +24,7 @@ router = APIRouter(
 
 
 @router.post(
-    "/",
+    "",
     response_model=ProductoResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Crear un producto",
@@ -105,7 +105,7 @@ async def bulk_update_prices(
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[ProductoResponse],
     summary="Obtener todos los productos",
     description="Devuelve la lista de productos.",

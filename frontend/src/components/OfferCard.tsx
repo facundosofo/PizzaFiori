@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Offer, OfferItem } from "../types/offer";
 import type { Product } from "../types/product";
 import * as Icons from "./shared/Icons";
-import Badge from "./shared/Badge";
+
 import ConfirmDialog from "./shared/ConfirmDialog";
 import ErrorAlert from "./shared/ErrorAlert";
 import { deactivateOffer } from "../services/ofertasService";
@@ -40,7 +40,6 @@ const getItemDetail = (
 
 const OfferCard = ({
   oferta,
-  productos,
   onEdit,
   onOfferDelete,
 }: OfferCardProps) => {

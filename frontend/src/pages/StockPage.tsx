@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import * as Icons from "../components/shared/Icons";
@@ -19,6 +19,8 @@ const StockPage = () => {
   const [stocks, setStocks] = useState<CategoryStock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadingRef = useRef(loading);
+  useEffect(() => { loadingRef.current = loading; }, [loading]);
 
   // Modal: agregar stock
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -32,7 +34,7 @@ const StockPage = () => {
     try {
       setError(null);
       const data = await getAllStocks();
-      setStocks(data);
+      setStocks(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar el stock");
     } finally {
@@ -40,11 +42,14 @@ const StockPage = () => {
     }
   }, []);
 
-  // Carga inicial + refresh por eventos cross-page y focus
+  // Carga inicial
   useEffect(() => {
     fetchStocks();
+  }, [fetchStocks]);
 
-    const handleRefresh = () => void fetchStocks();
+  // Refresh por eventos cross-page y focus — usa ref para evitar re-registrar handlers en cada cambio de loading
+  useEffect(() => {
+    const handleRefresh = () => { if (!loadingRef.current) void fetchStocks(); };
     window.addEventListener("focus", handleRefresh);
     window.addEventListener("sale:created", handleRefresh);
     window.addEventListener("stock-updated", handleRefresh);

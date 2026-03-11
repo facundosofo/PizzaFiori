@@ -1,8 +1,8 @@
 """Initial Schema
 
-Revision ID: 1152e57d7573
+Revision ID: 740a1792f26a
 Revises: 
-Create Date: 2026-03-04 19:31:17.579884
+Create Date: 2026-03-10 18:23:01.710625
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '1152e57d7573'
+revision: str = '740a1792f26a'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -59,7 +59,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_Ventas_fecha_creacion'), 'Ventas', ['fecha_creacion'], unique=False)
     op.create_index(op.f('ix_Ventas_id'), 'Ventas', ['id'], unique=False)
-    op.create_table('audit_logs',
+    op.create_table('auditoria',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('timestamp', sa.DateTime(), nullable=False),
     sa.Column('username', sa.String(length=50), nullable=False),
@@ -69,12 +69,12 @@ def upgrade() -> None:
     sa.Column('changes', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('ix_audit_entity_timestamp', 'audit_logs', ['entity_type', 'entity_id', 'timestamp'], unique=False)
-    op.create_index(op.f('ix_audit_logs_entity_id'), 'audit_logs', ['entity_id'], unique=False)
-    op.create_index(op.f('ix_audit_logs_entity_type'), 'audit_logs', ['entity_type'], unique=False)
-    op.create_index(op.f('ix_audit_logs_timestamp'), 'audit_logs', ['timestamp'], unique=False)
-    op.create_index('ix_audit_timestamp_desc', 'audit_logs', [sa.literal_column('timestamp DESC')], unique=False)
-    op.create_index('ix_audit_username_timestamp', 'audit_logs', ['username', 'timestamp'], unique=False)
+    op.create_index('ix_audit_entity_timestamp', 'auditoria', ['entity_type', 'entity_id', 'timestamp'], unique=False)
+    op.create_index('ix_audit_timestamp_desc', 'auditoria', [sa.literal_column('timestamp DESC')], unique=False)
+    op.create_index('ix_audit_username_timestamp', 'auditoria', ['username', 'timestamp'], unique=False)
+    op.create_index(op.f('ix_auditoria_entity_id'), 'auditoria', ['entity_id'], unique=False)
+    op.create_index(op.f('ix_auditoria_entity_type'), 'auditoria', ['entity_type'], unique=False)
+    op.create_index(op.f('ix_auditoria_timestamp'), 'auditoria', ['timestamp'], unique=False)
     op.create_table('gastos_categorias',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('nombre', sa.String(length=100), nullable=False),
@@ -88,11 +88,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_gastos_categorias_id'), 'gastos_categorias', ['id'], unique=False)
     op.create_index(op.f('ix_gastos_categorias_nombre'), 'gastos_categorias', ['nombre'], unique=False)
     op.create_index('ix_gastos_categorias_padre', 'gastos_categorias', ['padre_id'], unique=False)
-    op.create_table('order_daily_sequence',
-    sa.Column('business_date', sa.Date(), nullable=False),
-    sa.Column('last_value', sa.Integer(), nullable=False),
-    sa.PrimaryKeyConstraint('business_date')
-    )
     op.create_table('productos_categorias',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nombre', sa.String(length=50), nullable=False),
@@ -102,6 +97,11 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_productos_categorias_nombre'), 'productos_categorias', ['nombre'], unique=True)
+    op.create_table('secuencia_pedidos',
+    sa.Column('business_date', sa.Date(), nullable=False),
+    sa.Column('last_value', sa.Integer(), nullable=False),
+    sa.PrimaryKeyConstraint('business_date')
+    )
     op.create_table('OfertaItems',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('oferta_id', sa.Integer(), nullable=False),
@@ -247,20 +247,20 @@ def downgrade() -> None:
     op.drop_table('Productos')
     op.drop_index(op.f('ix_OfertaItems_id'), table_name='OfertaItems')
     op.drop_table('OfertaItems')
+    op.drop_table('secuencia_pedidos')
     op.drop_index(op.f('ix_productos_categorias_nombre'), table_name='productos_categorias')
     op.drop_table('productos_categorias')
-    op.drop_table('order_daily_sequence')
     op.drop_index('ix_gastos_categorias_padre', table_name='gastos_categorias')
     op.drop_index(op.f('ix_gastos_categorias_nombre'), table_name='gastos_categorias')
     op.drop_index(op.f('ix_gastos_categorias_id'), table_name='gastos_categorias')
     op.drop_table('gastos_categorias')
-    op.drop_index('ix_audit_username_timestamp', table_name='audit_logs')
-    op.drop_index('ix_audit_timestamp_desc', table_name='audit_logs')
-    op.drop_index(op.f('ix_audit_logs_timestamp'), table_name='audit_logs')
-    op.drop_index(op.f('ix_audit_logs_entity_type'), table_name='audit_logs')
-    op.drop_index(op.f('ix_audit_logs_entity_id'), table_name='audit_logs')
-    op.drop_index('ix_audit_entity_timestamp', table_name='audit_logs')
-    op.drop_table('audit_logs')
+    op.drop_index(op.f('ix_auditoria_timestamp'), table_name='auditoria')
+    op.drop_index(op.f('ix_auditoria_entity_type'), table_name='auditoria')
+    op.drop_index(op.f('ix_auditoria_entity_id'), table_name='auditoria')
+    op.drop_index('ix_audit_username_timestamp', table_name='auditoria')
+    op.drop_index('ix_audit_timestamp_desc', table_name='auditoria')
+    op.drop_index('ix_audit_entity_timestamp', table_name='auditoria')
+    op.drop_table('auditoria')
     op.drop_index(op.f('ix_Ventas_id'), table_name='Ventas')
     op.drop_index(op.f('ix_Ventas_fecha_creacion'), table_name='Ventas')
     op.drop_table('Ventas')

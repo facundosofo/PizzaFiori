@@ -22,7 +22,7 @@
   border-radius: 16px;
   width: 90%;
   max-width: 800px;
-  max-height: 90vh;
+  max-height: calc(var(--app-height, 100vh) * 0.90);
   overflow: hidden;
   box-shadow: 0 0 40px rgba(34, 197, 94, 0.2);
   z-index: 1001;

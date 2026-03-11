@@ -60,10 +60,11 @@ const SearchableSelect = ({
     const updatePosition = () => {
       if (containerRef.current && isOpen) {
         const rect = containerRef.current.getBoundingClientRect();
+        const zoom = parseFloat(document.documentElement.style.zoom) || 1;
         setDropdownPosition({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX,
-          width: rect.width,
+          top: (rect.bottom + window.scrollY + 8) / zoom,
+          left: (rect.left + window.scrollX) / zoom,
+          width: rect.width / zoom,
         });
       }
     };

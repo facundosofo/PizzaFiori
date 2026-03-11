@@ -11,7 +11,7 @@
 
 /* Contenedor principal de la página de inicio con gradiente radial */
 .home-container {
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
   width: 100%;
   background: var(--gradient-hero);
   color: var(--color-text);

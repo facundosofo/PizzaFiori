@@ -14,7 +14,7 @@ Toda la documentación del proyecto se encuentra en la carpeta [`docs/`](docs/RE
    pip install -r requirements.txt
    # Configurar .env
    alembic upgrade head
-   uvicorn app.main:app --reload
+   uvicorn app.main:app --reload  # o: hypercorn app.main:app --reload --bind 0.0.0.0:8000 (recomendado, soporta HTTP/2)
    ```
 
 2. **Frontend:**

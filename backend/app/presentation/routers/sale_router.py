@@ -24,7 +24,7 @@ router = APIRouter(
 
 
 @router.post(
-    "/",
+    "",
     response_model=SaleResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Crear una venta",
@@ -52,7 +52,7 @@ async def create_sale(
 
 
 @router.get(
-    "/",
+    "",
     response_model=SaleListResponse,
     summary="Obtener todas las ventas",
     description="Devuelve la lista de ventas con paginación, filtros de fecha y total count.",

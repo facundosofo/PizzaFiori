@@ -183,17 +183,17 @@ Si no hay errores, la conexión está correcta.
 ### 8. Ejecutar el Servidor Backend
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 \
-  --ssl-keyfile .\certs\localhost+2-key.pem \
-  --ssl-certfile .\certs\localhost+2.pem
+hypercorn app.main:app --reload --bind 0.0.0.0:8000 \
+  --keyfile ./certs/localhost+2-key.pem \
+  --certfile ./certs/localhost+2.pem
 ```
 
 En Windows (PowerShell):
 
 ```powershell
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 `
-  --ssl-keyfile .\certs\localhost+2-key.pem `
-  --ssl-certfile .\certs\localhost+2.pem
+hypercorn app.main:app --reload --bind 0.0.0.0:8000 `
+  --keyfile .\certs\localhost+2-key.pem `
+  --certfile .\certs\localhost+2.pem
 ```
 
 El servidor estará disponible en: **https://localhost:8000**
@@ -335,7 +335,7 @@ Si el puerto 8000 o 5173 está ocupado:
 **Backend:**
 ```bash
 # Usa otro puerto
-uvicorn app.main:app --reload --port 8001
+hypercorn app.main:app --reload --bind 0.0.0.0:8001
 ```
 
 **Frontend:**
@@ -354,9 +354,9 @@ venv\Scripts\activate  # Windows
 source venv/bin/activate  # Linux/Mac
 
 # Ejecutar servidor con SSL (Windows PowerShell)
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 `
-  --ssl-keyfile .\certs\localhost+2-key.pem `
-  --ssl-certfile .\certs\localhost+2.pem
+hypercorn app.main:app --reload --bind 0.0.0.0:8000 `
+  --keyfile .\certs\localhost+2-key.pem `
+  --certfile .\certs\localhost+2.pem
 
 # Crear nueva migración
 alembic revision --autogenerate -m "descripción"

@@ -10,20 +10,27 @@
   margin-bottom: 25px;
   box-shadow: var(--shadow-card),
               0 0 0 1px var(--color-border);
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 /* ===== ROW LAYOUT ===== */
 
 .filter-bar-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
-  align-items: end;
+  align-items: flex-end;
 }
 
 /* ===== FILTER GROUPS ===== */
 
 .filter-group {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -39,7 +46,8 @@
 }
 
 .filter-group-range {
-  min-width: 280px;
+  flex: 0 0 auto;
+  min-width: 260px;
 }
 
 /* ===== DATE INPUT ===== */
@@ -194,12 +202,10 @@
 /* ===== FILTER ACTIONS ===== */
 
 .filter-actions {
+  flex: 0 0 auto;
   display: flex;
   gap: 12px;
   align-items: center;
-  justify-content: flex-end;
-  align-self: end;
-  margin-left: auto;
 }
 
 .filter-btn {
@@ -274,17 +280,6 @@
 
 /* ===== RESPONSIVE ===== */
 
-@media (max-width: 1024px) {
-  .filter-bar-row {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-
-  .filter-actions {
-    grid-column: 1 / -1;
-    justify-content: center;
-  }
-}
-
 @media (max-width: 768px) {
   .filter-bar {
     padding: 15px;
@@ -305,12 +300,15 @@
   }
 
   .filter-bar-row {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 12px;
   }
 
+  .filter-group {
+    width: 100%;
+  }
+
   .filter-actions {
-    grid-column: 1;
     flex-direction: column;
     width: 100%;
   }

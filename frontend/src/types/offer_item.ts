@@ -1,5 +1,4 @@
 import type { Offer } from './offer';
-import type { Product } from './product';
 
 export interface ProductoOpcion {
   id: number;

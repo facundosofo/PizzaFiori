@@ -17,6 +17,7 @@ export const getGastosCategorias = async (padreId?: number | null): Promise<Expe
   try {
     const params = padreId !== undefined ? { padre_id: padreId } : {};
     const response = await api.get<ExpenseCategory[]>("/gastos-categorias", { params });
+    if (!Array.isArray(response.data)) return [];
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";

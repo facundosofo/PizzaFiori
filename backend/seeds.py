@@ -6,11 +6,25 @@ Idempotente: verifica existencia antes de insertar.
 """
 
 import asyncio
+import logging
+import os
 import sys
 from datetime import datetime
 from decimal import Decimal
+from pathlib import Path
 
 from sqlalchemy import select
+
+# Cargar .env explicitamente para que os.getenv() funcione
+# (pydantic-settings NO popula os.environ, solo su propio modelo)
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    _env_file = Path(__file__).resolve().parent / ".env"
+    if not _env_file.exists() and getattr(sys, 'frozen', False):
+        _env_file = Path(sys.executable).resolve().parent.parent / ".env"
+    _load_dotenv(dotenv_path=str(_env_file), override=False)
+except Exception:
+    pass  # Si dotenv no esta disponible, se usan las vars del sistema
 
 # Importar modelos y DB
 from app.infrastructure.database import AsyncSessionLocal
@@ -24,6 +38,17 @@ from app.domain.models.user import User
 from app.infrastructure.sku_generator import generar_sku_producto, normalizar_texto
 from app.application.user_service import hash_password
 
+_log = logging.getLogger("seeds")
+
+
+def _info(msg: str) -> None:
+    """Escribe al logger Y a stdout (para ejecucion manual)."""
+    _log.info(msg)
+    try:
+        print(msg)
+    except Exception:
+        pass  # stdout puede no estar disponible en contexto de servicio
+
 
 # ─── Datos ───────────────────────────────────────────────────────────────────
 
@@ -35,61 +60,70 @@ CATEGORIAS_PRODUCTO = [
     "Papas Fritas",
     "Picada",
     "Tartas",
+    "Extras",
 ]
 
 PRODUCTOS_POR_CATEGORIA = {
     "Pizzas": [
-        "Muzzarella",
-        "Napolitana",
-        "Calabresa",
-        "Roquefort",
-        "Provolone",
-        "Palmitos",
-        "Ananá",
-        "Anchoas",
-        "Jamón y Morrones",
-        "Espinaca S. Blanca",
-        "Fugazza (S. Queso)",
-        "Fugazetta",
-        "Capresse",
-        "Crudo y Rúcula",
+        "Pizza Muzzarella",
+        "Pizza Napolitana",
+        "Pizza Calabresa",
+        "Pizza Roquefort",
+        "Pizza Provolone",
+        "Pizza Palmitos",
+        "Pizza Ananá",
+        "Pizza Anchoas",
+        "Pizza Jamón y Morrones",
+        "Pizza Espinaca S. Blanca",
+        "Pizza Fugazza (S. Queso)",
+        "Pizza Fugazetta",
+        "Pizza Caprese",
+        "Pizza Crudo y Rúcula",
         "Pizza Fiori",
-        "Faina x Porción",
+        "Faina (Porcion)",
         "Faina Completa",
     ],
     "Empanadas": [
-        "Carne",
-        "Pollo",
-        "Jamón y Queso",
-        "Humita",
-        "Capresse",
-        "Verdura",
-        "Roqueford",
-        "Cebolla",
+        "Empanada de Carne",
+        "Empanada de Pollo",
+        "Empanada de Jamón y Queso",
+        "Empanada de Humita",
+        "Empanada Caprese",
+        "Empanada de Verdura",
+        "Empanada de Roquefort",
+        "Empanada de Cebolla",
     ],
     "Super Milas": [
-        "Napolitana",
-        "Americana",
-        "Fugazzetta",
-        "Capresse",
+        "Super Mila Napolitana",
+        "Super Mila Americana",
+        "Super Mila Fugazzetta",
+        "Super Mila Caprese",
     ],
     "Sandwich de Mila": [
-        "Completo",
-        "Simple",
+        "Sandwich de Mila Completo",
+        "Sandwich de Mila Simple",
     ],
     "Papas Fritas": [
-        "Completas",
-        "Simples",
+        "Papas Fritas Completas",
+        "Papas Fritas Simples",
     ],
     "Picada": [
-        "Tequeños, Nuggets y Papas Fritas",
-        "Tequeños",
+        "Picada: Tequeños, Nuggets y Papas Fritas",
+        "Picada: Tequeños",
     ],
     "Tartas": [
-        "Jamón, Queso y Huevo (ENTERA)",
+        "Jamón, Queso y Huevo",
         "Jamón, Queso y Huevo (PORCION)",
-        "Jamón, Queso, Tomate y Huevo (ENTERA)",
+        "Jamón, Queso, Tomate y Huevo",
         "Jamón, Queso, Tomate y Huevo (PORCION)",
+    ],
+    "Extras": [
+        "Salsa",
+        "Muzzarella",
+        "Aceitunas Verdes",
+        "Aceitunas Negras",
+        "Jamón",
+        "Huevo Frito",
     ],
 }
 
@@ -103,13 +137,13 @@ GASTOS_CATEGORIAS = {
     "Otros": [],
 }
 
-# Usuario base
+# Usuario base — credenciales leídas del .env (nunca en el código fuente)
 USUARIO = {
-    "username": "FacundoS",
-    "email": "facundosofo@gmail.com",
-    "first_name": "Facundo",
-    "last_name": "Sofia",
-    "password": "FacundoS123++",
+    "username": os.getenv("SEED_ADMIN_USERNAME", "admin"),
+    "email": os.getenv("SEED_ADMIN_EMAIL", "admin@pizzafiori.com.ar"),
+    "first_name": os.getenv("SEED_ADMIN_FIRST_NAME", "Admin"),
+    "last_name": os.getenv("SEED_ADMIN_LAST_NAME", "PizzaFiori"),
+    "password": os.getenv("SEED_ADMIN_PASSWORD"),
     "role": "ADMIN",
 }
 
@@ -118,23 +152,17 @@ USUARIO = {
 
 def generar_sku_unico(nombre: str, categoria_nombre: str, contador: int = 0) -> str:
     """
-    Genera un SKU único usando nombre + categoría para evitar colisiones
-    entre productos con el mismo nombre en distintas categorías.
-    Formato: PROD-{CAT3}{NOMBRE5}{##}-TEMP
+    Genera un SKU legible para un producto.
+    Formato: CAT-CLAVE-00000 (ej: EMP-POLLO-01234)
+    El sufijo aleatorio garantiza unicidad entre llamadas.
     """
-    cat_limpio = normalizar_texto(categoria_nombre.upper())
-    cat_limpio = ''.join(c for c in cat_limpio if c.isalnum())[:3]
-
-    nom_limpio = normalizar_texto(nombre.upper())
-    nom_limpio = ''.join(c for c in nom_limpio if c.isalnum())[:5]
-
-    return f"PROD-{cat_limpio}{nom_limpio}{contador:02d}-TEMP"
+    return generar_sku_producto(nombre, categoria_nombre)
 
 
 # ─── Seed functions ─────────────────────────────────────────────────────────
 
 async def seed_product_categories(session) -> dict[str, ProductCategory]:
-    """Crea categorías de producto. Retorna {nombre: ProductCategory}."""
+    """Crea categorias de producto. Retorna {nombre: ProductCategory}."""
     now = datetime.now()
     creados = 0
     resultado = {}
@@ -145,7 +173,7 @@ async def seed_product_categories(session) -> dict[str, ProductCategory]:
 
         if existing:
             resultado[nombre] = existing
-            print(f"  [SKIP] Categoría producto: {nombre} (ya existe, id={existing.id})")
+            _info(f"  [SKIP] Categoria producto: {nombre} (ya existe, id={existing.id})")
         else:
             cat = ProductCategory(
                 nombre=nombre,
@@ -158,7 +186,7 @@ async def seed_product_categories(session) -> dict[str, ProductCategory]:
             creados += 1
 
     await session.flush()
-    print(f"  → Categorías producto: {creados} creadas, {len(CATEGORIAS_PRODUCTO) - creados} existentes")
+    _info(f"  -> Categorias producto: {creados} creadas, {len(CATEGORIAS_PRODUCTO) - creados} existentes")
     return resultado
 
 
@@ -175,7 +203,7 @@ async def seed_products(session, categorias: dict[str, ProductCategory]) -> dict
 
         for prod_nombre in productos:
             total += 1
-            # Generar SKU único con contador incremental para evitar colisiones
+            # Generar SKU unico con contador incremental para evitar colisiones
             contador = 0
             sku = generar_sku_unico(prod_nombre, cat_nombre, contador)
             while sku in skus_usados:
@@ -183,7 +211,7 @@ async def seed_products(session, categorias: dict[str, ProductCategory]) -> dict
                 sku = generar_sku_unico(prod_nombre, cat_nombre, contador)
             skus_usados.add(sku)
 
-            # Verificar por nombre + categoría (más fiable que SKU)
+            # Verificar por nombre + categoria (mas fiable que SKU)
             stmt = select(Product).where(
                 Product.nombre == prod_nombre,
                 Product.categoria_id == categoria.id,
@@ -197,11 +225,12 @@ async def seed_products(session, categorias: dict[str, ProductCategory]) -> dict
 
             if existing:
                 resultado[f"{cat_nombre}::{prod_nombre}"] = existing
-                print(f"  [SKIP] Producto: {prod_nombre} ({cat_nombre}) (ya existe, id={existing.id})")
+                _info(f"  [SKIP] Producto: {prod_nombre} ({cat_nombre}) (ya existe, id={existing.id})")
             else:
                 producto = Product(
                     sku=sku,
                     nombre=prod_nombre,
+                    imagen=f"uploads/productos/{sku}.jpg",
                     categoria_id=categoria.id,
                     activo=True,
                     fecha_creacion=now,
@@ -220,7 +249,7 @@ async def seed_products(session, categorias: dict[str, ProductCategory]) -> dict
                 creados += 1
 
     await session.flush()
-    print(f"  → Productos: {creados} creados, {total - creados} existentes")
+    _info(f"  -> Productos: {creados} creados, {total - creados} existentes")
     return resultado
 
 
@@ -237,7 +266,7 @@ async def seed_offers(session, categorias: dict[str, ProductCategory], productos
             "items": [
                 {
                     "tipo": "producto",
-                    "producto_key": "Pizzas::Muzzarella",
+                    "producto_key": "Pizzas::Pizza Muzzarella",
                     "cantidad": 3,
                 },
             ],
@@ -262,15 +291,15 @@ async def seed_offers(session, categorias: dict[str, ProductCategory], productos
                 {
                     "tipo": "opciones",
                     "producto_keys": [
-                        "Pizzas::Jamón y Morrones",
-                        "Pizzas::Napolitana",
-                        "Pizzas::Calabresa",
+                        "Pizzas::Pizza Jamón y Morrones",
+                        "Pizzas::Pizza Napolitana",
+                        "Pizzas::Pizza Calabresa",
                     ],
                     "cantidad": 1,
                 },
                 {
                     "tipo": "producto",
-                    "producto_key": "Pizzas::Muzzarella",
+                    "producto_key": "Pizzas::Pizza Muzzarella",
                     "cantidad": 1,
                 },
                 {
@@ -287,7 +316,7 @@ async def seed_offers(session, categorias: dict[str, ProductCategory], productos
             "items": [
                 {
                     "tipo": "producto",
-                    "producto_key": "Pizzas::Muzzarella",
+                    "producto_key": "Pizzas::Pizza Muzzarella",
                     "cantidad": 1,
                 },
                 {
@@ -306,7 +335,7 @@ async def seed_offers(session, categorias: dict[str, ProductCategory], productos
         existing = (await session.execute(stmt)).scalar_one_or_none()
 
         if existing:
-            print(f"  [SKIP] Oferta: {nombre} (ya existe, id={existing.id})")
+            _info(f"  [SKIP] Oferta: {nombre} (ya existe, id={existing.id})")
             continue
 
         items = []
@@ -348,11 +377,11 @@ async def seed_offers(session, categorias: dict[str, ProductCategory], productos
         creados += 1
 
     await session.flush()
-    print(f"  → Ofertas: {creados} creadas, {len(ofertas_def) - creados} existentes")
+    _info(f"  -> Ofertas: {creados} creadas, {len(ofertas_def) - creados} existentes")
 
 
 async def seed_expense_categories(session):
-    """Crea categorías y subcategorías de gastos."""
+    """Crea categorias y subcategorias de gastos."""
     now = datetime.now()
     creados_padres = 0
     creados_hijos = 0
@@ -369,7 +398,7 @@ async def seed_expense_categories(session):
 
         if existing:
             padres[padre_nombre] = existing
-            print(f"  [SKIP] Gasto categoría padre: {padre_nombre} (ya existe, id={existing.id})")
+            _info(f"  [SKIP] Gasto categoria padre: {padre_nombre} (ya existe, id={existing.id})")
         else:
             cat = ExpenseCategory(
                 nombre=padre_nombre,
@@ -395,7 +424,7 @@ async def seed_expense_categories(session):
             existing = (await session.execute(stmt)).scalar_one_or_none()
 
             if existing:
-                print(f"  [SKIP] Gasto subcategoría: {hijo_nombre} → {padre_nombre} (ya existe, id={existing.id})")
+                _info(f"  [SKIP] Gasto subcategoria: {hijo_nombre} -> {padre_nombre} (ya existe, id={existing.id})")
             else:
                 sub = ExpenseCategory(
                     nombre=hijo_nombre,
@@ -409,8 +438,8 @@ async def seed_expense_categories(session):
 
     await session.flush()
     total_hijos = sum(len(h) for h in GASTOS_CATEGORIAS.values())
-    print(f"  → Gastos categorías padre: {creados_padres} creadas, {len(GASTOS_CATEGORIAS) - creados_padres} existentes")
-    print(f"  → Gastos subcategorías: {creados_hijos} creadas, {total_hijos - creados_hijos} existentes")
+    _info(f"  -> Gastos categorias padre: {creados_padres} creadas, {len(GASTOS_CATEGORIAS) - creados_padres} existentes")
+    _info(f"  -> Gastos subcategorias: {creados_hijos} creadas, {total_hijos - creados_hijos} existentes")
 
 
 async def seed_users(session):
@@ -421,7 +450,7 @@ async def seed_users(session):
     existing = (await session.execute(stmt)).scalar_one_or_none()
 
     if existing:
-        print(f"  [SKIP] Usuario: {username} (ya existe, id={existing.id})")
+        _info(f"  [SKIP] Usuario: {username} (ya existe, id={existing.id})")
         return
 
     now = datetime.now()
@@ -440,48 +469,50 @@ async def seed_users(session):
     )
     session.add(user)
     await session.flush()
-    print(f"  → Usuario: {username} creado (role={USUARIO['role']}, id={user.id})")
+    _info(f"  -> Usuario: {username} creado (role={USUARIO['role']}, id={user.id})")
 
 
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 async def main():
-    print("=" * 60)
-    print("  PizzaFiori - Seed de datos iniciales")
-    print("=" * 60)
-    print()
+    if not USUARIO["password"]:
+        raise EnvironmentError("SEED_ADMIN_PASSWORD no esta definida en el .env")
+
+    _info("=" * 60)
+    _info("  PizzaFiori - Seed de datos iniciales")
+    _info("=" * 60)
 
     async with AsyncSessionLocal() as session:
-        async with session.begin():
-            try:
-                print("[1/5] Categorías de producto...")
-                categorias = await seed_product_categories(session)
-                print()
+        try:
+            # Transaccion explicita — NO usar session.begin() como context manager
+            # para tener control total sobre commit/rollback
+            await session.begin()
 
-                print("[2/5] Productos...")
-                productos = await seed_products(session, categorias)
-                print()
+            _info("[1/5] Categorias de producto...")
+            categorias = await seed_product_categories(session)
 
-                print("[3/5] Ofertas (Promos)...")
-                await seed_offers(session, categorias, productos)
-                print()
+            _info("[2/5] Productos...")
+            productos = await seed_products(session, categorias)
 
-                print("[4/5] Categorías de gastos...")
-                await seed_expense_categories(session)
-                print()
+            _info("[3/5] Ofertas (Promos)...")
+            await seed_offers(session, categorias, productos)
 
-                print("[5/5] Usuarios...")
-                await seed_users(session)
-                print()
+            _info("[4/5] Categorias de gastos...")
+            await seed_expense_categories(session)
 
-                # session.begin() hace commit automático al salir del context manager
-                print("=" * 60)
-                print("  Seed completado exitosamente!")
-                print("=" * 60)
+            _info("[5/5] Usuarios...")
+            await seed_users(session)
 
-            except Exception as e:
-                print(f"\n[ERROR] Seed falló: {e}")
-                raise
+            # Commit explicito con confirmacion
+            await session.commit()
+            _info("=" * 60)
+            _info("  Seed completado y COMMIT exitoso!")
+            _info("=" * 60)
+
+        except Exception as e:
+            await session.rollback()
+            _log.error("Seed fallo: %s", e, exc_info=True)
+            raise
 
 
 if __name__ == "__main__":

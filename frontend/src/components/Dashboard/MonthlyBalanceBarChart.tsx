@@ -145,7 +145,7 @@ const MonthlyBalanceBarChart = memo(({
 
   // Label para la barra de Gastos: se muestra solo cuando Gastos > Ventas
   const ExpensesBarLabel = (props: any) => {
-    const { x, y, width, index } = props;
+    const { x, y, index } = props;
     const entry = chartData[index];
     if (!entry || (entry.sales === 0 && entry.expenses === 0)) return <g />;
     if (entry.expenses <= entry.sales) return <g />; // la barra de ventas es más alta o igual

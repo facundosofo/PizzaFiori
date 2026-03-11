@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProductQuickSelector } from '../components/ProductQuickSelector';
 import { OfferQuickSelector } from '../components/OfferQuickSelector';
@@ -22,8 +21,6 @@ import type { SaleItemRequest } from '../types/sale_item';
 import '../styles/sales-create.css';
 
 export const SalesCreatePage: React.FC = () => {
-  const navigate = useNavigate();
-
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductoCategoria[]>([]);
@@ -82,7 +79,7 @@ export const SalesCreatePage: React.FC = () => {
   // Refetch data when window gains focus (handles updates from other tabs)
   useEffect(() => {
     const handleFocus = () => {
-      fetchData();
+      if (!loading) fetchData();
     };
 
     window.addEventListener('focus', handleFocus);
@@ -90,7 +87,7 @@ export const SalesCreatePage: React.FC = () => {
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [fetchData]);
+  }, [fetchData, loading]);
 
   // Calculate cart total whenever items change
   useEffect(() => {

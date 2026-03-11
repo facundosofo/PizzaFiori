@@ -58,6 +58,18 @@ class SqlAlchemyProductRepository(
         result = await self.session.execute(query)
         return result.scalars().all()
 
+    async def get_by_ids(self, producto_ids: List[int]) -> List[Product]:
+        query = (
+            select(Product)
+            .where(Product.id.in_(producto_ids))
+            .options(
+                selectinload(Product.precios),
+                selectinload(Product.categoria)
+            )
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
     async def replace_prices(
         self,
         producto_id: int,

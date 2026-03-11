@@ -21,7 +21,7 @@ router = APIRouter(
 
 
 @router.post(
-    "/",
+    "",
     response_model=OfferResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Crear una oferta",
@@ -54,7 +54,7 @@ async def create_offer(
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[OfferResponse],
     summary="Obtener todas las ofertas",
     description="Devuelve la lista de ofertas con filtros opcionales.",

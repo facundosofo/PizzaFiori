@@ -19,8 +19,28 @@ PUBLIC_ROUTES = {
     "/redoc",
     "/health",
     "/auth/login",
-    "/auth/reset-password", #TODO: Implementar endpoint
+    "/auth/reset-password",
 }
+
+# All API route prefixes that require authentication
+API_PREFIXES = (
+    "/auth/",
+    "/auth",
+    "/users",
+    "/productos",
+    "/productos-categorias",
+    "/ofertas",
+    "/ventas",
+    "/dashboard",
+    "/audit",
+    "/gastos",
+    "/gastos-categorias",
+    "/stock",
+    "/health",
+    "/docs",
+    "/openapi",
+    "/redoc",
+)
 
 
 class JWTMiddleware(BaseHTTPMiddleware):
@@ -96,6 +116,13 @@ class JWTMiddleware(BaseHTTPMiddleware):
         
         # If no token and route is NOT public, require authentication
         elif not is_public_route:
+            # Browser page refreshes (F5 / direct URL) send Accept: text/html but
+            # no Bearer token — they are not API calls.  Let them pass through so
+            # the SPA exception handler can serve index.html and React can boot.
+            accept = request.headers.get("Accept", "")
+            if "text/html" in accept:
+                return await call_next(request)
+
             self.logger.warning(
                 "Missing authentication token",
                 path=request.url.path,
@@ -112,13 +139,19 @@ class JWTMiddleware(BaseHTTPMiddleware):
     @staticmethod
     def _is_public_route(path: str, method: str = "GET") -> bool:
         """Check if the route is public (doesn't require authentication)."""
-        # Exact matches
+        # Exact matches for known public API routes
         if path in PUBLIC_ROUTES:
             return True
 
-        # Prefix matches
-        for public_prefix in ["/docs", "/openapi", "/redoc", "/health", "/uploads"]:
-            if path.startswith(public_prefix):
-                return True
+        # Static uploads (product images) are public — <img> tags never send auth headers
+        if path.startswith("/uploads"):
+            return True
 
-        return False
+        # If path doesn't start with any known API prefix, it's a frontend
+        # static file or SPA route — let it through without auth.
+        for prefix in API_PREFIXES:
+            if path == prefix or path.startswith(prefix + "/") or path.startswith(prefix):
+                return False  # It's an API route — requires auth check
+
+        # Not an API route → it's a frontend asset or SPA page → public
+        return True

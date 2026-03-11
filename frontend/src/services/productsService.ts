@@ -35,6 +35,7 @@ export const getProductos = async (categoriaId?: number): Promise<Product[]> => 
       params.categoria = categoriaId;
     }
     const response = await api.get<Product[]>("/productos", { params });
+    if (!Array.isArray(response.data)) return [];
     return response.data;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";

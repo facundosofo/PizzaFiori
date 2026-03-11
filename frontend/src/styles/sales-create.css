@@ -3,7 +3,7 @@
 @import './shared/page-header.css';
 
 .sales-create-page {
-  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
   /* inherit global background */
   background: transparent;
   box-sizing: border-box;

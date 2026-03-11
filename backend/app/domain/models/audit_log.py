@@ -11,7 +11,7 @@ class AuditLog(Base):
     Modelo para auditoría de acciones del sistema.
     Registra quién hizo qué, sobre qué entidad, cuándo y qué cambió.
     """
-    __tablename__ = "audit_logs"
+    __tablename__ = "auditoria"
 
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime.now, nullable=False, index=True)
