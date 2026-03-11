@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { motion } from 'framer-motion';
 import type { Product } from '../types/product';
 import type { Category } from '../types/category';
@@ -6,6 +6,7 @@ import { formatCurrency } from '../utils/formatters';
 import * as Icons from './shared/Icons';
 import env from '../config/env';
 import pizzaMitadImage from '../assets/PizzaMitad.png';
+import '../styles/product-card.css';
 import '../styles/product-quick-selector.css';
 import '../styles/shared/quantity-controls.css';
 
@@ -18,7 +19,16 @@ interface ProductQuickSelectorProps {
   onOpenPizzaMitadMitad?: () => void; // Nuevo prop para abrir modal de pizza mitad-mitad
 }
 
-export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
+function formatCantidad(cantidad: number): string {
+  switch (cantidad) {
+    case 1: return "Unidad";
+    case 6: return "1/2 Docena";
+    case 12: return "Docena";
+    default: return `${cantidad} unid.`;
+  }
+}
+
+const ProductQuickSelectorBase: React.FC<ProductQuickSelectorProps> = ({
   products,
   categories,
   cartQuantities,
@@ -27,46 +37,34 @@ export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
   onOpenPizzaMitadMitad,
 }) => {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<number>>(new Set());
-  
-  // Format quantity label
-  const formatCantidad = (cantidad: number): string => {
-    switch (cantidad) {
-      case 1:
-        return "Unidad";
-      case 6:
-        return "1/2 Docena";
-      case 12:
-        return "Docena";
-      default:
-        return `${cantidad} unid.`;
-    }
-  };
-  
-  // Group products by category
-  const productsByCategory = categories.map((category) => ({
-    category,
-    products: products.filter((p) => p.categoria_id === category.id),
-  })).filter(({ products }) => products.length > 0);
 
-  const handleIncrement = (product: Product) => {
+  // Group products by category — memoized to avoid recomputing on unrelated re-renders
+  const productsByCategory = useMemo(() =>
+    categories
+      .map((category) => ({
+        category,
+        products: products.filter((p) => p.categoria_id === category.id),
+      }))
+      .filter(({ products }) => products.length > 0),
+  [categories, products]);
+
+  const handleIncrement = useCallback((product: Product) => {
     const currentQty = cartQuantities.get(product.id) || 0;
     if (currentQty === 0) {
-      // Add new product to cart
       onAddProduct(product);
     } else {
-      // Increment existing product
       onUpdateProductQuantity(product.id, currentQty + 1);
     }
-  };
+  }, [cartQuantities, onAddProduct, onUpdateProductQuantity]);
 
-  const handleDecrement = (productId: number) => {
+  const handleDecrement = useCallback((productId: number) => {
     const currentQty = cartQuantities.get(productId) || 0;
     if (currentQty > 0) {
       onUpdateProductQuantity(productId, currentQty - 1);
     }
-  };
+  }, [cartQuantities, onUpdateProductQuantity]);
 
-  const toggleCategoryCollapse = (categoryId: number) => {
+  const toggleCategoryCollapse = useCallback((categoryId: number) => {
     setCollapsedCategories((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(categoryId)) {
@@ -76,7 +74,7 @@ export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
       }
       return newSet;
     });
-  };
+  }, []);
 
   if (productsByCategory.length === 0) {
     return (
@@ -116,7 +114,7 @@ export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
                 transition={{ duration: 0.2, delay: 0.12 }}
               >
                 <div className="product-card-image">
-                  <img src={pizzaMitadImage} alt="Pizza mitad y mitad" />
+                  <img src={pizzaMitadImage} alt="Pizza mitad y mitad" loading="lazy" decoding="async" />
                 </div>
                 <div className="product-card-content">
                   <h4 className="product-card-name">Pizza Mitad-Mitad</h4>
@@ -155,7 +153,7 @@ export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
                   )}
 
                   <div className="product-card-image">
-                    <img src={imageUrl} alt={product.nombre} />
+                    <img src={imageUrl} alt={product.nombre} loading="lazy" decoding="async" />
                   </div>
 
                   <div className="product-card-content">
@@ -232,3 +230,5 @@ export const ProductQuickSelector: React.FC<ProductQuickSelectorProps> = ({
     </div>
   );
 };
+
+export const ProductQuickSelector = memo(ProductQuickSelectorBase);

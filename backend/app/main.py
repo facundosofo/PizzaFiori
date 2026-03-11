@@ -7,6 +7,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.exception_handlers import http_exception_handler
+from starlette.responses import Response as _StarletteResponse
+
+
+class _CachedStaticFiles(StaticFiles):
+    """StaticFiles con Cache-Control explicito para imagenes subidas."""
+
+    async def get_response(self, path: str, scope) -> _StarletteResponse:
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers.setdefault("Cache-Control", "public, max-age=3600")
+        return response
 from .presentation.routers.product_router import router as product_router
 from .presentation.routers.product_category_router import router as product_category_router
 from .presentation.routers.offer_router import router as offer_router
@@ -144,7 +155,7 @@ app.add_middleware(
 
 # Crear la carpeta si no existe (por seguridad al arrancar)
 os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", _CachedStaticFiles(directory="uploads"), name="uploads")
 
 # Agregar los routers
 app.include_router(auth_router)

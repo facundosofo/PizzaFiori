@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProductQuickSelector } from '../components/ProductQuickSelector';
@@ -19,6 +19,8 @@ import type { Offer } from '../types/offer';
 import type { CartItem, CartProductItem, CartOfferItem, CartPizzaMitadMitadItem } from '../types/cart';
 import type { SaleItemRequest } from '../types/sale_item';
 import '../styles/sales-create.css';
+
+const STALE_MS = 60_000; // 1 minute: don't refetch on window focus if data is fresh
 
 export const SalesCreatePage: React.FC = () => {
   // Data states
@@ -46,6 +48,9 @@ export const SalesCreatePage: React.FC = () => {
   // Modal states for pizza mitad-mitad
   const [isPizzaMitadMitadModalOpen, setIsPizzaMitadMitadModalOpen] = useState(false);
 
+  // Timestamp of last successful fetch (used to skip redundant focus refetches)
+  const lastFetchRef = useRef<number>(0);
+
   // Load products and categories
   const fetchData = useCallback(async () => {
     try {
@@ -64,6 +69,7 @@ export const SalesCreatePage: React.FC = () => {
       setProducts(activeProducts);
       setCategories(categoriesData);
       setOffers(activeOffers);
+      lastFetchRef.current = Date.now();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar datos';
       setError(errorMessage);
@@ -77,9 +83,12 @@ export const SalesCreatePage: React.FC = () => {
   }, [fetchData]);
 
   // Refetch data when window gains focus (handles updates from other tabs)
+  // Throttled: only fetches if data is older than STALE_MS to avoid redundant requests
   useEffect(() => {
     const handleFocus = () => {
-      if (!loading) fetchData();
+      if (!loading && Date.now() - lastFetchRef.current > STALE_MS) {
+        fetchData();
+      }
     };
 
     window.addEventListener('focus', handleFocus);

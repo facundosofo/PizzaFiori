@@ -126,7 +126,7 @@ const ProductCard = ({
         </button>
 
         <div className="product-card-image">
-          <img src={imageUrl} alt={producto.nombre} />
+          <img src={imageUrl} alt={producto.nombre} loading="lazy" decoding="async" />
         </div>
 
         <div className="product-card-body">
