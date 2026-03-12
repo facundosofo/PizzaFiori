@@ -59,6 +59,17 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-animations': ['framer-motion'],
+            'vendor-charts': ['recharts'],
+          },
+        },
+      },
+    },
     server: {
       https: httpsConfig,
       host: '0.0.0.0',

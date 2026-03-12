@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import select, func, text, cast, Date, extract
+from sqlalchemy import select, func, text, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -27,10 +27,6 @@ class SqlAlchemySaleRepository(
             .where(Sale.id == sale_id)
             .options(
                 selectinload(Sale.items)
-                .selectinload(SaleItem.producto),
-                selectinload(Sale.items)
-                .selectinload(SaleItem.oferta),
-                selectinload(Sale.items)
                 .selectinload(SaleItem.oferta_productos_snapshot)
             )
         )
@@ -48,25 +44,20 @@ class SqlAlchemySaleRepository(
             select(Sale)
             .options(
                 selectinload(Sale.items)
-                .selectinload(SaleItem.producto),
-                selectinload(Sale.items)
-                .selectinload(SaleItem.oferta),
-                selectinload(Sale.items)
                 .selectinload(SaleItem.oferta_productos_snapshot)
             )
         )
-        
-        # Aplicar ajuste de horario de negocio (-6 horas)
-        # Las ventas entre 00:00-05:59 se asignan al día anterior
-        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
-        business_date = cast(adjusted_fecha, Date)
-        
-        # Aplicar filtros de fecha (comparando con fecha de negocio)
+
+        # Filtros index-friendly: transformar el parámetro en vez de la columna.
+        # Equivalencia: CAST(fecha_creacion - '6h' AS DATE) >= fecha_desde
+        #               <=> fecha_creacion >= DATE(fecha_desde) + '06:00:00'
         if fecha_desde is not None:
-            query = query.where(business_date >= cast(fecha_desde, Date))
+            boundary = datetime(fecha_desde.year, fecha_desde.month, fecha_desde.day, 6, 0, 0)
+            query = query.where(Sale.fecha_creacion >= boundary)
         if fecha_hasta is not None:
-            query = query.where(business_date <= cast(fecha_hasta, Date))
-        
+            boundary = datetime(fecha_hasta.year, fecha_hasta.month, fecha_hasta.day, 6, 0, 0) + timedelta(days=1)
+            query = query.where(Sale.fecha_creacion < boundary)
+
         query = (
             query
             .order_by(Sale.fecha_creacion.desc())
@@ -83,18 +74,14 @@ class SqlAlchemySaleRepository(
     ) -> int:
         """Cuenta el total de ventas con filtros opcionales de fecha."""
         query = select(func.count()).select_from(Sale)
-        
-        # Aplicar ajuste de horario de negocio (-6 horas)
-        # Las ventas entre 00:00-05:59 se asignan al día anterior
-        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
-        business_date = cast(adjusted_fecha, Date)
-        
-        # Aplicar filtros de fecha (comparando con fecha de negocio)
+
         if fecha_desde is not None:
-            query = query.where(business_date >= cast(fecha_desde, Date))
+            boundary = datetime(fecha_desde.year, fecha_desde.month, fecha_desde.day, 6, 0, 0)
+            query = query.where(Sale.fecha_creacion >= boundary)
         if fecha_hasta is not None:
-            query = query.where(business_date <= cast(fecha_hasta, Date))
-        
+            boundary = datetime(fecha_hasta.year, fecha_hasta.month, fecha_hasta.day, 6, 0, 0) + timedelta(days=1)
+            query = query.where(Sale.fecha_creacion < boundary)
+
         result = await self.session.execute(query)
         return result.scalar() or 0
 

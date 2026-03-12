@@ -11,6 +11,7 @@ env/
 
 # Environment variables
 .env
+.env.*
 
 # Logs
 *.log
@@ -25,6 +26,7 @@ env/
 .coverage
 htmlcov/
 .pytest_cache/
+benchmark_results/
 
 # Build
 build/

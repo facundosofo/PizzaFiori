@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem } from '../types/cart';
 import { formatCurrency } from '../utils/formatters';
@@ -27,13 +28,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const isEmpty = items.length === 0;
 
   // Calcular cantidad total de items (sumando cantidades y productos dentro de ofertas)
-  const totalItems = items.reduce((acc, item) => {
+  const totalItems = useMemo(() => items.reduce((acc, item) => {
     if (item.tipo === 'oferta') {
       const productosEnOferta = item.productos_seleccionados.reduce((sum, p) => sum + p.cantidad, 0);
       return acc + productosEnOferta * item.cantidad;
     }
     return acc + item.cantidad;
-  }, 0);
+  }, 0), [items]);
 
   return (
     <div className="cart-drawer">

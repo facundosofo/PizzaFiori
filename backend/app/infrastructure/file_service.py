@@ -1,9 +1,19 @@
+import io
 import os
 import aiofiles
 from fastapi import UploadFile, HTTPException
 from uuid import uuid4
 from pathlib import Path
 from typing import Optional
+
+try:
+    from PIL import Image as _PIL_Image
+    _HAS_PIL = True
+except ImportError:
+    _HAS_PIL = False
+
+_MAX_IMAGE_PX = 800  # Máximo lado en píxeles tras resize
+_JPEG_QUALITY = 80   # Calidad JPEG (0-100)
 
 class FileService:
     def __init__(self, base_path: str = "uploads/productos"):
@@ -26,6 +36,23 @@ class FileService:
         contents = await file.read()
         if len(contents) > self.max_size:
             raise HTTPException(status_code=400, detail="Archivo demasiado grande (máx 5MB)")
+
+        # 3.5 Redimensionar y comprimir con Pillow (evita subir fotos de 4MB)
+        if _HAS_PIL:
+            try:
+                img = _PIL_Image.open(io.BytesIO(contents))
+                # Convertir a RGB (descarta canal alfa y modos raros)
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                # Reducir solo si supera el máximo; mantiene proporción
+                if img.width > _MAX_IMAGE_PX or img.height > _MAX_IMAGE_PX:
+                    img.thumbnail((_MAX_IMAGE_PX, _MAX_IMAGE_PX), _PIL_Image.Resampling.LANCZOS)
+                buf = io.BytesIO()
+                img.save(buf, format='JPEG', quality=_JPEG_QUALITY, optimize=True)
+                contents = buf.getvalue()
+                file_ext = '.jpg'
+            except Exception:
+                pass  # Si Pillow falla, se sube el original sin redimensionar
 
         # 4. Determinar nombre de archivo y ruta
         if filename_base:

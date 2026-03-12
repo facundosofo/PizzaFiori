@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models.order_daily_sequence import OrderDailySequence
@@ -15,6 +15,7 @@ class SqlAlchemySequenceRepository(AbstractSequenceRepository):
         self.session = session
 
     async def get_for_update(self, business_date: date) -> Optional[OrderDailySequence]:
+        await self.session.execute(text("SET LOCAL lock_timeout = '2000ms'"))
         query = select(OrderDailySequence).where(OrderDailySequence.business_date == business_date).with_for_update()
         result = await self.session.execute(query)
         return result.scalars().first()
