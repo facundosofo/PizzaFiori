@@ -1,24 +1,31 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Icons from "./shared/Icons";
-import type { CategoryStock } from "../types/stock";
-import { addStock } from "../services/stockService";
+import type { CategoryStock, ProductStock } from "../types/stock";
+import { addStock, addProductStock } from "../services/stockService";
 import "../styles/stock-add-modal.css";
 import "../styles/shared/quantity-controls.css";
 
-interface StockAddModalProps {
+interface StockAddModalCategoriaProps {
+  mode: "categoria";
   isOpen: boolean;
-  categoria: CategoryStock | null;
+  target: CategoryStock | null;
   onClose: () => void;
   onSave: (updated: CategoryStock) => void;
 }
 
-const StockAddModal = ({
-  isOpen,
-  categoria,
-  onClose,
-  onSave,
-}: StockAddModalProps) => {
+interface StockAddModalProductoProps {
+  mode: "producto";
+  isOpen: boolean;
+  target: ProductStock | null;
+  onClose: () => void;
+  onSave: (updated: ProductStock) => void;
+}
+
+type StockAddModalProps = StockAddModalCategoriaProps | StockAddModalProductoProps;
+
+const StockAddModal = (props: StockAddModalProps) => {
+  const { isOpen, target, onClose } = props;
   const [delta, setDelta] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,12 +46,17 @@ const StockAddModal = ({
   const handleSave = async () => {
     setError("");
     if (delta === 0) return;
-    if (!categoria) return;
+    if (!target) return;
 
     setLoading(true);
     try {
-      const updated = await addStock(categoria.categoria_id, { cantidad: delta });
-      onSave(updated);
+      if (props.mode === "categoria") {
+        const updated = await addStock((target as CategoryStock).categoria_id, { cantidad: delta });
+        props.onSave(updated);
+      } else {
+        const updated = await addProductStock((target as ProductStock).producto_id, { cantidad: delta });
+        props.onSave(updated);
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ajustar stock");
@@ -53,9 +65,14 @@ const StockAddModal = ({
     }
   };
 
-  const nuevoStock = categoria ? Math.max(0, categoria.cantidad + delta) : 0;
-  const deltaLabel =
-    delta > 0 ? `+${delta}` : delta < 0 ? `−${Math.abs(delta)}` : "0";
+  const targetName = target
+    ? props.mode === "categoria"
+      ? (target as CategoryStock).categoria_nombre
+      : (target as ProductStock).producto_nombre
+    : "";
+  const currentQty = target?.cantidad ?? 0;
+  const nuevoStock = Math.max(0, currentQty + delta);
+  const deltaLabel = delta > 0 ? `+${delta}` : delta < 0 ? `−${Math.abs(delta)}` : "0";
   const canSubmit = delta !== 0 && !loading;
 
   return (
@@ -82,9 +99,7 @@ const StockAddModal = ({
                 <p className="stock-add-modal-eyebrow">Stock</p>
                 <h2 className="stock-add-modal-title">
                   Modificar —{" "}
-                  <span className="stock-add-modal-category">
-                    {categoria?.categoria_nombre}
-                  </span>
+                  <span className="stock-add-modal-category">{targetName}</span>
                 </h2>
               </div>
               <button
@@ -98,15 +113,11 @@ const StockAddModal = ({
 
             {/* Body */}
             <div className="stock-add-modal-body">
-              {/* Stock actual */}
               <div className="stock-add-current-row">
                 <span className="stock-add-current-label">Stock actual</span>
-                <span className="stock-add-current-value">
-                  {categoria?.cantidad ?? 0} unidades
-                </span>
+                <span className="stock-add-current-value">{currentQty} unidades</span>
               </div>
 
-              {/* Control - delta + */}
               <div className="stock-add-control-section">
                 <div className="stock-add-control">
                   <button
@@ -141,7 +152,6 @@ const StockAddModal = ({
                 </div>
               </div>
 
-              {/* Preview nuevo stock */}
               <div className="stock-add-preview-row">
                 <span className="stock-add-preview-label">Nuevo stock</span>
                 <span
@@ -152,7 +162,6 @@ const StockAddModal = ({
                 </span>
               </div>
 
-              {/* Error */}
               {error && (
                 <div className="stock-add-error">
                   <Icons.AlertCircleIcon size={16} />
@@ -163,11 +172,7 @@ const StockAddModal = ({
 
             {/* Footer */}
             <div className="stock-add-modal-footer">
-              <button
-                className="stock-add-btn cancel"
-                onClick={onClose}
-                disabled={loading}
-              >
+              <button className="stock-add-btn cancel" onClick={onClose} disabled={loading}>
                 Cancelar
               </button>
               <button
@@ -179,11 +184,7 @@ const StockAddModal = ({
                   <span className="stock-add-spinner" />
                 ) : (
                   <>
-                    {delta < 0 ? (
-                      <Icons.MinusIcon size={15} />
-                    ) : (
-                      <Icons.PlusIcon size={15} />
-                    )}
+                    {delta < 0 ? <Icons.MinusIcon size={15} /> : <Icons.PlusIcon size={15} />}
                     Confirmar ({deltaLabel})
                   </>
                 )}
@@ -197,3 +198,4 @@ const StockAddModal = ({
 };
 
 export default StockAddModal;
+

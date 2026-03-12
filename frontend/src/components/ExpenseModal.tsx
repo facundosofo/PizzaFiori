@@ -225,7 +225,6 @@ const ExpenseModal = ({
           >
             <div className="expense-modal-header">
               <div>
-                <p className="expense-modal-eyebrow">Operacion</p>
                 <h2 className="expense-modal-title">
                   {isEditing ? "Editar gasto" : "Nuevo gasto"}
                 </h2>

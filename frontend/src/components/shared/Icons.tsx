@@ -13,11 +13,15 @@ import {
   Clock,
   DollarSign,
   Eye,
+  EyeOff,
+  User,
+  Lock,
   Info,
   KeyRound,
   Layers,
   Loader,
   Minus,
+  Diff,
   BadgePercent,
   Pencil,
   Pizza,
@@ -31,6 +35,7 @@ import {
   FolderTree,
   TrendingUp,
   X,
+  Cog
 } from "lucide-react";
 
 interface IconProps {
@@ -46,7 +51,16 @@ const renderLucideIcon = (Icon: LucideIcon, props: IconProps, strokeWidth = 2) =
   );
 };
 
+export const CogIcon = (props: IconProps) => renderLucideIcon(Cog, props);
+
 export const EyeIcon = (props: IconProps) => renderLucideIcon(Eye, props);
+
+export const EyeOffIcon = (props: IconProps) => renderLucideIcon(EyeOff, props);
+
+export const UserIcon = (props: IconProps) => renderLucideIcon(User, props);
+
+export const LockIcon = (props: IconProps) => renderLucideIcon(Lock, props);
+
 
 export const EditIcon = (props: IconProps) => renderLucideIcon(Pencil, props);
 
@@ -79,6 +93,8 @@ export const InfoIcon = (props: IconProps) => renderLucideIcon(Info, props);
 export const PlusIcon = (props: IconProps) => renderLucideIcon(Plus, props);
 
 export const MinusIcon = (props: IconProps) => renderLucideIcon(Minus, props);
+
+export const DiffIcon = (props: IconProps) => renderLucideIcon(Diff, props);
 
 export const ChevronDownIcon = (props: IconProps) => renderLucideIcon(ChevronDown, props);
 

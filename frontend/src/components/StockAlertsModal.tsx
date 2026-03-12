@@ -2,49 +2,79 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Icons from "./shared/Icons";
 import Badge from "./shared/Badge";
-import type { CategoryStock } from "../types/stock";
+import type { CategoryStock, ProductStock } from "../types/stock";
 import { STOCK_ESTADO_BADGE, STOCK_ESTADO_LABELS } from "../types/stock";
-import { configureAlerts } from "../services/stockService";
+import { configureAlerts, configureProductAlerts } from "../services/stockService";
 import "../styles/stock-alerts-modal.css";
 import "../styles/shared/quantity-controls.css";
 
-interface StockAlertsModalProps {
+interface StockAlertsModalCategoriaProps {
+  mode: "categoria";
+  isOpen: boolean;
+  target: CategoryStock | null;
+  onClose: () => void;
+  onSave: (updated: CategoryStock) => void;
+}
+
+interface StockAlertsModalProductoProps {
+  mode: "producto";
+  isOpen: boolean;
+  target: ProductStock | null;
+  onClose: () => void;
+  onSave: (updated: ProductStock) => void;
+}
+
+// Legacy support: allow old props shape (categoria / onSave typed as CategoryStock)
+interface StockAlertsModalLegacyProps {
   isOpen: boolean;
   categoria: CategoryStock | null;
   onClose: () => void;
   onSave: (updated: CategoryStock) => void;
 }
 
-const StockAlertsModal = ({
-  isOpen,
-  categoria,
-  onClose,
-  onSave,
-}: StockAlertsModalProps) => {
+type StockAlertsModalProps =
+  | StockAlertsModalCategoriaProps
+  | StockAlertsModalProductoProps
+  | StockAlertsModalLegacyProps;
+
+const StockAlertsModal = (props: StockAlertsModalProps) => {
+  // Normalize legacy usage
+  const isLegacy = "categoria" in props;
+  const mode = isLegacy ? "categoria" : (props as StockAlertsModalCategoriaProps | StockAlertsModalProductoProps).mode;
+  const target = isLegacy
+    ? (props as StockAlertsModalLegacyProps).categoria
+    : (props as StockAlertsModalCategoriaProps | StockAlertsModalProductoProps).target;
+  const { isOpen, onClose } = props;
+
   const [umbralAmarillo, setUmbralAmarillo] = useState(0);
   const [umbralRojo, setUmbralRojo] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (isOpen && categoria) {
-      setUmbralAmarillo(categoria.umbral_amarillo ?? 0);
-      setUmbralRojo(categoria.umbral_rojo ?? 0);
+    if (isOpen && target) {
+      setUmbralAmarillo(target.umbral_amarillo ?? 0);
+      setUmbralRojo(target.umbral_rojo ?? 0);
       setError("");
     }
-  }, [isOpen, categoria]);
+  }, [isOpen, target]);
 
   const umbralAmarilloVal = umbralAmarillo > 0 ? umbralAmarillo : null;
   const umbralRojoVal = umbralRojo > 0 ? umbralRojo : null;
 
-  // Preview del estado con los valores ingresados
   const previewEstado = (() => {
-    const qty = categoria?.cantidad ?? 0;
+    const qty = target?.cantidad ?? 0;
     if (qty === 0) return "sin_stock" as const;
     if (umbralRojoVal != null && qty <= umbralRojoVal) return "critical" as const;
     if (umbralAmarilloVal != null && qty <= umbralAmarilloVal) return "warning" as const;
     return "ok" as const;
   })();
+
+  const targetName = target
+    ? mode === "categoria"
+      ? (target as CategoryStock).categoria_nombre
+      : (target as ProductStock).producto_nombre
+    : "";
 
   const handleSave = async () => {
     setError("");
@@ -54,15 +84,27 @@ const StockAlertsModal = ({
       return;
     }
 
-    if (!categoria) return;
+    if (!target) return;
 
     setLoading(true);
     try {
-      const updated = await configureAlerts(categoria.categoria_id, {
-        umbral_amarillo: umbralAmarilloVal,
-        umbral_rojo: umbralRojoVal,
-      });
-      onSave(updated);
+      if (mode === "categoria") {
+        const updated = await configureAlerts((target as CategoryStock).categoria_id, {
+          umbral_amarillo: umbralAmarilloVal,
+          umbral_rojo: umbralRojoVal,
+        });
+        if (isLegacy) {
+          (props as StockAlertsModalLegacyProps).onSave(updated);
+        } else {
+          (props as StockAlertsModalCategoriaProps).onSave(updated);
+        }
+      } else {
+        const updated = await configureProductAlerts((target as ProductStock).producto_id, {
+          umbral_amarillo: umbralAmarilloVal,
+          umbral_rojo: umbralRojoVal,
+        });
+        (props as StockAlertsModalProductoProps).onSave(updated);
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar umbral");
@@ -93,7 +135,7 @@ const StockAlertsModal = ({
               <div>
                 <p className="stock-alerts-modal-eyebrow">Stock — Umbral</p>
                 <h2 className="stock-alerts-modal-title">
-                  {categoria?.categoria_nombre}
+                  {targetName}
                 </h2>
               </div>
               <button
@@ -181,7 +223,7 @@ const StockAlertsModal = ({
               {/* Vista previa */}
               <div className="stock-alerts-preview">
                 <p className="stock-alerts-preview-title">
-                  Vista previa con stock actual ({categoria?.cantidad ?? 0} uds)
+                  Vista previa con stock actual ({target?.cantidad ?? 0} uds)
                 </p>
                 <div className="stock-alerts-preview-row">
                   <span>Estado resultante:</span>

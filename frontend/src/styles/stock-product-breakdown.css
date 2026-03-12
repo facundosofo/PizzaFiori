@@ -1,0 +1,357 @@
+.spb-container {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-top: 2rem;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.spb-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.spb-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.spb-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.spb-category-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.spb-meta {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+}
+
+
+/* ── Body ── */
+.spb-body {
+  padding: 1rem 1.25rem;
+}
+
+.spb-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--color-text-muted);
+  padding: 1.5rem 0;
+  justify-content: center;
+}
+
+.spb-spinner {
+  animation: spb-spin 1s linear infinite;
+}
+@keyframes spb-spin {
+  to { transform: rotate(360deg); }
+}
+
+.spb-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  padding: 1rem 0;
+}
+
+.spb-empty {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+/* ── Product grid ── */
+.spb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.spb-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  height: 100%;
+  transition: border-color 0.2s;
+}
+.spb-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.spb-card.has-ok {
+  border-color: rgba(34, 197, 94, 0.8);
+}
+
+.spb-card.has-critical {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.spb-card.has-warning {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.spb-card-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.spb-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+  min-height: 3.4rem;
+}
+
+.spb-product-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.spb-quantity {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.spb-qty-number {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+}
+.spb-qty-number.qty-ok {
+  color: #22c55e;
+}
+.spb-qty-number.qty-critical {
+  color: var(--color-danger);
+}
+
+.spb-qty-number.qty-warning {
+  color: #f59e0b;
+}
+
+.spb-qty-number.qty-sin-stock {
+  color: var(--color-text-muted);
+}
+
+.spb-qty-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.spb-thresholds {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  min-height: 1.7rem;
+  align-items: flex-start;
+}
+
+.spb-threshold {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.55);
+}
+.spb-threshold.warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.12);
+  color: rgba(245, 158, 11, 0.75);
+}
+.spb-threshold.critical {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.12);
+  color: rgba(239, 68, 68, 0.75);
+}
+
+.spb-threshold.empty {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Card admin actions ── */
+.spb-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: auto;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.7rem;
+}
+
+.spb-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 7px;
+  border: none;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.spb-action-btn:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+
+.spb-action-btn.mod {
+  background: rgba(34, 197, 94, 0.1);
+  color: rgba(34, 197, 94, 0.8);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+}
+
+.spb-action-btn.mod:hover {
+  background: rgba(34, 197, 94, 0.16);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.spb-action-btn.alerts {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.spb-action-btn.alerts:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.stock-threshold-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 1;
+}
+
+.stock-threshold-tooltip-wrap .spb-action-btn.alerts {
+  width: 100%;
+}
+
+.stock-threshold-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%) translateY(4px);
+  min-width: 260px;
+  max-width: 320px;
+  padding: 0.65rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(14, 16, 20, 0.96);
+  color: var(--color-text);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  z-index: 30;
+}
+
+.stock-threshold-tooltip-wrap:hover .stock-threshold-tooltip,
+.stock-threshold-tooltip-wrap:focus-within .stock-threshold-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.stock-threshold-tooltip-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.stock-threshold-tooltip-divider {
+  margin: 0.35rem 0 0.45rem;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.stock-threshold-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.stock-threshold-tooltip-row + .stock-threshold-tooltip-row {
+  margin-top: 0.25rem;
+}
+
+.stock-threshold-tooltip-label {
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stock-threshold-tooltip-value {
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 500;
+  text-align: right;
+}
+
+.stock-threshold-tooltip-empty {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 640px) {
+  .spb-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .spb-header-row {
+    align-items: flex-start;
+  }
+}
