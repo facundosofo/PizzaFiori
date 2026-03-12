@@ -336,6 +336,7 @@ class StockService:
                     "estado": estado,
                 })
 
+            result.sort(key=lambda item: item["producto_id"])
             return ServiceResult(value=result)
 
         except Exception as e:

@@ -242,3 +242,56 @@ async def test_get_movements_empty(mock_uow, mock_logger):
 
     assert result.status_code == 200
     assert result.value == []
+
+
+# ==================== get_product_stocks Tests ====================
+
+
+@pytest.mark.asyncio
+async def test_get_product_stocks_sorted_like_products(mock_uow, mock_logger):
+    """Product stock breakdown should be sorted by product id (same as productos list)."""
+    service = StockService(uow=mock_uow, logger=mock_logger)
+
+    cat = MagicMock(id=1, nombre="Pizza", stock_por_producto=True)
+    mock_uow.product_category_repo.get_by_id.return_value = cat
+
+    p1 = MagicMock(id=1)
+    p2 = MagicMock(id=2)
+    p3 = MagicMock(id=3)
+    mock_uow.product_repo.list.return_value = [p1, p2, p3]
+
+    mock_uow.product_stock_repo = AsyncMock()
+    mock_uow.product_stock_repo.get_or_create = AsyncMock(return_value=None)
+
+    ps3 = MagicMock(producto_id=3, cantidad=4, umbral_amarillo=8, umbral_rojo=2, producto=MagicMock(nombre="C"))
+    ps1 = MagicMock(producto_id=1, cantidad=10, umbral_amarillo=5, umbral_rojo=2, producto=MagicMock(nombre="A"))
+    ps2 = MagicMock(producto_id=2, cantidad=0, umbral_amarillo=5, umbral_rojo=2, producto=MagicMock(nombre="B"))
+    mock_uow.product_stock_repo.get_by_categoria_id.return_value = [ps3, ps1, ps2]
+
+    result = await service.get_product_stocks(categoria_id=1)
+
+    assert result.status_code == 200
+    assert [item["producto_id"] for item in result.value] == [1, 2, 3]
+    assert mock_uow.product_stock_repo.get_or_create.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_product_stocks_category_not_found(mock_uow, mock_logger):
+    service = StockService(uow=mock_uow, logger=mock_logger)
+    mock_uow.product_category_repo.get_by_id.return_value = None
+
+    result = await service.get_product_stocks(categoria_id=999)
+
+    assert result.status_code == 404
+    assert "Categoría no encontrada" in result.error
+
+
+@pytest.mark.asyncio
+async def test_get_product_stocks_requires_per_product_enabled(mock_uow, mock_logger):
+    service = StockService(uow=mock_uow, logger=mock_logger)
+    mock_uow.product_category_repo.get_by_id.return_value = MagicMock(id=1, stock_por_producto=False)
+
+    result = await service.get_product_stocks(categoria_id=1)
+
+    assert result.status_code == 400
+    assert "stock por producto" in result.error
