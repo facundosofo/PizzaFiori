@@ -45,8 +45,8 @@ async def test_get_all_stocks_success(mock_uow, mock_logger):
     """Test getting all stocks with categories."""
     service = StockService(uow=mock_uow, logger=mock_logger)
 
-    cat1 = MagicMock(id=1, nombre="Pizza")
-    cat2 = MagicMock(id=2, nombre="Empanadas")
+    cat1 = MagicMock(id=1, nombre="Pizza", stock_visible=True, stock_por_producto=False)
+    cat2 = MagicMock(id=2, nombre="Empanadas", stock_visible=True, stock_por_producto=False)
     mock_uow.product_category_repo.list_by_active.return_value = [cat1, cat2]
 
     stock1 = build_stock_model(categoria_id=1, cantidad=50, umbral_amarillo=10, umbral_rojo=5)
@@ -55,15 +55,16 @@ async def test_get_all_stocks_success(mock_uow, mock_logger):
     result = await service.get_all_stocks()
 
     assert result.status_code == 200
-    assert len(result.value) == 2
+    categorias = result.value["categorias"]
+    assert len(categorias) == 2
     # cat1 has stock
-    assert result.value[0]["categoria_id"] == 1
-    assert result.value[0]["cantidad"] == 50
-    assert result.value[0]["estado"] == "ok"
+    assert categorias[0]["categoria_id"] == 1
+    assert categorias[0]["cantidad"] == 50
+    assert categorias[0]["estado"] == "ok"
     # cat2 has no stock
-    assert result.value[1]["categoria_id"] == 2
-    assert result.value[1]["cantidad"] == 0
-    assert result.value[1]["estado"] == "sin_stock"
+    assert categorias[1]["categoria_id"] == 2
+    assert categorias[1]["cantidad"] == 0
+    assert categorias[1]["estado"] == "sin_stock"
 
 
 @pytest.mark.asyncio
@@ -76,7 +77,7 @@ async def test_get_all_stocks_empty(mock_uow, mock_logger):
     result = await service.get_all_stocks()
 
     assert result.status_code == 200
-    assert result.value == []
+    assert result.value["categorias"] == []
 
 
 # ==================== add_stock Tests ====================
@@ -87,7 +88,7 @@ async def test_add_stock_success(mock_uow, mock_logger):
     """Test successfully adding stock to a category."""
     service = StockService(uow=mock_uow, logger=mock_logger)
 
-    cat = MagicMock(id=1, nombre="Pizza")
+    cat = MagicMock(id=1, nombre="Pizza", stock_por_producto=False)
     mock_uow.product_category_repo.get_by_id.return_value = cat
 
     stock = build_stock_model(categoria_id=1, cantidad=10)
@@ -129,7 +130,7 @@ async def test_add_stock_creates_stock_if_none(mock_uow, mock_logger):
     """Test adding stock when no stock record exists (upsert)."""
     service = StockService(uow=mock_uow, logger=mock_logger)
 
-    cat = MagicMock(id=1, nombre="Pizza")
+    cat = MagicMock(id=1, nombre="Pizza", stock_por_producto=False)
     mock_uow.product_category_repo.get_by_id.return_value = cat
     mock_uow.stock_repo.get_by_categoria_id.return_value = None
 
@@ -144,7 +145,7 @@ async def test_add_stock_negative_clamps_to_zero(mock_uow, mock_logger):
     """Test that removing more stock than available clamps to 0."""
     service = StockService(uow=mock_uow, logger=mock_logger)
 
-    cat = MagicMock(id=1, nombre="Pizza")
+    cat = MagicMock(id=1, nombre="Pizza", stock_por_producto=False)
     mock_uow.product_category_repo.get_by_id.return_value = cat
 
     stock = build_stock_model(categoria_id=1, cantidad=3)
@@ -164,7 +165,7 @@ async def test_configure_alerts_success(mock_uow, mock_logger):
     """Test configuring stock alert thresholds."""
     service = StockService(uow=mock_uow, logger=mock_logger)
 
-    cat = MagicMock(id=1, nombre="Pizza")
+    cat = MagicMock(id=1, nombre="Pizza", stock_por_producto=False)
     mock_uow.product_category_repo.get_by_id.return_value = cat
 
     stock = build_stock_model(categoria_id=1, cantidad=50)
@@ -198,7 +199,7 @@ async def test_configure_alerts_creates_stock_if_none(mock_uow, mock_logger):
     """Test configuring alerts creates stock record if none exists."""
     service = StockService(uow=mock_uow, logger=mock_logger)
 
-    cat = MagicMock(id=1, nombre="Pizza")
+    cat = MagicMock(id=1, nombre="Pizza", stock_por_producto=False)
     mock_uow.product_category_repo.get_by_id.return_value = cat
     mock_uow.stock_repo.get_by_categoria_id.return_value = None
 
