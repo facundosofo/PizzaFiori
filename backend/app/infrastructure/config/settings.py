@@ -77,5 +77,8 @@ class Settings(BaseSettings):
     seed_admin_first_name: Optional[str] = Field(default=None, alias="SEED_ADMIN_FIRST_NAME")
     seed_admin_last_name: Optional[str] = Field(default=None, alias="SEED_ADMIN_LAST_NAME")
 
+    supabase_url: str = ""
+    supabase_key: str = "" 
+
 
 settings = Settings()
