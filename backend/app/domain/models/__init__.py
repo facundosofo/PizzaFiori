@@ -16,6 +16,8 @@ from app.domain.models.sale_item_offer_product import SaleItemOfferProduct
 from app.domain.models.user import User
 from app.domain.models.expense_category import ExpenseCategory
 from app.domain.models.expense import Expense
+from app.domain.models.category_stock import CategoryStock
+from app.domain.models.product_stock import ProductStock
 
 __all__ = [
     "Base",
@@ -31,4 +33,6 @@ __all__ = [
     "User",
     "ExpenseCategory",
     "Expense",
+    "CategoryStock",
+    "ProductStock",
 ]

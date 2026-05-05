@@ -9,8 +9,7 @@ import userService from '../services/userService';
 import '../styles/profile.css';
 import { validatePasswordChangeForm } from '../utils/validation';
 import { VALIDATION_MESSAGES } from '../constants/validationMessages';
-import { Eye, EyeOff } from 'lucide-react';
-import * as Icons from '../components/shared/Icons';
+import * as Icons from "../components/shared/Icons";
 
 const UserProfilePage = () => {
   const { user } = useAuth();
@@ -146,7 +145,7 @@ const UserProfilePage = () => {
                       aria-label={showOldPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       tabIndex={-1}
                     >
-                      {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showOldPassword ? <Icons.EyeOffIcon size={18} /> : <Icons.EyeIcon size={18} />}
                     </button>
                   </div>
                 </div>
@@ -178,7 +177,7 @@ const UserProfilePage = () => {
                       aria-label={showNewPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       tabIndex={-1}
                     >
-                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showNewPassword ? <Icons.EyeOffIcon size={18} /> : <Icons.EyeIcon size={18} />}
                     </button>
                   </div>
                 </div>
@@ -202,7 +201,7 @@ const UserProfilePage = () => {
                       aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       tabIndex={-1}
                     >
-                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showConfirmPassword ? <Icons.EyeOffIcon size={18} /> : <Icons.EyeIcon size={18} />}
                     </button>
                   </div>
                 </div>

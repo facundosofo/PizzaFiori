@@ -14,20 +14,24 @@ from datetime import datetime
 @pytest.mark.asyncio
 async def test_get_all_stocks(async_client: AsyncClient, mock_stock_service):
     """GET /stock retorna lista de stock."""
-    stocks = [
+    categorias = [
         {"categoria_id": 1, "categoria_nombre": "Pizza", "cantidad": 50,
-         "umbral_amarillo": 10, "umbral_rojo": 5, "estado": "ok"},
+         "umbral_amarillo": 10, "umbral_rojo": 5, "estado": "ok",
+         "stock_visible": True, "stock_por_producto": False, "num_productos": None},
         {"categoria_id": 2, "categoria_nombre": "Empanada", "cantidad": 0,
-         "umbral_amarillo": None, "umbral_rojo": None, "estado": "sin_stock"},
+         "umbral_amarillo": None, "umbral_rojo": None, "estado": "sin_stock",
+         "stock_visible": True, "stock_por_producto": False, "num_productos": None},
     ]
     mock_stock_service.get_all_stocks.return_value.error = None
-    mock_stock_service.get_all_stocks.return_value.value = stocks
+    mock_stock_service.get_all_stocks.return_value.value = {
+        "categorias": categorias,
+    }
 
     response = await async_client.get("/stock")
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 2
+    assert len(data["categorias"]) == 2
 
 
 @pytest.mark.asyncio

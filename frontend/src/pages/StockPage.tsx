@@ -7,7 +7,9 @@ import ErrorAlert from "../components/shared/ErrorAlert";
 import SkeletonLoader from "../components/shared/SkeletonLoader";
 import StockAddModal from "../components/StockAddModal";
 import StockAlertsModal from "../components/StockAlertsModal";
-import type { CategoryStock } from "../types/stock";
+import StockConfigModal from "../components/StockConfigModal";
+import StockProductBreakdown from "../components/StockProductBreakdown";
+import type { CategoryStock, StockListResponse } from "../types/stock";
 import { STOCK_ESTADO_BADGE, STOCK_ESTADO_LABELS } from "../types/stock";
 import { getAllStocks } from "../services/stockService";
 import "../styles/stock.css";
@@ -22,19 +24,25 @@ const StockPage = () => {
   const loadingRef = useRef(loading);
   useEffect(() => { loadingRef.current = loading; }, [loading]);
 
-  // Modal: agregar stock
+  // Modal: agregar stock (categoria)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedForAdd, setSelectedForAdd] = useState<CategoryStock | null>(null);
 
-  // Modal: configurar alertas
+  // Modal: configurar alertas (categoria)
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
   const [selectedForAlerts, setSelectedForAlerts] = useState<CategoryStock | null>(null);
+
+  // Modal: configurar categorias (admin)
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+  // Panel: desglose por producto
+  const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null);
 
   const fetchStocks = useCallback(async () => {
     try {
       setError(null);
-      const data = await getAllStocks();
-      setStocks(Array.isArray(data) ? data : []);
+      const data: StockListResponse = await getAllStocks();
+      setStocks(Array.isArray(data.categorias) ? data.categorias : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar el stock");
     } finally {
@@ -47,7 +55,7 @@ const StockPage = () => {
     fetchStocks();
   }, [fetchStocks]);
 
-  // Refresh por eventos cross-page y focus — usa ref para evitar re-registrar handlers en cada cambio de loading
+  // Refresh por eventos cross-page y focus
   useEffect(() => {
     const handleRefresh = () => { if (!loadingRef.current) void fetchStocks(); };
     window.addEventListener("focus", handleRefresh);
@@ -78,25 +86,43 @@ const StockPage = () => {
     window.dispatchEvent(new CustomEvent("stock-updated"));
   };
 
+  const handleToggleBreakdown = (categoriaId: number) => {
+    setExpandedCategoryId((prev) => (prev === categoriaId ? null : categoriaId));
+  };
+
   const getQuantityClass = (estado: string) => {
+    if (estado === "ok") return "qty-ok";
     if (estado === "critical" || estado === "sin_stock") return "qty-critical";
     if (estado === "warning") return "qty-warning";
-    if (estado === "sin_stock") return "qty-sin-stock";
     return "";
   };
 
   const getCardClass = (estado: string) => {
+    if (estado === "ok") return "has-ok";
     if (estado === "critical" || estado === "sin_stock") return "has-critical";
     if (estado === "warning") return "has-warning";
     return "";
   };
+
+  const expandedCategory = stocks.find((s) => s.categoria_id === expandedCategoryId) ?? null;
 
   return (
     <div className="stock-container">
       <ErrorAlert message={error} onClose={() => setError(null)} />
 
       <div className="page-header">
-        <h1 className="page-title">Stock</h1>
+        <div>
+          <h1 className="page-title">Stock</h1>
+        </div>
+        {isAdmin && (
+          <button
+            className="stock-config-trigger-btn"
+            onClick={() => setIsConfigModalOpen(true)}
+          >
+            <Icons.CogIcon size={15} />
+            Configuracion
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -109,77 +135,170 @@ const StockPage = () => {
         <div className="stock-empty">
           <Icons.LayersIcon size={48} color="var(--color-text-muted)" />
           <p>No hay categorías de producto configuradas.</p>
+          {isAdmin && (
+            <button className="stock-config-trigger-btn" onClick={() => setIsConfigModalOpen(true)}>
+              <Icons.CogIcon size={15} />
+              Configuracion
+            </button>
+          )}
         </div>
       ) : (
         <>
           <div className="stock-grid">
-            {stocks.map((cat) => (
-              <motion.div
-                key={cat.categoria_id}
-                className={`stock-card ${getCardClass(cat.estado)}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.18 }}
-              >
-                <div className="stock-card-header">
-                  <span className="stock-card-category">{cat.categoria_nombre}</span>
-                  <Badge variant={STOCK_ESTADO_BADGE[cat.estado]}>
-                    {STOCK_ESTADO_LABELS[cat.estado]}
-                  </Badge>
-                </div>
-
-                <div className="stock-card-quantity-row">
-                  <span className={`stock-card-quantity ${getQuantityClass(cat.estado)}`}>
-                    {cat.cantidad}
-                  </span>
-                  <span className="stock-card-unit">unidades</span>
-                </div>
-
-                {(cat.umbral_amarillo != null || cat.umbral_rojo != null) && (
-                  <div className="stock-card-thresholds">
-                    {cat.umbral_amarillo != null && (
-                      <span className="stock-threshold-chip amarillo">
-                        🟡 ≤ {cat.umbral_amarillo}
-                      </span>
-                    )}
-                    {cat.umbral_rojo != null && (
-                      <span className="stock-threshold-chip rojo">
-                        🔴 ≤ {cat.umbral_rojo}
-                      </span>
-                    )}
+            {stocks.map((cat) => {
+              const isExpanded = expandedCategoryId === cat.categoria_id;
+              return (
+                <motion.div
+                  key={cat.categoria_id}
+                  className={`stock-card ${getCardClass(cat.estado)}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <div className="stock-card-header">
+                    <span className="stock-card-category">{cat.categoria_nombre}</span>
+                    <Badge variant={STOCK_ESTADO_BADGE[cat.estado]}>
+                      {STOCK_ESTADO_LABELS[cat.estado]}
+                    </Badge>
                   </div>
-                )}
 
-                {isAdmin && (
+                  <div className="stock-card-quantity-row">
+                    <span className={`stock-card-quantity ${getQuantityClass(cat.estado)}`}>
+                      {cat.cantidad}
+                    </span>
+                    <span className="stock-card-unit">unidades</span>
+                  </div>
+                  {/*
+                  {(cat.umbral_amarillo != null || cat.umbral_rojo != null) && (
+                    <div className="stock-card-thresholds">
+                      {cat.umbral_amarillo != null && (
+                        <span className="stock-threshold-chip amarillo">
+                          🟡 ≤ {cat.umbral_amarillo}
+                        </span>
+                      )}
+                      {cat.umbral_rojo != null && (
+                        <span className="stock-threshold-chip rojo">
+                          🔴 ≤ {cat.umbral_rojo}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  */}
                   <div className="stock-card-actions">
-                    <button
-                      className="stock-card-btn add"
-                      onClick={() => handleOpenAddModal(cat)}
-                    >
-                      <Icons.PlusIcon size={14} />
-                      Modificar
-                    </button>
-                    <button
-                      className="stock-card-btn config"
-                      onClick={() => handleOpenAlertsModal(cat)}
-                    >
-                      <Icons.OctagonAlertIcon size={14} />
-                      Umbral
-                    </button>
+                    {cat.stock_por_producto ? (
+                      <>
+                        <button
+                          className={`stock-card-btn view${isExpanded ? " active" : ""}`}
+                          onClick={() => handleToggleBreakdown(cat.categoria_id)}
+                        >
+                          {isExpanded ? (
+                            <>
+                              <Icons.EyeOffIcon size={14} />
+                              Cerrar
+                            </>
+                          ) : (
+                            <>
+                              <Icons.EyeIcon size={14} />
+                              Ver
+                            </>
+                          )}
+                        </button>
+                        {isAdmin && (
+                          <div className="stock-threshold-tooltip-wrap">
+                            <button
+                              className="stock-card-btn config"
+                              onClick={() => handleOpenAlertsModal(cat)}
+                            >
+                              <Icons.OctagonAlertIcon size={14} />
+                              Umbral
+                            </button>
+                            <div className="stock-threshold-tooltip" role="tooltip">
+                              <div className="stock-threshold-tooltip-title">UMBRALES CONFIGURADOS</div>
+                              <div className="stock-threshold-tooltip-divider" />
+                              {cat.umbral_amarillo != null && (
+                                <div className="stock-threshold-tooltip-row">
+                                  <span className="stock-threshold-tooltip-label">🟡 Alerta</span>
+                                  <span className="stock-threshold-tooltip-value">a partir de {cat.umbral_amarillo}</span>
+                                </div>
+                              )}
+                              {cat.umbral_rojo != null && (
+                                <div className="stock-threshold-tooltip-row">
+                                  <span className="stock-threshold-tooltip-label">🔴 Crítico</span>
+                                  <span className="stock-threshold-tooltip-value">a partir de {cat.umbral_rojo}</span>
+                                </div>
+                              )}
+                              {cat.umbral_amarillo == null && cat.umbral_rojo == null && (
+                                <div className="stock-threshold-tooltip-empty">Sin umbrales configurados</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      isAdmin && (
+                        <>
+                          <button
+                            className="stock-card-btn add"
+                            onClick={() => handleOpenAddModal(cat)}
+                          >
+                            <Icons.DiffIcon size={14} />
+                            Modificar
+                          </button>
+                          <div className="stock-threshold-tooltip-wrap">
+                            <button
+                              className="stock-card-btn config"
+                              onClick={() => handleOpenAlertsModal(cat)}
+                            >
+                              <Icons.OctagonAlertIcon size={14} />
+                              Umbral
+                            </button>
+                            <div className="stock-threshold-tooltip" role="tooltip">
+                              <div className="stock-threshold-tooltip-title">UMBRALES CONFIGURADOS</div>
+                              <div className="stock-threshold-tooltip-divider" />
+                              {cat.umbral_amarillo != null && (
+                                <div className="stock-threshold-tooltip-row">
+                                  <span className="stock-threshold-tooltip-label">🟡 Alerta</span>
+                                  <span className="stock-threshold-tooltip-value">a partir de {cat.umbral_amarillo}</span>
+                                </div>
+                              )}
+                              {cat.umbral_rojo != null && (
+                                <div className="stock-threshold-tooltip-row">
+                                  <span className="stock-threshold-tooltip-label">🔴 Crítico</span>
+                                  <span className="stock-threshold-tooltip-value">a partir de {cat.umbral_rojo}</span>
+                                </div>
+                              )}
+                              {cat.umbral_amarillo == null && cat.umbral_rojo == null && (
+                                <div className="stock-threshold-tooltip-empty">Sin umbrales configurados</div>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )
+                    )}
                   </div>
-                )}
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
+
+          {expandedCategory && (
+            <StockProductBreakdown
+              categoria={expandedCategory}
+              isAdmin={isAdmin}
+              onClose={() => setExpandedCategoryId(null)}
+              onCategoryStockChanged={fetchStocks}
+            />
+          )}
         </>
       )}
 
-      {/* Modales (solo admin) */}
+      {/* Modal: agregar/editar stock por categoria (solo admin) */}
       {isAdmin && (
         <>
           <StockAddModal
+            mode="categoria"
             isOpen={isAddModalOpen}
-            categoria={selectedForAdd}
+            target={selectedForAdd}
             onClose={() => {
               setIsAddModalOpen(false);
               setSelectedForAdd(null);
@@ -187,13 +306,22 @@ const StockPage = () => {
             onSave={handleStockSaved}
           />
           <StockAlertsModal
+            mode="categoria"
             isOpen={isAlertsModalOpen}
-            categoria={selectedForAlerts}
+            target={selectedForAlerts}
             onClose={() => {
               setIsAlertsModalOpen(false);
               setSelectedForAlerts(null);
             }}
             onSave={handleStockSaved}
+          />
+          <StockConfigModal
+            isOpen={isConfigModalOpen}
+            onClose={() => setIsConfigModalOpen(false)}
+            onSaved={() => {
+              setExpandedCategoryId(null);
+              void fetchStocks();
+            }}
           />
         </>
       )}

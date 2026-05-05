@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
@@ -26,7 +26,7 @@ class SqlAlchemyProductRepository(
             .where(Product.id == producto_id)
             .options(
                 selectinload(Product.precios),
-                selectinload(Product.categoria)
+                joinedload(Product.categoria)
             )
         )
         result = await self.session.execute(query)
@@ -41,7 +41,7 @@ class SqlAlchemyProductRepository(
             select(Product)
             .options(
                 selectinload(Product.precios),
-                selectinload(Product.categoria)
+                joinedload(Product.categoria)
             )
             .order_by(Product.id.asc())
         )
@@ -64,7 +64,7 @@ class SqlAlchemyProductRepository(
             .where(Product.id.in_(producto_ids))
             .options(
                 selectinload(Product.precios),
-                selectinload(Product.categoria)
+                joinedload(Product.categoria)
             )
         )
         result = await self.session.execute(query)

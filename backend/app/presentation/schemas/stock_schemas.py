@@ -26,6 +26,32 @@ class CategoryStockResponse(BaseModel):
     umbral_amarillo: Optional[int] = None
     umbral_rojo: Optional[int] = None
     estado: str  # "ok" | "warning" | "critical" | "sin_stock"
+    stock_visible: bool = True
+    stock_por_producto: bool = False
+    num_productos: Optional[int] = None  # number of products when stock_por_producto=True
+
+
+class StockListResponse(BaseModel):
+    categorias: List[CategoryStockResponse]
+
+
+class ProductStockResponse(BaseModel):
+    producto_id: int
+    producto_nombre: str
+    cantidad: int
+    umbral_amarillo: Optional[int] = None
+    umbral_rojo: Optional[int] = None
+    estado: str
+
+
+class CategoryConfigItem(BaseModel):
+    categoria_id: int
+    stock_visible: bool
+    stock_por_producto: bool
+
+
+class SaveStockConfigRequest(BaseModel):
+    configs: List[CategoryConfigItem]
 
 
 class StockMovementResponse(BaseModel):
@@ -34,3 +60,4 @@ class StockMovementResponse(BaseModel):
     username: str
     action: str
     changes: Any
+
