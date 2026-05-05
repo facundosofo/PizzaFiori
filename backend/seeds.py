@@ -257,7 +257,7 @@ async def seed_products(session, categorias: dict[str, ProductCategory]) -> dict
                 producto = Product(
                     sku=sku,
                     nombre=prod_nombre,
-                    imagen=f"uploads/productos/{sku}.jpg",
+                    imagen=None,  # Imágenes se cargan vía API/FileService → R2
                     categoria_id=categoria.id,
                     activo=True,
                     fecha_creacion=now,

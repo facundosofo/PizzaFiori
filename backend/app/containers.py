@@ -18,6 +18,7 @@ from app.infrastructure.file_service import FileService
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 from app.infrastructure.logging import configure_logging
+from app.infrastructure.config.settings import settings
 
 
 class Container(containers.DeclarativeContainer):
@@ -39,9 +40,13 @@ class Container(containers.DeclarativeContainer):
     
     logging = providers.Singleton(configure_logging)
     
-    file_service = providers.Singleton(FileService)
     cache_service = providers.Singleton(CacheService)
     unit_of_work = providers.Factory(SqlAlchemyUnitOfWork)
+    file_service = providers.Singleton(
+        FileService,
+        settings=settings,
+        cache_service=cache_service,
+    )
 
     # Audit service (used by other services)
     audit_service = providers.Factory(
