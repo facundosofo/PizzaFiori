@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Lock, Eye, EyeOff } from 'lucide-react';
+import * as Icons from "../components/shared/Icons";
 import logo from '../assets/PizzaFioriLogo.png';
 import '../styles/auth.css';
 import { validateLoginForm } from '../utils/validation';
@@ -71,7 +71,7 @@ const LoginPage = () => {
           <div className="form-group">
             <label htmlFor="username">Usuario</label>
             <div className="input-with-icon">
-              <User size={20} className="input-icon" />
+              <Icons.UserIcon size={20} className="input-icon" />
               <input
                 id="username"
                 type="text"
@@ -89,7 +89,7 @@ const LoginPage = () => {
           <div className="form-group">
             <label htmlFor="password">Contraseña</label>
             <div className="input-with-icon">
-              <Lock size={20} className="input-icon" />
+              <Icons.LockIcon size={20} className="input-icon" />
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -106,7 +106,7 @@ const LoginPage = () => {
                 aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <Icons.EyeOffIcon size={20} /> : <Icons.EyeIcon size={20} />}
               </button>
             </div>
           </div>

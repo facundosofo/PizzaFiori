@@ -77,5 +77,33 @@ class Settings(BaseSettings):
     seed_admin_first_name: Optional[str] = Field(default=None, alias="SEED_ADMIN_FIRST_NAME")
     seed_admin_last_name: Optional[str] = Field(default=None, alias="SEED_ADMIN_LAST_NAME")
 
+    # ---------------------------
+    # Cloudflare R2 (S3 compatible)
+    # ---------------------------
+    r2_enabled: bool = Field(default=False, alias="R2_ENABLED")
+    r2_endpoint_url: Optional[str] = Field(default=None, alias="R2_ENDPOINT_URL")
+    r2_access_key_id: Optional[str] = Field(default=None, alias="R2_ACCESS_KEY_ID")
+    r2_secret_access_key: Optional[str] = Field(default=None, alias="R2_SECRET_ACCESS_KEY")
+    r2_bucket_name: Optional[str] = Field(default=None, alias="R2_BUCKET_NAME")
+
+    # Public base URL used to serve objects (custom domain or public bucket URL)
+    # Example: https://img.tudominio.com
+    r2_public_base_url: Optional[str] = Field(default=None, alias="R2_PUBLIC_BASE_URL")
+    r2_key_prefix: str = Field(default="productos/", alias="R2_KEY_PREFIX")
+
+    # ---------------------------
+    # Plan limits / cost controls
+    # ---------------------------
+    # R2 ops/day (PUT/DELETE/HEAD/LIST we issue). Default aligned with 500 admin API limit.
+    r2_max_ops_per_day: int = Field(default=500, alias="R2_MAX_OPS_PER_DAY")
+    # Total stored bytes cap (default 5GB). Used to prevent surprise costs.
+    r2_max_total_bytes: int = Field(default=5 * 1024 * 1024 * 1024, alias="R2_MAX_TOTAL_BYTES")
+
+    # Media constraints (Cloudflare plan)
+    media_max_image_bytes: int = Field(default=10 * 1024 * 1024, alias="MEDIA_MAX_IMAGE_BYTES")  # 10MB
+    media_max_raw_bytes: int = Field(default=10 * 1024 * 1024, alias="MEDIA_MAX_RAW_BYTES")      # 10MB
+    media_max_image_megapixels: int = Field(default=25, alias="MEDIA_MAX_IMAGE_MEGAPIXELS")       # 25MP
+    media_max_image_transform_bytes: int = Field(default=100 * 1024 * 1024, alias="MEDIA_MAX_IMAGE_TRANSFORM_BYTES")  # 100MB
+
 
 settings = Settings()

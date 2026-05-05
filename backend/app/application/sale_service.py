@@ -239,6 +239,10 @@ class SaleService:
                 numero_orden_val = f"#ORD-{business_date.strftime('%y%m%d')}-{seq:05d}"
                 # dict para acumular descuentos de stock por categoria: {categoria_id: delta}
                 stock_deductions: dict[int, int] = {}
+                # dict para acumular descuentos de stock por producto: {producto_id: delta}
+                product_stock_deductions: dict[int, int] = {}
+                # map producto_id -> categoria_id para evitar re-fetch en el loop de descuento
+                producto_categoria_ids: dict[int, int] = {}
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
                     precio_unitario = None
@@ -273,6 +277,11 @@ class SaleService:
                             stock_deductions[producto.categoria_id] = (
                                 stock_deductions.get(producto.categoria_id, 0) + item.cantidad
                             )
+                        product_stock_deductions[item.producto_id] = (
+                            product_stock_deductions.get(item.producto_id, 0) + item.cantidad
+                        )
+                        if producto.categoria_id:
+                            producto_categoria_ids[item.producto_id] = producto.categoria_id
                     
                     elif item.oferta_id:
                         # Validar que la oferta existe y está activa
@@ -329,6 +338,10 @@ class SaleService:
                                     stock_deductions[producto.categoria_id] = (
                                         stock_deductions.get(producto.categoria_id, 0) + deduccion_total
                                     )
+                                    product_stock_deductions[prod_sel.producto_id] = (
+                                        product_stock_deductions.get(prod_sel.producto_id, 0) + deduccion_total
+                                    )
+                                    producto_categoria_ids[prod_sel.producto_id] = producto.categoria_id
                     
                     elif item.pizza_mitad_mitad:
                         # Validar y procesar pizza mitad-mitad
@@ -399,7 +412,17 @@ class SaleService:
 
                 # Descontar stock por categoria para todos los items de la venta
                 from datetime import datetime as _dt
+
+                # Determinar qué categorías usan stock por producto
+                cats_por_producto: set[int] = set()
+                for cat_id in stock_deductions:
+                    cat_obj = await uow.product_category_repo.get_by_id(cat_id)
+                    if cat_obj and cat_obj.stock_por_producto:
+                        cats_por_producto.add(cat_id)
+
                 for cat_id, delta in stock_deductions.items():
+                    if cat_id in cats_por_producto:
+                        continue  # handled at product level below
                     stock = await uow.stock_repo.get_by_categoria_id(cat_id)
                     if stock is None:
                         self.logger.warning(
@@ -420,6 +443,36 @@ class SaleService:
                             "cantidad_descontada": delta,
                             "stock_anterior": stock_anterior,
                             "stock_nuevo": stock.cantidad,
+                            "numero_orden": numero_orden_val,
+                        },
+                    )
+
+                # Descontar stock por producto para categorías con stock_por_producto=True
+                for prod_id, delta in product_stock_deductions.items():
+                    prod_stock = await uow.product_stock_repo.get_by_producto_id(prod_id)
+                    if prod_stock is None:
+                        self.logger.warning(
+                            "Sin registro de stock para producto, descuento omitido",
+                            producto_id=prod_id,
+                        )
+                        continue
+                    # Only deduct if product belongs to a per-product category
+                    cat_id_for_prod = producto_categoria_ids.get(prod_id)
+                    if cat_id_for_prod is None or cat_id_for_prod not in cats_por_producto:
+                        continue
+                    stock_anterior = prod_stock.cantidad
+                    prod_stock.cantidad = max(0, prod_stock.cantidad - delta)
+                    prod_stock.fecha_actualizacion = _dt.now()
+                    await uow.audit_repo.log_action(
+                        username=username or "sistema",
+                        entity_type="StockProducto",
+                        entity_id=prod_id,
+                        action="UPDATE",
+                        changes={
+                            "tipo": "VENTA_DESCUENTO",
+                            "cantidad_descontada": delta,
+                            "stock_anterior": stock_anterior,
+                            "stock_nuevo": prod_stock.cantidad,
                             "numero_orden": numero_orden_val,
                         },
                     )

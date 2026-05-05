@@ -45,14 +45,6 @@
   margin: 0;
 }
 
-.expense-modal-eyebrow {
-  margin: 0 0 0.3rem;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.65rem;
-  color: var(--color-text-muted);
-}
-
 .expense-modal-close {
   position: absolute;
   top: 16px;

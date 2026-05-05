@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 from app.domain.repositories.audit_repository import AbstractAuditRepository
 from app.domain.repositories.abstract_category_stock_repository import AbstractCategoryStockRepository
+from app.domain.repositories.abstract_product_stock_repository import AbstractProductStockRepository
 from app.domain.repositories.product_category_repository import AbstractProductCategoryRepository
 from app.domain.repositories.product_repository import AbstractProductRepository
 from app.domain.repositories.offer_repository import AbstractOfferRepository
@@ -25,6 +26,7 @@ class AbstractUnitOfWork(ABC):
     expense_category_repo: AbstractExpenseCategoryRepository
     expense_repo: AbstractExpenseRepository
     stock_repo: AbstractCategoryStockRepository
+    product_stock_repo: AbstractProductStockRepository
 
 
     async def __aenter__(self):

@@ -153,9 +153,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Crear la carpeta si no existe (por seguridad al arrancar)
-os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", _CachedStaticFiles(directory="uploads"), name="uploads")
+# Legacy local uploads: solo si R2 está deshabilitado
+if not settings.r2_enabled:
+    # Crear la carpeta si no existe (por seguridad al arrancar)
+    os.makedirs("uploads", exist_ok=True)
+    app.mount("/uploads", _CachedStaticFiles(directory="uploads"), name="uploads")
 
 # Agregar los routers
 app.include_router(auth_router)

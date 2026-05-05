@@ -7,6 +7,29 @@ export interface CategoryStock {
   umbral_amarillo: number | null;
   umbral_rojo: number | null;
   estado: StockEstado;
+  stock_visible: boolean;
+  stock_por_producto: boolean;
+  num_productos: number | null;
+}
+
+export interface StockListResponse {
+  categorias: CategoryStock[];
+}
+
+export interface ProductStock {
+  producto_id: number;
+  producto_nombre: string;
+  cantidad: number;
+  umbral_amarillo: number | null;
+  umbral_rojo: number | null;
+  estado: StockEstado;
+}
+
+export interface CategoryConfigItem {
+  categoria_id: number;
+  categoria_nombre: string;
+  stock_visible: boolean;
+  stock_por_producto: boolean;
 }
 
 export interface StockMovement {
@@ -37,18 +60,19 @@ export interface ConfigureAlertsRequest {
 }
 
 export const STOCK_ESTADO_LABELS: Record<StockEstado, string> = {
-  ok: "Normal",
-  warning: "Stock bajo",
-  critical: "Stock crítico",
+  ok: "En stock",
+  warning: "Stock medio",
+  critical: "Stock bajo",
   sin_stock: "Sin stock",
 };
 
 export const STOCK_ESTADO_BADGE: Record<
   StockEstado,
-  "success" | "warning" | "danger" | "neutral"
+  "success" | "warning" | "danger" | "danger"
 > = {
   ok: "success",
   warning: "warning",
   critical: "danger",
-  sin_stock: "neutral",
+  sin_stock: "danger",
 };
+

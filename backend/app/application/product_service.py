@@ -8,7 +8,7 @@ from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest
-from app.infrastructure.file_service import FileService
+from app.infrastructure.file_service import FileService, FileSaveResult
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.sku_generator import generar_sku_producto
 
@@ -44,6 +44,7 @@ class ProductService:
     ) -> ServiceResult:
 
         ruta_imagen = None
+        imagen_guardada: FileSaveResult | None = None
 
         try:
             self.logger.debug(
@@ -65,8 +66,9 @@ class ProductService:
                 sku = generar_sku_producto(producto_create.nombre, categoria_nombre)
 
             if image:
-                ruta_imagen = await self.file_service.save_file(image, filename_base=sku)
-                self.logger.debug("Imagen guardada", ruta=ruta_imagen)
+                imagen_guardada = await self.file_service.save_image(image, filename_base=sku)
+                ruta_imagen = imagen_guardada.url
+                self.logger.debug("Imagen guardada", ruta=ruta_imagen, key=imagen_guardada.key, size=imagen_guardada.size_bytes)
 
             async with self.uow as uow:
                 producto = Product(
@@ -117,7 +119,9 @@ class ProductService:
                 exc_info=True
             )
             
-            if ruta_imagen:
+            if imagen_guardada:
+                await self.file_service.delete_image(imagen_guardada.key)
+            elif ruta_imagen:
                 self.file_service.delete_file(ruta_imagen)
 
             return ServiceResult(error=str(e), status_code=400)
@@ -158,6 +162,7 @@ class ProductService:
     ) -> ServiceResult:
 
         ruta_imagen_nueva = None
+        imagen_guardada: FileSaveResult | None = None
 
         try:
             async with self.uow as uow:
@@ -190,7 +195,11 @@ class ProductService:
                 sku_producto = producto.sku
 
                 if image:
-                    ruta_imagen_nueva = await self.file_service.save_file(image, filename_base=sku_producto)
+                    imagen_guardada = await self.file_service.save_image(
+                        image,
+                        filename_base=sku_producto,
+                    )
+                    ruta_imagen_nueva = imagen_guardada.url
                     producto.imagen = ruta_imagen_nueva
                 
                 if producto_update is not None:
@@ -284,7 +293,7 @@ class ProductService:
                             await uow.commit()
 
             if image and ruta_imagen_vieja and ruta_imagen_vieja != ruta_imagen_nueva:
-                self.file_service.delete_file(ruta_imagen_vieja)
+                await self.file_service.delete_image(ruta_imagen_vieja)
 
             # Invalidate product cache on write (selective)
             self.cache_service.invalidate('producto_*')
@@ -292,7 +301,9 @@ class ProductService:
             return ServiceResult(value=producto)
 
         except Exception as e:
-            if ruta_imagen_nueva:
+            if imagen_guardada:
+                await self.file_service.delete_image(imagen_guardada.key)
+            elif ruta_imagen_nueva:
                 self.file_service.delete_file(ruta_imagen_nueva)
 
             return ServiceResult(error=str(e), status_code=400)

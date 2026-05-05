@@ -63,6 +63,17 @@ CATEGORIAS_PRODUCTO = [
     "Extras",
 ]
 
+STOCK_VISIBLES = {
+    "Pizzas",
+    "Empanadas",
+    "Super Milas",
+    "Papas Fritas",
+}
+
+STOCK_POR_PRODUCTO = {
+    "Empanadas",
+}
+
 PRODUCTOS_POR_CATEGORIA = {
     "Pizzas": [
         "Pizza Muzzarella",
@@ -165,6 +176,7 @@ async def seed_product_categories(session) -> dict[str, ProductCategory]:
     """Crea categorias de producto. Retorna {nombre: ProductCategory}."""
     now = datetime.now()
     creados = 0
+    actualizados = 0
     resultado = {}
 
     for nombre in CATEGORIAS_PRODUCTO:
@@ -172,12 +184,24 @@ async def seed_product_categories(session) -> dict[str, ProductCategory]:
         existing = (await session.execute(stmt)).scalar_one_or_none()
 
         if existing:
+            desired_visible = nombre in STOCK_VISIBLES
+            desired_per_product = nombre in STOCK_POR_PRODUCTO
+            if (
+                existing.stock_visible != desired_visible
+                or existing.stock_por_producto != desired_per_product
+            ):
+                existing.stock_visible = desired_visible
+                existing.stock_por_producto = desired_per_product
+                existing.fecha_actualizacion = now
+                actualizados += 1
             resultado[nombre] = existing
             _info(f"  [SKIP] Categoria producto: {nombre} (ya existe, id={existing.id})")
         else:
             cat = ProductCategory(
                 nombre=nombre,
                 activo=True,
+                stock_visible=nombre in STOCK_VISIBLES,
+                stock_por_producto=nombre in STOCK_POR_PRODUCTO,
                 fecha_creacion=now,
                 fecha_actualizacion=now,
             )
@@ -186,7 +210,10 @@ async def seed_product_categories(session) -> dict[str, ProductCategory]:
             creados += 1
 
     await session.flush()
-    _info(f"  -> Categorias producto: {creados} creadas, {len(CATEGORIAS_PRODUCTO) - creados} existentes")
+    _info(
+        f"  -> Categorias producto: {creados} creadas, "
+        f"{len(CATEGORIAS_PRODUCTO) - creados} existentes, {actualizados} actualizadas (stock config)"
+    )
     return resultado
 
 
@@ -230,7 +257,7 @@ async def seed_products(session, categorias: dict[str, ProductCategory]) -> dict
                 producto = Product(
                     sku=sku,
                     nombre=prod_nombre,
-                    imagen=f"uploads/productos/{sku}.jpg",
+                    imagen=None,  # Imágenes se cargan vía API/FileService → R2
                     categoria_id=categoria.id,
                     activo=True,
                     fecha_creacion=now,
