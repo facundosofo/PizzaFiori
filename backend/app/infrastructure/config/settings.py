@@ -13,6 +13,9 @@ if getattr(_sys, 'frozen', False):
 else:
     _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent.parent
 _ENV_FILE = _BACKEND_DIR / ".env"
+_RENDER_SECRET_ENV_FILE = Path("/etc/secrets/.env")
+if not _ENV_FILE.exists() and _RENDER_SECRET_ENV_FILE.exists():
+    _ENV_FILE = _RENDER_SECRET_ENV_FILE
 
 
 class Settings(BaseSettings):
