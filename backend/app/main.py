@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.exception_handlers import http_exception_handler
 from starlette.responses import Response as _StarletteResponse
@@ -172,6 +172,16 @@ app.include_router(expense_category_router)
 app.include_router(expense_router)
 app.include_router(stock_router)
 app.include_router(health_router)
+
+# R2 uploads redirect: cuando R2 está habilitado, redirigir /uploads/* a URLs de Cloudflare
+if settings.r2_enabled and settings.r2_public_base_url:
+    @app.get("/uploads/{path:path}", include_in_schema=False)
+    async def redirect_uploads_to_r2(path: str):
+        """Redirige peticiones legacy /uploads/* a URLs públicas de R2."""
+        # Construir la URL de R2: base + key_prefix + path
+        key = f"{settings.r2_key_prefix.rstrip('/')}/{path}"
+        r2_url = f"{settings.r2_public_base_url.rstrip('/')}/{key.lstrip('/')}"
+        return RedirectResponse(url=r2_url, status_code=302)
 
 if _FRONTEND_DIST.is_dir():
     # Montar los assets estaticos directamente para MIME types correctos

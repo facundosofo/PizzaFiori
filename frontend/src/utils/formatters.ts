@@ -1,3 +1,5 @@
+import env from "../config/env";
+
 /**
  * Format a number as currency in Argentine Pesos (ARS)
  */
@@ -46,6 +48,25 @@ export const formatDateTimeDisplay = (isoString: string): string => {
   } catch (err) {
     return isoString;
   }
+};
+
+/**
+ * Get the full URL for a product image.
+ * If the image path is already a complete URL (starts with http/https), use it directly.
+ * Otherwise, prepend the API base URL to create a relative path.
+ */
+export const getImageUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath) {
+    return "/placeholder.png";
+  }
+
+  // If it's already a complete URL, use it directly
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+
+  // Otherwise, treat it as a relative path and prepend API base URL
+  return `${env.API_BASE_URL}/${imagePath}`;
 };
 
 /**

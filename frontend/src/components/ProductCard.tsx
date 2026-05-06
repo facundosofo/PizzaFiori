@@ -9,9 +9,8 @@ import ConfirmDialog from "./shared/ConfirmDialog";
 import * as Icons from './shared/Icons';
 import { deactivateProducto } from "../services/productsService";
 import { getOfertas } from "../services/ofertasService";
-import { formatCurrency } from "../utils/formatters";
+import { formatCurrency, getImageUrl } from "../utils/formatters";
 import "../styles/product-card.css";
-import env from "../config/env";
 
 
 
@@ -35,7 +34,7 @@ const ProductCard = ({
   const [affectedOffers, setAffectedOffers] = useState<Offer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(false);
 
-  const imageUrl = producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png";
+  const imageUrl = getImageUrl(producto.imagen);
 
   const formatCantidad = (cantidad: number): string => {
     switch (cantidad) {
