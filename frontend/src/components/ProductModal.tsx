@@ -41,6 +41,17 @@ const ProductModal = ({
   const [priceIndexToDelete, setPriceIndexToDelete] = useState<number | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
+  function getImageUrl(path?: string | null) {
+    if (!path) return "/placeholder.png";
+
+    try {
+      new URL(path);
+      return path;
+    } catch {
+      return `${env.API_BASE_URL}/${path.replace(/^\/+/, "")}`;
+    }
+  }
+
   // Auto-scroll al error cuando aparece
   useEffect(() => {
     if (error && errorRef.current) {
@@ -62,11 +73,7 @@ const ProductModal = ({
         setPreciosInput(producto.precios?.map(p => formatCurrency(p.precio)) || []);
       }
 
-      setPreviewImagen(
-        producto.imagen
-          ? `${env.API_BASE_URL}/${producto.imagen}`
-          : "/placeholder.png"
-      );
+      setPreviewImagen(getImageUrl(producto.imagen));
       setImagen(null);
       setError("");
     }
@@ -433,9 +440,7 @@ const ProductModal = ({
                         setImagen(null);
                         const input = document.getElementById("file-input") as HTMLInputElement;
                         if (input) input.value = "";
-                        setPreviewImagen(
-                          producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png"
-                        );
+                        setPreviewImagen(getImageUrl(producto.imagen));
                       }}
                       disabled={loading}
                     >
