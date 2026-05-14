@@ -1,26 +1,30 @@
 /* ConfigPage.css - Página de configuración */
 
 .config-page {
-  min-height: 100%;
-  padding: 24px;
-  background: var(--color-surface);
+  width: 100%;
+  min-height: var(--app-height, 100vh);
+  padding: 40px 20px 40px 24px;
+  background: transparent;
 }
 
 .config-container {
-  max-width: 900px;
+  max-width: 1120px;
   margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: 32px;
+.page-title {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
 }
 
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 8px 0;
-  letter-spacing: -0.5px;
+.page-subtitle {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0.5rem 0 0;
 }
 
 .page-subtitle {
@@ -35,17 +39,21 @@
 }
 
 .config-card {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 .config-card-header {
-  padding: 20px;
-  background: var(--gradient-card);
+  padding: 1.5rem 2rem;
+  background: transparent;
   border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+}
+
+.config-card-body {
+  padding: 1.5rem 2rem 2rem;
 }
 
 .config-card-title-group {
@@ -205,6 +213,11 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+}
+
+.form-actions .btn {
+  flex: 1;
+  justify-content: center;
 }
 
 .btn {

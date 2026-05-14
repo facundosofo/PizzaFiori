@@ -3,7 +3,10 @@
  */
 
 .user-management-container {
-  padding: 2rem 0;
+  width: 100%;
+  min-height: var(--app-height, 100vh);
+  padding: 40px 20px 40px 24px;
+  background: transparent;
 }
 
 .user-management-header {
@@ -19,30 +22,6 @@
   color: var(--color-text);
 }
 
-.access-denied {
-  text-align: center;
-  padding: 4rem 2rem;
-  background: var(--gradient-card);
-  border-radius: 16px;
-  border: 2px solid var(--color-border);
-  box-shadow: var(--shadow-card);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.access-denied h1 {
-  font-size: 2rem;
-  margin: 0;
-  color: var(--color-text);
-}
-
-.access-denied p {
-  color: var(--color-text-muted);
-  font-size: 1.1rem;
-  margin: 0;
-}
 
 .alert {
   padding: 1rem;

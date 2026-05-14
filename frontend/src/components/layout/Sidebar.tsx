@@ -41,8 +41,8 @@ const adminNavItems = [
   { label: "Dashboard", to: "/dashboard", icon: ChartLine, adminOnly: true },
   { label: "Reportes", to: "/reportes", icon: FileText, adminOnly: true },
   { label: "Auditoría", to: "/auditoria", icon: FileSearch, adminOnly: true },
-  { label: "Gestión Usuarios", to: "/admin/users", icon: Users, adminOnly: true },
-  { label: "Configuración", to: "/admin/config", icon: Cog, adminOnly: true }
+  { label: "Gestión Usuarios", to: "/users", icon: Users, adminOnly: true },
+  { label: "Configuración", to: "/config", icon: Cog, adminOnly: true }
 ];
 
 const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {

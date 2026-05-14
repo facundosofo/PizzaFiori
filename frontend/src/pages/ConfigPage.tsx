@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useAuth } from "../contexts/AuthContext";
 import { getRecargoConfig, updateRecargoConfig } from "../services/configService";
 import ErrorAlert from "../components/shared/ErrorAlert";
 import * as Icons from "../components/shared/Icons";
+import "../styles/shared/page-header.css";
 import "../styles/config-page.css";
 
 const CONFIG_FIELDS = [
@@ -16,6 +18,9 @@ const CONFIG_FIELDS = [
 ];
 
 export default function ConfigPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
+
   const [configValues, setConfigValues] = useState<Record<string, string>>({
     recargo_transferencia: "10",
   });
@@ -95,14 +100,40 @@ export default function ConfigPage() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="config-page">
+        <div className="config-container">
+          <div className="page-header">
+            <h1 className="page-title">Configuración</h1>
+          </div>
+          <div className="access-denied">
+            <p>Cargando...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="config-page">
+        <div className="config-container">
+          <div className="access-denied">
+            <Icons.ShieldOffIcon size={64} color="#ef4444" />
+            <h1>Acceso Denegado</h1>
+            <p>Solo los administradores pueden acceder a esta página.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="config-page">
       <div className="config-container">
         <div className="page-header">
           <h1 className="page-title">Configuración</h1>
-          <p className="page-subtitle">
-            Gestiona las claves y valores del negocio desde un solo lugar.
-          </p>
         </div>
 
         {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
@@ -121,9 +152,6 @@ export default function ConfigPage() {
                 </div>
                 <div>
                   <h2 className="config-card-title">Ajustes del negocio</h2>
-                  <p className="config-card-description">
-                    Actualiza los valores de negocio que se usan en ventas y procesos.
-                  </p>
                 </div>
               </div>
             </div>
@@ -176,7 +204,7 @@ export default function ConfigPage() {
                       onClick={handleReset}
                       disabled={saving || !hasChanges}
                     >
-                      <Icons.EditIcon size={16} /> Revertir
+                      <Icons.UndoIcon size={16} /> Revertir
                     </button>
                     <button
                       className="btn btn-primary"

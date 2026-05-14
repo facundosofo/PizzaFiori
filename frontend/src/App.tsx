@@ -58,8 +58,8 @@ function App() {
               <Route path="/gastos" element={<ExpensesPage />} />
               <Route path="/stock" element={<StockPage />} />
               <Route path="/profile" element={<UserProfilePage />} />
-              <Route path="/admin/users" element={<UserManagementPage />} />
-              <Route path="/admin/config" element={<ConfigPage />} />
+              <Route path="/users" element={<UserManagementPage />} />
+              <Route path="/config" element={<ConfigPage />} />
             </Route>
           </Routes>
         </Suspense>

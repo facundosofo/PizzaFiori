@@ -35,7 +35,8 @@ import {
   FolderTree,
   TrendingUp,
   X,
-  Cog
+  Cog,
+  Undo
 } from "lucide-react";
 
 interface IconProps {
@@ -67,6 +68,8 @@ export const EditIcon = (props: IconProps) => renderLucideIcon(Pencil, props);
 export const TrashIcon = (props: IconProps) => renderLucideIcon(Trash2, props);
 
 export const SearchIcon = (props: IconProps) => renderLucideIcon(Search, props);
+
+export const UndoIcon = (props: IconProps) => renderLucideIcon(Undo, props);
 
 export const XIcon = (props: IconProps) =>
   renderLucideIcon(X, {
