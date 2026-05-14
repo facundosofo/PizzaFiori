@@ -7,7 +7,7 @@ import structlog
 from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
 from app.domain.unit_of_work import AbstractUnitOfWork
-from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoUpdateRequest
+from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoResponse, ProductoUpdateRequest
 from app.infrastructure.file_service import FileService
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.sku_generator import generar_sku_producto
@@ -127,24 +127,22 @@ class ProductService:
         self,
         categoria_id: Optional[int] = None,
         active: Optional[bool] = None
-    ) -> List[Product]:
-
+    ) -> List[dict]:
         async with self.uow as uow:
-            return await uow.product_repo.list(
+            productos = await uow.product_repo.list(
                 categoria_id=categoria_id,
                 active=active,
             )
-
-    
+            # Serializar dentro de la sesión, mientras los objetos aún están attached
+            return [ProductoResponse.model_validate(p) for p in productos]
 
     async def get_by_id(self, producto_id: int) -> ServiceResult:
         async with self.uow as uow:
             producto = await uow.product_repo.get_by_id(producto_id)
-
             if not producto:
                 return ServiceResult(error="Producto no encontrado", status_code=404)
-
-            return ServiceResult(value=producto)
+            # Serializar dentro de la sesión
+            return ServiceResult(value=ProductoResponse.model_validate(producto))
 
 
     async def update(

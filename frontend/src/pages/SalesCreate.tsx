@@ -13,6 +13,7 @@ import { getProductos } from '../services/productsService';
 import { getProductosCategorias } from '../services/productosCategoriasService';
 import { getOfertas } from '../services/ofertasService';
 import { createSale } from '../services/salesService';
+import { getRecargoConfig } from '../services/configService';
 import type { Product } from '../types/product';
 import type { ProductoCategoria } from '../types/product_category';
 import type { Offer } from '../types/offer';
@@ -33,11 +34,14 @@ export const SalesCreatePage: React.FC = () => {
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartTotal, setCartTotal] = useState(0);
+  const [recargoPercent, setRecargoPercent] = useState(10);
+  const [recargoAmount, setRecargoAmount] = useState(0);
 
   // UI states
   const [isConfirming, setIsConfirming] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [aplicarRecargo, setAplicarRecargo] = useState(false);
   const [activeTab, setActiveTab] = useState<'productos' | 'ofertas'>('productos');
   const [addedItemToast, setAddedItemToast] = useState<string | null>(null);
 
@@ -57,10 +61,11 @@ export const SalesCreatePage: React.FC = () => {
       setError(null);
       setLoading(true);
 
-      const [productsData, categoriesData, offersData] = await Promise.all([
+      const [productsData, categoriesData, offersData, recargoConfig] = await Promise.all([
         getProductos(),
         getProductosCategorias(true),
         getOfertas(),
+        getRecargoConfig(),
       ]);
 
       // Filter only active products and offers
@@ -69,6 +74,7 @@ export const SalesCreatePage: React.FC = () => {
       setProducts(activeProducts);
       setCategories(categoriesData);
       setOffers(activeOffers);
+      setRecargoPercent(recargoConfig?.porcentaje_recargo ?? 10);
       lastFetchRef.current = Date.now();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar datos';
@@ -98,11 +104,13 @@ export const SalesCreatePage: React.FC = () => {
     };
   }, [fetchData, loading]);
 
-  // Calculate cart total whenever items change
+  // Calculate cart total whenever items or surcharge settings change
   useEffect(() => {
-    const total = cartItems.reduce((sum, item) => sum + item.subtotal, 0);
-    setCartTotal(total);
-  }, [cartItems]);
+    const subtotal = cartItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const surcharge = aplicarRecargo ? parseFloat(((subtotal * recargoPercent) / 100).toFixed(2)) : 0;
+    setRecargoAmount(surcharge);
+    setCartTotal(parseFloat((subtotal + surcharge).toFixed(2)));
+  }, [cartItems, aplicarRecargo, recargoPercent]);
 
   // Get product price based on quantity (using range system like backend)
   // Example: 7 empanadas with prices:
@@ -432,6 +440,7 @@ export const SalesCreatePage: React.FC = () => {
       // Create sale
       await createSale({
         items: saleItems,
+        aplicar_recargo: aplicarRecargo,
       });
 
       const saleEventKey = 'pizza_fiori:sale_created_at';
@@ -442,6 +451,7 @@ export const SalesCreatePage: React.FC = () => {
       // Show success feedback
       setShowSuccess(true);
       setCartItems([]);
+      setAplicarRecargo(false);
 
       // Hide success message after 1.5 seconds
       setTimeout(() => {
@@ -522,6 +532,10 @@ export const SalesCreatePage: React.FC = () => {
       <CartDrawer
         items={cartItems}
         total={cartTotal}
+        aplicarRecargo={aplicarRecargo}
+        recargoPercent={recargoPercent}
+        recargoAmount={recargoAmount}
+        onToggleRecargo={() => setAplicarRecargo((prev) => !prev)}
         onUpdateQuantity={handleUpdateCartItemQuantity}
         onRemoveItem={handleRemoveCartItem}
         onClearCart={handleClearCart}

@@ -27,6 +27,7 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const AuditPage = lazy(() => import("./pages/AuditPage"));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
 const StockPage = lazy(() => import("./pages/StockPage"));
+const ConfigPage = lazy(() => import("./pages/ConfigPage"));
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
               <Route path="/stock" element={<StockPage />} />
               <Route path="/profile" element={<UserProfilePage />} />
               <Route path="/admin/users" element={<UserManagementPage />} />
+              <Route path="/admin/config" element={<ConfigPage />} />
             </Route>
           </Routes>
         </Suspense>

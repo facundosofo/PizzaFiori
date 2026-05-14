@@ -129,6 +129,7 @@ class SaleUpdateRequest(BaseModel):
 
 class SaleCreateRequest(BaseModel):
     items: List[SaleItemRequest] = Field(..., min_length=1)
+    aplicar_recargo: bool = Field(False, description="Aplicar recargo por pago en transferencia/débito")
 
     @model_validator(mode="after")
     def validar_items(self):
@@ -145,6 +146,8 @@ class SaleResponse(BaseModel):
     id: int
     numero_orden: str
     total: Decimal
+    porcentaje_recargo: Optional[Decimal] = Field(None, description="Porcentaje de recargo aplicado")
+    monto_recargo: Optional[Decimal] = Field(None, description="Monto de recargo aplicado")
     total_items: int = Field(0, description="Total de items (incluye productos dentro de ofertas)")
     fecha_creacion: datetime
     fecha_actualizacion: datetime

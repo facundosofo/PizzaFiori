@@ -163,6 +163,22 @@ const SaleDetailModal = ({
                   </div>
 
                   <div className="sale-total-section">
+                    {sale.monto_recargo && sale.monto_recargo > 0 ? (
+                      <>
+                        <div className="sale-total-row">
+                          <span className="sale-total-label">Subtotal:</span>
+                          <span className="sale-total-value">
+                            {formatCurrency((sale.total - sale.monto_recargo))}
+                          </span>
+                        </div>
+                        <div className="sale-total-row" style={{ color: "rgba(255, 165, 0, 0.9)" }}>
+                          <span className="sale-total-label">Recargo ({sale.porcentaje_recargo}%):</span>
+                          <span className="sale-total-value">
+                            {formatCurrency(sale.monto_recargo)}
+                          </span>
+                        </div>
+                      </>
+                    ) : null}
                     <div className="sale-total-row">
                       <span className="sale-total-label">TOTAL:</span>
                       <span className="sale-total-value">

@@ -9,6 +9,10 @@ import '../styles/shared/quantity-controls.css';
 interface CartDrawerProps {
   items: CartItem[];
   total: number;
+  aplicarRecargo: boolean;
+  recargoPercent: number;
+  recargoAmount: number;
+  onToggleRecargo: () => void;
   onUpdateQuantity: (itemId: string, newQuantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onClearCart: () => void;
@@ -19,6 +23,10 @@ interface CartDrawerProps {
 export const CartDrawer: React.FC<CartDrawerProps> = ({
   items,
   total,
+  aplicarRecargo,
+  recargoPercent,
+  recargoAmount,
+  onToggleRecargo,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -169,6 +177,25 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
       {/* Footer */}
       <div className="cart-drawer-footer">
+        <div className="cart-recargo-row">
+          <label className="cart-recargo-label">
+            <input
+              type="checkbox"
+              checked={aplicarRecargo}
+              onChange={onToggleRecargo}
+              disabled={isEmpty || isConfirming}
+            />
+            Aplicar recargo por transferencia/débito
+          </label>
+        </div>
+
+        {aplicarRecargo && (
+          <div className="cart-recargo-summary">
+            <span>Recargo ({recargoPercent}%):</span>
+            <span>{formatCurrency(recargoAmount)}</span>
+          </div>
+        )}
+
         <p className="cart-total-single">TOTAL: <span className="cart-total-amount">{formatCurrency(total)}</span></p>
 
         <div className="cart-actions">

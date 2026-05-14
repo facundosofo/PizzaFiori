@@ -18,6 +18,7 @@ from app.domain.models.expense_category import ExpenseCategory
 from app.domain.models.expense import Expense
 from app.domain.models.category_stock import CategoryStock
 from app.domain.models.product_stock import ProductStock
+from app.domain.models.app_config import AppConfig
 
 __all__ = [
     "Base",

@@ -5,6 +5,8 @@ export interface Sale {
   numero_orden?: string | null;
   total_items?: number;
   total: number;
+  porcentaje_recargo?: number | null;
+  monto_recargo?: number | null;
   fecha_creacion: string;
   fecha_actualizacion: string;
   items: SaleItem[];
@@ -13,4 +15,5 @@ export interface Sale {
 export interface SaleCreateRequest {
   numero_orden?: string | null;
   items: SaleItemRequest[];
+  aplicar_recargo?: boolean;
 }

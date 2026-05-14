@@ -286,6 +286,9 @@ def build_sale_model(
         ]
     
     sale.items = items
+    sale.porcentaje_recargo = None
+    sale.monto_recargo = None
+    sale.total_items = sum((getattr(item, 'cantidad', 0) or 0) for item in items)
     return sale
 
 

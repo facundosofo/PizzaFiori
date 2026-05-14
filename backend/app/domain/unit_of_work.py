@@ -13,6 +13,7 @@ from app.domain.repositories.sequence_repository import AbstractSequenceReposito
 from app.domain.repositories.user_repository import AbstractUserRepository
 from app.domain.repositories.expense_category_repository import AbstractExpenseCategoryRepository
 from app.domain.repositories.expense_repository import AbstractExpenseRepository
+from app.domain.repositories.app_config_repository import AbstractAppConfigRepository
 
 
 class AbstractUnitOfWork(ABC):
@@ -27,6 +28,7 @@ class AbstractUnitOfWork(ABC):
     expense_repo: AbstractExpenseRepository
     stock_repo: AbstractCategoryStockRepository
     product_stock_repo: AbstractProductStockRepository
+    app_config_repo: AbstractAppConfigRepository
 
 
     async def __aenter__(self):

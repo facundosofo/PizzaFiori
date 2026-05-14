@@ -12,6 +12,10 @@ from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.sale_schemas import SaleCreateRequest
 
 
+RECARGO_KEY = "recargo_transferencia"
+DEFAULT_RECARGO_PERCENTAGE = Decimal("10.00")
+
+
 @dataclass
 class ServiceResult:
     value: Optional[Sale | List[Sale]] = None
@@ -400,9 +404,27 @@ class SaleService:
                     )
                     sale_items.append(sale_item)
 
+                porcentaje_recargo = None
+                monto_recargo = None
+
+                if sale_create.aplicar_recargo:
+                    config = await uow.app_config_repo.get_by_key(RECARGO_KEY)
+                    if config and config.value:
+                        try:
+                            porcentaje_recargo = Decimal(str(config.value))
+                        except Exception:
+                            porcentaje_recargo = DEFAULT_RECARGO_PERCENTAGE
+                    else:
+                        porcentaje_recargo = DEFAULT_RECARGO_PERCENTAGE
+
+                    monto_recargo = (total * porcentaje_recargo / Decimal("100")).quantize(Decimal("0.01"))
+                    total += monto_recargo
+
                 sale = Sale(
                     numero_orden=numero_orden_val,
                     total=total,
+                    porcentaje_recargo=porcentaje_recargo,
+                    monto_recargo=monto_recargo,
                     fecha_creacion=datetime.now(),
                     fecha_actualizacion=datetime.now(),
                     items=sale_items,

@@ -35,6 +35,7 @@ from app.domain.models.offer import Offer
 from app.domain.models.offer_item import OfferItem, oferta_item_productos
 from app.domain.models.expense_category import ExpenseCategory
 from app.domain.models.user import User
+from app.domain.models.app_config import AppConfig
 from app.infrastructure.sku_generator import generar_sku_producto, normalizar_texto
 from app.application.user_service import hash_password
 
@@ -139,6 +140,7 @@ PRODUCTOS_POR_CATEGORIA = {
 }
 
 PRECIO_DEFAULT = Decimal("1000.00")
+CONFIG_DEFAULT_RECARGO_PERCENTAGE = Decimal("10.00")
 
 # Categorías de gastos: {padre: [hijos]}
 GASTOS_CATEGORIAS = {
@@ -499,6 +501,27 @@ async def seed_users(session):
     _info(f"  -> Usuario: {username} creado (role={USUARIO['role']}, id={user.id})")
 
 
+async def seed_app_config(session):
+    """Crea la configuración inicial de la aplicación."""
+    stmt = select(AppConfig).where(AppConfig.key == "recargo_transferencia")
+    existing = (await session.execute(stmt)).scalar_one_or_none()
+
+    if existing:
+        _info(f"  [SKIP] Configuración de recargo: ya existe (id={existing.id})")
+        return
+
+    now = datetime.now()
+    config = AppConfig(
+        key="recargo_transferencia",
+        value=str(CONFIG_DEFAULT_RECARGO_PERCENTAGE),
+        fecha_creacion=now,
+        fecha_actualizacion=now,
+    )
+    session.add(config)
+    await session.flush()
+    _info(f"  -> Configuración de recargo creada con {CONFIG_DEFAULT_RECARGO_PERCENTAGE}%")
+
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 async def main():
@@ -524,10 +547,13 @@ async def main():
             _info("[3/5] Ofertas (Promos)...")
             await seed_offers(session, categorias, productos)
 
-            _info("[4/5] Categorias de gastos...")
+            _info("[4/6] Configuración de aplicación...")
+            await seed_app_config(session)
+
+            _info("[5/6] Categorias de gastos...")
             await seed_expense_categories(session)
 
-            _info("[5/5] Usuarios...")
+            _info("[6/6] Usuarios...")
             await seed_users(session)
 
             # Commit explicito con confirmacion

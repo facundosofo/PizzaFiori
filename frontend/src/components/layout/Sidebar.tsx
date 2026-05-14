@@ -16,6 +16,7 @@ import {
   FileSearch,
   Tags,
   Users,
+  Cog,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePersistentState } from "../../utils/usePersistentState";
@@ -41,6 +42,7 @@ const adminNavItems = [
   { label: "Reportes", to: "/reportes", icon: FileText, adminOnly: true },
   { label: "Auditoría", to: "/auditoria", icon: FileSearch, adminOnly: true },
   { label: "Gestión Usuarios", to: "/admin/users", icon: Users, adminOnly: true },
+  { label: "Configuración", to: "/admin/config", icon: Cog, adminOnly: true }
 ];
 
 const Sidebar = ({ collapsed, onToggleCollapse, onNavigate }: SidebarProps) => {
