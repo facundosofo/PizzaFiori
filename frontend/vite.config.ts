@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import fs from 'fs'
 import path from 'path'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 export default defineConfig(({ mode }) => {
   // Cargar variables de entorno
   const env = loadEnv(mode, process.cwd(), '')
@@ -58,7 +60,7 @@ export default defineConfig(({ mode }) => {
     : undefined
 
   return {
-    plugins: [react()],
+    plugins: [react(), cloudflare()],
     build: {
       rollupOptions: {
         output: {
@@ -76,5 +78,5 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy,
     },
-  }
+  };
 })
