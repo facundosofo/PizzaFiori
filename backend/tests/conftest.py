@@ -633,9 +633,9 @@ def multiple_categories():
 def multiple_products():
     """Multiple product models for list testing."""
     return [
-        build_product_model(1, "Empanada de Carne", 1, None, True),
-        build_product_model(2, "Empanada de Pollo", 1, None, True),
-        build_product_model(3, "Pizza Muzzarella", 2, None, True)
+        build_product_model(id=1, nombre="Empanada de Carne", categoria_id=1, imagen=None, activo=True),
+        build_product_model(id=2, nombre="Empanada de Pollo", categoria_id=1, imagen=None, activo=True),
+        build_product_model(id=3, nombre="Pizza Muzzarella", categoria_id=2, imagen=None, activo=True)
     ]
 
 

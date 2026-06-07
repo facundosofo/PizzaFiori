@@ -259,8 +259,8 @@ async def test_get_all_products_with_active_filter(mock_uow, mock_file_service, 
     # Arrange
     service = ProductService(uow=mock_uow, file_service=mock_file_service, cache_service=mock_cache_service, logger=mock_logger)
     active_products = [
-        build_product_model(1, "Product 1", 1, None, True),
-        build_product_model(2, "Product 2", 1, None, True)
+        build_product_model(id=1, nombre="Product 1", categoria_id=1, imagen=None, activo=True),
+        build_product_model(id=2, nombre="Product 2", categoria_id=1, imagen=None, activo=True)
     ]
     mock_uow.product_repo.list.return_value = active_products
     
