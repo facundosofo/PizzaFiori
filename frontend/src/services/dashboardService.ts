@@ -144,7 +144,7 @@ export interface Category {
   activo: boolean;
 }
 
-export type Period = 'daily' | 'monthly' | 'yearly';
+export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type TimeFilter = 'today' | 'last_7_days' | 'last_month' | 'last_year' | 'all_time';
 export type ProductSort = 'top' | 'bottom';
 
@@ -423,8 +423,10 @@ export interface MonthlyBalanceList {
 /**
  * Obtener datos de balance agrupados por período
  *
- * GET /api/dashboard/balance/monthly?period=monthly|yearly
+ * GET /api/dashboard/balance/monthly?period=daily|weekly|monthly|yearly
  *
+ * - daily:  últimos 30 días
+ * - weekly: últimas 12 semanas
  * - monthly: últimos 12 meses
  * - yearly:  últimos 5 años
  */

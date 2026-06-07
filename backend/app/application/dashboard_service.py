@@ -1131,22 +1131,22 @@ class DashboardService:
                 status_code=500
             )
 
-    async def get_monthly_balance_data(self, period: str = "monthly") -> ServiceResult:
+    async def get_monthly_balance_data(self, period: TipoPeriodo = TipoPeriodo.MENSUAL) -> ServiceResult:
         """
         Obtiene datos de ventas y gastos agrupados por período.
 
         Args:
-            period: "monthly" → últimos 12 meses | "yearly" → últimos 5 años
+            period: TipoPeriodo — `daily` → últimos 30 días | `weekly` → últimas 12 semanas | `monthly` → últimos 12 meses | `yearly` → últimos 5 años
 
         Returns:
-            ServiceResult con MonthlyBalanceListResponse
+            ServiceResult con MonthlyBalanceListResponse (etiquetas en `month` según granularidad)
         """
         try:
             async with self.uow:
                 now = datetime.now()
                 data = []
 
-                if period == "yearly":
+                if period == TipoPeriodo.ANUAL:
                     # Últimos 5 años (de más antiguo a más reciente)
                     current_year = now.year
                     for y in range(current_year - 4, current_year + 1):
@@ -1160,6 +1160,58 @@ class DashboardService:
                             "expenses": float(year_expenses or 0),
                         })
                     current_month = str(current_year)
+                elif period == TipoPeriodo.SEMANAL:
+                    # Últimas 12 semanas (de más antiguo a más reciente)
+                    month_abbrev = [
+                        'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                        'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+                    ]
+                    weeks = 12
+                    for i in range(weeks - 1, -1, -1):
+                        ref = now - timedelta(weeks=i)
+                        # semana calendario: lunes como inicio
+                        week_start_date = (ref - timedelta(days=ref.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+                        week_end_date = week_start_date + timedelta(days=7)
+                        week_sales = await self._get_sales_total_between_dates(week_start_date, week_end_date)
+                        week_expenses = await self._get_expenses_total_between_dates(week_start_date, week_end_date)
+                        end_date = week_end_date - timedelta(days=1)
+                        start_label = f"{week_start_date.day}"
+                        end_label = f"{end_date.day}"
+                        start_month = month_abbrev[week_start_date.month - 1]
+                        end_month = month_abbrev[end_date.month - 1]
+                        if start_month == end_month:
+                            label = f"{start_label}-{end_label} {start_month}"
+                        else:
+                            label = f"{start_label} {start_month}-{end_label} {end_month}"
+                        data.append({
+                            "month": label,
+                            "sales": float(week_sales or 0),
+                            "expenses": float(week_expenses or 0),
+                        })
+                    current_week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+                    current_end_date = current_week_start + timedelta(days=6)
+                    current_start_label = f"{current_week_start.day}"
+                    current_end_label = f"{current_end_date.day}"
+                    current_start_month = month_abbrev[current_week_start.month - 1]
+                    current_end_month = month_abbrev[current_end_date.month - 1]
+                    if current_start_month == current_end_month:
+                        current_month = f"{current_start_label}-{current_end_label} {current_start_month}"
+                    else:
+                        current_month = f"{current_start_label} {current_start_month}-{current_end_label} {current_end_month}"
+                elif period == TipoPeriodo.DIARIO:
+                    # Últimos 30 días (de más antiguo a más reciente)
+                    days = 30
+                    for i in range(days - 1, -1, -1):
+                        d = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+                        d_end = d + timedelta(days=1)
+                        day_sales = await self._get_sales_total_between_dates(d, d_end)
+                        day_expenses = await self._get_expenses_total_between_dates(d, d_end)
+                        data.append({
+                            "month": d.strftime("%Y-%m-%d"),
+                            "sales": float(day_sales or 0),
+                            "expenses": float(day_expenses or 0),
+                        })
+                    current_month = now.strftime("%Y-%m-%d")
                 else:
                     # Últimos 12 meses (de más antiguo a más reciente)
                     month_names = [

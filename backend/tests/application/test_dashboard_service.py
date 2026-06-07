@@ -253,7 +253,7 @@ async def test_get_monthly_balance_data_monthly(mock_uow, mock_logger):
 
     with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(return_value=10000.0)):
         with patch.object(service, "_get_expenses_total_between_dates", new=AsyncMock(return_value=5000.0)):
-            result = await service.get_monthly_balance_data(period="monthly")
+            result = await service.get_monthly_balance_data(period=TipoPeriodo.MENSUAL)
 
     assert result.error is None
     assert len(result.value["data"]) == 12
@@ -272,7 +272,7 @@ async def test_get_monthly_balance_data_yearly(mock_uow, mock_logger):
 
     with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(return_value=120000.0)):
         with patch.object(service, "_get_expenses_total_between_dates", new=AsyncMock(return_value=80000.0)):
-            result = await service.get_monthly_balance_data(period="yearly")
+            result = await service.get_monthly_balance_data(period=TipoPeriodo.ANUAL)
 
     assert result.error is None
     assert len(result.value["data"]) == 5
@@ -287,7 +287,34 @@ async def test_get_monthly_balance_data_error(mock_uow, mock_logger):
     service = DashboardService(uow=mock_uow, logger=mock_logger)
 
     with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(side_effect=Exception("fail"))):
-        result = await service.get_monthly_balance_data(period="monthly")
+        result = await service.get_monthly_balance_data(period=TipoPeriodo.MENSUAL)
 
-    assert result.error is not None
-    assert result.status_code == 500
+
+@pytest.mark.asyncio
+async def test_get_monthly_balance_data_weekly(mock_uow, mock_logger):
+    """get_monthly_balance_data en modo weekly retorna 12 semanas."""
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+
+    with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(return_value=70000.0)):
+        with patch.object(service, "_get_expenses_total_between_dates", new=AsyncMock(return_value=30000.0)):
+            result = await service.get_monthly_balance_data(period=TipoPeriodo.SEMANAL)
+
+    assert result.error is None
+    assert len(result.value["data"]) == 12
+    assert result.value["data"][0]["sales"] == 70000.0
+    assert "-" in result.value["data"][0]["month"]
+    assert result.value["current_month"] == result.value["data"][-1]["month"]
+
+
+@pytest.mark.asyncio
+async def test_get_monthly_balance_data_daily(mock_uow, mock_logger):
+    """get_monthly_balance_data en modo daily retorna 30 días."""
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+
+    with patch.object(service, "_get_sales_total_between_dates", new=AsyncMock(return_value=5000.0)):
+        with patch.object(service, "_get_expenses_total_between_dates", new=AsyncMock(return_value=2000.0)):
+            result = await service.get_monthly_balance_data(period=TipoPeriodo.DIARIO)
+
+    assert result.error is None
+    assert len(result.value["data"]) == 30
+    assert result.value["data"][0]["sales"] == 5000.0

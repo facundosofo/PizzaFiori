@@ -526,6 +526,8 @@ const DashboardOverview = () => {
               selectedPeriod={generalBalancePeriod}
               onPeriodChange={setGeneralBalancePeriod}
               options={[
+                { value: 'daily', label: 'Diario' },
+                { value: 'weekly', label: 'Semanal' },
                 { value: 'monthly', label: 'Mensual' },
                 { value: 'yearly', label: 'Anual' },
               ]}
@@ -650,6 +652,8 @@ const DashboardOverview = () => {
                 selectedPeriod={balancePeriod}
                 onPeriodChange={setBalancePeriod}
                 options={[
+                  { value: 'daily', label: 'Diario' },
+                  { value: 'weekly', label: 'Semanal' },
                   { value: 'monthly', label: 'Mensual' },
                   { value: 'yearly', label: 'Anual' },
                 ]}
@@ -683,6 +687,8 @@ const DashboardOverview = () => {
                 selectedPeriod={balancePeriod}
                 onPeriodChange={setBalancePeriod}
                 options={[
+                  { value: 'daily', label: 'Diario' },
+                  { value: 'weekly', label: 'Semanal' },
                   { value: 'monthly', label: 'Mensual' },
                   { value: 'yearly', label: 'Anual' },
                 ]}

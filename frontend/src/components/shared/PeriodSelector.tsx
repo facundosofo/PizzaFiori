@@ -5,7 +5,7 @@
 
 import '../../styles/shared/period-selector.css';
 
-export type Period = 'daily' | 'monthly' | 'yearly';
+export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 interface PeriodOption {
   value: Period;
@@ -21,6 +21,7 @@ interface PeriodSelectorProps {
 const PeriodSelector = ({ selectedPeriod, onPeriodChange, options }: PeriodSelectorProps) => {
   const defaultPeriods: PeriodOption[] = [
     { value: 'daily', label: 'Diario' },
+    { value: 'weekly', label: 'Semanal' },
     { value: 'monthly', label: 'Mensual' },
     { value: 'yearly', label: 'Anual' },
   ];

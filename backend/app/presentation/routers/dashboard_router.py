@@ -523,7 +523,10 @@ async def get_balance_metrics(
 )
 @inject
 async def get_monthly_balance_data(
-    period: str = Query("monthly", description="Período de agrupación: 'monthly' (últimos 12 meses) o 'yearly' (últimos 5 años)"),
+    period: TipoPeriodo = Query(
+        TipoPeriodo.MENSUAL,
+        description="Período de agrupación: 'daily','weekly','monthly' o 'yearly'",
+    ),
     service: DashboardService = Depends(Provide[Container.dashboard_service]),
 ):
     """

@@ -7,6 +7,7 @@ class TipoPeriodo(str, Enum):
     DIARIO = "daily"
     MENSUAL = "monthly"
     ANUAL = "yearly"
+    SEMANAL = "weekly"
 
 
 class FiltroTiempo(str, Enum):
