@@ -1,0 +1,41 @@
+/**
+ * Metric Selector Styles
+ * Tabs para Ingresos/Cantidad siguiendo UX guide
+ */
+
+.metric-selector {
+  display: flex;
+  gap: 4px;
+  background: var(--color-hover);
+  padding: 4px;
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.metric-tab {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: capitalize;
+}
+
+.metric-tab:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+
+.metric-tab.active {
+  background: var(--color-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.metric-tab.active:hover {
+  background: var(--color-accent-strong);
+}

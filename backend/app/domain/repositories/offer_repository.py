@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import List, Optional
+
+from app.domain.models.offer import Offer
+
+
+class AbstractOfferRepository(ABC):
+
+    @abstractmethod
+    async def add(self, offer: Offer) -> Offer:
+        ...
+
+    @abstractmethod
+    async def get_by_id(self, offer_id: int) -> Optional[Offer]:
+        ...
+
+    @abstractmethod
+    async def list(
+        self,
+        active: Optional[bool] = None,
+    ) -> List[Offer]:
+        ...
+
+    @abstractmethod
+    async def get_by_product(self, producto_id: int) -> List[Offer]:
+        """
+        Obtiene todas las ofertas activas que contienen el producto especificado.
+        
+        Args:
+            producto_id: ID del producto
+            
+        Returns:
+            List[Offer]: Ofertas activas que contienen el producto
+        """
+        ...
+
+    @abstractmethod
+    async def get_by_products(self, producto_ids: List[int]) -> List[Offer]:
+        """
+        Obtiene todas las ofertas activas que contienen cualquiera de los productos especificados.
+        
+        Args:
+            producto_ids: Lista de IDs de productos
+            
+        Returns:
+            List[Offer]: Ofertas activas que contienen los productos
+        """
+        ...
+
+    @abstractmethod
+    async def update(self, offer: Offer) -> Offer:
+        ...
+
+    @abstractmethod
+    async def refresh(
+        self,
+        offer: Offer,
+        attribute_names: Optional[list] = None,
+    ) -> None:
+        ...
+
+    @abstractmethod
+    async def deactivate_by_product(self, producto_id: int) -> List[int]:
+        """
+        Desactiva todas las ofertas activas que contienen el producto especificado.
+        
+        Args:
+            producto_id: ID del producto
+            
+        Returns:
+            List[int]: IDs de las ofertas desactivadas
+        """
+        ...

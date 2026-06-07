@@ -1,0 +1,419 @@
+@import "./shared/tooltip.css";
+
+/* ================================================================
+  PRODUCT-MODAL.CSS - Estilos para el modal de producto
+  ================================================================
+  Contiene estilos para:
+  - Modal de visualización y edición de productos
+  - Control de cantidad
+  - Editor de precios
+  - Diálogo de confirmación de eliminación
+  - Botones de edición y eliminación
+  ================================================================ */
+
+/* ===== MODAL OVERLAY ===== */
+
+/* Capa de fondo oscuro semi-transparente que cubre toda la pantalla y contiene el modal */
+.product-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+/* ===== MODAL CONTENT ===== */
+
+/* Contenedor principal del modal con gradiente oscuro y bordes redondeados */
+.product-modal-content {
+  background: var(--gradient-card);
+  border-radius: 20px;
+  max-width: 500px;
+  width: 90%;
+  max-height: calc(var(--app-height, 100vh) * 0.90);
+  overflow-y: auto;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9),
+    0 0 40px rgba(34, 197, 94, 0.15);
+  border: 2px solid rgba(34, 197, 94, 0.2);
+  position: relative;
+}
+
+/* Botón circular de cierre del modal en la esquina superior derecha con efecto de rotación */
+.product-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(239, 68, 68, 0.8);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Efecto hover del botón cerrar con escala y rotación */
+.product-modal-close:hover {
+  background: var(--color-danger);
+  transform: scale(1.1) rotate(90deg);
+}
+
+/* ===== MODAL IMAGE ===== */
+
+/* Contenedor para la imagen del producto con altura fija y fondo oscuro */
+.product-modal-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: var(--gradient-card);
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+}
+
+/* Imagen del producto ajustada para contener sin deformar */
+.product-modal-image img {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== MODAL HEADER EDIT ===== */
+
+/* Encabezado del modal en modo edición con padding superior */
+.product-modal-header-edit {
+  padding: 16px 20px 0 20px;
+  text-align: center;
+}
+
+/* ===== MODAL BODY ===== */
+
+/* Cuerpo principal del modal con padding para el contenido */
+.product-modal-body {
+  padding: 16px 20px 20px 20px;
+}
+
+/* Título del producto en mayúsculas con efecto de sombra luminosa verde */
+.product-modal-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 16px 0;
+  line-height: 1.3;
+}
+
+
+
+/* ===== EDIT FORM ===== */
+
+/* Formulario de edición con animación de entrada fadeIn */
+.edit-form {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== FILE CLEAR BUTTON ===== */
+
+/* Botón para limpiar/eliminar el archivo seleccionado con estilo rojo tenue */
+.file-clear-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--color-danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  color: var(--color-danger);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Efecto hover del botón de limpiar archivo cuando no está deshabilitado */
+.file-clear-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: var(--color-danger);
+  box-shadow: 0 0 15px rgba(255, 59, 59, 0.2);
+}
+
+/* Efecto de presionado del botón de limpiar archivo */
+.file-clear-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Estado deshabilitado del botón de limpiar archivo */
+.file-clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 480px) {
+  .product-modal-content {
+    max-width: 95%;
+  }
+
+  .product-modal-body {
+    padding: 20px;
+  }
+
+  .product-modal-title {
+    font-size: 1.4rem;
+  }
+}
+
+/* ===== CHAR COUNTER ===== */
+
+/* Contador de caracteres alineado a la derecha con color gris */
+.char-counter {
+  font-size: 12px;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+/* Estado de advertencia del contador de caracteres en color naranja */
+.char-counter.warning {
+  color: #ff9800;
+}
+
+/* Estado de error del contador de caracteres en color rojo */
+.char-counter.error {
+  color: var(--color-danger);
+}
+
+/* ===== PRICES EDITOR ===== */
+
+/* Contenedor principal del editor de precios con scroll personalizado */
+.prices-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  background: var(--color-surface-2);
+  padding: 10px;
+  border-radius: 10px;
+  border: 2px solid var(--color-border);
+  max-height: 350px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 197, 94, 0.6) rgba(0, 0, 0, 0.3);
+}
+
+/* Ancho de la barra de scroll del editor de precios para navegadores webkit */
+.prices-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Pista/track de la barra de scroll con fondo oscuro */
+.prices-editor::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+/* Pulgar/thumb de la barra de scroll con gradiente verde */
+.prices-editor::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0.8));
+  border-radius: 4px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+}
+
+/* Efecto hover del pulgar de la barra de scroll */
+.prices-editor::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.8), var(--color-accent));
+}
+
+/* Fila individual del editor de precios con diseño en grid de 3 columnas */
+.price-edit-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 40px;
+  gap: 12px;
+  align-items: flex-start; /* Align labels and fields to the same top line */
+  background: var(--gradient-card);
+  padding: 14px 14px 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Efecto hover de la fila de precio con borde y sombra más intensos */
+.price-edit-row:hover {
+  border-color: rgba(34, 197, 94, 0.3);
+  background: var(--gradient-card-hover);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+/* Campo individual de edición de precio con disposición vertical centrada */
+.price-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-align: center;
+  align-items: center;
+  padding: 0;
+}
+
+/* Input de formulario dentro de las filas de precio con estilo oscuro y borde neutro */
+.price-edit-row .form-input {
+  padding: 6px 10px;
+  font-size: 0.95rem;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 8px;
+  text-align: center;
+  width: 100%;
+  color: var(--color-text);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  height: 35px;
+  line-height: 23px;
+}
+
+/* Control de cantidad dentro del campo de precio con altura ajustada al input */
+.price-edit-field .quantity-control {
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Botón de cantidad dentro del campo de precio con tamaño específico */
+.price-edit-field .qty-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  padding: 0;
+}
+
+/* Valor de cantidad dentro del campo de precio */
+.price-edit-field .qty-value {
+  line-height: 32px;
+  font-size: 1rem;
+}
+
+/* Estado de foco del input de precio con borde y sombra destacados */
+.price-edit-row .form-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: var(--color-bg-2);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.18);
+}
+
+/* Efecto hover del input de precio cuando no está deshabilitado */
+.price-edit-row .form-input:hover:not(:disabled) {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+/* Etiqueta descriptiva para los campos de precio en mayúsculas */
+.price-edit-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Badge para indicar el precio unitario */
+.unit-price-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--color-accent-soft);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: var(--color-accent);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.15);
+  margin-left: 4px;
+  position: relative;
+  top: -2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Mensaje mostrado cuando no hay precios configurados */
+.no-prices-editor {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+  background: var(--color-hover);
+  border-radius: 8px;
+  border: 1.5px dashed var(--color-border);
+}
+
+/* Texto de ayuda informativo debajo del botón agregar precio */
+.price-help-text {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+  border-left: 3px solid #3b82f6;
+  border-radius: 8px;
+  color: #93c5fd;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.price-help-text strong {
+  color: #60a5fa;
+  font-weight: 700;
+}
+
+/* Alinea verticalmente el botón de eliminar dentro de la fila de precios
+   y lo hace ligeramente más grande para mantener consistencia visual */
+.price-edit-row .item-remove-btn {
+  align-self: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+

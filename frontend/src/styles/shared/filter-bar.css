@@ -1,0 +1,331 @@
+/* ================================================================
+   FILTER-BAR.CSS - Estilos compartidos para barras de filtros
+   ================================================================ */
+
+.filter-bar {
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px 25px;
+  margin-bottom: 25px;
+  box-shadow: var(--shadow-card),
+              0 0 0 1px var(--color-border);
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ===== ROW LAYOUT ===== */
+
+.filter-bar-row {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+/* ===== FILTER GROUPS ===== */
+
+.filter-group {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.filter-group-range {
+  flex: 0 0 auto;
+  min-width: 260px;
+}
+
+/* ===== DATE INPUT ===== */
+
+.filter-date-input {
+  padding: 10px 14px;
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 10px;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  text-transform: capitalize;
+}
+
+.filter-date-input-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-date-icon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.filter-date-label {
+  color: inherit;
+}
+
+.filter-date-input:hover {
+  border-color: var(--color-border-strong);
+  background: var(--gradient-card-hover);
+}
+
+.filter-date-input:focus {
+  outline: none;
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-2);
+  box-shadow: 0 0 0 4px var(--color-hover),
+              0 0 20px rgba(255, 255, 255, 0.12),
+              inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.filter-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.filter-date-input::-webkit-calendar-picker-indicator:hover {
+  background: var(--color-hover);
+  transform: scale(1.1);
+}
+
+.filter-date-input::-webkit-datetime-edit {
+  padding: 0;
+}
+
+.filter-date-input::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+.filter-date-input::-webkit-datetime-edit-text {
+  color: var(--color-text-muted);
+  padding: 0 2px;
+}
+
+.filter-date-input::-webkit-datetime-edit-month-field,
+.filter-date-input::-webkit-datetime-edit-day-field,
+.filter-date-input::-webkit-datetime-edit-year-field {
+  background: var(--color-hover);
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.filter-date-input::-webkit-datetime-edit-month-field:focus,
+.filter-date-input::-webkit-datetime-edit-day-field:focus,
+.filter-date-input::-webkit-datetime-edit-year-field:focus {
+  background: var(--color-hover);
+  color: var(--color-text);
+  outline: none;
+}
+
+/* ===== SELECT ===== */
+
+.filter-select {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  appearance: none;
+}
+
+.filter-select option {
+  padding: 8px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+/* ===== QUICK FILTERS ===== */
+
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-filter-btn {
+  padding: 8px 16px;
+  background: var(--color-accent-soft);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 20px;
+  color: var(--color-accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-filter-btn:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+}
+
+.quick-filter-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+}
+
+/* ===== FILTER ACTIONS ===== */
+
+.filter-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid;
+}
+
+.filter-btn span {
+  white-space: nowrap;
+}
+
+/* Search button */
+.filter-btn.search {
+  background: var(--gradient-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.filter-btn.search:hover {
+  background: var(--gradient-accent);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
+  transform: translateY(-2px);
+}
+
+.filter-btn.search:active {
+  transform: translateY(0);
+}
+
+/* Clear button */
+.filter-btn.clear {
+  background: transparent;
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--color-danger);
+}
+
+.filter-btn.clear:hover {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  transform: translateY(-2px);
+}
+
+.filter-btn.clear:active {
+  transform: translateY(0);
+}
+
+/* ===== FILTER ERROR ===== */
+
+.filter-error {
+  margin-top: 15px;
+  padding: 12px 16px;
+  background: var(--color-danger-bg);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  color: var(--color-danger);
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .filter-bar {
+    padding: 15px;
+  }
+
+  .quick-filters {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .quick-filter-btn {
+    flex: 1;
+    min-width: calc(50% - 5px);
+    text-align: center;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  .filter-bar-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filter-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ===== REACT-DATEPICKER WRAPPER ===== */
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container {
+  width: 100%;
+  display: block;
+}

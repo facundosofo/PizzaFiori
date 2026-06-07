@@ -1,0 +1,191 @@
+/* ================================================================
+   SALES-FILTERS.CSS - Estilos del datepicker para ventas
+   (Filtros movidos a shared/filter-bar.css)
+   ================================================================ */
+
+/* ================================================================
+   REACT-DATEPICKER CUSTOM STYLES
+   ================================================================ */
+
+/* Contenedor principal del calendario */
+.react-datepicker {
+  background: var(--gradient-card) !important;
+  border: 2px solid var(--color-border-strong) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-card),
+              0 0 0 1px var(--color-border) !important;
+  font-family: inherit !important;
+}
+
+/* Encabezado del calendario */
+.react-datepicker__header {
+  background: var(--gradient-card) !important;
+  border-bottom: 2px solid var(--color-border-strong) !important;
+  border-top-left-radius: 10px !important;
+  border-top-right-radius: 10px !important;
+  padding-top: 12px !important;
+}
+
+/* Mes y año actual */
+.react-datepicker__current-month {
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  margin-bottom: 10px !important;
+  text-transform: capitalize !important;
+  letter-spacing: 1px !important;
+}
+
+/* Días de la semana */
+.react-datepicker__day-names {
+  margin-top: 8px !important;
+}
+
+.react-datepicker__day-name {
+  color: var(--color-text-muted) !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  width: 2.2rem !important;
+  line-height: 2.2rem !important;
+  margin: 0.2rem !important;
+}
+
+/* Días del mes */
+.react-datepicker__day {
+  color: var(--color-text) !important;
+  font-weight: 600 !important;
+  width: 2.2rem !important;
+  line-height: 2.2rem !important;
+  margin: 0.2rem !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.react-datepicker__day:hover {
+  background: var(--color-hover) !important;
+  color: var(--color-text) !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong) !important;
+  transform: scale(1.1);
+}
+
+/* Día seleccionado */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background: var(--gradient-accent) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong),
+              var(--shadow-accent) !important;
+}
+
+.react-datepicker__day--selected:hover {
+  background: var(--gradient-accent) !important;
+}
+
+/* Día actual */
+.react-datepicker__day--today {
+  background: var(--color-accent-soft) !important;
+  border: 2px solid var(--color-accent) !important;
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+}
+
+/* Días en el rango seleccionado */
+.react-datepicker__day--in-range {
+  background-color: var(--color-accent-soft) !important;
+  color: var(--color-text) !important;
+}
+
+/* Inicio y fin del rango */
+.react-datepicker__day--range-start,
+.react-datepicker__day--range-end {
+  background: var(--gradient-accent) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong),
+              var(--shadow-accent) !important;
+}
+
+/* Hover al seleccionar el rango */
+.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range) {
+  background-color: var(--color-hover) !important;
+}
+
+/* Días fuera del mes actual */
+.react-datepicker__day--outside-month {
+  color: var(--color-text-muted) !important;
+  opacity: 0.5 !important;
+}
+
+/* Días deshabilitados */
+.react-datepicker__day--disabled {
+  color: var(--color-text-muted) !important;
+  cursor: not-allowed !important;
+  opacity: 0.35 !important;
+}
+
+.react-datepicker__day--disabled:hover {
+  background: transparent !important;
+  transform: none !important;
+}
+
+/* Rango de fechas */
+.react-datepicker__day--in-range,
+.react-datepicker__day--in-selecting-range {
+  background: var(--color-accent-soft) !important;
+  color: var(--color-text) !important;
+}
+
+/* Botones de navegación */
+.react-datepicker__navigation {
+  top: 12px !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: var(--color-text) !important;
+  border-width: 2px 2px 0 0 !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+  border-color: var(--color-text) !important;
+}
+
+/* Triangle del dropdown */
+.react-datepicker__triangle {
+  display: none !important;
+}
+
+/* Semanas */
+.react-datepicker__week {
+  display: flex !important;
+}
+
+/* Calendario - Posicionamiento sin animación para evitar ajustes */
+.react-datepicker-popper {
+  z-index: 99999 !important;
+}
+
+.react-datepicker-popper[data-placement^="bottom"] {
+  margin-top: 4px;
+}
+
+.react-datepicker-popper[data-placement^="top"] {
+  margin-bottom: 4px;
+}
+
+.react-datepicker__portal {
+  z-index: 99999 !important;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container {
+  width: 100%;
+  display: block;
+}

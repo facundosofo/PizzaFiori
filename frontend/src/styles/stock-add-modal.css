@@ -1,0 +1,295 @@
+/* StockAddModal - Siguiendo guía UX */
+
+.stock-add-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  backdrop-filter: blur(4px);
+}
+
+.stock-add-modal {
+  position: relative;
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.15);
+  z-index: 1101;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.stock-add-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.4rem 1.5rem 1.2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stock-add-modal-eyebrow {
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+}
+
+.stock-add-modal-title {
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.stock-add-modal-category {
+  color: var(--color-accent);
+}
+
+.stock-add-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(239, 68, 68, 0.8);
+  border: none;
+  color: white;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stock-add-modal-close:hover {
+  background: var(--color-danger);
+  transform: scale(1.1) rotate(90deg);
+}
+
+/* ── Body ─────────────────────────────────────────────────── */
+.stock-add-modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Stock actual */
+.stock-add-current-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+}
+
+.stock-add-current-label {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.stock-add-current-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* Control - delta + */
+.stock-add-control-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.stock-add-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Override shared qty-btn to be slightly larger in this modal */
+.stock-add-control .qty-btn {
+  width: 40px;
+  height: 40px;
+}
+
+/* Delta input — wide, large font, colored by data-sign */
+.stock-delta-input {
+  width: 90px;
+  height: 48px;
+  text-align: center;
+  border-radius: 10px;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 1.6rem;
+  padding: 0 8px;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-delta-input::-webkit-outer-spin-button,
+.stock-delta-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.stock-delta-input[data-sign="positive"] {
+  color: var(--color-accent);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.15);
+}
+
+.stock-delta-input[data-sign="negative"] {
+  color: var(--color-danger);
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.15);
+}
+
+.stock-delta-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.stock-delta-input[data-sign="negative"]:focus {
+  border-color: var(--color-danger);
+}
+
+/* Preview */
+.stock-add-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+}
+
+.stock-add-preview-label {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.stock-add-preview-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.stock-add-preview-value[data-zero="true"] {
+  color: var(--color-danger);
+}
+
+/* Error */
+.stock-add-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.stock-add-modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.stock-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.3rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stock-add-btn.save {
+  background: var(--gradient-accent);
+  color: #fff;
+  border: 1px solid var(--color-accent);
+}
+
+.stock-add-btn.save:hover:not(:disabled) {
+  background: var(--color-accent-strong);
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.35);
+}
+
+.stock-add-btn.save.negative {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+  border-color: var(--color-danger);
+}
+
+.stock-add-btn.save.negative:hover:not(:disabled) {
+  background: var(--color-danger);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.35);
+}
+
+.stock-add-btn.cancel {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+}
+
+.stock-add-btn.cancel:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.stock-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.stock-add-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin-add 0.7s linear infinite;
+}
+
+@keyframes spin-add {
+  to { transform: rotate(360deg); }
+}

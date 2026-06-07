@@ -1,0 +1,429 @@
+/* ================================================================
+   PRODUCT-CARD.CSS - Estilos para la página de productos y tarjetas
+   ================================================================
+   Contiene estilos para:
+   - Contenedor principal de productos
+   - Categorías y sus tarjetas de productos
+   - Scroll horizontal de productos
+   - Cards individuales de productos
+   ================================================================ */
+
+@import './shared/page-header.css';
+
+/* ===== PAGE HEADER ACTIONS ===== */
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-config {
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-config:hover {
+  background: var(--gradient-card-hover);
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+}
+
+/* ===== CONTENEDOR GENERAL ===== */
+
+/* Contenedor principal de la página de productos con gradiente */
+.productos-container {
+  padding: 40px 32px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-height: var(--app-height, 100vh);
+  /* Inherit global background */
+  background: transparent;
+  color: var(--color-text);
+}
+
+/* Mensaje cuando no hay productos */
+.product-empty-state {
+  text-align: center;
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  margin-top: 60px;
+}
+
+/* Botón para crear nuevo producto */
+.btn-create-product {
+  padding: 0.75rem 1.5rem;
+  background: var(--gradient-accent);
+  border: 2px solid var(--color-accent);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+.btn-create-product:hover {
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-create-product:active {
+  transform: translateY(0);
+}
+
+
+/* ===== CATEGORÍAS ===== */
+
+/* Sección de cada categoría con sus productos */
+.categoria-section {
+  margin-bottom: 56px;
+}
+
+/* Header de la categoría con título y botón de colapsar */
+.categoria-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+/* Título de la categoría */
+.categoria-title {
+  font-size: 1.9rem;
+  font-weight: 700;
+  padding-left: 14px;
+  border-left: 5px solid var(--color-danger);
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* Botón para colapsar/expandir categoría */
+.categoria-toggle {
+  background: linear-gradient(135deg, #ff3b3b, #ff5252);
+  border: 2px solid #ff1744;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+  z-index: 5;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Hover del botón toggle */
+.categoria-toggle:hover {
+  background: linear-gradient(135deg, #ff5252, #ff6b6b);
+  transform: scale(1.1);
+  box-shadow: 0 6px 18px rgba(255, 59, 59, 0.5);
+  border-color: #ff6b6b;
+}
+
+/* Estado activo del botón toggle */
+.categoria-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Estado normal (expandido) del toggle */
+.categoria-toggle {
+  transform: rotate(0deg);
+}
+
+/* Estado colapsado con rotación */
+.categoria-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
+/* ===== SCROLL HORIZONTAL ===== */
+
+/* Contenedor con scroll horizontal para las tarjetas de producto */
+.product-scroll-horizontal {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0 16px 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) var(--color-hover);
+}
+
+/* Altura de la scrollbar en Chrome */
+.product-scroll-horizontal::-webkit-scrollbar {
+  height: 10px;
+}
+
+/* Track de la scrollbar */
+.product-scroll-horizontal::-webkit-scrollbar-track {
+  background: var(--color-hover);
+  border-radius: 10px;
+}
+
+/* Thumb (barra deslizante) de la scrollbar */
+.product-scroll-horizontal::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 10px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* Hover del thumb de la scrollbar */
+.product-scroll-horizontal::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+}
+
+/* ===== PRODUCT CARD ===== */
+
+/* Tarjeta individual de producto */
+.product-card {
+  flex: 0 0 240px;
+  background: var(--gradient-card);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+
+/* Hover de la tarjeta con sombra roja */
+.product-card:hover {
+  box-shadow: 0 18px 40px rgba(255, 59, 59, 0.35);
+}
+
+/* Botón de eliminar en la esquina superior izquierda */
+.product-card-deactivate {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: linear-gradient(135deg, #ff3b3b, #ff5252);
+  border: 2px solid #ff1744;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Icono SVG dentro del botón eliminar */
+.product-card-deactivate svg {
+  stroke: white;
+  width: 18px;
+  height: 18px;
+}
+
+/* Hover del botón eliminar con rotación */
+.product-card-deactivate:hover {
+  background: linear-gradient(135deg, #ff5252, #ff6b6b);
+  transform: scale(1.15) rotate(10deg);
+  box-shadow: 0 6px 18px rgba(255, 59, 59, 0.5);
+  border-color: #ff6b6b;
+}
+
+/* Estado activo del botón desactivar */
+.product-card-deactivate:active {
+  transform: scale(0.95);
+}
+
+/* ===== PRODUCT CARD IMAGE ===== */
+
+/* Contenedor de la imagen del producto */
+.product-card-image {
+  width: 100%;
+  height: 170px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--color-surface-2);
+  flex-shrink: 0;
+}
+
+/* Imagen del producto con zoom al hover */
+.product-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+/* Zoom de la imagen al hacer hover en la card */
+.product-card:hover .product-card-image img {
+  transform: scale(1.08);
+}
+
+/* ===== PRODUCT CARD BODY ===== */
+
+/* Cuerpo de la tarjeta con información del producto */
+.product-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-grow: 1;
+  justify-content: space-between;
+}
+
+/* Nombre del producto en blanco con efecto sutil verde */
+.product-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+  line-height: 1.3;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Contenedor de los precios del producto */
+.product-card-prices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 50px;
+  justify-content: center;
+}
+
+/* Item individual de precio (cantidad + monto) */
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--gradient-card);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+/* Texto de la cantidad del precio (ej: "1/2 Molde") */
+.price-cantidad {
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.78;
+}
+
+/* Monto del precio en dinero */
+.price-amount {
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+}
+
+/* Estilo cuando no hay precio disponible */
+.price-item.no-price {
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+  background: none;
+  border: 1px dashed var(--color-border-strong);
+}
+
+/* Botón de ver detalles del producto */
+.product-card-btn {
+  background: var(--gradient-accent);
+  border: none;
+  color: #1a1a1a;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Hover del botón con efecto verde brillante */
+.product-card-btn:hover {
+  background: var(--gradient-accent);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(109, 255, 122, 0.4);
+}
+
+/* Estado activo del botón */
+.product-card-btn:active {
+  transform: scale(0.98);
+}
+
+/* ===== RESPONSIVE ===== */
+
+/* Ajustes para tablets y móviles */
+@media (max-width: 768px) {
+  /* Padding reducido en dispositivos móviles */
+  .productos-container {
+    padding: 24px 16px;
+  }
+
+  /* Título más pequeño en móviles */
+  .productos-title {
+    font-size: 2rem;
+    margin-bottom: 28px;
+  }
+
+  /* Título de categoría más pequeño */
+  .categoria-title {
+    font-size: 1.5rem;
+    margin-bottom: 18px;
+  }
+
+  /* Menor espacio entre cards en scroll */
+  .product-scroll-horizontal {
+    gap: 16px;
+  }
+
+  /* Tamaño de card optimizado para móvil */
+  .product-card {
+    flex: 0 0 200px;
+  }
+
+  /* Altura reducida de imagen en móviles */
+  .product-card-image {
+    height: 140px;
+  }
+
+  /* Título de producto más pequeño */
+  .product-card-title {
+    font-size: 0.95rem;
+  }
+
+  /* Precio más pequeño en móviles */
+  .product-card-price {
+    font-size: 1.2rem;
+  }
+}

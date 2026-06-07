@@ -1,0 +1,99 @@
+/**
+ * Time Filter Selector Styles
+ * Dropdown personalizado para seleccionar filtros de tiempo
+ */
+
+.time-filter-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.time-filter-button {
+  padding: 8px 12px;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.time-filter-button:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.time-filter-button .chevron {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.time-filter-button .chevron.open {
+  transform: rotate(180deg);
+}
+
+.time-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  min-width: 140px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.time-filter-option {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-filter-option:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.time-filter-option.active {
+  background: var(--color-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.time-filter-option.active:hover {
+  background: var(--color-accent-strong);
+}
+
+.time-filter-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.time-filter-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.time-filter-dropdown::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}

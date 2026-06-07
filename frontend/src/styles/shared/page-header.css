@@ -1,0 +1,74 @@
+/* ================================================================
+   PAGE-HEADER.CSS - Estilos compartidos para headers de páginas
+   ================================================================
+   Estilos comunes para headers de Ofertas, Ventas, Productos, etc.
+   ================================================================ */
+
+/* Header con línea verde inferior */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid rgba(34, 197, 94, 0.6);
+}
+
+/* Título principal de página */
+.page-title {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.access-denied {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--gradient-card);
+  border-radius: 16px;
+  border: 2px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.access-denied h1 {
+  font-size: 2rem;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.access-denied p {
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Botón Nueva Venta (acción positiva) */
+.btn-new-sale {
+  background: var(--gradient-accent);
+  border: 2px solid var(--color-accent);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.btn-new-sale:hover {
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-new-sale:active {
+  transform: translateY(0);
+}
+

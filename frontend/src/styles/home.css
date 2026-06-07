@@ -1,0 +1,110 @@
+/* ================================================================
+   HOME.CSS - Estilos para la página de inicio
+   ================================================================
+   Contiene estilos para:
+   - Contenedor principal de la página de inicio
+   - Logo con animación de colores de la bandera italiana
+   - Tarjetas de módulos (navegación)
+   ================================================================ */
+
+/* ===== HOME CONTAINER ===== */
+
+/* Contenedor principal de la página de inicio con gradiente radial */
+.home-container {
+  min-height: var(--app-height, 100vh);
+  width: 100%;
+  background: var(--gradient-hero);
+  color: var(--color-text);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 32px;
+}
+
+/* ===== LOGO ===== */
+
+/* Logo circular con animación de los colores de la bandera italiana */
+.logo {
+  width: 300px;
+  height: 300px;
+  object-fit: cover;
+
+  border-radius: 50%;
+  margin-bottom: 24px;
+
+  animation: italyGlow 4.5s ease-in-out infinite;
+}
+
+/* Animación que alterna entre verde, blanco y rojo (bandera de Italia) */
+@keyframes italyGlow {
+  /* Verde */
+  0% {
+    box-shadow:
+      0 0 10px rgba(0, 255, 0, 0.9),
+      0 0 25px rgba(0, 255, 0, 0.6),
+      0 0 45px rgba(0, 255, 0, 0.4),
+      0 25px 50px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Blanco */
+  33% {
+    box-shadow:
+      0 0 10px rgba(255, 255, 255, 0.9),
+      0 0 25px rgba(255, 255, 255, 0.6),
+      0 0 45px rgba(255, 255, 255, 0.4),
+      0 25px 50px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Rojo */
+  66% {
+    box-shadow:
+      0 0 15px rgba(255, 50, 50, 1),
+      0 0 35px rgba(255, 80, 80, 0.7),
+      0 0 60px rgba(255, 100, 100, 0.5),
+      0 25px 50px rgba(0, 0, 0, 0.7); 
+  }
+
+  /* Loop suave de vuelta al verde */
+  100% {
+    box-shadow:
+      0 0 10px rgba(0, 255, 0, 0.9),
+      0 0 25px rgba(0, 255, 0, 0.6),
+      0 0 45px rgba(0, 255, 0, 0.4),
+      0 25px 50px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Hover del logo con efecto de escala */
+.logo:hover {
+  transform: scale(1.03);
+  box-shadow:
+    0 35px 70px rgba(0, 0, 0, 0.7),
+    0 0 0 6px rgba(255, 255, 255, 0.05);
+}
+
+/* ===== WELCOME MESSAGE ===== */
+
+/* Mensaje de bienvenida centrado debajo del logo */
+.welcome-message {
+  text-align: center;
+  margin-top: 24px;
+  padding: 0 20px;
+}
+
+.welcome-message h1 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.welcome-message p {
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  opacity: 0.9;
+}

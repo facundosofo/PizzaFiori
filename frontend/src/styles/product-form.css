@@ -1,0 +1,32 @@
+/* ================================================================
+   PRODUCT-FORM.CSS - Estilos para el formulario de producto
+   ================================================================
+   Contiene estilos específicos para el componente de formulario
+   de creación de productos. Los estilos compartidos de formulario
+   están en shared.css
+   ================================================================ */
+
+/* ===== PRODUCT FORM CONTAINER ===== */
+
+/* Contenedor principal del formulario de producto con gradiente oscuro */
+.product-form {
+  background: var(--gradient-card);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 500px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-strong);
+}
+
+/* Título del formulario con texto brillante */
+.product-form h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 24px 0;
+  text-align: center;
+  text-shadow: 0 0 20px rgba(109, 255, 122, 0.4);
+}

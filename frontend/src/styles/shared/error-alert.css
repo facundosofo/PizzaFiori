@@ -1,0 +1,122 @@
+/* ================================================================
+   ERROR-ALERT.CSS - Estilos para alertas de error
+   ================================================================
+   Contiene estilos para el componente de alerta de error que
+   se muestra en la esquina superior derecha cuando ocurre un error.
+   Incluye animaciones y diseño responsivo.
+   ================================================================ */
+
+/* ===== ERROR ALERT CONTAINER ===== */
+
+/* Contenedor principal de la alerta de error, fijo en la esquina superior derecha */
+.error-alert {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  max-width: 500px;
+  z-index: 2000;
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  border: 2px solid var(--color-danger);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.15);
+  backdrop-filter: blur(4px);
+}
+
+/* Contenido interno de la alerta (icono + texto + botón cerrar) */
+.error-alert-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+/* Icono de error (emoji o SVG) */
+.error-alert-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-text);
+}
+
+/* Contenedor del texto de la alerta */
+.error-alert-text {
+  flex-grow: 1;
+  margin: 0;
+}
+
+/* Título del error en mayúsculas */
+.error-alert-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-danger);
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Mensaje descriptivo del error */
+.error-alert-message {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Información de contacto opcional */
+.error-alert-contact {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 8px 0 0 0;
+  line-height: 1.3;
+  font-style: italic;
+}
+
+/* Botón de cerrar la alerta */
+.error-alert-close {
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+/* Hover del botón cerrar */
+.error-alert-close:hover {
+  color: var(--color-danger);
+  transform: scale(1.2);
+}
+
+/* Estado activo del botón cerrar */
+.error-alert-close:active {
+  transform: scale(0.95);
+}
+
+/* ===== RESPONSIVE ===== */
+
+/* Ajustes para tablets y móviles */
+@media (max-width: 768px) {
+  /* Alerta ocupa todo el ancho en móviles */
+  .error-alert {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+  }
+
+  /* Espaciado reducido en móviles */
+  .error-alert-content {
+    gap: 12px;
+  }
+
+  /* Texto más pequeño en móviles */
+  .error-alert-message {
+    font-size: 0.9rem;
+  }
+}

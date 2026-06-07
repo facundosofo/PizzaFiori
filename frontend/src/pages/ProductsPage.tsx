@@ -1,0 +1,257 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { formatLocalISO } from "../utils/formatters";
+import { getProductos } from "../services/productsService";
+import { getProductosCategorias } from "../services/productosCategoriasService";
+import ProductCard from "../components/ProductCard";
+import ProductModal from "../components/ProductModal";
+import ProductosCategoryConfigModal from "../components/ProductosCategoryConfigModal";
+import BulkPriceUpdateModal from "../components/BulkPriceUpdateModal";
+import SkeletonLoader from "../components/shared/SkeletonLoader";
+import ErrorAlert from "../components/shared/ErrorAlert";
+import * as Icons from "../components/shared/Icons";
+import type { Product } from "../types/product";
+import type { ProductoCategoria } from "../types/product_category";
+import "../styles/product-card.css";
+
+const ProductosPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const [productos, setProductos] = useState<Product[]>([]);
+  const [categorias, setCategorias] = useState<ProductoCategoria[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<number>>(new Set());
+  const [isCreating, setIsCreating] = useState(false);
+  const [newProduct, setNewProduct] = useState<Product | null>(null);
+  const [showCategoryConfig, setShowCategoryConfig] = useState(false);
+  const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setError(null);
+        const [prods, cats] = await Promise.all([
+          getProductos(),
+          getProductosCategorias(true),
+        ]);
+
+        if (!prods || prods.length === 0) {
+          setError("No se pudieron cargar los productos. Intenta recargar la página.");
+        }
+        if (!cats || cats.length === 0) {
+          setError("No se pudieron cargar las categorías. Intenta recargar la página.");
+        }
+
+        setProductos(prods || []);
+        setCategorias(cats || []);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Error desconocido al cargar los datos";
+        setError(`Error al cargar: ${errorMessage}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleProductUpdate = (updatedProducto: Product) => {
+    setProductos((prevProductos) => {
+      const updated = prevProductos.map((p) => (p.id === updatedProducto.id ? updatedProducto : p));
+      return updated;
+    });
+  };
+
+  const handleBulkPriceSuccess = (updatedProducts: Product[]) => {
+    setProductos((prevProductos) => {
+      let updated = [...prevProductos];
+      for (const prod of updatedProducts) {
+        updated = updated.map((p) => (p.id === prod.id ? prod : p));
+      }
+      return updated;
+    });
+  };
+
+  const handleProductDelete = (productoId: number) => {
+    setProductos((prevProductos) => {
+      const filtered = prevProductos.filter((p) => p.id !== productoId);
+      return filtered;
+    });
+  };
+
+  const handleCreateClick = () => {
+    setNewProduct({
+      id: 0,
+      sku: "",
+      nombre: "",
+      categoria_id: 0,
+      imagen: undefined,
+      activo: true,
+      fecha_creacion: formatLocalISO(new Date()),
+      fecha_actualizacion: formatLocalISO(new Date()),
+      precios: [],
+    });
+    setIsCreating(true);
+  };
+
+  const handleCreateProduct = async (producto: Product) => {
+    setProductos((prev) => {
+      const updated = [...prev, producto];
+      return updated;
+    });
+    
+    setCollapsedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (producto.categoria_id) {
+        newSet.delete(producto.categoria_id);
+      }
+      return newSet;
+    });
+    
+    setIsCreating(false);
+    setNewProduct(null);
+  };
+
+  const toggleCategoryCollapse = (categoryId: number) => {
+    setCollapsedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  if (!isAdmin) {
+    return (
+      <div className="user-management-container">
+        <div className="access-denied">
+          <Icons.ShieldOffIcon size={64} color="#ef4444" />
+          <h1>Acceso Denegado</h1>
+          <p>Solo los administradores pueden acceder a esta página.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="productos-container">
+      <div className="page-header">
+        <h1 className="page-title">Productos</h1>
+        <div className="page-header-actions">
+          <button
+            className="btn-create-product"
+            onClick={handleCreateClick}
+          >
+            <Icons.PlusIcon size={16} /> Nuevo Producto
+          </button>
+          <button
+            className="btn-config"
+            onClick={() => setShowBulkPriceModal(true)}
+          >
+            <Icons.PesoIcon size={16} />
+            Actualizar Precios
+          </button>
+          <button
+            className="btn-config"
+            onClick={() => setShowCategoryConfig(true)}
+          >
+            <Icons.FolderTreeIcon size={16} />
+            Categorías
+          </button>
+        </div>
+      </div>
+
+      <ErrorAlert message={error} onClose={() => setError(null)} />
+
+      <ProductosCategoryConfigModal
+        isOpen={showCategoryConfig}
+        onClose={() => setShowCategoryConfig(false)}
+        categorias={categorias}
+        onRefresh={async () => {
+          const cats = await getProductosCategorias(true);
+          setCategorias(cats || []);
+        }}
+      />
+
+      <BulkPriceUpdateModal
+        isOpen={showBulkPriceModal}
+        onClose={() => setShowBulkPriceModal(false)}
+        onSuccess={handleBulkPriceSuccess}
+        categorias={categorias}
+      />
+
+      {newProduct && (
+        <ProductModal
+          producto={newProduct}
+          isOpen={isCreating}
+          onClose={() => {
+            setIsCreating(false);
+            setNewProduct(null);
+          }}
+          onSave={handleCreateProduct}
+          categorias={categorias}
+        />
+      )}
+
+      {loading ? (
+        <div className="skeleton-grid">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <SkeletonLoader key={i} />
+          ))}
+        </div>
+      ) : productos.length === 0 ? (
+        <div className="product-selector-empty product-selector-empty-box">
+          <div className="product-selector-empty-icon"><Icons.PizzaIcon size={36} /></div>
+          <p>No hay productos disponibles</p>
+        </div>
+      ) : categorias.length === 0 ? (
+        <p className="product-empty-state">No hay categorías disponibles</p>
+      ) : (
+        categorias.map((cat) => {
+          const productosDeCategoria = productos.filter(
+            (p) => p.categoria_id === cat.id
+          );
+
+          if (productosDeCategoria.length === 0) return null;
+
+          const isCollapsed = collapsedCategories.has(cat.id);
+
+          return (
+            <section key={cat.id} className="categoria-section">
+              <div className="categoria-header">
+                <h2 className="categoria-title">{cat.nombre}</h2>
+                <button
+                  className={`categoria-toggle ${isCollapsed ? "collapsed" : ""}`}
+                  onClick={() => toggleCategoryCollapse(cat.id)}
+                  aria-label={isCollapsed ? "Expandir" : "Colapsar"}
+                >
+                  <Icons.ChevronDownIcon size={16} />
+                </button>
+              </div>
+
+              {!isCollapsed && (
+                <div className="product-scroll-horizontal">
+                  {productosDeCategoria.map((p) => (
+                    <ProductCard
+                      key={p.id}
+                      producto={p}
+                      onProductUpdate={handleProductUpdate}
+                      onProductDelete={handleProductDelete}
+                      categorias={categorias}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })
+      )}
+    </div>
+  );
+};
+
+export default ProductosPage;

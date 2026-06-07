@@ -1,0 +1,301 @@
+/* OfferConfigModal.css - Modal de configuración de ofertas */
+
+.offer-config-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-overlay);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.offer-config-modal {
+  background: var(--gradient-card);
+  border: 2px solid var(--color-border-strong);
+  box-shadow: 
+    0 10px 50px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(74, 222, 128, 0.2);
+  border-radius: 12px;
+  max-width: 800px;
+  width: 100%;
+  max-height: calc(var(--app-height, 100vh) * 0.90);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.offer-config-header {
+  padding: 24px;
+  border-bottom: 2px solid rgba(74, 222, 128, 0.3);
+  background: var(--gradient-card);
+}
+
+.offer-config-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+  text-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+.offer-config-subtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.offer-config-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: transparent;
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: all 0.2s ease;
+}
+
+.offer-config-close:hover {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Content */
+.offer-config-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.offer-config-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.offer-config-content::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+.offer-config-content::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 4px;
+}
+
+.offer-config-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-strong);
+}
+
+/* Counter badge */
+.offer-config-counter {
+  display: inline-block;
+  color: var(--color-accent);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  letter-spacing: 0.3px;
+}
+
+
+/* Category-based configuration */
+.offer-config-category {
+  margin-bottom: 24px;
+}
+
+.offer-config-category-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-accent);
+  margin: 0 0 16px 0;
+}
+
+.offer-config-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.offer-config-product-card {
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.offer-config-product-card:hover {
+  border-color: rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.offer-config-product-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.offer-config-product-card:hover {
+  border-color: rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.offer-config-product-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f5f5f5;
+  margin: 0 0 12px 0;
+}
+
+/* Options-based configuration */
+.offer-config-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.offer-config-option {
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.offer-config-option:hover {
+  border-color: rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.offer-config-option.selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.offer-config-option-radio {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border-strong);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.offer-config-option.selected .offer-config-option-radio {
+  border-color: var(--color-accent);
+}
+
+.offer-config-option-radio-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  display: none;
+}
+
+.offer-config-option.selected .offer-config-option-radio-dot {
+  display: block;
+}
+
+.offer-config-option-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  flex: 1;
+}
+
+/* Footer */
+.offer-config-footer {
+  padding: 24px;
+  border-top: 2px solid rgba(74, 222, 128, 0.3);
+  background: var(--gradient-card);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.offer-config-btn {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.offer-config-btn-cancel {
+  background: transparent;
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.offer-config-btn-cancel:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-hover);
+}
+
+.offer-config-btn-confirm {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border: 2px solid #4ade80;
+  color: #ffffff;
+}
+
+.offer-config-btn-confirm:hover:not(:disabled) {
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
+  transform: translateY(-2px);
+}
+
+.offer-config-btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(50%);
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+  .offer-config-modal {
+    max-width: 100%;
+    max-height: var(--app-height, 100vh);
+    border-radius: 0;
+  }
+  
+  .offer-config-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  
+  .offer-config-header {
+    padding: 20px;
+  }
+  
+  .offer-config-content {
+    padding: 20px;
+  }
+}

@@ -1,0 +1,81 @@
+/* ================================================================
+   DATEPICKER-CUSTOM.CSS - Estilos personalizados para React DatePicker
+   Este archivo debe cargarse DESPUÉS de react-datepicker.css
+   ================================================================ */
+
+/* Dropdowns de mes y año */
+.react-datepicker__month-dropdown-container--select .react-datepicker__month-select,
+.react-datepicker__year-dropdown-container--select .react-datepicker__year-select,
+.react-datepicker__month-select,
+.react-datepicker__year-select {
+  background: var(--gradient-card) !important;
+  border: 2px solid var(--color-border-strong) !important;
+  border-radius: 8px !important;
+  color: var(--color-text) !important;
+  padding: 8px 12px !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  min-width: 100px !important;
+  transition: all 0.2s ease !important;
+  /* Tells the browser's native dropdown renderer to use a dark palette
+     so options inherit a dark background — prevents white-on-white text */
+  color-scheme: dark;
+}
+
+[data-theme="light"] .react-datepicker__month-select,
+[data-theme="light"] .react-datepicker__year-select {
+  color-scheme: light;
+}
+
+/* Capitalizar el select del mes */
+.react-datepicker__month-select {
+  text-transform: capitalize !important;
+}
+
+/* Capitalizar meses en el dropdown */
+.react-datepicker__month-select option {
+  text-transform: capitalize !important;
+}
+
+.react-datepicker__month-select:hover,
+.react-datepicker__year-select:hover {
+  border-color: var(--color-border-strong) !important;
+  background: var(--gradient-card-hover) !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong),
+              0 0 10px rgba(255, 255, 255, 0.14) !important;
+}
+
+.react-datepicker__month-select:focus,
+.react-datepicker__year-select:focus {
+  outline: none !important;
+  border-color: var(--color-border-strong) !important;
+  background: var(--gradient-card-hover) !important;
+  box-shadow: 0 0 0 1px var(--color-border-strong),
+              0 0 12px rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Opciones dentro de los selects.
+   NOTA: los navegadores solo aceptan background-color (no gradientes)
+   en elementos <option>. Usar color sólido para evitar fallback blanco. */
+.react-datepicker__month-select option,
+.react-datepicker__year-select option {
+  background-color: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  padding: 10px !important;
+  font-weight: 500 !important;
+}
+
+.react-datepicker__month-select option:hover,
+.react-datepicker__year-select option:hover {
+  background-color: var(--color-surface-3) !important;
+  color: var(--color-text) !important;
+}
+
+.react-datepicker__month-select option:checked,
+.react-datepicker__year-select option:checked {
+  /* Gradientes no funcionan en <option>; usar color sólido */
+  background-color: var(--color-surface-3) !important;
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+}

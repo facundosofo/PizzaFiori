@@ -1,0 +1,217 @@
+/* ================================================================
+  SHARED.CSS - Estilos compartidos y reutilizables
+  ================================================================
+  Este archivo contiene estilos de formularios, botones e inputs
+  que se usan en múltiples componentes para evitar duplicación.
+  ================================================================ */
+
+/* ===== FORM GROUPS ===== */
+
+/* Contenedor de cada grupo de formulario (label + input) */
+.form-group {
+  margin-bottom: 20px;
+}
+
+/* Etiquetas de los campos del formulario */
+.form-group label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== FORM INPUTS ===== */
+
+/* Input base para todos los campos de texto, select y textarea */
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* Estado focus del input */
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: var(--color-bg-2);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.25);
+}
+
+/* Estilos para autocompletado de Chrome */
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--color-bg) inset !important;
+  -webkit-text-fill-color: var(--color-text) !important;
+  caret-color: var(--color-text);
+  border: 2px solid var(--color-border-strong) !important;
+}
+
+/* Placeholder del input */
+.form-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ===== FORM ERROR MESSAGE ===== */
+
+/* Mensaje de error del formulario */
+.form-error {
+  background: var(--color-danger-bg);
+  border: 2px solid var(--color-danger);
+  border-radius: 8px;
+  color: var(--color-danger);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* ===== FORM ACTIONS (Botones de acción) ===== */
+
+/* Contenedor de los botones de acción del formulario */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Estilos base compartidos para botones de guardar y cancelar */
+.form-save-btn,
+.form-cancel-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Botón de guardar con gradiente verde */
+.form-save-btn {
+  background: var(--gradient-accent);
+  color: #1a1a1a;
+}
+
+/* Hover del botón guardar */
+.form-save-btn:hover {
+  background: var(--gradient-accent);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(74, 222, 128, 0.3);
+}
+
+/* Estado activo del botón guardar */
+.form-save-btn:active {
+  transform: scale(0.98);
+}
+
+/* Botón de cancelar con estilo rojo */
+.form-cancel-btn {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 2px solid var(--color-danger);
+}
+
+/* Hover del botón cancelar */
+.form-cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.2);
+}
+
+/* Estado activo del botón cancelar */
+.form-cancel-btn:active {
+  transform: scale(0.98);
+}
+
+/* ===== FILE INPUT ===== */
+
+/* Wrapper del input de archivo personalizado */
+.file-input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Input de archivo oculto (se muestra el label personalizado) */
+.file-input {
+  display: none;
+}
+
+/* Label personalizado que actúa como botón de selección de archivo */
+.file-label {
+  display: block;
+  padding: 12px 14px;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
+  border-radius: 8px;
+  color: var(--color-text);
+  text-align: center;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.95rem;
+}
+
+/* Hover del label de archivo */
+.file-label:hover {
+  border-color: var(--color-accent);
+  background: var(--color-bg-2);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.25);
+}
+
+/* Estado deshabilitado del input de archivo */
+.file-input-wrapper:has(.file-input:disabled) .file-label {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--color-bg);
+}
+
+/* ===== IMAGE PREVIEW ===== */
+
+/* Contenedor de previsualización de imagen */
+.image-preview {
+  width: 100%;
+  margin: 16px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+/* Imagen dentro del preview */
+.image-preview img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ===== RESPONSIVE FORM STYLES ===== */
+
+/* Ajustes para pantallas móviles */
+@media (max-width: 480px) {
+  /* Botones en columna en móviles */
+  .form-actions {
+    flex-direction: column;
+  }
+
+  /* Altura reducida de imagen en móviles */
+  .image-preview img {
+    height: 200px;
+  }
+}
