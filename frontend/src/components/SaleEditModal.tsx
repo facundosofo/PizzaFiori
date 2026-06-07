@@ -5,7 +5,8 @@ import type { SaleItemWithDetails } from "../types/sale_item";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
 import { getSaleById, updateSale } from "../services/salesService";
-import { formatCurrency, formatDateTimeDisplay, formatLocalISO } from "../utils/formatters";
+import { getRecargoConfig } from "../services/configService";
+import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import { OfferConfigModal } from "./OfferConfigModal";
 import RadioGroup, { type RadioOption } from "./shared/RadioGroup";
 import SearchableSelect from "./shared/SearchableSelect";
@@ -137,6 +138,9 @@ const SaleEditModal = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [editingPriceId, setEditingPriceId] = useState<number | null>(null);
+  const [applyRecargo, setApplyRecargo] = useState(false);
+  const [recargoPercent, setRecargoPercent] = useState(10);
+  const [recargoAmount, setRecargoAmount] = useState(0);
 
   const toNumber = (value: unknown): number => {
     if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -210,7 +214,21 @@ const SaleEditModal = ({
           setLoading(true);
           setError("");
           const data = await getSaleById(saleId);
+          let configPercent = 10;
+
+          try {
+            const recargoConfig = await getRecargoConfig();
+            if (recargoConfig?.porcentaje_recargo !== undefined) {
+              configPercent = recargoConfig.porcentaje_recargo;
+            }
+          } catch (configError) {
+            configPercent = Number(data.porcentaje_recargo ?? 10);
+          }
+
           setSale(data);
+          setApplyRecargo(Boolean(data.porcentaje_recargo));
+          setRecargoPercent(configPercent);
+
           const normalizedItems =
             (data.items || []).map((item) => {
               const precio_unitario = toNumber((item as any).precio_unitario);
@@ -399,6 +417,12 @@ const SaleEditModal = ({
     return editedItems.reduce((sum, item) => sum + toNumber((item as any).subtotal), 0);
   };
 
+  useEffect(() => {
+    const subtotal = calculateTotal();
+    const surcharge = applyRecargo ? parseFloat(((subtotal * recargoPercent) / 100).toFixed(2)) : 0;
+    setRecargoAmount(surcharge);
+  }, [editedItems, applyRecargo, recargoPercent]);
+
   const handleSave = async () => {
     if (editedItems.length === 0) {
       setError("La venta debe tener al menos un item");
@@ -410,7 +434,7 @@ const SaleEditModal = ({
       setError("");
 
       // Call update service with precio_unitario and productos_seleccionados for offers
-      await updateSale(saleId!, {
+      const updatedSale = await updateSale(saleId!, {
         items: editedItems.map((item) => ({
           producto_id: item.producto_id || undefined,
           oferta_id: item.oferta_id || undefined,
@@ -421,15 +445,8 @@ const SaleEditModal = ({
             cantidad: p.cantidad,
           })) || undefined,
         })),
+        aplicar_recargo: applyRecargo,
       });
-
-      // Create updated sale object for parent component
-      const updatedSale: Sale = {
-        ...sale!,
-        items: editedItems,
-        total: calculateTotal(),
-        fecha_actualizacion: formatLocalISO(new Date()),
-      };
 
       onSave(updatedSale);
       onClose();
@@ -615,6 +632,35 @@ const SaleEditModal = ({
                     </div>
                   </div>
 
+                  <div className="sale-recargo-and-total-section">
+                    <div className="sale-recargo-controls">
+                      <label className="sale-recargo-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={applyRecargo}
+                          onChange={() => setApplyRecargo((prev) => !prev)}
+                          disabled={saving || loading}
+                        />
+                        Aplicar recargo por transferencia/débito
+                      </label>
+                      {!applyRecargo && (
+                        <span className="recargo-status-off">Sin recargo</span>
+                      )}
+                    </div>
+                    {applyRecargo && (
+                      <div className="sale-recargo-summary">
+                        <span className="recargo-label">Recargo ({recargoPercent}%):</span>
+                        <span className="recargo-amount">{formatCurrency(recargoAmount)}</span>
+                      </div>
+                    )}
+                    <div className="sale-total-row">
+                      <span className="sale-total-label">TOTAL:</span>
+                      <span className="sale-total-value">
+                        {formatCurrency(calculateTotal() + recargoAmount)}
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="add-item-section-wrapper">
                     <h3>Agregar Item</h3>
                     <div className="add-item-section">
@@ -670,15 +716,6 @@ const SaleEditModal = ({
                           )}
                         </AnimatePresence>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="sale-total-section">
-                    <div className="sale-total-row">
-                      <span className="sale-total-label">TOTAL:</span>
-                      <span className="sale-total-value">
-                        {formatCurrency(calculateTotal())}
-                      </span>
                     </div>
                   </div>
                 </>

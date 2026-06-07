@@ -10,7 +10,8 @@ from pydantic import ValidationError
 from app.presentation.schemas.sale_schemas import (
     SaleItemRequest,
     SaleCreateRequest,
-    SaleResponse
+    SaleResponse,
+    SaleUpdateRequest,
 )
 
 
@@ -234,6 +235,21 @@ def test_create_sale_valid_with_offers():
     assert len(sale.items) == 1
     assert sale.items[0].oferta_id == 1
     assert len(sale.items[0].productos_seleccionados) == 2
+
+
+def test_update_sale_request_accepts_aplicar_recargo():
+    """Test that SaleUpdateRequest allows aplicar_recargo flag."""
+    data = {
+        "items": [
+            {"producto_id": 1, "cantidad": 1, "precio_unitario": "1200.00"}
+        ],
+        "aplicar_recargo": True
+    }
+
+    sale = SaleUpdateRequest(**data)
+
+    assert sale.aplicar_recargo is True
+
 
 def test_create_sale_valid_mixed_items():
     """Test creating sale with both products and offers."""

@@ -800,10 +800,28 @@ class SaleService:
                     )
                     sale_items.append(sale_item)
 
+                porcentaje_recargo = None
+                monto_recargo = None
+
+                if getattr(sale_update, 'aplicar_recargo', False):
+                    config = await uow.app_config_repo.get_by_key(RECARGO_KEY)
+                    if config and config.value:
+                        try:
+                            porcentaje_recargo = Decimal(str(config.value))
+                        except Exception:
+                            porcentaje_recargo = DEFAULT_RECARGO_PERCENTAGE
+                    else:
+                        porcentaje_recargo = DEFAULT_RECARGO_PERCENTAGE
+
+                    monto_recargo = (total * porcentaje_recargo / Decimal("100")).quantize(Decimal("0.01"))
+                    total += monto_recargo
+
                 # Actualizar venta
                 existing_sale.total = total
                 existing_sale.fecha_actualizacion = datetime.now()
                 existing_sale.items = sale_items
+                existing_sale.porcentaje_recargo = porcentaje_recargo
+                existing_sale.monto_recargo = monto_recargo
 
                 await uow.sale_repo.update(existing_sale)
                 await uow.commit()

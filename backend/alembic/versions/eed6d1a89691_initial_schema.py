@@ -1,8 +1,8 @@
 """Initial Schema
 
-Revision ID: 740a1792f26a
+Revision ID: eed6d1a89691
 Revises: 
-Create Date: 2026-03-10 18:23:01.710625
+Create Date: 2026-05-14 20:15:13.228289
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '740a1792f26a'
+revision: str = 'eed6d1a89691'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -52,6 +52,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('numero_orden', sa.String(length=17), nullable=False),
     sa.Column('total', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('porcentaje_recargo', sa.Numeric(precision=5, scale=2), nullable=True),
+    sa.Column('monto_recargo', sa.Numeric(precision=10, scale=2), nullable=True),
     sa.Column('fecha_creacion', sa.DateTime(), nullable=True),
     sa.Column('fecha_actualizacion', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
@@ -59,6 +61,14 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_Ventas_fecha_creacion'), 'Ventas', ['fecha_creacion'], unique=False)
     op.create_index(op.f('ix_Ventas_id'), 'Ventas', ['id'], unique=False)
+    op.create_table('app_config',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('key', sa.String(length=100), nullable=False),
+    sa.Column('value', sa.String(length=255), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('key')
+    )
+    op.create_index(op.f('ix_app_config_id'), 'app_config', ['id'], unique=False)
     op.create_table('auditoria',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('timestamp', sa.DateTime(), nullable=False),
@@ -92,6 +102,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nombre', sa.String(length=50), nullable=False),
     sa.Column('activo', sa.Boolean(), nullable=False),
+    sa.Column('stock_visible', sa.Boolean(), nullable=False),
+    sa.Column('stock_por_producto', sa.Boolean(), nullable=False),
     sa.Column('fecha_creacion', sa.DateTime(), nullable=False),
     sa.Column('fecha_actualizacion', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id')
@@ -196,6 +208,15 @@ def upgrade() -> None:
     op.create_index('ix_ventaitems_venta_id', 'VentaItems', ['venta_id'], unique=False)
     op.create_index('ix_ventaitems_venta_oferta', 'VentaItems', ['venta_id', 'oferta_id'], unique=False)
     op.create_index('ix_ventaitems_venta_producto', 'VentaItems', ['venta_id', 'producto_id'], unique=False)
+    op.create_table('stock_productos',
+    sa.Column('producto_id', sa.Integer(), nullable=False),
+    sa.Column('cantidad', sa.Integer(), nullable=False),
+    sa.Column('umbral_amarillo', sa.Integer(), nullable=True),
+    sa.Column('umbral_rojo', sa.Integer(), nullable=True),
+    sa.Column('fecha_actualizacion', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['producto_id'], ['Productos.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('producto_id')
+    )
     op.create_table('VentaItemOfertaProductos',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('venta_item_id', sa.Integer(), nullable=False),
@@ -224,6 +245,7 @@ def downgrade() -> None:
     op.drop_index('ix_ventaitemofertaproductos_categoria_nombre', table_name='VentaItemOfertaProductos')
     op.drop_index(op.f('ix_VentaItemOfertaProductos_id'), table_name='VentaItemOfertaProductos')
     op.drop_table('VentaItemOfertaProductos')
+    op.drop_table('stock_productos')
     op.drop_index('ix_ventaitems_venta_producto', table_name='VentaItems')
     op.drop_index('ix_ventaitems_venta_oferta', table_name='VentaItems')
     op.drop_index('ix_ventaitems_venta_id', table_name='VentaItems')
@@ -261,6 +283,8 @@ def downgrade() -> None:
     op.drop_index('ix_audit_timestamp_desc', table_name='auditoria')
     op.drop_index('ix_audit_entity_timestamp', table_name='auditoria')
     op.drop_table('auditoria')
+    op.drop_index(op.f('ix_app_config_id'), table_name='app_config')
+    op.drop_table('app_config')
     op.drop_index(op.f('ix_Ventas_id'), table_name='Ventas')
     op.drop_index(op.f('ix_Ventas_fecha_creacion'), table_name='Ventas')
     op.drop_table('Ventas')

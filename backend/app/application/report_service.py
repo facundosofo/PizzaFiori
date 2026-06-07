@@ -46,28 +46,32 @@ from app.domain.unit_of_work import AbstractUnitOfWork
 # ─────────────────────────────────────────────────────────────────────────────
 THEMES = {
     "dark": {
-        "BG_MAIN":    colors.HexColor("#0d0d0d"),
-        "BG_SECOND":  colors.HexColor("#1a1a1a"),
-        "BG_RAISED":  colors.HexColor("#2a2a2a"),
-        "TEXT_H1":    colors.HexColor("#ffffff"),
-        "TEXT_BODY":  colors.HexColor("#e8e8e8"),
-        "TEXT_MUTED": colors.HexColor("#888888"),
-        "GREEN_BASE":  colors.HexColor("#22c55e"),
-        "GREEN_LIGHT": colors.HexColor("#4ade80"),
-        "BORDER_MAIN": colors.HexColor("#404040"),
-        "BORDER_SUB":  colors.HexColor("#2e2e2e"),
+        "BG_MAIN":       colors.HexColor("#0d0d0d"),
+        "BG_SECOND":     colors.HexColor("#1a1a1a"),
+        "BG_RAISED":     colors.HexColor("#2a2a2a"),
+        "TEXT_H1":       colors.HexColor("#ffffff"),
+        "TEXT_BODY":     colors.HexColor("#e8e8e8"),
+        "TEXT_MUTED":    colors.HexColor("#888888"),
+        "GREEN_BASE":    colors.HexColor("#22c55e"),
+        "GREEN_LIGHT":   colors.HexColor("#4ade80"),
+        "GREEN_SUBTLE":  colors.HexColor("#0d2b17"),   # fondo filas subtotal/recargo
+        "GREEN_TOTAL":   colors.HexColor("#14381f"),   # fondo fila TOTAL
+        "BORDER_MAIN":   colors.HexColor("#404040"),
+        "BORDER_SUB":    colors.HexColor("#2e2e2e"),
     },
     "light": {
-        "BG_MAIN":    colors.HexColor("#ffffff"),
-        "BG_SECOND":  colors.HexColor("#f8f9fa"),
-        "BG_RAISED":  colors.HexColor("#f1f3f5"),
-        "TEXT_H1":    colors.HexColor("#222222"),
-        "TEXT_BODY":  colors.HexColor("#333333"),
-        "TEXT_MUTED": colors.HexColor("#888888"),
-        "GREEN_BASE":  colors.HexColor("#22c55e"),
-        "GREEN_LIGHT": colors.HexColor("#16a34a"),
-        "BORDER_MAIN": colors.HexColor("#cccccc"),
-        "BORDER_SUB":  colors.HexColor("#e0e0e0"),
+        "BG_MAIN":       colors.HexColor("#ffffff"),
+        "BG_SECOND":     colors.HexColor("#f8f9fa"),
+        "BG_RAISED":     colors.HexColor("#f1f3f5"),
+        "TEXT_H1":       colors.HexColor("#222222"),
+        "TEXT_BODY":     colors.HexColor("#333333"),
+        "TEXT_MUTED":    colors.HexColor("#888888"),
+        "GREEN_BASE":    colors.HexColor("#22c55e"),
+        "GREEN_LIGHT":   colors.HexColor("#16a34a"),
+        "GREEN_SUBTLE":  colors.HexColor("#f0fdf4"),   # fondo filas subtotal/recargo
+        "GREEN_TOTAL":   colors.HexColor("#dcfce7"),   # fondo fila TOTAL
+        "BORDER_MAIN":   colors.HexColor("#cccccc"),
+        "BORDER_SUB":    colors.HexColor("#e0e0e0"),
     },
 }
 
@@ -83,15 +87,18 @@ GREEN_LIGHT = THEMES["dark"]["GREEN_LIGHT"]
 BORDER_MAIN = THEMES["dark"]["BORDER_MAIN"]
 BORDER_SUB  = THEMES["dark"]["BORDER_SUB"]
 
+
 def get_theme_colors(mode: str = "dark"):
     """Devuelve el diccionario de colores para el modo dado ('dark' o 'light')."""
     return THEMES.get(mode, THEMES["dark"])
+
 
 LOGO_PATH = r"C:\Users\Facundo\Desktop\PizzaFiori\frontend\public\logo.png"
 
 HEADER_H = 1.4 * cm
 FOOTER_H = 0.8 * cm
 MARGIN   = 1.8 * cm
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 @dataclass
@@ -104,7 +111,12 @@ class ReportResult:
 # ─────────────────────────────────────────────────────────────────────────────
 #  Función de decoración de página (se llama ANTES del contenido Platypus)
 # ─────────────────────────────────────────────────────────────────────────────
-def _decorate_page_with_theme(canvas: rl_canvas.Canvas, doc: BaseDocTemplate, mode: str = "dark", report_title: str = "Reporte de Ventas"):
+def _decorate_page_with_theme(
+    canvas: rl_canvas.Canvas,
+    doc: BaseDocTemplate,
+    mode: str = "dark",
+    report_title: str = "Reporte de Ventas",
+):
     """
     onPage callback: dibuja fondo, header y footer ANTES que Platypus
     pinte el contenido, así nada queda tapado. Usa la paleta del modo.
@@ -127,16 +139,16 @@ def _decorate_page_with_theme(canvas: rl_canvas.Canvas, doc: BaseDocTemplate, mo
     canvas.line(0, h - HEADER_H, w, h - HEADER_H)
 
     # Logo o texto fallback
-    logo_y = h - HEADER_H + 0.18 * cm
-    logo_h = HEADER_H - 0.36 * cm
-    logo_max_w = 4 * cm  # Limitar ancho máximo del logo
+    logo_y     = h - HEADER_H + 0.18 * cm
+    logo_h     = HEADER_H - 0.36 * cm
+    logo_max_w = 4 * cm
     logo_drawn = False
     if os.path.isfile(LOGO_PATH):
         try:
             canvas.drawImage(
                 LOGO_PATH, 2 * cm, logo_y,
                 height=logo_h, width=logo_max_w,
-                preserveAspectRatio=True, anchor='w',
+                preserveAspectRatio=True, anchor="w",
                 mask="auto",
             )
             logo_drawn = True
@@ -191,11 +203,8 @@ class TwoPassDoc(BaseDocTemplate):
         super().handle_pageEnd()
 
     def build(self, flowables, **kwargs):
-        # Pass 1: contar páginas (sin escribir al buffer real)
         from io import BytesIO as _BytesIO
         tmp = _BytesIO()
-        # Necesitamos construir en un buffer temporal para contar
-        # Usamos el método interno de platypus
         self._pagecount = 0
         super().build(flowables, **kwargs)
 
@@ -315,11 +324,9 @@ class ReportService:
             topMargin=TOP_PAD, bottomMargin=BOT_PAD,
         )
 
-        # Guardamos referencia al doc en la función de decoración via closure
         page_count_holder = [1]
 
         def on_page(canvas, doc):
-            # Necesitamos el total; usamos el holder que se actualiza tras el build
             _decorate_page_with_theme(canvas, doc, modo)
 
         frame = Frame(
@@ -333,7 +340,7 @@ class ReportService:
             PageTemplate(id="dark", frames=[frame], onPage=on_page)
         ])
 
-        styles   = self._styles(modo)
+        styles    = self._styles(modo)
         content_w = w - 2 * MARGIN
         flowables = self._build_story(
             sales, total_ventas, total_ingresos,
@@ -364,7 +371,6 @@ class ReportService:
         )
         count_doc.addPageTemplates([PageTemplate(id="count", frames=[count_frame])])
 
-        # Rebuild flowables for counting (they get consumed)
         flowables_count = self._build_story(
             sales, total_ventas, total_ingresos,
             fecha_desde, fecha_hasta, chart_data,
@@ -408,7 +414,6 @@ class ReportService:
         for sale in sales:
             for item in sale.items:
                 if item.oferta_id and item.oferta_productos_snapshot:
-                    # Sumar productos dentro de la oferta
                     for prod in item.oferta_productos_snapshot:
                         total_productos += prod.cantidad * item.cantidad
                 else:
@@ -434,7 +439,7 @@ class ReportService:
             elements.append(Spacer(1, 0.15 * cm))
             elements.append(self._monthly_summary_table(sales, styles, content_w, modo))
             elements.append(Spacer(1, 0.5 * cm))
-        
+
         """
         # Gráfico
         if len(chart_data) > 1:
@@ -442,7 +447,7 @@ class ReportService:
             chart_img = self._build_chart(chart_data, compact=many_rows)
             if chart_img:
                 elements.append(Image(chart_img, width=content_w, height=chart_h))
-                elements.append(Spacer(1, 0.5 * cm)) 
+                elements.append(Spacer(1, 0.5 * cm))
         """
 
         # Tabla de resumen por categoría
@@ -487,11 +492,13 @@ class ReportService:
             ),
             "section": ps(
                 "rpt_section", fontName="Helvetica-Bold", fontSize=10,
-                textColor=colors_["TEXT_H1"] if mode == "light" else colors_["GREEN_BASE"], leading=13,
+                textColor=colors_["TEXT_H1"] if mode == "light" else colors_["GREEN_BASE"],
+                leading=13,
             ),
             "kpi_val": ps(
                 "rpt_kval", fontName="Helvetica-Bold", fontSize=16,
-                textColor=colors_["TEXT_H1"] if mode == "light" else colors_["GREEN_BASE"], alignment=TA_CENTER, leading=19,
+                textColor=colors_["TEXT_H1"] if mode == "light" else colors_["GREEN_BASE"],
+                alignment=TA_CENTER, leading=19,
             ),
             "kpi_lbl": ps(
                 "rpt_klbl", fontName="Helvetica", fontSize=7,
@@ -499,7 +506,8 @@ class ReportService:
             ),
             "th": ps(
                 "rpt_th", fontName="Helvetica-Bold", fontSize=7.5,
-                textColor=colors_["TEXT_BODY"] if mode == "light" else colors_["GREEN_BASE"], alignment=TA_CENTER,
+                textColor=colors_["TEXT_BODY"] if mode == "light" else colors_["GREEN_BASE"],
+                alignment=TA_CENTER,
             ),
             "td": ps(
                 "rpt_td", fontName="Helvetica", fontSize=7.5,
@@ -513,12 +521,27 @@ class ReportService:
                 "rpt_money", fontName="Helvetica-Bold", fontSize=7.5,
                 textColor=colors_["GREEN_BASE"], alignment=TA_RIGHT, leading=10,
             ),
+            # ── Nuevos estilos para filas de resumen en _sales_table ──────────
+            "td_summary_label": ps(
+                "rpt_sum_lbl", fontName="Helvetica-Bold", fontSize=7.5,
+                textColor=colors_["TEXT_MUTED"], alignment=TA_RIGHT, leading=10,
+            ),
+            "td_summary_total": ps(
+                "rpt_sum_tot", fontName="Helvetica-Bold", fontSize=8,
+                textColor=colors_["GREEN_BASE"], alignment=TA_RIGHT, leading=10,
+            ),
         }
 
     # ── KPI cards ────────────────────────────────────────────────────────────
 
-    def _kpi_table(self, total_ventas: int, total_ingresos: Decimal, total_productos: int, content_w: float, modo: str) -> Table:
-        # Usar los estilos pasados por parámetro para detectar el modo
+    def _kpi_table(
+        self,
+        total_ventas: int,
+        total_ingresos: Decimal,
+        total_productos: int,
+        content_w: float,
+        modo: str,
+    ) -> Table:
         import inspect
         caller = inspect.stack()[1].function
         s = self._styles(modo)
@@ -530,12 +553,11 @@ class ReportService:
         data = [[
             card("Total de Ventas",    str(total_ventas)),
             card("Productos Vendidos", str(total_productos)),
-            card("Ingresos Totales",   f"${float(total_ingresos):,.2f}")
+            card("Ingresos Totales",   f"${float(total_ingresos):,.2f}"),
         ]]
 
-        cw = content_w / 3
-        t  = Table(data, colWidths=[cw, cw, cw], rowHeights=[1.4 * cm])
-        # Fondo: BG_RAISED en dark, BG_MAIN (blanco) en light, igual que otras tablas
+        cw       = content_w / 3
+        t        = Table(data, colWidths=[cw, cw, cw], rowHeights=[1.4 * cm])
         bg_color = colors_["BG_RAISED"] if modo == "dark" else colors_["BG_MAIN"]
         t.setStyle(TableStyle([
             ("BACKGROUND",    (0, 0), (-1, -1), bg_color),
@@ -555,65 +577,54 @@ class ReportService:
     def _category_summary_table(self, sales: List[Sale], styles: dict, content_w: float) -> Table:
         """Agrupa cantidades vendidas por categoría, desglosando ofertas."""
         from collections import defaultdict
-        
-        # Diccionario para agrupar por categoría
+
         categories: dict = defaultdict(int)
-        
+
         for sale in sales:
             for item in sale.items:
                 es_oferta = item.oferta_id is not None
-                
                 if es_oferta and item.oferta_productos_snapshot:
-                    # Desglosar oferta: sumar a categoría de cada producto
                     for prod in item.oferta_productos_snapshot:
                         cat = prod.categoria_nombre or "Sin Categoría"
                         categories[cat] += prod.cantidad * item.cantidad
                 else:
-                    # Producto regular
                     cat = item.item_categoria or "Sin Categoría"
                     categories[cat] += item.cantidad
-        
-        # Ordenar por cantidad descendente
+
         sorted_cats = sorted(categories.items(), key=lambda x: x[1], reverse=True)
-        
+
         headers = [
-            Paragraph("Categoría", styles["th"]),
+            Paragraph("Categoría",        styles["th"]),
             Paragraph("Cantidad Vendida", styles["th"]),
         ]
         rows = [headers]
-        
+
         for cat_name, cantidad in sorted_cats:
             rows.append([
-                Paragraph(cat_name, styles["td_item"]),
+                Paragraph(cat_name,    styles["td_item"]),
                 Paragraph(str(cantidad), styles["td"]),
             ])
-        
+
         col_widths = [content_w * r for r in (0.60, 0.40)]
-        
-        t = Table(
-            rows,
-            colWidths=col_widths,
-            rowHeights=None,
-            repeatRows=1,
-        )
-        # Detectar modo desde color de estilos
-        modo = "light" if styles["title"].textColor == THEMES["light"]["TEXT_H1"] else "dark"
+        t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
+
+        modo    = "light" if styles["title"].textColor == THEMES["light"]["TEXT_H1"] else "dark"
         colors_ = get_theme_colors(modo)
         t.setStyle(TableStyle([
-            ("BACKGROUND",     (0, 0), (-1, 0), colors_["BG_RAISED"]),
-            ("LINEBELOW",      (0, 0), (-1, 0), 1.5,  colors_["GREEN_BASE"]),
-            ("TOPPADDING",     (0, 0), (-1, 0), 8),
-            ("BOTTOMPADDING",  (0, 0), (-1, 0), 8),
+            ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
+            ("LINEBELOW",      (0, 0), (-1, 0),  1.5, colors_["GREEN_BASE"]),
+            ("TOPPADDING",     (0, 0), (-1, 0),  8),
+            ("BOTTOMPADDING",  (0, 0), (-1, 0),  8),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors_["BG_MAIN"], colors_["BG_SECOND"]]),
             ("TOPPADDING",     (0, 1), (-1, -1), 4),
             ("BOTTOMPADDING",  (0, 1), (-1, -1), 4),
             ("LINEBELOW",      (0, 1), (-1, -2), 0.3, colors_["BORDER_SUB"]),
             ("BOX",            (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (0, 0), (0, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (1, 0), (1, -1), 0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (0, 0), (0, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (1, 0), (1, -1),  0.5, colors_["BORDER_MAIN"]),
             ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
-            ("ALIGN",          (0, 1), (0, -1), "LEFT"),
-            ("ALIGN",          (1, 1), (1, -1), "RIGHT"),
+            ("ALIGN",          (0, 1), (0, -1),  "LEFT"),
+            ("ALIGN",          (1, 1), (1, -1),  "RIGHT"),
             ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING",    (0, 0), (-1, -1), 6),
             ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
@@ -623,86 +634,75 @@ class ReportService:
     def _grouped_items_table(self, sales: List[Sale], styles: dict, content_w: float) -> Table:
         """Agrupa ítems vendidos por producto, desglosando los que están dentro de ofertas."""
         from collections import defaultdict
-        
-        # Diccionario para agrupar productos: key -> (nombre, categoria, cantidad)
+
         grouped: dict = defaultdict(lambda: {"nombre": "", "categoria": "", "cantidad": 0})
-        
+
         for sale in sales:
             for item in sale.items:
                 es_oferta = item.oferta_id is not None
-                
                 if es_oferta and item.oferta_productos_snapshot:
-                    # Desglosar oferta: contar cada producto individual
                     for prod in item.oferta_productos_snapshot:
                         key = f"{prod.producto_nombre}:{prod.categoria_nombre}"
-                        grouped[key]["nombre"] = prod.producto_nombre
+                        grouped[key]["nombre"]    = prod.producto_nombre
                         grouped[key]["categoria"] = prod.categoria_nombre or "-"
-                        # Cantidad del producto en oferta × cantidad de ofertas vendidas
                         grouped[key]["cantidad"] += prod.cantidad * item.cantidad
                 else:
-                    # Producto regular
                     key = f"{item.item_nombre}:{item.item_categoria}"
-                    grouped[key]["nombre"] = item.item_nombre
+                    grouped[key]["nombre"]    = item.item_nombre
                     grouped[key]["categoria"] = item.item_categoria
                     grouped[key]["cantidad"] += item.cantidad
-        
-        # Ordenar por cantidad descendente
+
         sorted_items = sorted(grouped.items(), key=lambda x: x[1]["cantidad"], reverse=True)
-        
+
         headers = [
-            Paragraph("Producto", styles["th"]),
-            Paragraph("Categoría", styles["th"]),
+            Paragraph("Producto",         styles["th"]),
+            Paragraph("Categoría",        styles["th"]),
             Paragraph("Cantidad Vendida", styles["th"]),
         ]
         rows = [headers]
-        
+
         for key, data in sorted_items:
             rows.append([
-                Paragraph(data["nombre"], styles["td_item"]),
+                Paragraph(data["nombre"],    styles["td_item"]),
                 Paragraph(data["categoria"], styles["td"]),
                 Paragraph(str(data["cantidad"]), styles["td"]),
             ])
-        
+
         col_widths = [content_w * r for r in (0.45, 0.30, 0.25)]
-        
-        t = Table(
-            rows,
-            colWidths=col_widths,
-            rowHeights=None,
-            repeatRows=1,
-        )
-        modo = "light" if styles["title"].textColor == THEMES["light"]["TEXT_H1"] else "dark"
+        t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
+
+        modo    = "light" if styles["title"].textColor == THEMES["light"]["TEXT_H1"] else "dark"
         colors_ = get_theme_colors(modo)
         t.setStyle(TableStyle([
-            ("BACKGROUND",     (0, 0), (-1, 0), colors_["BG_RAISED"]),
-            ("LINEBELOW",      (0, 0), (-1, 0), 1.5,  colors_["GREEN_BASE"]),
-            ("TOPPADDING",     (0, 0), (-1, 0), 8),
-            ("BOTTOMPADDING",  (0, 0), (-1, 0), 8),
+            ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
+            ("LINEBELOW",      (0, 0), (-1, 0),  1.5, colors_["GREEN_BASE"]),
+            ("TOPPADDING",     (0, 0), (-1, 0),  8),
+            ("BOTTOMPADDING",  (0, 0), (-1, 0),  8),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors_["BG_MAIN"], colors_["BG_SECOND"]]),
             ("TOPPADDING",     (0, 1), (-1, -1), 4),
             ("BOTTOMPADDING",  (0, 1), (-1, -1), 4),
             ("LINEBELOW",      (0, 1), (-1, -2), 0.3, colors_["BORDER_SUB"]),
             ("BOX",            (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (0, 0), (0, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (1, 0), (1, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (2, 0), (2, -1), 0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (0, 0), (0, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (1, 0), (1, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (2, 0), (2, -1),  0.5, colors_["BORDER_MAIN"]),
             ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
-            ("ALIGN",          (0, 1), (0, -1), "LEFT"),
-            ("ALIGN",          (2, 1), (2, -1), "RIGHT"),
+            ("ALIGN",          (0, 1), (0, -1),  "LEFT"),
+            ("ALIGN",          (2, 1), (2, -1),  "RIGHT"),
             ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING",    (0, 0), (-1, -1), 6),
             ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
         ]))
         return t
-    
+
     def _daily_summary_table(self, sales: List[Sale], styles: dict, content_w: float, modo: str) -> Table:
         from collections import defaultdict
         import datetime as dt_mod
-        # Agrupar por día
+
         daily = defaultdict(lambda: {"ventas": 0, "productos": 0, "ingresos": Decimal("0")})
         for sale in sales:
             day = (sale.fecha_creacion - dt_mod.timedelta(hours=6)).date()
-            daily[day]["ventas"] += 1
+            daily[day]["ventas"]   += 1
             daily[day]["ingresos"] += sale.total
             for item in sale.items:
                 if item.oferta_id and item.oferta_productos_snapshot:
@@ -710,47 +710,43 @@ class ReportService:
                         daily[day]["productos"] += prod.cantidad * item.cantidad
                 else:
                     daily[day]["productos"] += item.cantidad
-        # Ordenar por fecha
+
         sorted_days = sorted(daily.items())
         headers = [
-            Paragraph("Fecha", styles["th"]),
-            Paragraph("Total de Ventas", styles["th"]),
+            Paragraph("Fecha",             styles["th"]),
+            Paragraph("Total de Ventas",   styles["th"]),
             Paragraph("Productos Vendidos", styles["th"]),
-            Paragraph("Ingresos Totales", styles["th"]),
+            Paragraph("Ingresos Totales",  styles["th"]),
         ]
         rows = [headers]
         for day, data in sorted_days:
             rows.append([
-                Paragraph(day.strftime("%d/%m/%Y"), styles["td"]),
-                Paragraph(str(data["ventas"]), styles["td"]),
-                Paragraph(str(data["productos"]), styles["td"]),
+                Paragraph(day.strftime("%d/%m/%Y"),         styles["td"]),
+                Paragraph(str(data["ventas"]),              styles["td"]),
+                Paragraph(str(data["productos"]),           styles["td"]),
                 Paragraph(f"${float(data['ingresos']):,.2f}", styles["td_money"]),
             ])
+
         col_widths = [content_w * r for r in (0.18, 0.22, 0.30, 0.30)]
-        colors_ = get_theme_colors(modo)
-        t = Table(
-            rows,
-            colWidths=col_widths,
-            rowHeights=None,
-            repeatRows=1,
-        )
+        colors_    = get_theme_colors(modo)
+        t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
         t.setStyle(TableStyle([
-            ("BACKGROUND",     (0, 0), (-1, 0), colors_["BG_RAISED"]),
-            ("LINEBELOW",      (0, 0), (-1, 0), 1.5,  colors_["GREEN_BASE"]),
-            ("TOPPADDING",     (0, 0), (-1, 0), 8),
-            ("BOTTOMPADDING",  (0, 0), (-1, 0), 8),
+            ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
+            ("LINEBELOW",      (0, 0), (-1, 0),  1.5, colors_["GREEN_BASE"]),
+            ("TOPPADDING",     (0, 0), (-1, 0),  8),
+            ("BOTTOMPADDING",  (0, 0), (-1, 0),  8),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors_["BG_MAIN"], colors_["BG_SECOND"]]),
             ("TOPPADDING",     (0, 1), (-1, -1), 4),
             ("BOTTOMPADDING",  (0, 1), (-1, -1), 4),
             ("LINEBELOW",      (0, 1), (-1, -2), 0.3, colors_["BORDER_SUB"]),
             ("BOX",            (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (0, 0), (0, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (1, 0), (1, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (2, 0), (2, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (3, 0), (3, -1), 0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (0, 0), (0, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (1, 0), (1, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (2, 0), (2, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (3, 0), (3, -1),  0.5, colors_["BORDER_MAIN"]),
             ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
-            ("ALIGN",          (0, 1), (0, -1), "LEFT"),
-            ("ALIGN",          (3, 1), (3, -1), "RIGHT"),
+            ("ALIGN",          (0, 1), (0, -1),  "LEFT"),
+            ("ALIGN",          (3, 1), (3, -1),  "RIGHT"),
             ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING",    (0, 0), (-1, -1), 6),
             ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
@@ -760,14 +756,15 @@ class ReportService:
     def _monthly_summary_table(self, sales: List[Sale], styles: dict, content_w: float, modo: str) -> Table:
         from collections import defaultdict
         import datetime as dt_mod
+
         MONTH_NAMES = [
             "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
             "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
         ]
         monthly = defaultdict(lambda: {"ventas": 0, "productos": 0, "ingresos": Decimal("0")})
         for sale in sales:
-            m = (sale.fecha_creacion - dt_mod.timedelta(hours=6)).month  # 1-12
-            monthly[m]["ventas"] += 1
+            m = (sale.fecha_creacion - dt_mod.timedelta(hours=6)).month
+            monthly[m]["ventas"]   += 1
             monthly[m]["ingresos"] += sale.total
             for item in sale.items:
                 if item.oferta_id and item.oferta_productos_snapshot:
@@ -775,6 +772,7 @@ class ReportService:
                         monthly[m]["productos"] += prod.cantidad * item.cantidad
                 else:
                     monthly[m]["productos"] += item.cantidad
+
         sorted_months = sorted(monthly.keys())
         headers = [
             Paragraph("Mes",                styles["th"]),
@@ -786,13 +784,14 @@ class ReportService:
         for m in sorted_months:
             data = monthly[m]
             rows.append([
-                Paragraph(MONTH_NAMES[m - 1],               styles["td_item"]),
+                Paragraph(MONTH_NAMES[m - 1],                styles["td_item"]),
                 Paragraph(str(data["ventas"]),               styles["td"]),
                 Paragraph(str(data["productos"]),            styles["td"]),
                 Paragraph(f"${float(data['ingresos']):,.2f}", styles["td_money"]),
             ])
+
         col_widths = [content_w * r for r in (0.25, 0.22, 0.28, 0.25)]
-        colors_ = get_theme_colors(modo)
+        colors_    = get_theme_colors(modo)
         t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
         t.setStyle(TableStyle([
             ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
@@ -819,6 +818,24 @@ class ReportService:
     # ── Tabla de ventas ──────────────────────────────────────────────────────
 
     def _sales_table(self, sales: List[Sale], styles: dict, content_w: float) -> Table:
+        """
+        Tabla de detalle de ventas.
+
+        Cambio clave respecto a la versión anterior:
+        Las filas de SUBTOTAL, RECARGO y TOTAL hacen SPAN sobre las dos últimas
+        columnas ("Precio Unit." + "Total"), mostrando el label y el monto
+        concatenados en una sola celda alineada a la derecha.  Esto evita el
+        aspecto "desconectado" que se producía cuando el label aparecía en la
+        columna "Precio Unit." y el monto en "Total" con cuatro columnas vacías
+        a la izquierda.
+
+        Colores de fondo:
+          • subtotal / recargo → GREEN_SUBTLE  (verde muy suave)
+          • total              → GREEN_TOTAL   (verde más marcado)
+        """
+        modo    = "light" if styles["title"].textColor == THEMES["light"]["TEXT_H1"] else "dark"
+        colors_ = get_theme_colors(modo)
+
         headers = [
             Paragraph("Fecha y Hora", styles["th"]),
             Paragraph("Nº Orden",     styles["th"]),
@@ -828,104 +845,176 @@ class ReportService:
             Paragraph("Precio Unit.", styles["th"]),
             Paragraph("Total",        styles["th"]),
         ]
-        rows = [headers]
-        sale_end_rows = []  # Para marcar líneas separadoras entre ventas
+        rows         = [headers]
+        span_cmds    = []          # comandos SPAN acumulados
+        summary_rows = []          # índices de filas subtotal / recargo
+        total_rows   = []          # índices de filas TOTAL
+        sale_sep_rows = []         # índices de última fila de cada venta (para separador)
 
         for sale in sales:
-            fecha_str = sale.fecha_creacion.strftime("%d/%m/%y %H:%M")
+            fecha_str      = sale.fecha_creacion.strftime("%d/%m/%y %H:%M")
             sale_start_row = len(rows)
-            first_row = True
+            first_row      = True
+
             for item in sale.items:
                 es_oferta = item.oferta_id is not None
+
                 if es_oferta and item.oferta_productos_snapshot:
-                    oferta_nombre = item.item_nombre
-                    oferta_total = f"${float(item.subtotal):,.2f}"
-                    oferta_precio_unit = f"${float(item.precio_unitario):,.2f}"
-                    # Solo en la primera fila de la venta se muestra fecha y número de orden
-                    row = [
-                        Paragraph(fecha_str if first_row else "", styles["td"]),
-                        Paragraph(sale.numero_orden if first_row else "", styles["td"]),
-                        Paragraph(f" {oferta_nombre}", styles["td_item"]),
-                        Paragraph("OFERTA", styles["td"]),
-                        Paragraph(str(item.cantidad), styles["td"]),
-                        Paragraph(oferta_precio_unit, styles["td"]),
-                        Paragraph(oferta_total, styles["td_money"]),
-                    ]
-                    rows.append(row)
+                    # ── fila cabecera de oferta ───────────────────────────────
+                    rows.append([
+                        Paragraph(fecha_str if first_row else "",          styles["td"]),
+                        Paragraph(sale.numero_orden if first_row else "",  styles["td"]),
+                        Paragraph(f" {item.item_nombre}",                  styles["td_item"]),
+                        Paragraph("OFERTA",                                styles["td"]),
+                        Paragraph(str(item.cantidad),                      styles["td"]),
+                        Paragraph(f"${float(item.precio_unitario):,.2f}",  styles["td"]),
+                        Paragraph(f"${float(item.subtotal):,.2f}",         styles["td_money"]),
+                    ])
                     first_row = False
-                    # Filas de desglose de productos en la oferta
+
+                    # ── filas de desglose de la oferta ────────────────────────
                     for prod in item.oferta_productos_snapshot:
-                        prod_nombre = f"{prod.producto_nombre}"
-                        prod_cat = prod.categoria_nombre or "-"
-                        prod_cant = prod.cantidad * item.cantidad
-                        row = [
+                        rows.append([
                             Paragraph("", styles["td"]),
                             Paragraph("", styles["td"]),
-                            Paragraph(prod_nombre, styles["td_item"]),
-                            Paragraph(prod_cat, styles["td"]),
-                            Paragraph(str(prod_cant), styles["td"]),
+                            Paragraph(prod.producto_nombre,              styles["td_item"]),
+                            Paragraph(prod.categoria_nombre or "-",      styles["td"]),
+                            Paragraph(str(prod.cantidad * item.cantidad), styles["td"]),
                             Paragraph("", styles["td"]),
                             Paragraph("", styles["td_money"]),
-                        ]
-                        rows.append(row)
+                        ])
+
                 else:
-                    item_nombre = item.item_nombre
-                    item_cat = item.item_categoria
-                    item_precio = f"${float(item.precio_unitario):,.2f}"
-                    item_total = f"${float(item.subtotal):,.2f}"
-                    row = [
-                        Paragraph(fecha_str if first_row else "", styles["td"]),
+                    # ── fila de ítem regular ──────────────────────────────────
+                    rows.append([
+                        Paragraph(fecha_str if first_row else "",         styles["td"]),
                         Paragraph(sale.numero_orden if first_row else "", styles["td"]),
-                        Paragraph(item_nombre, styles["td_item"]),
-                        Paragraph(item_cat, styles["td"]),
-                        Paragraph(str(item.cantidad), styles["td"]),
-                        Paragraph(item_precio, styles["td"]),
-                        Paragraph(item_total, styles["td_money"]),
-                    ]
-                    rows.append(row)
+                        Paragraph(item.item_nombre,                       styles["td_item"]),
+                        Paragraph(item.item_categoria,                    styles["td"]),
+                        Paragraph(str(item.cantidad),                     styles["td"]),
+                        Paragraph(f"${float(item.precio_unitario):,.2f}", styles["td"]),
+                        Paragraph(f"${float(item.subtotal):,.2f}",        styles["td_money"]),
+                    ])
                     first_row = False
-            # Agregar línea separadora después de cada venta (excepto la última)
-            sale_end_row = len(rows) - 1
-            if sale_end_row > sale_start_row:
-                sale_end_rows.append(sale_end_row)
 
-        col_widths = [content_w * r for r in (0.14, 0.18, 0.22, 0.13, 0.10, 0.11, 0.14)]
+            # ── fila SUBTOTAL ─────────────────────────────────────────────────
+            subtotal     = sum(i.subtotal for i in sale.items)
+            sub_idx      = len(rows)
+            rows.append([
+                Paragraph("", styles["td"]),
+                Paragraph("", styles["td"]),
+                Paragraph("", styles["td_item"]),
+                Paragraph("", styles["td"]),
+                Paragraph("", styles["td"]),
+                Paragraph(
+                    f"Subtotal    ${float(subtotal):,.2f}",
+                    styles["td_summary_label"],
+                ),
+                Paragraph("", styles["td"]),   # celda absorbida por el SPAN
+            ])
+            span_cmds.append(("SPAN", (5, sub_idx), (6, sub_idx)))
+            summary_rows.append(sub_idx)
 
-        t = Table(
-            rows,
-            colWidths=col_widths,
-            rowHeights=None,  # Auto-height para evitar solapamiento
-            repeatRows=1,
-        )
-        modo = "light" if styles["title"].textColor == THEMES["light"]["TEXT_H1"] else "dark"
-        colors_ = get_theme_colors(modo)
-        t.setStyle(TableStyle([
-            ("BACKGROUND",     (0, 0), (-1, 0), colors_["BG_RAISED"]),
-            ("LINEBELOW",      (0, 0), (-1, 0), 1.5,  colors_["GREEN_BASE"]),
-            ("TOPPADDING",     (0, 0), (-1, 0), 8),
-            ("BOTTOMPADDING",  (0, 0), (-1, 0), 8),
+            # ── fila RECARGO (condicional) ────────────────────────────────────
+            if sale.porcentaje_recargo is not None and sale.monto_recargo is not None:
+                rec_idx = len(rows)
+                rows.append([
+                    Paragraph("", styles["td"]),
+                    Paragraph("", styles["td"]),
+                    Paragraph("", styles["td_item"]),
+                    Paragraph("", styles["td"]),
+                    Paragraph("", styles["td"]),
+                    Paragraph(
+                        f"Recargo ({float(sale.porcentaje_recargo):.0f}%)    "
+                        f"${float(sale.monto_recargo):,.2f}",
+                        styles["td_summary_label"],
+                    ),
+                    Paragraph("", styles["td"]),
+                ])
+                span_cmds.append(("SPAN", (5, rec_idx), (6, rec_idx)))
+                summary_rows.append(rec_idx)
+
+            # ── fila TOTAL ────────────────────────────────────────────────────
+            tot_idx = len(rows)
+            rows.append([
+                Paragraph("", styles["td"]),
+                Paragraph("", styles["td"]),
+                Paragraph("", styles["td_item"]),
+                Paragraph("", styles["td"]),
+                Paragraph("", styles["td"]),
+                Paragraph(
+                    f"TOTAL    ${float(sale.total):,.2f}",
+                    styles["td_summary_total"],
+                ),
+                Paragraph("", styles["td"]),
+            ])
+            span_cmds.append(("SPAN", (5, tot_idx), (6, tot_idx)))
+            summary_rows.append(tot_idx)
+            total_rows.append(tot_idx)
+            sale_sep_rows.append(tot_idx)
+
+        # ── anchos de columna ─────────────────────────────────────────────────
+        col_widths = [content_w * r for r in (0.14, 0.18, 0.22, 0.13, 0.08, 0.13, 0.12)]
+
+        # ── estilos base ──────────────────────────────────────────────────────
+        table_styles = [
+            ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
+            ("LINEBELOW",      (0, 0), (-1, 0),  1.5, colors_["GREEN_BASE"]),
+            ("TOPPADDING",     (0, 0), (-1, 0),  8),
+            ("BOTTOMPADDING",  (0, 0), (-1, 0),  8),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors_["BG_MAIN"], colors_["BG_SECOND"]]),
             ("TOPPADDING",     (0, 1), (-1, -1), 4),
             ("BOTTOMPADDING",  (0, 1), (-1, -1), 4),
             ("LINEBELOW",      (0, 1), (-1, -2), 0.3, colors_["BORDER_SUB"]),
             ("BOX",            (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
-            # Líneas verticales entre columnas
-            ("LINEAFTER",      (0, 0), (0, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (1, 0), (1, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (2, 0), (2, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (3, 0), (3, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (4, 0), (4, -1), 0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (5, 0), (5, -1), 0.5, colors_["BORDER_MAIN"]),
-            # Líneas separadoras entre ventas (ventas con múltiples ítems)
-            *[("LINEBELOW", (0, row), (-1, row), 1.0, colors_["BORDER_MAIN"]) for row in sale_end_rows],
+            # Líneas verticales
+            ("LINEAFTER",      (0, 0), (0, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (1, 0), (1, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (2, 0), (2, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (3, 0), (3, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (4, 0), (4, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (5, 0), (5, -1),  0.5, colors_["BORDER_MAIN"]),
+            # Alineación general
             ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
-            ("ALIGN",          (0, 1), (0, -1), "LEFT"),
-            ("ALIGN",          (2, 1), (2, -1), "LEFT"),
-            ("ALIGN",          (-1, 1), (-1, -1), "RIGHT"),
+            ("ALIGN",          (2, 1), (2, -1),  "LEFT"),
+            ("ALIGN",          (5, 1), (6, -1),  "RIGHT"),
             ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING",    (0, 0), (-1, -1), 6),
             ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
-        ]))
+        ]
+
+        # Separador grueso entre ventas
+        table_styles += [
+            ("LINEBELOW", (0, r), (-1, r), 1.0, colors_["BORDER_MAIN"])
+            for r in sale_sep_rows
+        ]
+
+        # Añadir los comandos SPAN
+        table_styles += span_cmds
+
+        # ── estilos filas SUBTOTAL / RECARGO ──────────────────────────────────
+        for r in summary_rows:
+            table_styles += [
+                ("BACKGROUND",    (0, r), (-1, r), colors_["GREEN_SUBTLE"]),
+                ("TOPPADDING",    (0, r), (-1, r), 5),
+                ("BOTTOMPADDING", (0, r), (-1, r), 5),
+                # Suprimir divisor vertical dentro del SPAN (cols 5-6)
+                ("LINEAFTER",     (4, r), (4, r),  0.5, colors_["BORDER_MAIN"]),
+                ("LINEAFTER",     (5, r), (5, r),  0,   colors_["BG_MAIN"]),
+            ]
+
+        # ── estilos fila TOTAL ────────────────────────────────────────────────
+        for r in total_rows:
+            table_styles += [
+                ("BACKGROUND",    (0, r), (-1, r), colors_["GREEN_TOTAL"]),
+                ("LINEABOVE",     (0, r), (-1, r), 1.0, colors_["GREEN_BASE"]),
+                ("LINEBELOW",     (0, r), (-1, r), 1.5, colors_["GREEN_BASE"]),
+                ("TOPPADDING",    (0, r), (-1, r), 6),
+                ("BOTTOMPADDING", (0, r), (-1, r), 6),
+            ]
+
+        t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
+        t.setStyle(TableStyle(table_styles))
         return t
 
     # ── Gráfico dark ─────────────────────────────────────────────────────────
@@ -1032,11 +1121,12 @@ class ReportService:
             if not expenses:
                 return ReportResult(error="No hay costos en el período seleccionado", status_code=404)
             total_costos = sum(e.monto for e in expenses)
-            cantidad = len(expenses)
-            pdf_bytes = await self._create_costs_pdf(
+            cantidad     = len(expenses)
+            pdf_bytes    = await self._create_costs_pdf(
                 expenses, total_costos, cantidad,
                 fecha_desde, fecha_hasta, modo,
-                mostrar_resumen_periodo, mostrar_resumen_categoria, mostrar_resumen_mes, mostrar_detalle_costos,
+                mostrar_resumen_periodo, mostrar_resumen_categoria,
+                mostrar_resumen_mes, mostrar_detalle_costos,
             )
             self.logger.info("Reporte de costos OK", cantidad=cantidad)
             return ReportResult(pdf_bytes=pdf_bytes)
@@ -1057,8 +1147,8 @@ class ReportService:
         mostrar_resumen_mes: bool = False,
         mostrar_detalle_costos: bool = True,
     ) -> bytes:
-        buffer = BytesIO()
-        w, h = A4
+        buffer  = BytesIO()
+        w, h    = A4
         TOP_PAD = HEADER_H + 0.5 * cm
         BOT_PAD = FOOTER_H + 0.5 * cm
 
@@ -1075,7 +1165,7 @@ class ReportService:
             id="main", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
         )
         doc.addPageTemplates([PageTemplate(id="costs", frames=[frame], onPage=on_page)])
-        styles = self._styles(modo)
+        styles    = self._styles(modo)
         content_w = w - 2 * MARGIN
 
         # Pass 1: contar páginas
@@ -1101,7 +1191,8 @@ class ReportService:
         flowables = self._build_costs_story(
             expenses, total_costos, cantidad, fecha_desde, fecha_hasta,
             styles, content_w, modo,
-            mostrar_resumen_periodo, mostrar_resumen_categoria, mostrar_resumen_mes, mostrar_detalle_costos,
+            mostrar_resumen_periodo, mostrar_resumen_categoria,
+            mostrar_resumen_mes, mostrar_detalle_costos,
         )
         doc.build(flowables)
         pdf_bytes = buffer.getvalue()
@@ -1165,15 +1256,16 @@ class ReportService:
         modo: str,
     ) -> Table:
         from collections import defaultdict
-        s = self._styles(modo)
+        s       = self._styles(modo)
         colors_ = get_theme_colors(modo)
         cat_totals: dict = defaultdict(float)
         for e in expenses:
             if e.categoria_gasto:
-                if e.categoria_gasto.padre_categoria:
-                    cat = e.categoria_gasto.padre_categoria.nombre
-                else:
-                    cat = e.categoria_gasto.nombre
+                cat = (
+                    e.categoria_gasto.padre_categoria.nombre
+                    if e.categoria_gasto.padre_categoria
+                    else e.categoria_gasto.nombre
+                )
             else:
                 cat = "Sin Categoría"
             cat_totals[cat] += float(e.monto)
@@ -1183,12 +1275,12 @@ class ReportService:
             return [Paragraph(value, s["kpi_val"]), Paragraph(label, s["kpi_lbl"])]
 
         data = [[
-            card("Total de Costos",  f"${float(total_costos):,.2f}"),
-            card("Registros",        str(cantidad)),
-            card("Mayor Categoría",  top_cat),
+            card("Total de Costos", f"${float(total_costos):,.2f}"),
+            card("Registros",       str(cantidad)),
+            card("Mayor Categoría", top_cat),
         ]]
-        cw = content_w / 3
-        t = Table(data, colWidths=[cw, cw, cw], rowHeights=[1.4 * cm])
+        cw       = content_w / 3
+        t        = Table(data, colWidths=[cw, cw, cw], rowHeights=[1.4 * cm])
         bg_color = colors_["BG_RAISED"] if modo == "dark" else colors_["BG_MAIN"]
         t.setStyle(TableStyle([
             ("BACKGROUND",    (0, 0), (-1, -1), bg_color),
@@ -1209,7 +1301,7 @@ class ReportService:
         self, expenses: List[Expense], styles: dict, content_w: float, modo: str
     ) -> Table:
         from collections import defaultdict
-        # Group by (parent_name, subcat_name)
+
         group_totals: dict = defaultdict(float)
         for e in expenses:
             if e.categoria_gasto:
@@ -1223,25 +1315,28 @@ class ReportService:
                 parent = "Sin Categoría"
                 sub    = "-"
             group_totals[(parent, sub)] += float(e.monto)
-        total = sum(group_totals.values()) or 1
+
+        total         = sum(group_totals.values()) or 1
         sorted_groups = sorted(group_totals.items(), key=lambda x: x[1], reverse=True)
+
         headers = [
-            Paragraph("Categoría",   styles["th"]),
+            Paragraph("Categoría",    styles["th"]),
             Paragraph("Subcategoría", styles["th"]),
-            Paragraph("Total",       styles["th"]),
-            Paragraph("% del Total", styles["th"]),
+            Paragraph("Total",        styles["th"]),
+            Paragraph("% del Total",  styles["th"]),
         ]
         rows = [headers]
         for (parent_name, sub_name), monto in sorted_groups:
             pct = monto / total * 100
             rows.append([
-                Paragraph(parent_name,       styles["td_item"]),
-                Paragraph(sub_name,          styles["td"]),
-                Paragraph(f"${monto:,.2f}",  styles["td_money"]),
-                Paragraph(f"{pct:.1f}%",     styles["td"]),
+                Paragraph(parent_name,      styles["td_item"]),
+                Paragraph(sub_name,         styles["td"]),
+                Paragraph(f"${monto:,.2f}", styles["td_money"]),
+                Paragraph(f"{pct:.1f}%",    styles["td"]),
             ])
+
         col_widths = [content_w * r for r in (0.35, 0.28, 0.22, 0.15)]
-        colors_ = get_theme_colors(modo)
+        colors_    = get_theme_colors(modo)
         t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
         t.setStyle(TableStyle([
             ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
@@ -1270,6 +1365,7 @@ class ReportService:
         self, expenses: List[Expense], styles: dict, content_w: float, modo: str
     ) -> Table:
         from collections import defaultdict
+
         MONTH_NAMES = [
             "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
             "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
@@ -1277,11 +1373,13 @@ class ReportService:
         month_totals: dict = defaultdict(float)
         month_counts: dict = defaultdict(int)
         for e in expenses:
-            m = e.fecha_pago.month  # 1-12
+            m = e.fecha_pago.month
             month_totals[m] += float(e.monto)
             month_counts[m] += 1
-        total = sum(month_totals.values()) or 1
+
+        total         = sum(month_totals.values()) or 1
         sorted_months = sorted(month_totals.keys())
+
         headers = [
             Paragraph("Mes",         styles["th"]),
             Paragraph("Registros",   styles["th"]),
@@ -1293,13 +1391,14 @@ class ReportService:
             monto = month_totals[m]
             pct   = monto / total * 100
             rows.append([
-                Paragraph(MONTH_NAMES[m - 1],    styles["td_item"]),
-                Paragraph(str(month_counts[m]),  styles["td"]),
-                Paragraph(f"${monto:,.2f}",      styles["td_money"]),
-                Paragraph(f"{pct:.1f}%",         styles["td"]),
+                Paragraph(MONTH_NAMES[m - 1],   styles["td_item"]),
+                Paragraph(str(month_counts[m]), styles["td"]),
+                Paragraph(f"${monto:,.2f}",     styles["td_money"]),
+                Paragraph(f"{pct:.1f}%",        styles["td"]),
             ])
+
         col_widths = [content_w * r for r in (0.35, 0.18, 0.30, 0.17)]
-        colors_ = get_theme_colors(modo)
+        colors_    = get_theme_colors(modo)
         t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
         t.setStyle(TableStyle([
             ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
@@ -1354,8 +1453,9 @@ class ReportService:
                 Paragraph(desc,                              styles["td_item"]),
                 Paragraph(f"${float(e.monto):,.2f}",         styles["td_money"]),
             ])
+
         col_widths = [content_w * r for r in (0.12, 0.19, 0.19, 0.33, 0.17)]
-        colors_ = get_theme_colors(modo)
+        colors_    = get_theme_colors(modo)
         t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
         t.setStyle(TableStyle([
             ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
@@ -1425,7 +1525,8 @@ class ReportService:
                 total_ingresos, total_gastos, resultado_neto, margen_neto,
                 fecha_desde, fecha_hasta, modo,
                 mostrar_resumen_periodo, mostrar_resumen_mes,
-                mostrar_resumen_categoria_ventas, mostrar_resumen_productos, mostrar_resumen_categoria_costos,
+                mostrar_resumen_categoria_ventas, mostrar_resumen_productos,
+                mostrar_resumen_categoria_costos,
             )
             self.logger.info("Reporte general OK")
             return ReportResult(pdf_bytes=pdf_bytes)
@@ -1450,15 +1551,15 @@ class ReportService:
         mostrar_resumen_productos: bool = True,
         mostrar_resumen_categoria_costos: bool = True,
     ) -> bytes:
-        buffer = BytesIO()
-        w, h = A4
+        buffer  = BytesIO()
+        w, h    = A4
         TOP_PAD = HEADER_H + 0.5 * cm
         BOT_PAD = FOOTER_H + 0.5 * cm
 
         def on_page(canvas, doc):
             _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte General")
 
-        styles = self._styles(modo)
+        styles    = self._styles(modo)
         content_w = w - 2 * MARGIN
 
         # Pass 1: contar páginas
@@ -1478,7 +1579,8 @@ class ReportService:
             total_ingresos, total_gastos, resultado_neto, margen_neto,
             fecha_desde, fecha_hasta, styles, content_w, modo,
             mostrar_resumen_periodo, mostrar_resumen_mes,
-            mostrar_resumen_categoria_ventas, mostrar_resumen_productos, mostrar_resumen_categoria_costos,
+            mostrar_resumen_categoria_ventas, mostrar_resumen_productos,
+            mostrar_resumen_categoria_costos,
         )
         count_doc.build(flowables_count)
         total_pages = count_doc.page
@@ -1504,7 +1606,8 @@ class ReportService:
             total_ingresos, total_gastos, resultado_neto, margen_neto,
             fecha_desde, fecha_hasta, styles, content_w, modo,
             mostrar_resumen_periodo, mostrar_resumen_mes,
-            mostrar_resumen_categoria_ventas, mostrar_resumen_productos, mostrar_resumen_categoria_costos,
+            mostrar_resumen_categoria_ventas, mostrar_resumen_productos,
+            mostrar_resumen_categoria_costos,
         )
         doc2.build(flowables_real)
         buffer.seek(0)
@@ -1580,14 +1683,13 @@ class ReportService:
         content_w: float,
         modo: str,
     ) -> Table:
-        s = self._styles(modo)
-        colors_ = get_theme_colors(modo)
-        red_color   = colors.HexColor("#ef4444")
-        pos_color   = colors_["GREEN_BASE"]
-        neto_color  = pos_color if resultado_neto >= 0 else red_color
-        margen_color = pos_color if margen_neto >= 0 else red_color
+        s        = self._styles(modo)
+        colors_  = get_theme_colors(modo)
+        red_color    = colors.HexColor("#ef4444")
+        pos_color    = colors_["GREEN_BASE"]
+        neto_color   = pos_color if resultado_neto >= 0 else red_color
+        margen_color = pos_color if margen_neto    >= 0 else red_color
 
-        # Smaller font so wide numbers fit in content_w/4 cells
         kpi_val_sm = ParagraphStyle(
             "rpt_kval_bal",
             parent=s["kpi_val"],
@@ -1609,8 +1711,8 @@ class ReportService:
             card("Resultado Neto",   f"${float(resultado_neto):,.2f}", neto_color),
             card("Margen Neto",      f"{margen_neto:.1f}%",           margen_color),
         ]]
-        cw = content_w / 4
-        t  = Table(data, colWidths=[cw, cw, cw, cw], rowHeights=[1.4 * cm])
+        cw       = content_w / 4
+        t        = Table(data, colWidths=[cw, cw, cw, cw], rowHeights=[1.4 * cm])
         bg_color = colors_["BG_RAISED"] if modo == "dark" else colors_["BG_MAIN"]
         t.setStyle(TableStyle([
             ("BACKGROUND",    (0, 0), (-1, -1), bg_color),
@@ -1638,6 +1740,7 @@ class ReportService:
     ) -> Table:
         from collections import defaultdict
         import datetime as dt_mod
+
         MONTH_NAMES = [
             "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
             "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
@@ -1650,10 +1753,12 @@ class ReportService:
         for e in expenses:
             m = e.fecha_pago.month
             monthly_exp[m] += e.monto
+
         all_months = sorted(set(monthly_sales.keys()) | set(monthly_exp.keys()))
-        colors_ = get_theme_colors(modo)
+        colors_    = get_theme_colors(modo)
         red_color   = colors.HexColor("#ef4444")
         green_color = colors_["GREEN_BASE"]
+
         headers = [
             Paragraph("Mes",       styles["th"]),
             Paragraph("Ingresos",  styles["th"]),
@@ -1682,6 +1787,7 @@ class ReportService:
                 Paragraph(f"${resultado:,.2f}", res_style),
                 Paragraph(f"{margen:.1f}%",     margen_style),
             ])
+
         col_widths = [content_w * r for r in (0.22, 0.21, 0.21, 0.22, 0.14)]
         t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
         t.setStyle(TableStyle([
@@ -1730,14 +1836,14 @@ def _decorate_page_with_total(canvas: rl_canvas.Canvas, doc, total_pages: int):
     # Logo
     logo_y     = h - HEADER_H + 0.18 * cm
     logo_h_px  = HEADER_H - 0.36 * cm
-    logo_max_w = 4 * cm  # Limitar ancho máximo del logo
+    logo_max_w = 4 * cm
     logo_drawn = False
     if os.path.isfile(LOGO_PATH):
         try:
             canvas.drawImage(
                 LOGO_PATH, 2 * cm, logo_y,
                 height=logo_h_px, width=logo_max_w,
-                preserveAspectRatio=True, anchor='w',
+                preserveAspectRatio=True, anchor="w",
                 mask="auto",
             )
             logo_drawn = True

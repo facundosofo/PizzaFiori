@@ -510,12 +510,9 @@ async def seed_app_config(session):
         _info(f"  [SKIP] Configuración de recargo: ya existe (id={existing.id})")
         return
 
-    now = datetime.now()
     config = AppConfig(
         key="recargo_transferencia",
         value=str(CONFIG_DEFAULT_RECARGO_PERCENTAGE),
-        fecha_creacion=now,
-        fecha_actualizacion=now,
     )
     session.add(config)
     await session.flush()

@@ -115,6 +115,7 @@ class SaleUpdateRequest(BaseModel):
     Nota: El número de orden es generado automáticamente y no puede ser editado.
     """
     items: List[SaleItemRequest] = Field(..., min_length=1)
+    aplicar_recargo: bool = Field(False, description="Aplicar recargo por pago en transferencia/débito")
 
     @model_validator(mode="after")
     def validar_items(self):

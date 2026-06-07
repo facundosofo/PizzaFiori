@@ -642,6 +642,45 @@ async def test_update_sale_with_offers_no_validation(mock_uow, mock_logger, samp
 
 
 @pytest.mark.asyncio
+async def test_update_sale_with_transfer_recargo(mock_uow, mock_logger, sample_sale):
+    """Test updating sale with transfer surcharge calculation."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+
+    request = SaleUpdateRequest(
+        items=[
+            SaleItemRequest(producto_id=1, cantidad=2, precio_unitario=Decimal("1000.00"))
+        ],
+        aplicar_recargo=True
+    )
+
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+
+    category = build_category_model(id=1, nombre="Empanadas")
+    product = build_product_model(
+        id=1,
+        nombre="Empanada Actualizada",
+        sku="EMPA-ACT-001",
+        categoria_id=1
+    )
+    product.categoria = category
+    mock_uow.product_repo.get_by_id.return_value = product
+    mock_uow.app_config_repo.get_by_key.return_value = type("Config", (), {"value": "10"})()
+    mock_uow.sale_repo.refresh = AsyncMock()
+
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
+
+    assert result.status_code == 200
+    assert result.value is not None
+    assert result.value.porcentaje_recargo == Decimal("10")
+    assert result.value.monto_recargo == Decimal("200.00")
+    assert result.value.total == Decimal("2200.00")
+    mock_uow.sale_repo.update.assert_called_once()
+    mock_uow.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_update_sale_missing_precio_unitario(mock_uow, mock_logger, sample_sale):
     """Test updating sale without precio_unitario fails."""
     # Arrange
