@@ -51,10 +51,16 @@ class ExpenseAnalyticsService:
                 )
                 result = []
                 
-                if period == TipoPeriodo.MENSUAL:
+                if period == TipoPeriodo.DIARIO:
+                    result = await self._get_daily_expenses_data(limit=limit, category=category)
+                elif period == TipoPeriodo.SEMANAL:
+                    result = await self._get_weekly_expenses_data(limit=limit, category=category)
+                elif period == TipoPeriodo.MENSUAL:
                     result = await self._get_monthly_expenses_data(limit=limit, category=category)
                 elif period == TipoPeriodo.ANUAL:
                     result = await self._get_yearly_expenses_data(limit=limit, category=category)
+                else:
+                    result = []
                 
                 return ServiceResult(value=result)
         except Exception as e:
@@ -475,6 +481,182 @@ class ExpenseAnalyticsService:
                 current_year += 1
             else:
                 current_month += 1
+
+        return results
+
+    async def _get_weekly_expenses_data(
+        self,
+        limit: int,
+        category: str | None,
+    ) -> List[dict]:
+        now = datetime.now()
+        current_week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        first_week_start = current_week_start - timedelta(weeks=limit - 1)
+        end_date = current_week_start + timedelta(days=7)
+
+        base_query = select(
+            extract('isoyear', Expense.fecha_pago).label('iso_year'),
+            extract('week', Expense.fecha_pago).label('iso_week'),
+            func.sum(Expense.monto).label('total_gastos'),
+        ).select_from(
+            Expense
+        ).join(
+            ExpenseCategory,
+            Expense.categoria_gasto_id == ExpenseCategory.id,
+        ).where(
+            and_(
+                Expense.activo.is_(True),
+                Expense.fecha_pago >= first_week_start,
+                Expense.fecha_pago < end_date,
+            )
+        )
+
+        if category:
+            category_result = await self.uow.session.execute(
+                select(ExpenseCategory).where(
+                    ExpenseCategory.nombre == category,
+                    ExpenseCategory.activo.is_(True),
+                )
+            )
+            category_row = category_result.scalars().first()
+
+            if category_row:
+                category_ids = [category_row.id]
+                if category_row.padre_id is None:
+                    subcategories_result = await self.uow.session.execute(
+                        select(ExpenseCategory.id).where(
+                            ExpenseCategory.padre_id == category_row.id,
+                            ExpenseCategory.activo.is_(True),
+                        )
+                    )
+                    category_ids.extend(subcategories_result.scalars().all())
+
+                base_query = base_query.where(Expense.categoria_gasto_id.in_(category_ids))
+            else:
+                base_query = base_query.where(Expense.categoria_gasto_id.in_([]))
+
+        query = base_query.group_by(
+            'iso_year',
+            'iso_week',
+        ).order_by(
+            'iso_year',
+            'iso_week',
+        )
+
+        result = await self.uow.session.execute(query)
+        rows = result.fetchall()
+
+        weekly_data = {
+            (int(row.iso_year), int(row.iso_week)): row
+            for row in rows
+        }
+
+        results: List[dict] = []
+        current = first_week_start
+        month_abbrev = [
+            'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+        ]
+
+        for _ in range(limit):
+            week_end = current + timedelta(days=6)
+            iso_year, iso_week, _ = current.isocalendar()
+            row = weekly_data.get((iso_year, iso_week))
+
+            start_label = str(current.day)
+            end_label = str(week_end.day)
+            start_month = month_abbrev[current.month - 1]
+            end_month = month_abbrev[week_end.month - 1]
+
+            if start_month == end_month:
+                label = f"{start_label}-{end_label} {start_month}"
+            else:
+                label = f"{start_label} {start_month}-{end_label} {end_month}"
+
+            results.append(
+                {
+                    'semana': label,
+                    'gastos': float(row.total_gastos or 0) if row else 0,
+                }
+            )
+            current += timedelta(weeks=1)
+
+        return results
+
+    async def _get_daily_expenses_data(
+        self,
+        limit: int,
+        category: str | None,
+    ) -> List[dict]:
+        now = datetime.now()
+        start_date = datetime(now.year, now.month, now.day) - timedelta(days=limit - 1)
+        end_date = datetime(now.year, now.month, now.day) + timedelta(days=1)
+
+        base_query = select(
+            Expense.fecha_pago.label('fecha'),
+            func.sum(Expense.monto).label('total_gastos'),
+        ).select_from(
+            Expense
+        ).join(
+            ExpenseCategory,
+            Expense.categoria_gasto_id == ExpenseCategory.id,
+        ).where(
+            and_(
+                Expense.activo.is_(True),
+                Expense.fecha_pago >= start_date,
+                Expense.fecha_pago < end_date,
+            )
+        )
+
+        if category:
+            category_result = await self.uow.session.execute(
+                select(ExpenseCategory).where(
+                    ExpenseCategory.nombre == category,
+                    ExpenseCategory.activo.is_(True),
+                )
+            )
+            category_row = category_result.scalars().first()
+
+            if category_row:
+                category_ids = [category_row.id]
+                if category_row.padre_id is None:
+                    subcategories_result = await self.uow.session.execute(
+                        select(ExpenseCategory.id).where(
+                            ExpenseCategory.padre_id == category_row.id,
+                            ExpenseCategory.activo.is_(True),
+                        )
+                    )
+                    category_ids.extend(subcategories_result.scalars().all())
+
+                base_query = base_query.where(Expense.categoria_gasto_id.in_(category_ids))
+            else:
+                base_query = base_query.where(Expense.categoria_gasto_id.in_([]))
+
+        query = base_query.group_by(
+            'fecha',
+        ).order_by(
+            'fecha',
+        )
+
+        result = await self.uow.session.execute(query)
+        rows = result.fetchall()
+
+        expenses_by_date = {
+            row.fecha: row
+            for row in rows
+        }
+
+        results: List[dict] = []
+        current = start_date
+        for _ in range(limit):
+            row = expenses_by_date.get(current.date())
+            results.append(
+                {
+                    'fecha': current.strftime('%Y-%m-%d'),
+                    'gastos': float(row.total_gastos or 0) if row else 0,
+                }
+            )
+            current += timedelta(days=1)
 
         return results
 

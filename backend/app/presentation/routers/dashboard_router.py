@@ -16,6 +16,8 @@ from app.presentation.schemas.dashboard_schemas import (
     VentasPorCategoriaResponse,
     WeekdayRevenueResponse,
     GastosPorMesResponse,
+    GastosPorSemanaResponse,
+    GastosPorDiaResponse,
     GastosPorCategoriaResponse,
     GastosPorAnoResponse,
     ResumenGastosPeriodoResponse,
@@ -147,9 +149,9 @@ async def get_top_products(
 
 @router.get(
     "/expenses",
-    response_model=List[GastosPorMesResponse | GastosPorAnoResponse],
+    response_model=List[GastosPorMesResponse | GastosPorSemanaResponse | GastosPorDiaResponse | GastosPorAnoResponse],
     summary="Obtener gastos por período",
-    description="Devuelve gastos agrupados por período (mensual o anual).",
+    description="Devuelve gastos agrupados por período (diario, semanal, mensual o anual).",
     responses={
         400: {"description": "Período inválido"},
         500: {"description": "Error interno del servidor"},
@@ -159,7 +161,7 @@ async def get_top_products(
 async def get_expenses(
     period: TipoPeriodo = Query(
         TipoPeriodo.MENSUAL,
-        description="Tipo de período: monthly (mensual), yearly (anual)"
+        description="Tipo de período: daily, weekly, monthly o yearly"
     ),
     limit: int = Query(12, ge=1, le=36, description="Cantidad de registros a devolver"),
     category: str | None = Query(None, description="Filtrar por categoría de gasto (opcional)"),

@@ -165,6 +165,36 @@ class SubcategoriaGastoResponse(BaseModel):
     )
 
 
+class GastosPorSemanaResponse(BaseModel):
+    """Respuesta para gastos agrupados por semana."""
+    semana: str = Field(..., description="Nombre de la semana (ej: '1-7 Ene')")
+    gastos: float = Field(..., description="Monto total de gastos en pesos")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "semana": "1-7 Ene",
+                "gastos": 12500.0,
+            }
+        }
+    )
+
+
+class GastosPorDiaResponse(BaseModel):
+    """Respuesta para gastos agrupados por día."""
+    fecha: str = Field(..., description="Fecha en formato YYYY-MM-DD")
+    gastos: float = Field(..., description="Monto total de gastos en pesos")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "fecha": "2026-06-01",
+                "gastos": 4200.0,
+            }
+        }
+    )
+
+
 class GastosPorAnoResponse(BaseModel):
     """Respuesta para gastos agrupados por año."""
     año: str = Field(..., description="Año (2024, 2025, etc)")

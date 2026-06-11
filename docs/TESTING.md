@@ -5,7 +5,7 @@ Documentación completa de la suite de tests del proyecto PizzaFiori.
 ## 📊 Resumen de Tests
 
 **Estado Actual:**
-- ✅ **561 tests pasando al 100%**
+- ✅ **565 tests pasando al 100%**
 - ✅ **Coverage: 71.10%** (objetivo: 70%)
 - ⚡ Tiempo de ejecución: ~7 segundos
 
@@ -13,24 +13,27 @@ Documentación completa de la suite de tests del proyecto PizzaFiori.
 
 | Categoría | Cantidad | Archivos |
 |-----------|----------|----------|
-| **Services (application)** | 279 tests | 17 archivos |
-| **Routers (endpoints)** | 168 tests | 11 archivos |
+| **Services (application)** | 281 tests | 17 archivos |
+| **Routers (endpoints)** | 170 tests | 11 archivos |
 | **Schemas (validación)** | 86 tests | 5 archivos |
 | **Infrastructure** | 26 tests | 2 archivos |
 | **Parametrizados extras** | 2 tests | — |
-| **TOTAL** | **561 tests** | **35 archivos** |
+| **TOTAL** | **565 tests** | **35 archivos** |
 
 ## 🎯 Coverage por Capa
 
-### Application Layer (Services) — 279 tests
+### Application Layer (Services) — 281 tests
 
 | Archivo | Tests | Stmts | Miss | Cover |
 |---------|------:|------:|-----:|------:|
 | `test_audit_helpers.py` → `audit_helpers.py` | 17 | 70 | 23 | 67% |
 | `test_audit_service.py` → `audit_service.py` | 14 | 79 | 7 | 91% |
 | `test_dashboard_service.py` → `dashboard_service.py` | 15 | 288 | 94 | 67% |
-| `test_expense_analytics_service.py` → `expense_analytics_service.py` | 10 | 315 | 116 | 63% |
+| `test_expense_analytics_service.py` → `expense_analytics_service.py` | 12 | 315 | 116 | 63% |
 | `test_expense_category_service.py` → `expense_category_service.py` | 13 | 110 | 9 | 92% |
+
+> `test_expense_analytics_service.py` cubre la lógica de periodos `daily`, `weekly`, `monthly` y `yearly`, incluyendo el relleno de períodos faltantes con valores de gastos = 0 para mantener el tamaño igual al `limit` pedido.
+
 | `test_expense_service.py` → `expense_service.py` | 13 | 117 | 9 | 92% |
 | `test_jwt_service.py` → `jwt_service.py` | 13 | 30 | 0 | **100%** |
 | `test_offer_service.py` → `offer_service.py` | 31 | 184 | 44 | 76% |
@@ -44,13 +47,13 @@ Documentación completa de la suite de tests del proyecto PizzaFiori.
 | `test_stock_service.py` → `stock_service.py` | 18 | 101 | 12 | 88% |
 | `test_user_service.py` → `user_service.py` | 25 | 194 | 34 | 82% |
 
-### Presentation Layer — Routers (168 tests)
+### Presentation Layer — Routers (170 tests)
 
 | Archivo | Tests | Stmts | Miss | Cover |
 |---------|------:|------:|-----:|------:|
 | `test_audit_router.py` → `audit_router.py` | 5 | 30 | 3 | 90% |
 | `test_auth_router.py` → `auth_router.py` | 6 | 34 | 0 | **100%** |
-| `test_dashboard_router.py` → `dashboard_router.py` | 39 | 121 | 4 | 97% |
+| `test_dashboard_router.py` → `dashboard_router.py` | 41 | 121 | 4 | 97% |
 | `test_expense_category_router.py` → `expense_category_router.py` | 11 | 45 | 1 | 98% |
 | `test_expense_router.py` → `expense_router.py` | 10 | 62 | 14 | 77% |
 | `test_offer_router.py` → `offer_router.py` | 18 | 54 | 2 | 96% |

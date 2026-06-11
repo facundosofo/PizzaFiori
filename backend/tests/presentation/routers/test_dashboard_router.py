@@ -286,6 +286,36 @@ async def test_get_expenses_default(async_client: AsyncClient, mock_expense_anal
 
 
 @pytest.mark.asyncio
+async def test_get_expenses_daily_period(async_client: AsyncClient, mock_expense_analytics_service):
+    """Obtener gastos diarios con periodo daily retorna 200"""
+    mock_expense_analytics_service.get_expenses_by_period.return_value.value = [
+        {"fecha": "2026-06-01", "gastos": 4200.0}
+    ]
+    
+    response = await async_client.get("/dashboard/expenses?period=daily")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert data[0]["fecha"] == "2026-06-01"
+
+
+@pytest.mark.asyncio
+async def test_get_expenses_weekly_period(async_client: AsyncClient, mock_expense_analytics_service):
+    """Obtener gastos semanales con periodo weekly retorna 200"""
+    mock_expense_analytics_service.get_expenses_by_period.return_value.value = [
+        {"semana": "1-7 Jun", "gastos": 25000.0}
+    ]
+    
+    response = await async_client.get("/dashboard/expenses?period=weekly")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert data[0]["semana"] == "1-7 Jun"
+
+
+@pytest.mark.asyncio
 async def test_get_expenses_service_error(async_client: AsyncClient, mock_expense_analytics_service):
     """Error del servicio de gastos retorna 500"""
     mock_expense_analytics_service.get_expenses_by_period.return_value.error = "DB error"

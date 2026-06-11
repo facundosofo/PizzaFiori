@@ -37,6 +37,16 @@ export interface YearlyRevenue {
   cantidad: number;
 }
 
+export interface DailyExpense {
+  fecha: string;
+  gastos: number;
+}
+
+export interface WeeklyExpense {
+  semana: string;
+  gastos: number;
+}
+
 export interface TopProduct {
   id?: number;
   nombre: string;
@@ -296,7 +306,7 @@ export const getExpensesByPeriod = async (
   period: Period,
   limit?: number,
   category?: string
-): Promise<MonthlyExpense[] | YearlyExpense[]> => {
+): Promise<DailyExpense[] | WeeklyExpense[] | MonthlyExpense[] | YearlyExpense[]> => {
   const params = new URLSearchParams({ period });
   if (limit) {
     params.set('limit', String(limit));

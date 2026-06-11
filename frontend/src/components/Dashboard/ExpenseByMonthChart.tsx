@@ -4,11 +4,16 @@
 
 import { memo } from 'react';
 import ChartWrapper from '../shared/ChartWrapper';
-import type { MonthlyExpense, YearlyExpense } from '../../services/dashboardService';
+import type {
+  DailyExpense,
+  WeeklyExpense,
+  MonthlyExpense,
+  YearlyExpense,
+} from '../../services/dashboardService';
 import { formatChartLabel } from '../../utils/formatters';
 
 interface ExpenseByMonthChartProps {
-  data: MonthlyExpense[] | YearlyExpense[];
+  data: DailyExpense[] | WeeklyExpense[] | MonthlyExpense[] | YearlyExpense[];
   height?: number | string;
   chartType?: 'bar' | 'area';
 }
@@ -37,11 +42,21 @@ const ExpenseByMonthChart = memo(({ data, height = 300, chartType = 'bar' }: Exp
     return `$${value.toFixed(0)}`;
   };
 
-  // Normalizar los datos para que funcionen con monthly o yearly
+  // Normalizar los datos para que funcionen con daily, weekly, monthly o yearly
   const normalizedData = data.map((item) => ({
     ...item,
-    displayLabel: formatChartLabel('mes' in item ? item.mes : item.año),
+    displayLabel: 'fecha' in item
+      ? formatChartLabel(item.fecha)
+      : 'semana' in item
+      ? item.semana
+      : 'mes' in item
+      ? formatChartLabel(item.mes)
+      : formatChartLabel(item.año),
   }));
+
+  const showAllXAxisTicks = data.some(
+    (item) => 'fecha' in item || 'semana' in item,
+  );
 
   const containerStyle =
     typeof height === 'string'
@@ -67,8 +82,9 @@ const ExpenseByMonthChart = memo(({ data, height = 300, chartType = 'bar' }: Exp
         showTooltip={true}
         tooltipFormatter={formatCurrency}
         xAxisProps={{
-          interval: 'preserveStartEnd',
-          angle: -35,
+          interval: showAllXAxisTicks ? 0 : 'preserveStartEnd',
+          angle: showAllXAxisTicks ? -35 : -25,
+          height: showAllXAxisTicks ? 80 : 60,
           textAnchor: 'end',
           tickMargin: 8,
           tickFormatter: formatChartLabel,

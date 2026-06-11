@@ -26,6 +26,8 @@ import {
   type ExpenseByCategory,
   type ExpenseSummary,
   type ProductSummary,
+  type DailyExpense,
+  type WeeklyExpense,
   type MonthlyExpense,
   type YearlyExpense,
   type ProductSort,
@@ -94,7 +96,9 @@ const DashboardOverview = () => {
   const [topProductsCategory, setTopProductsCategory] = useState<string>('');
   const [topProductsLimit, setTopProductsLimit] = useState<number>(5);
 
-  const [expensesByPeriod, setExpensesByPeriod] = useState<MonthlyExpense[] | YearlyExpense[]>([]);
+  const [expensesByPeriod, setExpensesByPeriod] = useState<
+    DailyExpense[] | WeeklyExpense[] | MonthlyExpense[] | YearlyExpense[]
+  >([]);
   const [expensesByCategory, setExpensesByCategory] = useState<ExpenseByCategory[]>([]);
   const [expenseSummary, setExpenseSummary] = useState<ExpenseSummary | null>(null);
   const [productsSummary, setProductsSummary] = useState<ProductSummary | null>(null);
@@ -245,7 +249,14 @@ const DashboardOverview = () => {
   const fetchExpensesByPeriod = useCallback(async () => {
     try {
       setExpensesLoading(true);
-      const limit = expensePeriod === 'monthly' ? 12 : 5;
+      const limit =
+        expensePeriod === 'daily'
+          ? 15
+          : expensePeriod === 'weekly'
+          ? 12
+          : expensePeriod === 'monthly'
+          ? 12
+          : 5;
       const expenses = await getExpensesByPeriod(expensePeriod, limit, expenseCategory || undefined);
       setExpensesByPeriod(expenses);
     } catch (err) {
@@ -912,10 +923,6 @@ const DashboardOverview = () => {
               <PeriodSelector
                 selectedPeriod={expensePeriod}
                 onPeriodChange={setExpensePeriod}
-                options={[
-                  { value: 'monthly', label: 'Mensual' },
-                  { value: 'yearly', label: 'Anual' },
-                ]}
               />
               <CategorySelector
                 categories={expenseCategories}

@@ -4,6 +4,7 @@ Tests expense analytics operations with mocked session and UnitOfWork.
 """
 
 import pytest
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
 from app.application.expense_analytics_service import ExpenseAnalyticsService
@@ -61,6 +62,44 @@ async def test_get_expenses_by_period_yearly(mock_uow, mock_logger):
     result = await service.get_expenses_by_period(period="yearly", limit=5)
 
     assert result.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_get_expenses_by_period_daily(mock_uow, mock_logger):
+    """Test getting daily expense periods."""
+    service = ExpenseAnalyticsService(uow=mock_uow, logger=mock_logger)
+
+    rows = [
+        _make_row(fecha=date(2026, 6, 1), total_gastos=4200.0),
+        _make_row(fecha=date(2026, 6, 2), total_gastos=3800.0),
+    ]
+    mock_uow.session.execute = AsyncMock(return_value=_mock_result(rows))
+
+    result = await service.get_expenses_by_period(period="daily", limit=15)
+
+    assert result.status_code == 200
+    assert len(result.value) == 15
+    assert {"fecha": "2026-06-01", "gastos": 4200.0} in result.value
+    assert {"fecha": "2026-06-02", "gastos": 3800.0} in result.value
+
+
+@pytest.mark.asyncio
+async def test_get_expenses_by_period_weekly(mock_uow, mock_logger):
+    """Test getting weekly expense periods."""
+    service = ExpenseAnalyticsService(uow=mock_uow, logger=mock_logger)
+
+    rows = [
+        _make_row(iso_year=2026, iso_week=22, total_gastos=25000.0),
+        _make_row(iso_year=2026, iso_week=23, total_gastos=27000.0),
+    ]
+    mock_uow.session.execute = AsyncMock(return_value=_mock_result(rows))
+
+    result = await service.get_expenses_by_period(period="weekly", limit=12)
+
+    assert result.status_code == 200
+    assert len(result.value) == 12
+    assert any(item["gastos"] == 25000.0 for item in result.value)
+    assert any(item["gastos"] == 27000.0 for item in result.value)
 
 
 @pytest.mark.asyncio
