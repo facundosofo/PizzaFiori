@@ -9,10 +9,12 @@ import { memo } from 'react';
 import ChartWrapper from '../shared/ChartWrapper';
 import { type Period } from '../shared/PeriodSelector';
 import { type Metric } from '../shared/MetricSelector';
-import type { DailyRevenue, MonthlyRevenue, YearlyRevenue } from '../../services/dashboardService';
+import type { DailyRevenue, WeeklyRevenue, MonthlyRevenue, YearlyRevenue } from '../../services/dashboardService';
+import { formatChartLabel } from '../../utils/formatters';
 
 interface RevenueChartProps {
   dailyData: DailyRevenue[];
+  weeklyData: WeeklyRevenue[];
   monthlyData: MonthlyRevenue[];
   yearlyData: YearlyRevenue[];
   selectedPeriod: Period;
@@ -23,6 +25,7 @@ interface RevenueChartProps {
 
 const RevenueChart = memo(({ 
   dailyData, 
+  weeklyData,
   monthlyData, 
   yearlyData,
   selectedPeriod,
@@ -66,7 +69,7 @@ const RevenueChart = memo(({
     if (!currentData || currentData.length === 0) return undefined;
 
     const seriesConfig = getSeriesConfig();
-    const values = currentData.map(item => (item as any)[seriesConfig.key] || 0);
+    const values = currentData.map((item: any) => Number(item[seriesConfig.key]) || 0);
     const maxValue = Math.max(...values);
 
     if (maxValue === 0) {
@@ -94,7 +97,7 @@ const RevenueChart = memo(({
 
   // Obtener datos según período seleccionado
   const getData = () => {
-    if (!dailyData || !monthlyData || !yearlyData) {
+    if (!dailyData || !weeklyData || !monthlyData || !yearlyData) {
       return [];
     }
     
@@ -145,6 +148,11 @@ const RevenueChart = memo(({
           }
         });
       }
+      case 'weekly':
+        return weeklyData.map((item) => ({
+          ...item,
+          displayLabel: item.semana,
+        }));
       case 'monthly':
         return monthlyData.map((item) => ({
           ...item,
@@ -156,7 +164,7 @@ const RevenueChart = memo(({
           displayLabel: item.año,
         }));
       default:
-        return dailyData || [];
+        return [];
     }
   };
 
@@ -199,6 +207,13 @@ const RevenueChart = memo(({
         showGrid={true}
         showTooltip={true}
         tooltipFormatter={formatTooltip}
+        xAxisProps={{
+          interval: selectedPeriod === 'daily' ? 0 : 'preserveStartEnd',
+          angle: -35,
+          textAnchor: 'end',
+          tickMargin: 8,
+          tickFormatter: formatChartLabel,
+        }}
         yAxisFormatter={formatYAxis}
         yAxisTicks={calculateYTicks()}
         yAxisDomain={calculateYDomain()}

@@ -5,6 +5,7 @@
 import { memo } from 'react';
 import ChartWrapper from '../shared/ChartWrapper';
 import type { MonthlyExpense, YearlyExpense } from '../../services/dashboardService';
+import { formatChartLabel } from '../../utils/formatters';
 
 interface ExpenseByMonthChartProps {
   data: MonthlyExpense[] | YearlyExpense[];
@@ -39,7 +40,7 @@ const ExpenseByMonthChart = memo(({ data, height = 300, chartType = 'bar' }: Exp
   // Normalizar los datos para que funcionen con monthly o yearly
   const normalizedData = data.map((item) => ({
     ...item,
-    displayLabel: 'mes' in item ? item.mes : item.año,
+    displayLabel: formatChartLabel('mes' in item ? item.mes : item.año),
   }));
 
   const containerStyle =
@@ -65,6 +66,13 @@ const ExpenseByMonthChart = memo(({ data, height = 300, chartType = 'bar' }: Exp
         showGrid={true}
         showTooltip={true}
         tooltipFormatter={formatCurrency}
+        xAxisProps={{
+          interval: 'preserveStartEnd',
+          angle: -35,
+          textAnchor: 'end',
+          tickMargin: 8,
+          tickFormatter: formatChartLabel,
+        }}
         yAxisFormatter={formatYAxis}
         allowDecimals={false}
         gridOpacity={0.05}

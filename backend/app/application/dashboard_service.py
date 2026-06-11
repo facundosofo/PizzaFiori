@@ -51,6 +51,8 @@ class DashboardService:
                 
                 if period == TipoPeriodo.DIARIO:
                     result = await self._get_daily_revenue(limit)
+                elif period == TipoPeriodo.SEMANAL:
+                    result = await self._get_weekly_revenue(limit)
                 elif period == TipoPeriodo.MENSUAL:
                     result = await self._get_monthly_revenue(limit)
                 elif period == TipoPeriodo.ANUAL:
@@ -448,6 +450,141 @@ class DashboardService:
                 current_year += 1
             else:
                 current_month += 1
+
+        return results
+
+    async def _get_weekly_revenue(self, limit: int) -> List[dict]:
+        """Agregación semanal optimizada de las últimas N semanas.
+
+        Usa el mismo ajuste de horario de negocio que los otros reportes:
+        ventas entre 00:00 y 05:59 se asignan al día anterior.
+        """
+        from sqlalchemy import text
+
+        now = datetime.now()
+        current_week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        first_week_start = current_week_start - timedelta(weeks=limit - 1)
+        end_date = current_week_start + timedelta(days=7)
+
+        adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
+        sale_subquery = select(
+            Sale.id.label("sale_id"),
+            extract('isoyear', adjusted_fecha).label("iso_year"),
+            extract('week', adjusted_fecha).label("iso_week"),
+            Sale.total.label("sale_total")
+        ).where(
+            and_(
+                adjusted_fecha >= first_week_start,
+                adjusted_fecha < end_date,
+            )
+        ).subquery()
+
+        direct_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("direct_qty")
+        ).where(
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.producto_id.isnot(None)
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+
+        offer_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItemOfferProduct.cantidad * SaleItem.cantidad).label("offer_qty")
+        ).select_from(
+            SaleItem
+        ).join(
+            SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
+        ).where(
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.oferta_id.isnot(None)
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+
+        mitad_mitad_items_subquery = select(
+            SaleItem.venta_id,
+            func.sum(SaleItem.cantidad).label("mitad_qty")
+        ).where(
+            and_(
+                SaleItem.venta_id.in_(select(sale_subquery.c.sale_id)),
+                SaleItem.es_pizza_mitad_mitad == True,
+            )
+        ).group_by(
+            SaleItem.venta_id
+        ).subquery()
+
+        query = select(
+            sale_subquery.c.iso_year,
+            sale_subquery.c.iso_week,
+            func.sum(sale_subquery.c.sale_total).label("revenue"),
+            func.count(sale_subquery.c.sale_id).label("pedidos"),
+            func.sum(
+                func.coalesce(direct_items_subquery.c.direct_qty, 0) +
+                func.coalesce(offer_items_subquery.c.offer_qty, 0) +
+                func.coalesce(mitad_mitad_items_subquery.c.mitad_qty, 0)
+            ).label("cantidad")
+        ).select_from(
+            sale_subquery
+        ).outerjoin(
+            direct_items_subquery,
+            sale_subquery.c.sale_id == direct_items_subquery.c.venta_id
+        ).outerjoin(
+            offer_items_subquery,
+            sale_subquery.c.sale_id == offer_items_subquery.c.venta_id
+        ).outerjoin(
+            mitad_mitad_items_subquery,
+            sale_subquery.c.sale_id == mitad_mitad_items_subquery.c.venta_id
+        ).group_by(
+            sale_subquery.c.iso_year,
+            sale_subquery.c.iso_week
+        ).order_by(
+            sale_subquery.c.iso_year,
+            sale_subquery.c.iso_week
+        )
+
+        result = await self.uow.session.execute(query)
+        rows = result.fetchall()
+        weekly_data = {
+            (int(row.iso_year), int(row.iso_week)): row
+            for row in rows
+        }
+
+        results: List[dict] = []
+        current = first_week_start
+        month_abbrev = [
+            'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+        ]
+
+        for _ in range(limit):
+            week_end = current + timedelta(days=6)
+            iso_year, iso_week, _ = current.isocalendar()
+            row = weekly_data.get((iso_year, iso_week))
+            start_label = str(current.day)
+            end_label = str(week_end.day)
+            start_month = month_abbrev[current.month - 1]
+            end_month = month_abbrev[week_end.month - 1]
+
+            if start_month == end_month:
+                label = f"{start_label}-{end_label} {start_month}"
+            else:
+                label = f"{start_label} {start_month}-{end_label} {end_month}"
+
+            results.append(
+                {
+                    "semana": label,
+                    "ingresos": float(row.revenue or 0) if row else 0,
+                    "pedidos": int(row.pedidos or 0) if row else 0,
+                    "cantidad": int(row.cantidad or 0) if row else 0,
+                }
+            )
+            current += timedelta(weeks=1)
 
         return results
 

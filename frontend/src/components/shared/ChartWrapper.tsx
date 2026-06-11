@@ -18,6 +18,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  type XAxisProps,
 } from 'recharts';
 
 export type ChartType = 'line' | 'bar' | 'area';
@@ -37,6 +38,7 @@ export interface ChartWrapperProps {
   series: DataSeries[];
   height?: number | `${number}%`;
   xAxisLabel?: string;
+  xAxisProps?: Partial<Omit<XAxisProps, 'dataKey'>>;
   yAxisLabel?: string;
   showGrid?: boolean;
   showLegend?: boolean;
@@ -62,6 +64,7 @@ const ChartWrapper = ({
   showLegend = false,
   showTooltip = true,
   tooltipFormatter,
+  xAxisProps,
   yAxisFormatter,
   yAxisDomain,
   yAxisTicks,
@@ -151,7 +154,12 @@ const ChartWrapper = ({
                 strokeOpacity={gridOpacity}
               />
             )}
-            <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
+            <XAxis
+              dataKey={xAxisKey}
+              {...commonAxisProps}
+              {...xAxisProps}
+              label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined}
+            />
             <YAxis 
               {...commonAxisProps} 
               label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
@@ -186,7 +194,12 @@ const ChartWrapper = ({
                 strokeOpacity={gridOpacity}
               />
             )}
-            <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
+            <XAxis
+              dataKey={xAxisKey}
+              {...commonAxisProps}
+              {...xAxisProps}
+              label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined}
+            />
             <YAxis 
               {...commonAxisProps} 
               label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
@@ -237,7 +250,12 @@ const ChartWrapper = ({
                 strokeOpacity={gridOpacity}
               />
             )}
-            <XAxis dataKey={xAxisKey} {...commonAxisProps} label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined} />
+            <XAxis
+              dataKey={xAxisKey}
+              {...commonAxisProps}
+              {...xAxisProps}
+              label={xAxisLabel ? { value: xAxisLabel, position: 'insideBottom' } : undefined}
+            />
             <YAxis 
               {...commonAxisProps} 
               label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}

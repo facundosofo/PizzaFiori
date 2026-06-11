@@ -22,6 +22,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { MonthlyBalanceData } from '../../services/dashboardService';
+import { formatChartLabel } from '../../utils/formatters';
 
 interface MonthlyBalanceBarChartProps {
   data: MonthlyBalanceData[];
@@ -36,10 +37,14 @@ const MonthlyBalanceBarChart = memo(({
 }: MonthlyBalanceBarChartProps) => {
   
   // Transformar datos para el gráfico
-  const chartData = data.map((item) => {
+  const isDailyPeriod = data.length > 15 && /^\d{4}-\d{2}-\d{2}$/.test(data[0]?.month ?? '');
+  const visibleData = isDailyPeriod ? data.slice(-15) : data;
+
+  const chartData = visibleData.map((item, index) => {
     const profit = item.sales - item.expenses;
     return {
       month: item.month,
+      displayMonth: formatChartLabel(item.month, index, visibleData.length),
       sales: item.sales,
       expenses: item.expenses,
       profit,
@@ -168,7 +173,16 @@ const MonthlyBalanceBarChart = memo(({
           barCategoryGap="20%"
         >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-strong)" strokeOpacity={0.05} />
-          <XAxis dataKey="month" stroke="var(--color-text-muted)" style={{ fontSize: '12px', fill: 'var(--color-text-muted)' }} />
+          <XAxis
+            dataKey="displayMonth"
+            stroke="var(--color-text-muted)"
+            tick={{ fontSize: isDailyPeriod ? 10 : 12, fill: 'var(--color-text-muted)' }}
+            interval={isDailyPeriod ? 0 : 'preserveStartEnd'}
+            height={isDailyPeriod ? 80 : 60}
+            angle={isDailyPeriod ? -45 : -35}
+            textAnchor="end"
+            tickMargin={10}
+          />
           <YAxis
             stroke="var(--color-text-muted)"
             style={{ fontSize: '12px', fill: 'var(--color-text-muted)' }}

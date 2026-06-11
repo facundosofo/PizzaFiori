@@ -78,6 +78,23 @@ async def test_get_revenue_monthly_success(mock_uow, mock_logger):
 
 
 @pytest.mark.asyncio
+async def test_get_revenue_weekly_success(mock_uow, mock_logger):
+    """Test getting weekly revenue."""
+    service = SalesAnalyticsService(uow=mock_uow, logger=mock_logger)
+
+    rows = [
+        _make_row(iso_year=2026, iso_week=6, ingresos=75000.0, pedidos=200, cantidad=450),
+    ]
+    mock_uow.session.execute = AsyncMock(return_value=_mock_result(rows))
+
+    result = await service.get_revenue_by_period(period="weekly", limit=12)
+
+    assert result.status_code == 200
+    assert result.value is not None
+    assert result.value[0]["semana"] is not None
+
+
+@pytest.mark.asyncio
 async def test_get_revenue_error(mock_uow, mock_logger):
     """Test revenue query error handling."""
     service = SalesAnalyticsService(uow=mock_uow, logger=mock_logger)

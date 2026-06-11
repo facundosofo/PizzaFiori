@@ -22,6 +22,7 @@ class FiltroTiempo(str, Enum):
 class RevenuePorPeriodoResponse(BaseModel):
     """Respuesta para revenue agrupado por período."""
     fecha: str | None = Field(None, description="Fecha (para daily)")
+    semana: str | None = Field(None, description="Semana (para weekly)")
     mes: str | None = Field(None, description="Mes (para monthly)")
     año: str | None = Field(None, description="Año (para yearly)")
     ingresos: float = Field(..., description="Monto total en pesos")

@@ -21,6 +21,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { MonthlyBalanceData } from '../../services/dashboardService';
+import { formatChartLabel } from '../../utils/formatters';
 
 const COLOR_PROFIT = '#16a34a';
 const COLOR_LOSS   = '#ef4444';
@@ -42,8 +43,12 @@ const NetMarginLineChart = memo(({
     return ((sales - expenses) / sales) * 100;
   };
 
-  const chartData = data.map((item) => ({
+  const isDailyPeriod = data.length > 15 && /^\d{4}-\d{2}-\d{2}$/.test(data[0]?.month ?? '');
+  const visibleData = isDailyPeriod ? data.slice(-15) : data;
+
+  const chartData = visibleData.map((item, index) => ({
     month: item.month,
+    displayMonth: formatChartLabel(item.month, index, visibleData.length),
     margin: calculateMargin(item.sales, item.expenses),
     isCurrentMonth: item.month === currentMonth,
   }));
@@ -135,9 +140,14 @@ const NetMarginLineChart = memo(({
             strokeOpacity={0.05}
           />
           <XAxis
-            dataKey="month"
+            dataKey="displayMonth"
             stroke="var(--color-text-muted)"
-            style={{ fontSize: '12px', fill: 'var(--color-text-muted)' }}
+            tick={{ fontSize: isDailyPeriod ? 10 : 12, fill: 'var(--color-text-muted)' }}
+            interval={isDailyPeriod ? 0 : 'preserveStartEnd'}
+            height={isDailyPeriod ? 80 : 60}
+            angle={isDailyPeriod ? -45 : -35}
+            textAnchor="end"
+            tickMargin={10}
           />
           <YAxis
             stroke="var(--color-text-muted)"

@@ -150,6 +150,7 @@ export type ProductSort = 'top' | 'bottom';
 
 export interface DashboardData {
   dailyRevenue: DailyRevenue[];
+  weeklyRevenue: WeeklyRevenue[];
   monthlyRevenue: MonthlyRevenue[];
   yearlyRevenue: YearlyRevenue[];
   topProducts: TopProduct[];
@@ -169,12 +170,14 @@ const fetchJson = async <T>(path: string): Promise<T> => {
 export const getDashboardData = async (): Promise<DashboardData> => {
   const [
     dailyRevenue,
+    weeklyRevenue,
     monthlyRevenue,
     yearlyRevenue,
     topProducts,
     salesByCategory,
   ] = await Promise.all([
     getRevenueByPeriod('daily', 30) as Promise<DailyRevenue[]>,
+    getRevenueByPeriod('weekly', 12) as Promise<WeeklyRevenue[]>,
     getRevenueByPeriod('monthly', 12) as Promise<MonthlyRevenue[]>,
     getRevenueByPeriod('yearly', 5) as Promise<YearlyRevenue[]>,
     getTopProducts(5, 'last_year'),
@@ -183,6 +186,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
 
   return {
     dailyRevenue,
+    weeklyRevenue,
     monthlyRevenue,
     yearlyRevenue,
     topProducts,
@@ -198,7 +202,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
 export const getRevenueByPeriod = async (
   period: Period,
   limit?: number
-): Promise<DailyRevenue[] | MonthlyRevenue[] | YearlyRevenue[]> => {
+): Promise<DailyRevenue[] | WeeklyRevenue[] | MonthlyRevenue[] | YearlyRevenue[]> => {
   const params = new URLSearchParams({ period });
   if (limit) {
     params.set('limit', String(limit));

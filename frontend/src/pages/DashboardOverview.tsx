@@ -776,6 +776,7 @@ const DashboardOverview = () => {
         </div>
         <RevenueChart 
           dailyData={data?.dailyRevenue || []}
+          weeklyData={data?.weeklyRevenue || []}
           monthlyData={data?.monthlyRevenue || []}
           yearlyData={data?.yearlyRevenue || []}
           selectedPeriod={revenuePeriod}

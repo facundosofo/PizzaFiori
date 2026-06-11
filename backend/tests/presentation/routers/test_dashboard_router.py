@@ -56,6 +56,21 @@ async def test_get_revenue_yearly(async_client: AsyncClient, mock_sales_analytic
 
 
 @pytest.mark.asyncio
+async def test_get_revenue_weekly(async_client: AsyncClient, mock_sales_analytics_service):
+    """Obtener revenue semanal retorna 200"""
+    mock_sales_analytics_service.get_revenue_by_period.return_value.value = [
+        {"semana": "01-07 Feb", "ingresos": 95000.0, "pedidos": 320, "cantidad": 780}
+    ]
+
+    response = await async_client.get("/dashboard/revenue?period=weekly&limit=12")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["semana"] == "01-07 Feb"
+
+
+@pytest.mark.asyncio
 async def test_get_revenue_limit_validation(async_client: AsyncClient):
     """Límite fuera de rango retorna 422"""
     response = await async_client.get("/dashboard/revenue?limit=500")

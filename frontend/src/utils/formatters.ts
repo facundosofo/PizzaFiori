@@ -145,3 +145,45 @@ export const validateDateRange = (from: Date | null, to: Date | null): string | 
   
   return null;
 };
+
+const CHART_MONTHS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+export const formatChartLabel = (
+  value: unknown,
+  index?: number,
+  totalItems?: number,
+): string => {
+  const label = value == null ? '' : String(value);
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(label)) {
+    const [, month, day] = label.split('-');
+    return `${day}/${month}`;
+  }
+
+  if (/^\d{4}-\d{2}$/.test(label)) {
+    const [year, month] = label.split('-');
+    return `${month}/${year.slice(-2)}`;
+  }
+
+  const monthYearMatch = label.match(/^([A-Za-zÀ-ÿñÑ]+)\s+(\d{4})$/);
+  if (monthYearMatch) {
+    return `${monthYearMatch[1].slice(0, 3)} ${monthYearMatch[2].slice(-2)}`;
+  }
+
+  if (/^[A-Za-zÀ-ÿñÑ]{3}$/.test(label) && typeof index === 'number' && typeof totalItems === 'number') {
+    const now = new Date();
+    const currentMonthIndex = now.getMonth();
+    const currentYear = now.getFullYear();
+    const parsedMonth = CHART_MONTHS_SHORT.findIndex(
+      (month) => month.toLowerCase() === label.toLowerCase(),
+    );
+
+    if (parsedMonth >= 0) {
+      const offset = totalItems - 1 - index;
+      const date = new Date(currentYear, currentMonthIndex - offset, 1);
+      return `${CHART_MONTHS_SHORT[date.getMonth()]} ${String(date.getFullYear()).slice(-2)}`;
+    }
+  }
+
+  return label;
+};

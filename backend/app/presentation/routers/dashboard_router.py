@@ -43,7 +43,7 @@ router = APIRouter(
     "/revenue",
     response_model=List[RevenuePorPeriodoResponse],
     summary="Obtener revenue por período",
-    description="Devuelve el revenue agrupado por período (daily, monthly, yearly).",
+    description="Devuelve el revenue agrupado por período (daily, weekly, monthly, yearly).",
     responses={
         400: {"description": "Período inválido"},
         500: {"description": "Error interno del servidor"},

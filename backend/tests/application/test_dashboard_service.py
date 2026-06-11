@@ -26,6 +26,7 @@ class DummyResult:
     "period, method_name",
     [
         (TipoPeriodo.DIARIO, "_get_daily_revenue"),
+        (TipoPeriodo.SEMANAL, "_get_weekly_revenue"),
         (TipoPeriodo.MENSUAL, "_get_monthly_revenue"),
         (TipoPeriodo.ANUAL, "_get_yearly_revenue"),
     ],
