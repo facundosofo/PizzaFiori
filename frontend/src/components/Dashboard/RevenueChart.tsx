@@ -69,7 +69,7 @@ const RevenueChart = memo(({
     if (!currentData || currentData.length === 0) return undefined;
 
     const seriesConfig = getSeriesConfig();
-    const values = currentData.map((item: any) => Number(item[seriesConfig.key]) || 0);
+    const values = chartData.map((item: any) => Number(item[seriesConfig.key]) || 0);
     const maxValue = Math.max(...values);
 
     if (maxValue === 0) {
@@ -80,7 +80,7 @@ const RevenueChart = memo(({
     }
 
     // Calcular intervalo: dividir máximo entre 4 (para generar 5 ticks)
-    const interval = (maxValue / 4)*1.2;
+    const interval = (maxValue / 4) * 1.2;
 
     // Generar exactamente 5 ticks
     return [0, interval, interval * 2, interval * 3, interval * 4];
@@ -168,6 +168,8 @@ const RevenueChart = memo(({
     }
   };
 
+  const chartData = getData();
+
   // Obtener configuración de la serie según métrica
   const getSeriesConfig = () => {
     if (selectedMetric === 'ingresos') {
@@ -195,7 +197,7 @@ const RevenueChart = memo(({
     <div className="chart-container">
       <ChartWrapper
         type={chartType}
-        data={getData()}
+        data={chartData}
         xAxisKey="displayLabel"
         series={[
           {
@@ -208,8 +210,9 @@ const RevenueChart = memo(({
         showTooltip={true}
         tooltipFormatter={formatTooltip}
         xAxisProps={{
-          interval: selectedPeriod === 'daily' ? 0 : 'preserveStartEnd',
-          angle: -35,
+          interval: selectedPeriod === 'daily' || selectedPeriod === 'weekly' ? 0 : 'preserveStartEnd',
+          angle: selectedPeriod === 'daily' || selectedPeriod === 'weekly' ? -35 : -25,
+          height: selectedPeriod === 'daily' || selectedPeriod === 'weekly' ? 80 : 60,
           textAnchor: 'end',
           tickMargin: 8,
           tickFormatter: formatChartLabel,
