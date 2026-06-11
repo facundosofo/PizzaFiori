@@ -18,7 +18,8 @@ from tests.helpers import (
     build_offer_model,
     build_offer_item_model,
     build_category_model,
-    build_sale_model
+    build_sale_model,
+    build_stock_model
 )
 
 
@@ -263,6 +264,50 @@ async def test_create_sale_with_products(mock_uow, mock_logger):
     # Verify sale was created
     mock_uow.sale_repo.add.assert_called_once()
     mock_uow.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_sale_super_milas_adds_papas_stock_deduction(mock_uow, mock_logger):
+    """Test selling a Super Milas product also deducts stock from Papas Fritas."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+
+    papas_category = build_category_model(id=9, nombre="Papas Fritas")
+    super_milas_category = build_category_model(id=5, nombre="Super Milas")
+
+    product = build_product_model(
+        id=1,
+        nombre="Super Mila Napolitana",
+        categoria_id=5,
+        precios=[build_product_price_model(1, 1, 1, 1200.0)]
+    )
+    product.categoria = super_milas_category
+
+    mock_uow.product_repo.get_by_id.return_value = product
+    mock_uow.product_category_repo.list.return_value = [papas_category, super_milas_category]
+
+    async def mock_get_category_by_id(category_id):
+        if category_id == 9:
+            return papas_category
+        if category_id == 5:
+            return super_milas_category
+        return None
+
+    mock_uow.product_category_repo.get_by_id = AsyncMock(side_effect=mock_get_category_by_id)
+    mock_uow.stock_repo.get_by_categoria_id = AsyncMock(side_effect=lambda categoria_id: build_stock_model(categoria_id=categoria_id))
+    mock_uow.sale_repo.refresh = AsyncMock()
+
+    request = SaleCreateRequest(
+        items=[
+            SaleItemRequest(producto_id=1, cantidad=1)
+        ]
+    )
+
+    result = await service.create(request)
+
+    assert result.status_code == 201
+    assert result.value is not None
+    assert any(call.args[0] == 9 for call in mock_uow.product_category_repo.get_by_id.await_args_list)
+    assert any(call.args[0] == 9 for call in mock_uow.stock_repo.get_by_categoria_id.await_args_list)
 
 
 @pytest.mark.asyncio

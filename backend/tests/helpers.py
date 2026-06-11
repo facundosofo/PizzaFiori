@@ -33,6 +33,7 @@ def build_category_model(
     category.id = id
     category.nombre = nombre
     category.descripcion = descripcion
+    category.stock_por_producto = False
     return category
 
 

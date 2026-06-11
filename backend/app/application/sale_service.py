@@ -15,6 +15,9 @@ from app.presentation.schemas.sale_schemas import SaleCreateRequest
 RECARGO_KEY = "recargo_transferencia"
 DEFAULT_RECARGO_PERCENTAGE = Decimal("10.00")
 
+SUPER_MILAS_CATEGORY_NAME = "Super Milas"
+PAPAS_FRTAS_CATEGORY_NAME = "Papas Fritas"
+
 
 @dataclass
 class ServiceResult:
@@ -201,6 +204,13 @@ class SaleService:
         # Validación exitosa
         return None
 
+    async def _get_category_id_by_name(self, nombre: str, uow) -> Optional[int]:
+        categorias = await uow.product_category_repo.list()
+        for categoria in categorias:
+            if categoria.nombre == nombre:
+                return categoria.id
+        return None
+
     async def create(
         self, 
         sale_create: SaleCreateRequest,
@@ -247,6 +257,8 @@ class SaleService:
                 product_stock_deductions: dict[int, int] = {}
                 # map producto_id -> categoria_id para evitar re-fetch en el loop de descuento
                 producto_categoria_ids: dict[int, int] = {}
+                # ID de la categoría de Papas Fritas para deducción adicional de Super Milas
+                papas_category_id = await self._get_category_id_by_name(PAPAS_FRTAS_CATEGORY_NAME, uow)
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
                     precio_unitario = None
@@ -280,6 +292,10 @@ class SaleService:
                         if producto.categoria_id:
                             stock_deductions[producto.categoria_id] = (
                                 stock_deductions.get(producto.categoria_id, 0) + item.cantidad
+                            )
+                        if producto.categoria and producto.categoria.nombre == SUPER_MILAS_CATEGORY_NAME and papas_category_id:
+                            stock_deductions[papas_category_id] = (
+                                stock_deductions.get(papas_category_id, 0) + item.cantidad
                             )
                         product_stock_deductions[item.producto_id] = (
                             product_stock_deductions.get(item.producto_id, 0) + item.cantidad
@@ -346,6 +362,10 @@ class SaleService:
                                         product_stock_deductions.get(prod_sel.producto_id, 0) + deduccion_total
                                     )
                                     producto_categoria_ids[prod_sel.producto_id] = producto.categoria_id
+                                    if producto.categoria and producto.categoria.nombre == SUPER_MILAS_CATEGORY_NAME and papas_category_id:
+                                        stock_deductions[papas_category_id] = (
+                                            stock_deductions.get(papas_category_id, 0) + deduccion_total
+                                        )
                     
                     elif item.pizza_mitad_mitad:
                         # Validar y procesar pizza mitad-mitad
