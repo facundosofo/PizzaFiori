@@ -38,7 +38,6 @@ const SearchableSelect = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const DROPDOWN_MARGIN = 8;
-  const DROPDOWN_MAX_HEIGHT = 320;
 
   const selectedOption = useMemo(() => {
     return options.find((opt) => opt.value === value);
