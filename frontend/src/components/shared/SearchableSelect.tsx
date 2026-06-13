@@ -37,6 +37,8 @@ const SearchableSelect = ({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const DROPDOWN_MARGIN = 8;
+  const DROPDOWN_MAX_HEIGHT = 320;
 
   const selectedOption = useMemo(() => {
     return options.find((opt) => opt.value === value);
@@ -60,11 +62,12 @@ const SearchableSelect = ({
     const updatePosition = () => {
       if (containerRef.current && isOpen) {
         const rect = containerRef.current.getBoundingClientRect();
-        const zoom = parseFloat(document.documentElement.style.zoom) || 1;
+        const top = rect.bottom + DROPDOWN_MARGIN;
+
         setDropdownPosition({
-          top: (rect.bottom + window.scrollY + 8) / zoom,
-          left: (rect.left + window.scrollX) / zoom,
-          width: rect.width / zoom,
+          top,
+          left: rect.left,
+          width: rect.width,
         });
       }
     };
@@ -122,6 +125,7 @@ const SearchableSelect = ({
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
+            maxHeight: `calc(100vh - ${DROPDOWN_MARGIN * 2}px)`,
           }}
           onMouseDown={(e) => e.stopPropagation()}
         >
