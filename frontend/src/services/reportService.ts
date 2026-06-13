@@ -114,7 +114,10 @@ export const generateCostsReport = async (request: ReportRequest): Promise<Repor
   let dateFrom: Date | null = null;
   let dateTo: Date | null = null;
 
-  if (request.dateRangeMode === "mes") {
+  if (request.dateRangeMode === "rango") {
+    dateFrom = request.dateFrom;
+    dateTo = request.dateTo;
+  } else if (request.dateRangeMode === "mes") {
     dateFrom = new Date(request.selectedYear, request.selectedMonth, 1);
     dateTo   = new Date(request.selectedYear, request.selectedMonth + 1, 0);
   } else if (request.dateRangeMode === "anio") {
@@ -146,7 +149,10 @@ export const generateGeneralReport = async (request: ReportRequest): Promise<Rep
   let dateFrom: Date | null = null;
   let dateTo: Date | null = null;
 
-  if (request.dateRangeMode === "mes") {
+  if (request.dateRangeMode === "rango") {
+    dateFrom = request.dateFrom;
+    dateTo = request.dateTo;
+  } else if (request.dateRangeMode === "mes") {
     dateFrom = new Date(request.selectedYear, request.selectedMonth, 1);
     dateTo   = new Date(request.selectedYear, request.selectedMonth + 1, 0);
   } else if (request.dateRangeMode === "anio") {

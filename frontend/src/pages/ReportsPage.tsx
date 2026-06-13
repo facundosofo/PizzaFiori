@@ -43,10 +43,9 @@ const ReportsPage = () => {
   const { generateReport, loading, error, clearError } = useGenerateReport();
 
   const validationMessage = useMemo(() => {
-    if (config.reportType !== "ventas") return null;
     if (config.dateRangeMode !== "rango") return null;
     return validateDateRange(config.dateFrom, config.dateTo);
-  }, [config.reportType, config.dateRangeMode, config.dateFrom, config.dateTo]);
+  }, [config.dateRangeMode, config.dateFrom, config.dateTo]);
 
   if (!isAdmin) {
     return (

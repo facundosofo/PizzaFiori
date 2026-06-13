@@ -92,12 +92,6 @@ const ReportConfigPanel = ({
       .catch(() => { /* mantiene FALLBACK_YEARS */ });
   }, []);
   const handleTypeChange = (type: ReportType) => {
-    const newMode: DateRangeMode =
-      type === "ventas"
-        ? config.dateRangeMode
-        : config.dateRangeMode === "rango"
-        ? "mes"
-        : config.dateRangeMode;
     const updatedSections = { ...config.sections };
     if (type === "general") {
       updatedSections.generalResumenPeriodo = true;
@@ -106,7 +100,7 @@ const ReportConfigPanel = ({
       updatedSections.generalResumenProductos = true;
       updatedSections.generalResumenCategoriaGastos = true;
     }
-    onChange({ ...config, reportType: type, dateRangeMode: newMode, sections: updatedSections });
+    onChange({ ...config, reportType: type, sections: updatedSections });
   };
 
   const handleDateModeChange = (mode: DateRangeMode) => {
@@ -177,16 +171,11 @@ const ReportConfigPanel = ({
     { key: "generalResumenCategoriaGastos" as const, title: "Costos por categoría" },
   ];
 
-  const dateModes: { key: DateRangeMode; label: string }[] = isVentas
-    ? [
-        { key: "rango", label: "Rango de fechas" },
-        { key: "mes", label: "Mes específico" },
-        { key: "anio", label: "Año completo" },
-      ]
-    : [
-        { key: "mes", label: "Mes específico" },
-        { key: "anio", label: "Año completo" },
-      ];
+  const dateModes: { key: DateRangeMode; label: string }[] = [
+    { key: "rango", label: "Rango de fechas" },
+    { key: "mes", label: "Mes específico" },
+    { key: "anio", label: "Año completo" },
+  ];
 
   return (
     <section className="rcp">
