@@ -33,7 +33,14 @@ const getItemDetail = (
     detalle = item.productos[0].nombre;
   }
 
-  return { cantidad: item.cantidad, detalle };
+  return { cantidad: Number(item.cantidad), detalle };
+};
+
+const formatOfferItemCantidad = (cantidad: number): string => {
+  if (Math.abs(cantidad - 0.5) < 1e-9) return "1/2";
+  if (Math.abs(cantidad - 0.25) < 1e-9) return "1/4";
+  if (Math.abs(cantidad - 0.125) < 1e-9) return "1/8";
+  return `${cantidad}`;
 };
 
 /* -------------------- Component -------------------- */
@@ -140,7 +147,7 @@ const OfferCard = ({
                   const { cantidad, detalle } = getItemDetail(item);
                   return (
                     <li key={item.id} className="offer-item">
-                      <span className="offer-qty">{cantidad}x</span>
+                      <span className="offer-qty">{formatOfferItemCantidad(cantidad)}x</span>
                       <span className="offer-item-detail">{detalle}</span>
                     </li>
                   );

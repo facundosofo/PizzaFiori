@@ -16,6 +16,7 @@ from app.domain.models.product_price import ProductPrice
 from app.domain.models.product_category import ProductCategory as Category
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.dashboard_schemas import FiltroTiempo
+from app.application.analytics_utils import format_mixed_fraction_quantity, infer_fraction_denominator
 
 
 @dataclass
@@ -99,6 +100,7 @@ class ProductAnalyticsService:
                         "producto_mas_vendido": "Sin datos",
                         "categoria_mas_vendida": "",
                         "cantidad_mas_vendida": 0,
+                        "cantidad_mas_vendida_display": "0",
                         "promocion_mas_vendida": None,
                         "cantidad_promocion": 0,
                         "mes_actual": f"{month_names[now.month - 1]} {now.year}",
@@ -116,6 +118,13 @@ class ProductAnalyticsService:
                     "producto_mas_vendido": most_sold["nombre"],
                     "categoria_mas_vendida": most_sold.get("categoria", ""),
                     "cantidad_mas_vendida": most_sold["cantidad"],
+                    "cantidad_mas_vendida_display": format_mixed_fraction_quantity(
+                        most_sold["cantidad"],
+                        denominator=infer_fraction_denominator(
+                            category=most_sold.get("categoria"),
+                            item_name=most_sold.get("nombre"),
+                        ),
+                    ),
                     "promocion_mas_vendida": most_sold_offer["nombre"] if most_sold_offer else None,
                     "cantidad_promocion": most_sold_offer["cantidad"] if most_sold_offer else 0,
                     "mes_actual": mes_actual,
@@ -278,10 +287,17 @@ class ProductAnalyticsService:
         
         return [
             {
-                "nombre": row.name,
-                "categoria": row.category or "Sin categoría",
-                "cantidad": int(row.total_quantity or 0),
-                "precio": float(row.price or 0),
+                "nombre": getattr(row, "name", None) or getattr(row, "nombre", "-"),
+                "categoria": (getattr(row, "category", None) or getattr(row, "categoria", None) or "Sin categoría"),
+                "cantidad": float(getattr(row, "total_quantity", None) or getattr(row, "cantidad", 0) or 0),
+                "cantidad_display": format_mixed_fraction_quantity(
+                    getattr(row, "total_quantity", None) or getattr(row, "cantidad", 0) or 0,
+                    denominator=infer_fraction_denominator(
+                        category=(getattr(row, "category", None) or getattr(row, "categoria", None)),
+                        item_name=(getattr(row, "name", None) or getattr(row, "nombre", None)),
+                    ),
+                ),
+                "precio": float(getattr(row, "price", None) or getattr(row, "precio", 0) or 0),
                 "enStock": True,
             }
             for row in rows
@@ -382,7 +398,7 @@ class ProductAnalyticsService:
             return {
                 "nombre": row.name,
                 "categoria": row.category or "",
-                "cantidad": int(row.total_quantity or 0),
+                "cantidad": float(row.total_quantity or 0),
             }
         
         return None
@@ -420,7 +436,7 @@ class ProductAnalyticsService:
         if row:
             return {
                 "nombre": row.name,
-                "cantidad": int(row.total_quantity or 0),
+                "cantidad": float(row.total_quantity or 0),
             }
         
         return None
@@ -520,7 +536,7 @@ class ProductAnalyticsService:
             return {
                 "nombre": row.name,
                 "ingreso_total": float(row.total_revenue or 0),
-                "cantidad": int(row.total_quantity or 0),
+                "cantidad": float(row.total_quantity or 0),
             }
         
         return None

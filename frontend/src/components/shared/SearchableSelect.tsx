@@ -34,10 +34,18 @@ const SearchableSelect = ({
 }: SearchableSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+    maxHeight: 320,
+    placement: "bottom" as "bottom" | "top",
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const DROPDOWN_MARGIN = 8;
+  const DROPDOWN_MIN_HEIGHT = 160;
+  const DROPDOWN_MAX_HEIGHT = 320;
 
   const selectedOption = useMemo(() => {
     return options.find((opt) => opt.value === value);
@@ -61,12 +69,27 @@ const SearchableSelect = ({
     const updatePosition = () => {
       if (containerRef.current && isOpen) {
         const rect = containerRef.current.getBoundingClientRect();
-        const top = rect.bottom + DROPDOWN_MARGIN;
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom - DROPDOWN_MARGIN;
+        const spaceAbove = rect.top - DROPDOWN_MARGIN;
+
+        const shouldOpenUp = spaceBelow < DROPDOWN_MIN_HEIGHT && spaceAbove > spaceBelow;
+        const rawMaxHeight = shouldOpenUp ? spaceAbove : spaceBelow;
+        const boundedMaxHeight = Math.max(
+          DROPDOWN_MIN_HEIGHT,
+          Math.min(DROPDOWN_MAX_HEIGHT, rawMaxHeight - DROPDOWN_MARGIN),
+        );
+
+        const top = shouldOpenUp
+          ? Math.max(DROPDOWN_MARGIN, rect.top - boundedMaxHeight - DROPDOWN_MARGIN)
+          : rect.bottom + DROPDOWN_MARGIN;
 
         setDropdownPosition({
           top,
           left: rect.left,
           width: rect.width,
+          maxHeight: boundedMaxHeight,
+          placement: shouldOpenUp ? "top" : "bottom",
         });
       }
     };
@@ -119,12 +142,12 @@ const SearchableSelect = ({
       {/* Dropdown con búsqueda */}
       {isOpen && createPortal(
         <div 
-          className="searchable-select-dropdown"
+          className={`searchable-select-dropdown ${dropdownPosition.placement === "top" ? "open-up" : "open-down"}`}
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
-            maxHeight: `calc(100vh - ${DROPDOWN_MARGIN * 2}px)`,
+            maxHeight: `${dropdownPosition.maxHeight}px`,
           }}
           onMouseDown={(e) => e.stopPropagation()}
         >

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem } from '../types/cart';
 import { formatCurrency } from '../utils/formatters';
+import { formatMixedFraction } from '../utils/soldQuantityFormatter';
 import * as Icons from './shared/Icons';
 import '../styles/cart-drawer.css';
 import '../styles/shared/quantity-controls.css';
@@ -20,6 +21,30 @@ interface CartDrawerProps {
   isConfirming?: boolean;
 }
 
+const formatCartItemCantidadLabel = (cantidad: number): string => {
+  if (Math.abs(cantidad - 1) < 1e-9) return 'Unidad';
+  if (Math.abs(cantidad - 0.5) < 1e-9) return 'Porción 1/2';
+  if (Math.abs(cantidad - 0.25) < 1e-9) return 'Porción 1/4';
+  if (Math.abs(cantidad - 0.125) < 1e-9) return 'Porción 1/8';
+  return `${cantidad}`;
+};
+
+const getFractionDenominator = (value: number): 2 | 4 | 8 => {
+  const normalized = Math.abs(value);
+  if (Math.abs(normalized * 4 - Math.round(normalized * 4)) < 1e-9) {
+    return 4;
+  }
+  if (Math.abs(normalized * 2 - Math.round(normalized * 2)) < 1e-9) {
+    return 2;
+  }
+  return 8;
+};
+
+const formatQuantityWithX = (value: number): string => {
+  const denominator = getFractionDenominator(value);
+  return `${formatMixedFraction(value, { fallbackDenominator: denominator })}x`;
+};
+
 export const CartDrawer: React.FC<CartDrawerProps> = ({
   items,
   total,
@@ -34,6 +59,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   isConfirming = false,
 }) => {
   const isEmpty = items.length === 0;
+
+  const getMaxQuantityForPortionPrice = (priceCantidad?: number) => {
+    if (!priceCantidad || priceCantidad >= 1) return null;
+
+    const maxQuantity = Math.round(1 / priceCantidad) - 1;
+    return Number.isFinite(maxQuantity) && maxQuantity > 0 ? maxQuantity : null;
+  };
 
   // Calcular cantidad total de items (sumando cantidades y productos dentro de ofertas)
   const totalItems = useMemo(() => items.reduce((acc, item) => {
@@ -81,6 +113,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             {items.map((item) => {
               const isOffer = item.tipo === 'oferta';
               const isPizzaMitadMitad = item.tipo === 'pizza_mitad_mitad';
+              const maxQuantity = item.tipo === 'producto'
+                ? getMaxQuantityForPortionPrice(item.precio_cantidad)
+                : null;
+              const isAtMaxQuantity = maxQuantity !== null && item.cantidad >= maxQuantity;
 
               return (
                 <motion.div
@@ -95,10 +131,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <div className="cart-item-info">
                       <h3 className="cart-item-name">
                         {isOffer && <Icons.DiscountIcon size={16} />}{' '}
-                        {item.tipo === 'producto' ? item.producto_nombre : 
-                         item.tipo === 'oferta' ? item.oferta_nombre :
-                         item.tipo === 'pizza_mitad_mitad' ? item.nombre_completo :
-                         'Item desconocido'}
+                        {item.tipo === 'producto' ? (
+                          item.precio_cantidad && item.precio_cantidad < 1 ?
+                            `${item.producto_nombre} - ${formatCartItemCantidadLabel(item.precio_cantidad)}` :
+                            item.producto_nombre
+                        ) : item.tipo === 'oferta' ? item.oferta_nombre :
+                          item.tipo === 'pizza_mitad_mitad' ? item.nombre_completo :
+                          'Item desconocido'}
                       </h3>
                       {item.tipo === 'producto' ? (
                         <p className="cart-item-category">{item.categoria_nombre}</p>
@@ -121,7 +160,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <div className="cart-offer-products">
                         {item.productos_seleccionados.map((product, index) => (
                           <div key={index} className="cart-offer-product-item">
-                            <span className="cart-offer-product-qty">{product.cantidad}x</span>
+                            <span className="cart-offer-product-qty">{formatQuantityWithX(product.cantidad)}</span>
                             <span className="cart-offer-product-name">{product.producto_nombre}</span>
                           </div>
                         ))}
@@ -145,24 +184,31 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         <input
                           type="number"
                           min="1"
+                          max={maxQuantity ?? 1000}
                           className="qty-input"
                           value={item.cantidad}
                           onFocus={(e) => (e.target as HTMLInputElement).select()}
                           onChange={(e) => {
-                            const newQty = Math.max(1, parseInt(e.target.value) || 1);
-                            onUpdateQuantity(item.id, newQty);
+                            const rawQty = Math.max(1, parseInt(e.target.value) || 1);
+                            onUpdateQuantity(item.id, maxQuantity !== null ? Math.min(rawQty, maxQuantity) : rawQty);
                           }}
                         />
 
                         <button
                           type="button"
                           className="qty-btn qty-btn-plus"
-                          onClick={() => onUpdateQuantity(item.id, item.cantidad + 1)}
+                          onClick={() => !isAtMaxQuantity && onUpdateQuantity(item.id, item.cantidad + 1)}
                           aria-label="Aumentar cantidad"
+                          disabled={isAtMaxQuantity}
                         >
                           <Icons.PlusIcon size={14} />
                         </button>
                       </div>
+                      {maxQuantity !== null && (
+                        <p className="cart-item-quantity-hint">
+                          Máximo {maxQuantity} porciones
+                        </p>
+                      )}
                     </div>
                     <div className="cart-item-subtotal">
                       {formatCurrency(item.subtotal)}

@@ -404,7 +404,7 @@ const DashboardOverview = () => {
   }, [activeTab, fetchSalesByCategory]);
 
   useEffect(() => {
-    if (activeTab !== 'ventas') return;
+    if (activeTab !== 'productos') return;
     fetchTopProducts();
   }, [activeTab, fetchTopProducts]);
 
@@ -1055,7 +1055,7 @@ const DashboardOverview = () => {
             </div>
           )}
           <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '8px' }}>
-            {productsSummary?.mes_actual || ''} • {productsSummary?.cantidad_mas_vendida ? `${productsSummary.cantidad_mas_vendida} unidades` : '—'}
+            {productsSummary?.mes_actual || ''} • {productsSummary?.cantidad_mas_vendida_display ?? productsSummary?.cantidad_mas_vendida ?? '—'} vendidos
           </div>
         </div>
         <div

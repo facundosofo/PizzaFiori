@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, String, Index
+from sqlalchemy import Column, Integer, ForeignKey, String, Index, Numeric
 from sqlalchemy.orm import relationship
 
 from app.domain.models.base import Base
@@ -25,7 +25,7 @@ class SaleItemOfferProduct(Base):
     producto_id = Column(Integer, ForeignKey("Productos.id"), nullable=True)  # Referencia (puede ser null si se borra)
     producto_nombre = Column(String(50), nullable=False)  # Nombre guardado al momento de la venta
     categoria_nombre = Column(String(50), nullable=True)  # Categoría del producto en la oferta
-    cantidad = Column(Integer, nullable=False)  # Cantidad de este producto en la oferta
+    cantidad = Column(Numeric(10, 3), nullable=False)  # Cantidad de este producto en la oferta
 
     venta_item = relationship(
         "SaleItem",

@@ -38,7 +38,7 @@ const TopProductsTable = memo(({ products }: TopProductsTableProps) => {
               <td className="product-name">{product.nombre}</td>
               <td className="category">{product.categoria}</td>
               <td className="price">{formatCurrency(product.precio)}</td>
-              <td className="text-center quantity">{product.cantidad}</td>
+              <td className="text-center quantity">{product.cantidad_display ?? product.cantidad}</td>
               <td className="text-center">
                 <span className={`status-badge ${product.enStock ? 'in-stock' : 'out-of-stock'}`}>
                   {product.enStock ? 'Disponible' : 'Sin stock'}

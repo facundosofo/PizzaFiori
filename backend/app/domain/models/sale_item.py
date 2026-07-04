@@ -28,7 +28,8 @@ class SaleItem(Base):
     venta_id = Column(Integer, ForeignKey("Ventas.id"), nullable=False)
     producto_id = Column(Integer, ForeignKey("Productos.id"), nullable=True)
     oferta_id = Column(Integer, ForeignKey("Ofertas.id"), nullable=True)
-    cantidad = Column(Integer, nullable=False)
+    cantidad = Column(Numeric(10, 3), nullable=False)
+    precio_cantidad = Column(Numeric(10, 3), nullable=True)
     precio_unitario = Column(Numeric(10, 2), nullable=False)
     subtotal = Column(Numeric(10, 2), nullable=False)
     

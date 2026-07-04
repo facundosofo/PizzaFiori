@@ -71,7 +71,32 @@
 .stock-card-quantity-row {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 0.5rem;
+}
+
+.stock-quantity-display {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-quantity-display-main {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stock-quantity-display-fraction {
+  position: relative;
+  top: -0.45em;
+  margin-left: 0.15em;
+  font-size: 0.6em;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
 }
 
 .stock-card-quantity {
@@ -208,6 +233,14 @@
 
   .stock-card-quantity {
     font-size: 2.4rem;
+  }
+
+  .stock-quantity-display-main {
+    font-size: 2.4rem;
+  }
+
+  .stock-quantity-display-fraction {
+    font-size: 0.58em;
   }
 }
 

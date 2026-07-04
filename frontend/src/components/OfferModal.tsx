@@ -58,7 +58,7 @@ const OfferModal = ({
       // Map oferta.productos to OfferItemRequest[]
       const mappedItems: OfferItemRequest[] = oferta.productos?.map(item => {
         const request: OfferItemRequest = {
-          cantidad: item.cantidad,
+          cantidad: Number(item.cantidad),
         };
 
         if (item.categoria_id) {
@@ -124,21 +124,90 @@ const OfferModal = ({
     setItems(items.filter((_, i) => i !== index));
   };
 
+  const getProductPortionStep = (productId?: number): number | null => {
+    if (!productId) return null;
+    const product = productos.find((p) => p.id === productId);
+    if (!product?.precios || product.precios.length === 0) return null;
+    const portion = product.precios
+      .map((price) => Number(price.cantidad))
+      .find((priceCantidad) => priceCantidad > 0 && priceCantidad < 1);
+    return portion ?? null;
+  };
+
+  const getOptionsPortionStep = (productIds?: number[]): number | null => {
+    if (!productIds || productIds.length === 0) return null;
+    const portions = productIds
+      .map((productId) => getProductPortionStep(productId))
+      .filter((value): value is number => value !== null);
+    if (portions.length === 0) return null;
+    return Math.min(...portions);
+  };
+
+  const getItemPortionStep = (item: OfferItemRequest): number | null => {
+    if (item.categoria_id) return null;
+    if (item.producto_id) return getProductPortionStep(item.producto_id);
+    if (item.producto_opciones) return getOptionsPortionStep(item.producto_opciones);
+    return null;
+  };
+
+  const getItemQuantityStep = (item: OfferItemRequest): number => {
+    const portionStep = getItemPortionStep(item);
+    return portionStep ?? 1;
+  };
+
+  const getItemQuantityMin = (item: OfferItemRequest): number => {
+    if (item.categoria_id) return 1;
+    return getItemQuantityStep(item);
+  };
+
+  const getItemQuantityMax = (item: OfferItemRequest): number => {
+    const step = getItemQuantityStep(item);
+    if (step >= 1) return 1000;
+    const maxPortions = Math.round(1 / step) - 1;
+    return Number((step * maxPortions).toFixed(3));
+  };
+
+  const normalizeItemQuantity = (item: OfferItemRequest, rawQuantity: number): number => {
+    if (item.categoria_id) {
+      return Math.max(1, Math.floor(rawQuantity));
+    }
+
+    const step = getItemQuantityStep(item);
+    const min = getItemQuantityMin(item);
+    const max = getItemQuantityMax(item);
+
+    if (step >= 1) {
+      return Math.min(max, Math.max(min, Math.floor(rawQuantity)));
+    }
+
+    const maxCount = Math.round(max / step);
+    const roundedCount = Math.round(rawQuantity / step);
+    const boundedCount = Math.min(maxCount, Math.max(1, roundedCount));
+    return Number((boundedCount * step).toFixed(3));
+  };
+
   const handleQuantityChange = (index: number, newQuantity: number) => {
-    if (newQuantity < 1) return;
+    const currentItem = items[index];
+    if (!currentItem) return;
+
+    const normalizedQuantity = normalizeItemQuantity(currentItem, newQuantity);
+
     setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, cantidad: newQuantity } : item))
+      prev.map((item, i) => (i === index ? { ...item, cantidad: normalizedQuantity } : item))
     );
   };
 
-  // Helper to select the input value on focus/click/pointer up
-  const selectInputValue = (e: any) => {
-    try {
-      const input = (e.currentTarget || e.target) as HTMLInputElement;
-      if (input && typeof input.select === 'function') input.select();
-    } catch (err) {
-      /* ignore */
+  const formatItemQuantityValue = (item: OfferItemRequest): string => {
+    const quantity = Number(item.cantidad);
+    const step = getItemQuantityStep(item);
+
+    if (step >= 1) {
+      return `${Math.floor(quantity)}`;
     }
+
+    const denominator = Math.round(1 / step);
+    const numerator = Math.round(quantity / step);
+    return `${numerator}/${denominator}`;
   };
 
   const handleSave = async () => {
@@ -386,52 +455,52 @@ const OfferModal = ({
                                   {tipo}
                                 </Badge>
                               </td>
-                              <td className="item-detail">{detalle}</td>
+                              <td className="item-detail">
+                                {detalle}
+                                {!item.categoria_id && (
+                                  <span className="form-hint" style={{ marginLeft: '8px' }}>
+                                    ({formatItemQuantityValue(item)})
+                                  </span>
+                                )}
+                              </td>
                               <td className="item-cantidad">
                                 <div className="quantity-control" style={{ display: 'inline-flex' }}>
+                                  {(() => {
+                                    const step = getItemQuantityStep(item);
+                                    const min = getItemQuantityMin(item);
+                                    const max = getItemQuantityMax(item);
+                                    const current = Number(item.cantidad);
+                                    return (
+                                      <>
                                   <button
                                     type="button"
                                     className="qty-btn qty-btn-minus"
-                                    onClick={() => handleQuantityChange(index, item.cantidad - 1)}
-                                    disabled={item.cantidad <= 1 || loading}
+                                    onClick={() => handleQuantityChange(index, current - step)}
+                                    disabled={current <= min || loading}
                                     aria-label="Disminuir cantidad"
                                   >
                                     <Icons.MinusIcon size={14} />
                                   </button>
                                   <input
-                                    type="number"
-                                    min="1"
-                                    max="100"
+                                    type="text"
                                     className="qty-input"
-                                    value={item.cantidad}
-                                    onFocus={selectInputValue}
-                                    onClick={selectInputValue}
-                                    onPointerUp={selectInputValue}
-                                    onMouseUp={selectInputValue}
-                                    onInput={(e) => {
-                                      const value = parseInt((e.target as HTMLInputElement).value);
-                                      if (!isNaN(value)) {
-                                        handleQuantityChange(index, Math.max(1, value));
-                                      }
-                                    }}
-                                    onBlur={(e) => {
-                                      const value = parseInt(e.target.value);
-                                      if (isNaN(value) || value < 1) {
-                                        handleQuantityChange(index, 1);
-                                      }
-                                    }}
+                                    value={formatItemQuantityValue(item)}
                                     disabled={loading}
+                                    readOnly
                                     aria-label="Cantidad"
                                   />
                                   <button
                                     type="button"
                                     className="qty-btn qty-btn-plus"
-                                    onClick={() => handleQuantityChange(index, item.cantidad + 1)}
-                                    disabled={item.cantidad >= 1000 || loading}
+                                    onClick={() => handleQuantityChange(index, current + step)}
+                                    disabled={current >= max || loading}
                                     aria-label="Aumentar cantidad"
                                   >
                                     <Icons.PlusIcon size={14} />
                                   </button>
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </td>
                               <td>

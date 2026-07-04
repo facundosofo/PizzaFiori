@@ -49,7 +49,7 @@ def build_product_price_data(
     return {
         "id": id,
         "producto_id": producto_id,
-        "cantidad": cantidad,
+        "cantidad": Decimal(str(cantidad)),
         "precio": precio
     }
 
@@ -126,7 +126,7 @@ def build_product_price_model(
     price = MagicMock()
     price.id = id
     price.producto_id = producto_id
-    price.cantidad = cantidad
+    price.cantidad = Decimal(str(cantidad))
     price.precio = Decimal(str(precio))
     price.fecha_creacion = datetime.now()
     price.fecha_actualizacion = datetime.now()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +25,7 @@ class SqlAlchemyCategoryStockRepository(AbstractCategoryStockRepository):
         result = await self.session.execute(select(CategoryStock))
         return result.scalars().all()
 
-    async def deduct(self, categoria_id: int, cantidad: int) -> Optional[CategoryStock]:
+    async def deduct(self, categoria_id: int, cantidad: Decimal) -> Optional[CategoryStock]:
         stock = await self.get_by_categoria_id(categoria_id)
         if stock is None:
             return None

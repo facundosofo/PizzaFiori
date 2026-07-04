@@ -4,6 +4,8 @@ import Badge from "./shared/Badge";
 import type { CategoryStock, ProductStock } from "../types/stock";
 import { STOCK_ESTADO_BADGE, STOCK_ESTADO_LABELS } from "../types/stock";
 import { getProductStocks } from "../services/stockService";
+import { getProductos } from "../services/productsService";
+import StockQuantityDisplay from "./shared/StockQuantityDisplay";
 import StockAddModal from "./StockAddModal";
 import StockAlertsModal from "./StockAlertsModal";
 import "../styles/stock-product-breakdown.css";
@@ -17,6 +19,7 @@ interface StockProductBreakdownProps {
 
 const StockProductBreakdown = ({ categoria, isAdmin, onClose, onCategoryStockChanged }: StockProductBreakdownProps) => {
   const [products, setProducts] = useState<ProductStock[]>([]);
+  const [productPortionSizeMap, setProductPortionSizeMap] = useState<Record<number, number | null>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [addTarget, setAddTarget] = useState<ProductStock | null>(null);
@@ -25,8 +28,25 @@ const StockProductBreakdown = ({ categoria, isAdmin, onClose, onCategoryStockCha
   const loadProducts = useCallback(() => {
     setLoading(true);
     setError("");
-    getProductStocks(categoria.categoria_id)
-      .then(setProducts)
+    Promise.all([
+      getProductStocks(categoria.categoria_id),
+      getProductos(categoria.categoria_id),
+    ])
+      .then(([stockProducts, catalogProducts]) => {
+        setProducts(stockProducts);
+
+        const nextMap: Record<number, number | null> = {};
+        catalogProducts.forEach((product) => {
+          const portionValues = (product.precios || [])
+            .map((price) => Number(price.cantidad))
+            .filter((cantidad) => Number.isFinite(cantidad) && cantidad > 0 && cantidad < 1)
+            .sort((a, b) => a - b);
+
+          nextMap[product.id] = portionValues.length > 0 ? portionValues[0] : null;
+        });
+
+        setProductPortionSizeMap(nextMap);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Error al cargar productos"))
       .finally(() => setLoading(false));
   }, [categoria.categoria_id]);
@@ -119,7 +139,16 @@ const StockProductBreakdown = ({ categoria, isAdmin, onClose, onCategoryStockCha
                   </div>
 
                   <div className="spb-quantity">
-                    <span className={`spb-qty-number ${getQtyClass(product.estado, product.cantidad)}`}>{product.cantidad}</span>
+                    <StockQuantityDisplay
+                      value={product.cantidad}
+                      className={`spb-qty-number ${getQtyClass(product.estado, product.cantidad)}`}
+                      formatOptions={productPortionSizeMap[product.producto_id]
+                        ? {
+                            preferredDenominator: Math.max(1, Math.round(1 / (productPortionSizeMap[product.producto_id] as number))),
+                            reduceFraction: false,
+                          }
+                        : undefined}
+                    />
                     <span className="spb-qty-label">unidades</span>
                   </div>
                   {/*
@@ -186,6 +215,7 @@ const StockProductBreakdown = ({ categoria, isAdmin, onClose, onCategoryStockCha
           mode="producto"
           isOpen={addTarget !== null}
           target={addTarget}
+          productPortionSize={productPortionSizeMap[addTarget.producto_id] ?? null}
           onClose={() => setAddTarget(null)}
           onSave={(updated: ProductStock) => {
             handleProductStockSaved(updated);

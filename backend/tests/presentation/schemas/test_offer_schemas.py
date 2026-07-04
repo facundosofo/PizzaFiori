@@ -106,6 +106,45 @@ def test_offer_item_invalid_cantidad():
     assert len(errors) > 0
 
 
+def test_offer_item_producto_allows_fractional_quantity():
+    """Product items accept fractional quantities in steps of 0.125."""
+    data = {
+        "producto_id": 1,
+        "cantidad": Decimal("0.5"),
+    }
+
+    item = OfferItemRequest(**data)
+
+    assert item.producto_id == 1
+    assert item.cantidad == Decimal("0.5")
+
+
+def test_offer_item_opciones_allows_fractional_quantity():
+    """Option items accept fractional quantities in steps of 0.125."""
+    data = {
+        "producto_opciones": [1, 2, 3],
+        "cantidad": Decimal("0.25"),
+    }
+
+    item = OfferItemRequest(**data)
+
+    assert item.producto_opciones == [1, 2, 3]
+    assert item.cantidad == Decimal("0.25")
+
+
+def test_offer_item_categoria_rejects_fractional_quantity():
+    """Category items must keep integer quantities (no portions)."""
+    data = {
+        "categoria_id": 1,
+        "cantidad": Decimal("0.5"),
+    }
+
+    with pytest.raises(ValidationError) as exc_info:
+        OfferItemRequest(**data)
+
+    assert "categorías no permiten porciones" in str(exc_info.value).lower()
+
+
 # ==================== OfferCreateRequest Tests ====================
 
 def test_create_offer_valid():

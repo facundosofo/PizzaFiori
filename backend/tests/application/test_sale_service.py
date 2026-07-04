@@ -70,6 +70,28 @@ def test_get_product_price_unit_price():
     assert result == Decimal("1200.00")
 
 
+def test_get_product_price_fractional_quantity():
+    """Test pricing for fractional quantities like 0.25 portions."""
+    # Arrange
+    service = SaleService(uow=AsyncMock(), logger=AsyncMock())
+    
+    product = build_product_model(
+        id=1,
+        nombre="Empanada",
+        categoria_id=1,
+        precios=[
+            build_product_price_model(1, 1, Decimal("0.25"), 250.0),
+            build_product_price_model(2, 1, 1, 1200.0)
+        ]
+    )
+    
+    # Act - buying 0.25 portion
+    result = service._get_product_price(product, Decimal("0.25"))
+    
+    # Assert - the fractional portion should use the 0.25 tier and return the equivalent unit price
+    assert result == Decimal("1000.00")
+
+
 def test_get_product_price_mixed_range_7_units():
     """Test pricing with quantity in between tiers (7 units)."""
     # Arrange
@@ -139,8 +161,8 @@ def test_get_product_price_large_quantity():
     # Two full 12s (21600) + 2 units at 1200 each (2400)
     result = service._get_product_price(product, 26)
     
-    # Assert - should be (10800*2 + 2*1200) / 26
-    expected = (Decimal("21600") + Decimal("2400")) / Decimal("26")
+    # Assert - should be (10800*2 + 2*1200) / 26 rounded to two decimals
+    expected = ((Decimal("21600") + Decimal("2400")) / Decimal("26")).quantize(Decimal("0.01"))
     assert result == expected
 
 
@@ -262,6 +284,39 @@ async def test_create_sale_with_products(mock_uow, mock_logger):
     mock_uow.product_repo.get_by_id.assert_called_once_with(1)
     
     # Verify sale was created
+    mock_uow.sale_repo.add.assert_called_once()
+    mock_uow.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_sale_with_fractional_product_quantity(mock_uow, mock_logger):
+    """Test creating sale with fractional product quantity (porciones)."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+
+    request = SaleCreateRequest(
+        items=[
+            SaleItemRequest(producto_id=1, cantidad=Decimal("0.25"))
+        ]
+    )
+
+    product = build_product_model(
+        id=1,
+        nombre="Empanada",
+        categoria_id=1,
+        precios=[
+            build_product_price_model(1, 1, Decimal("0.25"), 250.0),
+            build_product_price_model(2, 1, 1, 1200.0)
+        ]
+    )
+    product.categoria = build_category_model(id=1, nombre="Empanadas")
+
+    mock_uow.product_repo.get_by_id.return_value = product
+    mock_uow.sale_repo.refresh = AsyncMock()
+
+    result = await service.create(request)
+
+    assert result.status_code == 201
+    assert result.value is not None
     mock_uow.sale_repo.add.assert_called_once()
     mock_uow.commit.assert_called_once()
 

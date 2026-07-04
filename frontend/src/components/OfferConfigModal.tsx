@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Offer, OfferItem } from '../types/offer';
 import type { Product } from '../types/product';
+import { formatMixedFraction } from '../utils/soldQuantityFormatter';
 import '../styles/shared/quantity-controls.css';
 import '../styles/offer-config-modal.css';
 import * as Icons from './shared/Icons';
@@ -29,6 +30,30 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const toNumber = (value: number | string | null | undefined): number => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const getFractionDenominator = (value: number): 2 | 4 | 8 => {
+    const normalized = Math.abs(value);
+    if (Math.abs(normalized * 2 - Math.round(normalized * 2)) < 1e-9 && Math.abs(normalized * 4 - Math.round(normalized * 4)) > 1e-9) {
+      return 2;
+    }
+    if (Math.abs(normalized * 4 - Math.round(normalized * 4)) < 1e-9 && Math.abs(normalized * 8 - Math.round(normalized * 8)) > 1e-9) {
+      return 4;
+    }
+    if (Math.abs(normalized * 4 - Math.round(normalized * 4)) < 1e-9) {
+      return 4;
+    }
+    return 8;
+  };
+
+  const formatQuantityWithX = (value: number): string => {
+    const denominator = getFractionDenominator(value);
+    return `${formatMixedFraction(value, { fallbackDenominator: denominator })}x`;
+  };
+
   // Map of itemIndex -> Map<productId, quantity> for category items
   const [categorySelections, setCategorySelections] = useState<Map<number, Map<number, number>>>(new Map());
   // Map of itemIndex -> selectedProductId for option items
@@ -68,7 +93,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
         const selections = categorySelections.get(index);
         if (!selections) return false;
         const total = Array.from(selections.values()).reduce((sum, qty) => sum + qty, 0);
-        if (total !== item.cantidad) return false;
+        if (total !== toNumber(item.cantidad)) return false;
       } else if (type === 'options') {
         if (!optionSelections.has(index)) return false;
       }
@@ -116,7 +141,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
       // Don't allow exceeding required quantity
       const currentTotal = Array.from(itemMap.values()).reduce((sum, qty) => sum + qty, 0);
       const newTotal = currentTotal - currentQty + newQty;
-      if (newTotal > item.cantidad) return prev;
+      if (newTotal > toNumber(item.cantidad)) return prev;
 
       const newItemMap = new Map(itemMap);
       if (newQty === 0) {
@@ -153,7 +178,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
           result.push({
             producto_id: item.productos[0].id,
             producto_nombre: item.productos[0].nombre,
-            cantidad: item.cantidad,
+                cantidad: toNumber(item.cantidad),
           });
         }
       } else if (type === 'category') {
@@ -180,7 +205,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
             result.push({
               producto_id: selectedProductId,
               producto_nombre: productOption.nombre,
-              cantidad: item.cantidad,
+                cantidad: toNumber(item.cantidad),
             });
           }
         }
@@ -229,7 +254,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
                     <div className="offer-config-category">
                       <div className="offer-config-category-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
                         <h3 className="offer-config-category-title" style={{ margin: 0 }}>
-                          {item.categoria_nombre || 'Productos disponibles'} ({item.cantidad}x)
+                          {item.categoria_nombre || 'Productos disponibles'} ({toNumber(item.cantidad)}x)
                         </h3>
                         <div className="offer-config-counter">
                           {(() => {
@@ -237,7 +262,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
                             const total = selections
                               ? Array.from(selections.values()).reduce((sum, qty) => sum + qty, 0)
                               : 0;
-                            return `${total} / ${item.cantidad} seleccionados`;
+                            return `${total} / ${toNumber(item.cantidad)} seleccionados`;
                           })()}
                         </div>
                       </div>
@@ -251,7 +276,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
                             const currentTotal = selections
                               ? Array.from(selections.values()).reduce((sum, q) => sum + q, 0)
                               : 0;
-                            const canIncrease = currentTotal < item.cantidad;
+                            const canIncrease = currentTotal < toNumber(item.cantidad);
 
                             return (
                               <div key={product.id} className="offer-config-product-card">
@@ -279,7 +304,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
                                           const v = parseInt((e.target as HTMLInputElement).value) || 0;
                                           const delta = v - qty;
                                           if (delta > 0) {
-                                            const toAdd = Math.min(delta, item.cantidad - currentTotal);
+                                            const toAdd = Math.min(delta, toNumber(item.cantidad) - currentTotal);
                                             handleQuantityChange(index, product.id, toAdd);
                                           } else if (delta < 0) {
                                             handleQuantityChange(index, product.id, delta);
@@ -310,7 +335,7 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
                   {type === 'options' && item.productos && (
                     <div className="offer-config-options-section">
                       <h3 className="offer-config-category-title">
-                        Selecciona una opción ({item.cantidad}x)
+                        Selecciona una opción ({formatQuantityWithX(toNumber(item.cantidad))})
                       </h3>
                       <div className="offer-config-options">
                         {item.productos.map((productOption) => {

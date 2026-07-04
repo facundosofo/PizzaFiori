@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from io import BytesIO
 from typing import List, Optional, Tuple
 
@@ -39,6 +39,7 @@ from reportlab.platypus import (
 from app.domain.models.expense import Expense
 from app.domain.models.sale import Sale
 from app.domain.unit_of_work import AbstractUnitOfWork
+from app.application.analytics_utils import format_mixed_fraction_quantity, infer_fraction_denominator
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -240,14 +241,14 @@ class ReportService:
             self.logger.info("Generando reporte", fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
 
             async with self.uow as uow:
-                from datetime import time, timedelta
+                from datetime import time
                 fecha_desde_dt = (
-                    datetime.combine(fecha_desde, time.min) + timedelta(hours=6)
+                    datetime.combine(fecha_desde, time.min)
                     if fecha_desde
                     else None
                 )
                 fecha_hasta_dt = (
-                    datetime.combine(fecha_hasta, time.max) + timedelta(hours=6)
+                    datetime.combine(fecha_hasta, time.max)
                     if fecha_hasta
                     else None
                 )
@@ -294,6 +295,42 @@ class ReportService:
             (datetime.combine(d, datetime.min.time()), t)
             for d, t in sorted(buckets.items())
         ]
+
+    def _portion_count_for_quantity(
+        self,
+        quantity: Decimal | float | int,
+        *,
+        category: str | None = None,
+        item_name: str | None = None,
+        base_quantity: Decimal | float | int | None = None,
+    ) -> int:
+        """Convierte cantidad vendida a conteo de porciones para resúmenes agregados."""
+        denominator = infer_fraction_denominator(
+            category=category,
+            item_name=item_name,
+            base_quantity=base_quantity,
+            default=1,
+        )
+        qty_decimal = Decimal(str(quantity or 0))
+        portions = (qty_decimal * Decimal(denominator)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        return int(portions)
+
+    @staticmethod
+    def _portion_label(portions: int) -> str:
+        return f"{portions} porción" if portions == 1 else f"{portions} porciones"
+
+    @staticmethod
+    def _normalize_products_and_portions_by_denominator(portions_by_denominator: dict[int, int]) -> tuple[int, int]:
+        """Convierte porciones acumuladas por denominador en productos enteros + porciones remanentes."""
+        total_products = 0
+        total_leftover_portions = 0
+        for denominator, total_portions in portions_by_denominator.items():
+            if denominator <= 1:
+                total_products += total_portions
+                continue
+            total_products += total_portions // denominator
+            total_leftover_portions += total_portions % denominator
+        return total_products, total_leftover_portions
 
     # ── Construcción del PDF ─────────────────────────────────────────────────
 
@@ -410,20 +447,50 @@ class ReportService:
         elements.append(HRFlowable(width="100%", thickness=1.5, color=GREEN_BASE, spaceAfter=0.4 * cm))
 
         # Calcular totales incluyendo desglose de ofertas
-        total_productos = 0
+        from collections import defaultdict
+
+        portions_by_denominator = defaultdict(int)
         for sale in sales:
             for item in sale.items:
                 if item.oferta_id and item.oferta_productos_snapshot:
                     for prod in item.oferta_productos_snapshot:
-                        total_productos += prod.cantidad * item.cantidad
+                        quantity = Decimal(str(prod.cantidad * item.cantidad))
+                        denominator = infer_fraction_denominator(
+                            category=prod.categoria_nombre,
+                            item_name=prod.producto_nombre,
+                            default=1,
+                        )
+                        portions = self._portion_count_for_quantity(
+                            quantity,
+                            category=prod.categoria_nombre,
+                            item_name=prod.producto_nombre,
+                        )
+                        portions_by_denominator[denominator] += portions
                 else:
-                    total_productos += item.cantidad
+                    quantity = Decimal(str(item.cantidad))
+                    denominator = infer_fraction_denominator(
+                        category=item.item_categoria,
+                        item_name=item.item_nombre,
+                        base_quantity=getattr(item, "precio_cantidad", None),
+                        default=1,
+                    )
+                    portions = self._portion_count_for_quantity(
+                        quantity,
+                        category=item.item_categoria,
+                        item_name=item.item_nombre,
+                        base_quantity=getattr(item, "precio_cantidad", None),
+                    )
+                    portions_by_denominator[denominator] += portions
+
+        total_productos, total_porciones = self._normalize_products_and_portions_by_denominator(
+            portions_by_denominator
+        )
 
         # KPIs
         if mostrar_resumen_periodo:
             elements.append(Paragraph("Resumen del Período", styles["section"]))
             elements.append(Spacer(1, 0.15 * cm))
-            elements.append(self._kpi_table(total_ventas, total_ingresos, total_productos, content_w, modo))
+            elements.append(self._kpi_table(total_ventas, total_ingresos, total_productos, total_porciones, content_w, modo))
             elements.append(Spacer(1, 0.5 * cm))
 
         # Resumen por Día
@@ -513,6 +580,10 @@ class ReportService:
                 "rpt_td", fontName="Helvetica", fontSize=7.5,
                 textColor=colors_["TEXT_BODY"], alignment=TA_CENTER, leading=10,
             ),
+            "td_order": ps(
+                "rpt_td_order", fontName="Helvetica", fontSize=6.2,
+                textColor=colors_["TEXT_BODY"], alignment=TA_CENTER, leading=8,
+            ),
             "td_item": ps(
                 "rpt_td_item", fontName="Helvetica", fontSize=7,
                 textColor=colors_["TEXT_BODY"], alignment=TA_LEFT, leading=9,
@@ -538,7 +609,8 @@ class ReportService:
         self,
         total_ventas: int,
         total_ingresos: Decimal,
-        total_productos: int,
+        total_productos: Decimal,
+        total_porciones: int,
         content_w: float,
         modo: str,
     ) -> Table:
@@ -552,19 +624,23 @@ class ReportService:
 
         data = [[
             card("Total de Ventas",    str(total_ventas)),
-            card("Productos Vendidos", str(total_productos)),
+            card("Productos Vendidos", format_mixed_fraction_quantity(total_productos)),
+            card("Porciones Vendidas", self._portion_label(total_porciones)),
             card("Ingresos Totales",   f"${float(total_ingresos):,.2f}"),
         ]]
 
-        cw       = content_w / 3
-        t        = Table(data, colWidths=[cw, cw, cw], rowHeights=[1.4 * cm])
+        cw       = content_w / 4
+        t        = Table(data, colWidths=[cw, cw, cw, cw], rowHeights=[1.4 * cm])
         bg_color = colors_["BG_RAISED"] if modo == "dark" else colors_["BG_MAIN"]
         t.setStyle(TableStyle([
             ("BACKGROUND",    (0, 0), (-1, -1), bg_color),
             ("LINEABOVE",     (0, 0), (0, 0),   2.5, colors_["GREEN_BASE"]),
             ("LINEABOVE",     (1, 0), (1, 0),   2.5, colors_["GREEN_BASE"]),
             ("LINEABOVE",     (2, 0), (2, 0),   2.5, colors_["GREEN_BASE"]),
-            ("LINEAFTER",     (0, 0), (1, 0),   0.5, colors_["BORDER_MAIN"]),
+            ("LINEABOVE",     (3, 0), (3, 0),   2.5, colors_["GREEN_BASE"]),
+            ("LINEAFTER",     (0, 0), (0, 0),   0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",     (1, 0), (1, 0),   0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",     (2, 0), (2, 0),   0.5, colors_["BORDER_MAIN"]),
             ("BOX",           (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
             ("LEFTPADDING",   (0, 0), (-1, -1), 10),
             ("RIGHTPADDING",  (0, 0), (-1, -1), 10),
@@ -602,7 +678,13 @@ class ReportService:
         for cat_name, cantidad in sorted_cats:
             rows.append([
                 Paragraph(cat_name,    styles["td_item"]),
-                Paragraph(str(cantidad), styles["td"]),
+                Paragraph(
+                    format_mixed_fraction_quantity(
+                        cantidad,
+                        denominator=infer_fraction_denominator(category=cat_name),
+                    ),
+                    styles["td"],
+                ),
             ])
 
         col_widths = [content_w * r for r in (0.60, 0.40)]
@@ -665,7 +747,16 @@ class ReportService:
             rows.append([
                 Paragraph(data["nombre"],    styles["td_item"]),
                 Paragraph(data["categoria"], styles["td"]),
-                Paragraph(str(data["cantidad"]), styles["td"]),
+                Paragraph(
+                    format_mixed_fraction_quantity(
+                        data["cantidad"],
+                        denominator=infer_fraction_denominator(
+                            category=data["categoria"],
+                            item_name=data["nombre"],
+                        ),
+                    ),
+                    styles["td"],
+                ),
             ])
 
         col_widths = [content_w * r for r in (0.45, 0.30, 0.25)]
@@ -699,7 +790,13 @@ class ReportService:
         from collections import defaultdict
         import datetime as dt_mod
 
-        daily = defaultdict(lambda: {"ventas": 0, "productos": 0, "ingresos": Decimal("0")})
+        daily = defaultdict(
+            lambda: {
+                "ventas": 0,
+                "ingresos": Decimal("0"),
+                "portions_by_denominator": defaultdict(int),
+            }
+        )
         for sale in sales:
             day = (sale.fecha_creacion - dt_mod.timedelta(hours=6)).date()
             daily[day]["ventas"]   += 1
@@ -707,27 +804,135 @@ class ReportService:
             for item in sale.items:
                 if item.oferta_id and item.oferta_productos_snapshot:
                     for prod in item.oferta_productos_snapshot:
-                        daily[day]["productos"] += prod.cantidad * item.cantidad
+                        quantity = Decimal(str(prod.cantidad * item.cantidad))
+                        denominator = infer_fraction_denominator(
+                            category=prod.categoria_nombre,
+                            item_name=prod.producto_nombre,
+                            default=1,
+                        )
+                        portions = self._portion_count_for_quantity(
+                            quantity,
+                            category=prod.categoria_nombre,
+                            item_name=prod.producto_nombre,
+                        )
+                        daily[day]["portions_by_denominator"][denominator] += portions
                 else:
-                    daily[day]["productos"] += item.cantidad
+                    quantity = Decimal(str(item.cantidad))
+                    denominator = infer_fraction_denominator(
+                        category=item.item_categoria,
+                        item_name=item.item_nombre,
+                        base_quantity=getattr(item, "precio_cantidad", None),
+                        default=1,
+                    )
+                    portions = self._portion_count_for_quantity(
+                        quantity,
+                        category=item.item_categoria,
+                        item_name=item.item_nombre,
+                        base_quantity=getattr(item, "precio_cantidad", None),
+                    )
+                    daily[day]["portions_by_denominator"][denominator] += portions
 
         sorted_days = sorted(daily.items())
         headers = [
             Paragraph("Fecha",             styles["th"]),
             Paragraph("Total de Ventas",   styles["th"]),
             Paragraph("Productos Vendidos", styles["th"]),
+            Paragraph("Porciones Vendidas", styles["th"]),
             Paragraph("Ingresos Totales",  styles["th"]),
         ]
         rows = [headers]
         for day, data in sorted_days:
+            products_sold, portions_leftover = self._normalize_products_and_portions_by_denominator(
+                data["portions_by_denominator"]
+            )
             rows.append([
                 Paragraph(day.strftime("%d/%m/%Y"),         styles["td"]),
                 Paragraph(str(data["ventas"]),              styles["td"]),
-                Paragraph(str(data["productos"]),           styles["td"]),
+                Paragraph(str(products_sold),                styles["td"]),
+                Paragraph(self._portion_label(portions_leftover), styles["td"]),
                 Paragraph(f"${float(data['ingresos']):,.2f}", styles["td_money"]),
             ])
 
-        col_widths = [content_w * r for r in (0.18, 0.22, 0.30, 0.30)]
+        col_widths = [content_w * r for r in (0.17, 0.17, 0.23, 0.21, 0.22)]
+        colors_    = get_theme_colors(modo)
+        t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
+            ("LINEBELOW",      (0, 0), (-1, 0),  1.5, colors_["GREEN_BASE"]),
+            ("TOPPADDING",     (0, 0), (-1, 0),  8),
+            ("BOTTOMPADDING",  (0, 0), (-1, 0),  8),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors_["BG_MAIN"], colors_["BG_SECOND"]]),
+            ("TOPPADDING",     (0, 1), (-1, -1), 4),
+            ("BOTTOMPADDING",  (0, 1), (-1, -1), 4),
+            ("LINEBELOW",      (0, 1), (-1, -2), 0.3, colors_["BORDER_SUB"]),
+            ("BOX",            (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (0, 0), (0, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (1, 0), (1, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (2, 0), (2, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (3, 0), (3, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("LINEAFTER",      (4, 0), (4, -1),  0.5, colors_["BORDER_MAIN"]),
+            ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
+            ("ALIGN",          (0, 1), (0, -1),  "LEFT"),
+            ("ALIGN",          (4, 1), (4, -1),  "RIGHT"),
+            ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING",    (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
+        ]))
+        return t
+
+    def _monthly_summary_table(self, sales: List[Sale], styles: dict, content_w: float, modo: str) -> Table:
+        from collections import defaultdict
+        import datetime as dt_mod
+
+        MONTH_NAMES = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+        ]
+        monthly = defaultdict(lambda: {"ventas": 0, "productos": Decimal("0"), "porciones": 0, "ingresos": Decimal("0")})
+        for sale in sales:
+            m = (sale.fecha_creacion - dt_mod.timedelta(hours=6)).month
+            monthly[m]["ventas"]   += 1
+            monthly[m]["ingresos"] += sale.total
+            for item in sale.items:
+                if item.oferta_id and item.oferta_productos_snapshot:
+                    for prod in item.oferta_productos_snapshot:
+                        quantity = Decimal(str(prod.cantidad * item.cantidad))
+                        monthly[m]["productos"] += quantity
+                        monthly[m]["porciones"] += self._portion_count_for_quantity(
+                            quantity,
+                            category=prod.categoria_nombre,
+                            item_name=prod.producto_nombre,
+                        )
+                else:
+                    quantity = Decimal(str(item.cantidad))
+                    monthly[m]["productos"] += quantity
+                    monthly[m]["porciones"] += self._portion_count_for_quantity(
+                        quantity,
+                        category=item.item_categoria,
+                        item_name=item.item_nombre,
+                        base_quantity=getattr(item, "precio_cantidad", None),
+                    )
+
+        sorted_months = sorted(monthly.keys())
+        headers = [
+            Paragraph("Mes",                styles["th"]),
+            Paragraph("Total de Ventas",    styles["th"]),
+            Paragraph("Productos Vendidos", styles["th"]),
+            Paragraph("Porciones Vendidas", styles["th"]),
+            Paragraph("Ingresos Totales",   styles["th"]),
+        ]
+        rows = [headers]
+        for m in sorted_months:
+            data = monthly[m]
+            rows.append([
+                Paragraph(MONTH_NAMES[m - 1],                styles["td_item"]),
+                Paragraph(str(data["ventas"]),               styles["td"]),
+                Paragraph(format_mixed_fraction_quantity(data["productos"]), styles["td"]),
+                Paragraph(self._portion_label(data["porciones"]), styles["td"]),
+                Paragraph(f"${float(data['ingresos']):,.2f}", styles["td_money"]),
+            ])
+
+        col_widths = [content_w * r for r in (0.22, 0.18, 0.23, 0.17, 0.20)]
         colors_    = get_theme_colors(modo)
         t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
         t.setStyle(TableStyle([
@@ -746,69 +951,7 @@ class ReportService:
             ("LINEAFTER",      (3, 0), (3, -1),  0.5, colors_["BORDER_MAIN"]),
             ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
             ("ALIGN",          (0, 1), (0, -1),  "LEFT"),
-            ("ALIGN",          (3, 1), (3, -1),  "RIGHT"),
-            ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING",    (0, 0), (-1, -1), 6),
-            ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
-        ]))
-        return t
-
-    def _monthly_summary_table(self, sales: List[Sale], styles: dict, content_w: float, modo: str) -> Table:
-        from collections import defaultdict
-        import datetime as dt_mod
-
-        MONTH_NAMES = [
-            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-        ]
-        monthly = defaultdict(lambda: {"ventas": 0, "productos": 0, "ingresos": Decimal("0")})
-        for sale in sales:
-            m = (sale.fecha_creacion - dt_mod.timedelta(hours=6)).month
-            monthly[m]["ventas"]   += 1
-            monthly[m]["ingresos"] += sale.total
-            for item in sale.items:
-                if item.oferta_id and item.oferta_productos_snapshot:
-                    for prod in item.oferta_productos_snapshot:
-                        monthly[m]["productos"] += prod.cantidad * item.cantidad
-                else:
-                    monthly[m]["productos"] += item.cantidad
-
-        sorted_months = sorted(monthly.keys())
-        headers = [
-            Paragraph("Mes",                styles["th"]),
-            Paragraph("Total de Ventas",    styles["th"]),
-            Paragraph("Productos Vendidos", styles["th"]),
-            Paragraph("Ingresos Totales",   styles["th"]),
-        ]
-        rows = [headers]
-        for m in sorted_months:
-            data = monthly[m]
-            rows.append([
-                Paragraph(MONTH_NAMES[m - 1],                styles["td_item"]),
-                Paragraph(str(data["ventas"]),               styles["td"]),
-                Paragraph(str(data["productos"]),            styles["td"]),
-                Paragraph(f"${float(data['ingresos']):,.2f}", styles["td_money"]),
-            ])
-
-        col_widths = [content_w * r for r in (0.25, 0.22, 0.28, 0.25)]
-        colors_    = get_theme_colors(modo)
-        t = Table(rows, colWidths=col_widths, rowHeights=None, repeatRows=1)
-        t.setStyle(TableStyle([
-            ("BACKGROUND",     (0, 0), (-1, 0),  colors_["BG_RAISED"]),
-            ("LINEBELOW",      (0, 0), (-1, 0),  1.5, colors_["GREEN_BASE"]),
-            ("TOPPADDING",     (0, 0), (-1, 0),  8),
-            ("BOTTOMPADDING",  (0, 0), (-1, 0),  8),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors_["BG_MAIN"], colors_["BG_SECOND"]]),
-            ("TOPPADDING",     (0, 1), (-1, -1), 4),
-            ("BOTTOMPADDING",  (0, 1), (-1, -1), 4),
-            ("LINEBELOW",      (0, 1), (-1, -2), 0.3, colors_["BORDER_SUB"]),
-            ("BOX",            (0, 0), (-1, -1), 1,   colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (0, 0), (0, -1),  0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (1, 0), (1, -1),  0.5, colors_["BORDER_MAIN"]),
-            ("LINEAFTER",      (2, 0), (2, -1),  0.5, colors_["BORDER_MAIN"]),
-            ("ALIGN",          (0, 0), (-1, -1), "CENTER"),
-            ("ALIGN",          (0, 1), (0, -1),  "LEFT"),
-            ("ALIGN",          (3, 1), (3, -1),  "RIGHT"),
+            ("ALIGN",          (4, 1), (4, -1),  "RIGHT"),
             ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING",    (0, 0), (-1, -1), 6),
             ("RIGHTPADDING",   (0, 0), (-1, -1), 8),
@@ -853,6 +996,7 @@ class ReportService:
 
         for sale in sales:
             fecha_str      = sale.fecha_creacion.strftime("%d/%m/%y %H:%M")
+            order_str      = sale.numero_orden if sale.numero_orden else ""
             sale_start_row = len(rows)
             first_row      = True
 
@@ -863,10 +1007,20 @@ class ReportService:
                     # ── fila cabecera de oferta ───────────────────────────────
                     rows.append([
                         Paragraph(fecha_str if first_row else "",          styles["td"]),
-                        Paragraph(sale.numero_orden if first_row else "",  styles["td"]),
+                        Paragraph(order_str if first_row else "",          styles["td_order"]),
                         Paragraph(f" {item.item_nombre}",                  styles["td_item"]),
                         Paragraph("OFERTA",                                styles["td"]),
-                        Paragraph(str(item.cantidad),                      styles["td"]),
+                        Paragraph(
+                            format_mixed_fraction_quantity(
+                                item.cantidad,
+                                denominator=infer_fraction_denominator(
+                                    category=item.item_categoria,
+                                    item_name=item.item_nombre,
+                                    base_quantity=getattr(item, "precio_cantidad", None),
+                                ),
+                            ),
+                            styles["td"],
+                        ),
                         Paragraph(f"${float(item.precio_unitario):,.2f}",  styles["td"]),
                         Paragraph(f"${float(item.subtotal):,.2f}",         styles["td_money"]),
                     ])
@@ -879,7 +1033,16 @@ class ReportService:
                             Paragraph("", styles["td"]),
                             Paragraph(prod.producto_nombre,              styles["td_item"]),
                             Paragraph(prod.categoria_nombre or "-",      styles["td"]),
-                            Paragraph(str(prod.cantidad * item.cantidad), styles["td"]),
+                            Paragraph(
+                                format_mixed_fraction_quantity(
+                                    prod.cantidad * item.cantidad,
+                                    denominator=infer_fraction_denominator(
+                                        category=prod.categoria_nombre,
+                                        item_name=prod.producto_nombre,
+                                    ),
+                                ),
+                                styles["td"],
+                            ),
                             Paragraph("", styles["td"]),
                             Paragraph("", styles["td_money"]),
                         ])
@@ -888,10 +1051,20 @@ class ReportService:
                     # ── fila de ítem regular ──────────────────────────────────
                     rows.append([
                         Paragraph(fecha_str if first_row else "",         styles["td"]),
-                        Paragraph(sale.numero_orden if first_row else "", styles["td"]),
+                        Paragraph(order_str if first_row else "",         styles["td_order"]),
                         Paragraph(item.item_nombre,                       styles["td_item"]),
                         Paragraph(item.item_categoria,                    styles["td"]),
-                        Paragraph(str(item.cantidad),                     styles["td"]),
+                        Paragraph(
+                            format_mixed_fraction_quantity(
+                                item.cantidad,
+                                denominator=infer_fraction_denominator(
+                                    category=item.item_categoria,
+                                    item_name=item.item_nombre,
+                                    base_quantity=getattr(item, "precio_cantidad", None),
+                                ),
+                            ),
+                            styles["td"],
+                        ),
                         Paragraph(f"${float(item.precio_unitario):,.2f}", styles["td"]),
                         Paragraph(f"${float(item.subtotal):,.2f}",        styles["td_money"]),
                     ])
@@ -954,7 +1127,7 @@ class ReportService:
             sale_sep_rows.append(tot_idx)
 
         # ── anchos de columna ─────────────────────────────────────────────────
-        col_widths = [content_w * r for r in (0.14, 0.18, 0.22, 0.13, 0.08, 0.13, 0.12)]
+        col_widths = [content_w * r for r in (0.14, 0.17, 0.22, 0.12, 0.12, 0.12, 0.11)]
 
         # ── estilos base ──────────────────────────────────────────────────────
         table_styles = [

@@ -27,7 +27,7 @@ class RevenuePorPeriodoResponse(BaseModel):
     año: str | None = Field(None, description="Año (para yearly)")
     ingresos: float = Field(..., description="Monto total en pesos")
     pedidos: int = Field(..., description="Cantidad de pedidos/órdenes")
-    cantidad: int = Field(..., description="Cantidad de items vendidos")
+    cantidad: float = Field(..., description="Cantidad de items vendidos")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -35,7 +35,7 @@ class RevenuePorPeriodoResponse(BaseModel):
                 "fecha": "2026-02-08",
                 "ingresos": 15000.50,
                 "pedidos": 5,
-                "cantidad": 12
+                "cantidad": 12.0
             }
         }
     )
@@ -46,7 +46,7 @@ class RevenueEn12MesesResponse(BaseModel):
     mes: str = Field(..., description="Nombre del mes (Ene, Feb, etc)")
     ingresos: float = Field(..., description="Monto total en pesos")
     pedidos: int = Field(..., description="Cantidad de pedidos/órdenes")
-    cantidad: int = Field(..., description="Cantidad de items vendidos")
+    cantidad: float = Field(..., description="Cantidad de items vendidos")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -54,7 +54,7 @@ class RevenueEn12MesesResponse(BaseModel):
                 "mes": "Ene",
                 "ingresos": 45000.0,
                 "pedidos": 20,
-                "cantidad": 56
+                "cantidad": 56.0
             }
         }
     )
@@ -64,7 +64,8 @@ class ProductoDestacadoResponse(BaseModel):
     """Respuesta para Ranking de productos."""
     nombre: str = Field(..., description="Nombre del producto")
     categoria: str = Field(..., description="Categoría del producto")
-    cantidad: int = Field(..., description="Cantidad total vendida")
+    cantidad: float = Field(..., description="Cantidad total vendida")
+    cantidad_display: str | None = Field(None, description="Cantidad formateada para visualización")
     precio: float = Field(..., description="Precio promedio de venta")
     enStock: bool = Field(default=True, description="Indica si está en stock")
 
@@ -73,7 +74,8 @@ class ProductoDestacadoResponse(BaseModel):
             "example": {
                 "nombre": "Muzzarella",
                 "categoria": "Pizzas",
-                "cantidad": 45,
+                "cantidad": 45.0,
+                "cantidad_display": "45",
                 "precio": 1200.0,
                 "enStock": True
             }
@@ -84,13 +86,19 @@ class ProductoDestacadoResponse(BaseModel):
 class VentasPorCategoriaResponse(BaseModel):
     """Respuesta para ventas agrupadas por categoria."""
     categoria: str = Field(..., description="Nombre de la categoria")
-    cantidad: int = Field(..., description="Cantidad total vendida")
+    cantidad: float = Field(..., description="Cantidad total vendida")
+    cantidad_display: str | None = Field(None, description="Cantidad formateada para visualización")
+    productos_vendidos: int | None = Field(None, description="Productos completos vendidos")
+    porciones_vendidas: int | None = Field(None, description="Porciones remanentes vendidas")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "categoria": "Pizzas",
-                "cantidad": 120
+                "cantidad": 120.0,
+                "cantidad_display": "120",
+                "productos_vendidos": 120,
+                "porciones_vendidas": 0,
             }
         }
     )
@@ -234,9 +242,10 @@ class ResumenProductosResponse(BaseModel):
     """Resumen de productos destacados para cards del dashboard."""
     producto_mas_vendido: str = Field(..., description="Nombre del producto más vendido")
     categoria_mas_vendida: str = Field(default="", description="Categoría del producto más vendido")
-    cantidad_mas_vendida: int = Field(..., description="Cantidad vendida del producto más vendido")
+    cantidad_mas_vendida: float = Field(..., description="Cantidad vendida del producto más vendido")
+    cantidad_mas_vendida_display: str | None = Field(None, description="Cantidad formateada para visualización")
     promocion_mas_vendida: str | None = Field(None, description="Nombre de la oferta/promoción más vendida")
-    cantidad_promocion: int = Field(default=0, description="Cantidad de promociones vendidas")
+    cantidad_promocion: float = Field(default=0, description="Cantidad de promociones vendidas")
     mes_actual: str = Field(..., description="Mes y año actual (ej: 'Febrero 2026')")
 
 

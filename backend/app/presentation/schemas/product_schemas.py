@@ -10,14 +10,20 @@ from typing import List, Optional
 
 class ProductoPrecioRequest(BaseModel):
     id: Optional[int] = None
-    cantidad: int = Field(...,gt=0,le=1000,description="Cantidad mínima para aplicar el precio")
+    cantidad: Decimal = Field(
+        ..., 
+        gt=Decimal("0.000"),
+        le=Decimal("1000"),
+        multiple_of=Decimal("0.125"),
+        description="Cantidad mínima para aplicar el precio (acepta 0.125, 0.25, 0.5, 1, etc.)"
+    )
     precio: Decimal = Field(...,gt=0,le=99_999_999.99,max_digits=10, decimal_places=2,description="Precio para la cantidad indicada")
 
 class ProductoPrecioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: int
-    cantidad: int
+    cantidad: Decimal
     precio: Decimal
 
 # ======================================================
@@ -44,6 +50,10 @@ class ProductoCreateRequest(BaseModel):
                 "Debe existir un precio unitario"
             )
 
+        fractional_prices = [c for c in cantidades if c < 1]
+        if len(fractional_prices) > 1:
+            raise ValueError("Solo se permite un precio PORCION por producto")
+
         return self
 
     
@@ -69,6 +79,10 @@ class ProductoUpdateRequest(BaseModel):
                 raise ValueError(
                     "Debe existir un precio unitario"
                 )
+
+            fractional_prices = [c for c in cantidades if c < 1]
+            if len(fractional_prices) > 1:
+                raise ValueError("Solo se permite un precio PORCION por producto")
 
         return self
 

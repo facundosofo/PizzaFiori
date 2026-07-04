@@ -300,7 +300,7 @@ class DashboardService:
                 "fecha": row.date.strftime("%Y-%m-%d"),
                 "ingresos": float(row.revenue or 0),
                 "pedidos": int(row.pedidos or 0),
-                "cantidad": int(row.cantidad or 0),
+                "cantidad": float(row.cantidad or 0),
             }
             for row in rows
         ]
@@ -441,7 +441,7 @@ class DashboardService:
                     "mes": f"{months[current_month - 1]} {current_year}",
                     "ingresos": float(row.revenue or 0) if row else 0,
                     "pedidos": int(row.pedidos or 0) if row else 0,
-                    "cantidad": int(row.cantidad or 0) if row else 0,
+                    "cantidad": float(row.cantidad or 0) if row else 0,
                 }
             )
 
@@ -581,7 +581,7 @@ class DashboardService:
                     "semana": label,
                     "ingresos": float(row.revenue or 0) if row else 0,
                     "pedidos": int(row.pedidos or 0) if row else 0,
-                    "cantidad": int(row.cantidad or 0) if row else 0,
+                    "cantidad": float(row.cantidad or 0) if row else 0,
                 }
             )
             current += timedelta(weeks=1)
@@ -692,7 +692,7 @@ class DashboardService:
                 "año": str(year),
                 "ingresos": float(year_data[year].revenue or 0) if year in year_data else 0.0,
                 "pedidos": int(year_data[year].pedidos or 0) if year in year_data else 0,
-                "cantidad": int(year_data[year].cantidad or 0) if year in year_data else 0,
+                "cantidad": float(year_data[year].cantidad or 0) if year in year_data else 0,
             }
             for year in range(start_year, current_year + 1)
         ]
@@ -856,7 +856,7 @@ class DashboardService:
             {
                 "nombre": row.name,
                 "categoria": row.category or "Sin categoría",
-                "cantidad": int(row.total_quantity or 0),
+                "cantidad": float(row.total_quantity or 0),
                 "precio": float(row.price or 0),
                 "enStock": True,
             }
@@ -983,7 +983,7 @@ class DashboardService:
         return [
             {
                 "categoria": row.category or "Sin categoria",
-                "cantidad": int(row.total_quantity or 0),
+                "cantidad": float(row.total_quantity or 0),
             }
             for row in rows
         ]

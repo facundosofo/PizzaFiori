@@ -32,14 +32,92 @@ const ProductModal = ({
   const [categoriaId, setCategoriaId] = useState("");
   const [imagen, setImagen] = useState<File | null>(null);
   const [previewImagen, setPreviewImagen] = useState("/placeholder.png");
-  const [precios, setPrecios] = useState<Array<{ cantidad: number; precio: number }>>([]);
+  const [precios, setPrecios] = useState<Array<{ id?: number; cantidad: number; precio: number }>>([]);
   const [preciosInput, setPreciosInput] = useState<string[]>([]);
+  const [cantidadInputs, setCantidadInputs] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const [priceIndexToDelete, setPriceIndexToDelete] = useState<number | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+
+  const FRACTION_QUANTITIES = [0.125, 0.25, 0.5] as const;
+  const isSameQuantity = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+  const isPortionQuantity = (cantidad: number) => FRACTION_QUANTITIES.some((value) => isSameQuantity(value, cantidad));
+  const formatCantidadDisplay = (cantidad: number): string => {
+    if (isSameQuantity(cantidad, 0.5)) return "1/2";
+    if (isSameQuantity(cantidad, 0.25)) return "1/4";
+    if (isSameQuantity(cantidad, 0.125)) return "1/8";
+    return `${Math.round(cantidad)}`;
+  };
+  const parseCantidadInput = (value: string) => {
+    const normalized = value.replace(",", ".").trim();
+    const fractionMatch = normalized.match(/^(\d+)\s*\/\s*(\d+)$/);
+    if (fractionMatch) {
+      const numerator = parseInt(fractionMatch[1], 10);
+      const denominator = parseInt(fractionMatch[2], 10);
+      if (denominator > 0) {
+        return numerator / denominator;
+      }
+    }
+    const numeric = parseFloat(normalized);
+    return Number.isFinite(numeric) ? numeric : NaN;
+  };
+  const getNearestPortion = (value: number): number => {
+    let nearest: number = FRACTION_QUANTITIES[0];
+    let minDiff = Infinity;
+    FRACTION_QUANTITIES.forEach((portion) => {
+      const diff = Math.abs(portion - value);
+      if (diff < minDiff) {
+        minDiff = diff;
+        nearest = portion;
+      }
+    });
+    return nearest;
+  };
+  const normalizeCantidad = (value: number) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+      return 1;
+    }
+    if (numericValue < 1) {
+      return getNearestPortion(numericValue);
+    }
+    return Math.max(1, Math.round(numericValue));
+  };
+  const getNextCantidad = (current: number) => {
+    if (current < 1) {
+      if (isSameQuantity(current, 0.125)) return 0.25;
+      if (isSameQuantity(current, 0.25)) return 0.5;
+      if (isSameQuantity(current, 0.5)) return 1;
+      return 1;
+    }
+    return Math.round(current) + 1;
+  };
+  const getPrevCantidad = (current: number) => {
+    if (current > 1) {
+      return Math.round(current) - 1;
+    }
+    if (isSameQuantity(current, 1)) return 0.5;
+    if (isSameQuantity(current, 0.5)) return 0.25;
+    if (isSameQuantity(current, 0.25)) return 0.125;
+    return 0.125;
+  };
+  const canDecreaseCantidad = (current: number, index: number) => {
+    if (isSameQuantity(current, 0.125)) return false;
+    if (isSameQuantity(current, 1)) {
+      const hasOtherPortion = precios.some((p, i) => i !== index && p.cantidad < 1);
+      return !hasOtherPortion;
+    }
+    return true;
+  };
+  const formatCantidadBadge = (cantidad: number) => {
+    if (isSameQuantity(cantidad, 0.5)) return "Porción 1/2";
+    if (isSameQuantity(cantidad, 0.25)) return "Porción 1/4";
+    if (isSameQuantity(cantidad, 0.125)) return "Porción 1/8";
+    return "";
+  };
 
   // Auto-scroll al error cuando aparece
   useEffect(() => {
@@ -57,9 +135,15 @@ const ProductModal = ({
       if (producto.id === 0) {
         setPrecios([{ cantidad: 1, precio: 0 }]);
         setPreciosInput([""]);
+        setCantidadInputs([formatCantidadDisplay(1)]);
       } else {
-        setPrecios(producto.precios?.map(p => ({ cantidad: p.cantidad, precio: p.precio })) || []);
-        setPreciosInput(producto.precios?.map(p => formatCurrency(p.precio)) || []);
+        setPrecios(producto.precios?.map(p => ({
+          id: p.id,
+          cantidad: Number(p.cantidad),
+          precio: Number(p.precio),
+        })) || []);
+        setPreciosInput(producto.precios?.map(p => formatCurrency(Number(p.precio))) || []);
+        setCantidadInputs(producto.precios?.map(p => formatCantidadDisplay(Number(p.cantidad))) || []);
       }
 
       setPreviewImagen(
@@ -109,17 +193,32 @@ const ProductModal = ({
       return setError("El precio no puede exceder 99.999.999,99");
     }
 
+    const normalizedPrecios = precios.map((p) => ({
+      ...p,
+      cantidad: p.cantidad < 1 ? normalizeCantidad(p.cantidad) : Math.max(1, Math.round(p.cantidad)),
+    }));
+
+    if (!normalizedPrecios.every((p, index) => isSameQuantity(p.cantidad, precios[index].cantidad))) {
+      setPrecios(normalizedPrecios);
+      setCantidadInputs(normalizedPrecios.map((p) => formatCantidadDisplay(p.cantidad)));
+    }
+
     // Validar que existe precio unitario
-    const tienePrecioUnitario = precios.some(p => p.cantidad === 1);
+    const tienePrecioUnitario = normalizedPrecios.some(p => isSameQuantity(p.cantidad, 1));
     if (!tienePrecioUnitario) {
       return setError("Debe existir un precio unitario para el producto");
     }
 
     // Validar que no haya cantidades duplicadas
-    const cantidades = precios.map(p => p.cantidad);
+    const cantidades = normalizedPrecios.map(p => p.cantidad);
     const cantidadesUnicas = new Set(cantidades);
     if (cantidades.length !== cantidadesUnicas.size) {
       return setError("No se permiten cantidades duplicadas en los precios del producto");
+    }
+
+    const portionCount = normalizedPrecios.filter(p => p.cantidad < 1).length;
+    if (portionCount > 1) {
+      return setError("Un producto no puede tener más de un precio de porción");
     }
 
     setLoading(true);
@@ -127,7 +226,7 @@ const ProductModal = ({
       const productData = {
         nombre: nombre.trim(),
         categoria_id: parseInt(categoriaId),
-        precios: precios,
+        precios: normalizedPrecios,
         imagen: imagen,
       };
 
@@ -224,27 +323,32 @@ const ProductModal = ({
                   <div className="prices-editor">
                     {precios.length > 0 ? (
                       precios.map((precio_item, index) => (
-                        <div key={index} className="price-edit-row">
+                        <div key={precio_item.id ?? index} className="price-edit-row">
 
                           <div className="price-edit-field">
                             <label className="price-edit-label">
                               Cantidad
-                              {precio_item.cantidad === 1 && (
+                              {isPortionQuantity(precio_item.cantidad) && (
+                                <span className="unit-price-badge" title={formatCantidadBadge(precio_item.cantidad)}>
+                                  ★ {formatCantidadBadge(precio_item.cantidad)}
+                                </span>
+                              )}
+                              {isSameQuantity(precio_item.cantidad, 1) && (
                                 <span className="unit-price-badge" title="Precio unitario obligatorio">
                                   ★ Unitario
                                 </span>
                               )}
-                              {precio_item.cantidad === 6 && (
+                              {isSameQuantity(precio_item.cantidad, 6) && (
                                 <span className="unit-price-badge" title="Precio por media docena">
                                   ★ 1/2 Docena
                                 </span>
                               )}
-                              {precio_item.cantidad === 12 && (
+                              {isSameQuantity(precio_item.cantidad, 12) && (
                                 <span className="unit-price-badge" title="Precio por docena">
                                   ★ Docena
                                 </span>
                               )}
-                              {precio_item.cantidad > 12 && precio_item.cantidad % 12 === 0 && (
+                              {precio_item.cantidad > 12 && isSameQuantity(precio_item.cantidad % 12, 0) && (
                                 <span className="unit-price-badge" title={`Precio por ${precio_item.cantidad / 12} docenas`}>
                                   ★ {precio_item.cantidad / 12} Docenas
                                 </span>
@@ -258,25 +362,51 @@ const ProductModal = ({
                                 onClick={() => {
                                   const newPrecios = [...precios];
                                   const current = newPrecios[index].cantidad;
-                                  newPrecios[index].cantidad = Math.max(1, current - 1);
+                                  const next = getPrevCantidad(current);
+                                  newPrecios[index].cantidad = next;
                                   setPrecios(newPrecios);
+                                  const nextInputs = [...cantidadInputs];
+                                  nextInputs[index] = formatCantidadDisplay(next);
+                                  setCantidadInputs(nextInputs);
                                 }}
-                                disabled={loading}
+                                disabled={loading || !canDecreaseCantidad(precio_item.cantidad, index)}
                               >
                                 <Icons.MinusIcon size={14} />
                               </button>
                               <input
-                                type="number"
-                                min="1"
-                                max="1000"
+                                type="text"
+                                inputMode="decimal"
                                 className="qty-input"
-                                value={precio_item.cantidad}
-                                onFocus={(e) => e.target.select()}
+                                value={cantidadInputs[index] ?? formatCantidadDisplay(precio_item.cantidad)}
+                                onFocus={(e) => {
+                                  e.target.select();
+                                  const nextInputs = [...cantidadInputs];
+                                  nextInputs[index] = cantidadInputs[index] ?? formatCantidadDisplay(precio_item.cantidad);
+                                  setCantidadInputs(nextInputs);
+                                }}
                                 onChange={(e) => {
-                                  const valor = parseInt(e.target.value) || 1;
+                                  const rawValue = e.target.value;
+                                  const nextInputs = [...cantidadInputs];
+                                  nextInputs[index] = rawValue;
+                                  setCantidadInputs(nextInputs);
+
+                                  const parsed = parseCantidadInput(rawValue);
+                                  if (!Number.isNaN(parsed) && parsed > 0) {
+                                    const newPrecios = [...precios];
+                                    newPrecios[index].cantidad = parsed < 1 ? normalizeCantidad(parsed) : Math.max(1, Math.round(parsed));
+                                    setPrecios(newPrecios);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  const rawValue = cantidadInputs[index] ?? formatCantidadDisplay(precio_item.cantidad);
+                                  const parsed = parseCantidadInput(rawValue);
+                                  const normalized = !Number.isNaN(parsed) && parsed > 0 ? normalizeCantidad(parsed) : precio_item.cantidad;
                                   const newPrecios = [...precios];
-                                  newPrecios[index].cantidad = Math.max(1, valor);
+                                  newPrecios[index].cantidad = normalized;
                                   setPrecios(newPrecios);
+                                  const nextInputs = [...cantidadInputs];
+                                  nextInputs[index] = formatCantidadDisplay(normalized);
+                                  setCantidadInputs(nextInputs);
                                 }}
                                 disabled={loading}
                               />
@@ -287,8 +417,12 @@ const ProductModal = ({
                                 onClick={() => {
                                   const newPrecios = [...precios];
                                   const current = newPrecios[index].cantidad;
-                                  newPrecios[index].cantidad = current + 1;
+                                  const next = getNextCantidad(current);
+                                  newPrecios[index].cantidad = next;
                                   setPrecios(newPrecios);
+                                  const nextInputs = [...cantidadInputs];
+                                  nextInputs[index] = formatCantidadDisplay(next);
+                                  setCantidadInputs(nextInputs);
                                 }}
                                 disabled={loading}
                               >
@@ -352,6 +486,7 @@ const ProductModal = ({
                               } else {
                                 setPrecios(precios.filter((_, i) => i !== index));
                                 setPreciosInput(preciosInput.filter((_, i) => i !== index));
+                                setCantidadInputs(cantidadInputs.filter((_, i) => i !== index));
                               }
                             }}
                             disabled={loading || (precio_item.cantidad === 1 && precios.length === 1)}
@@ -374,17 +509,14 @@ const ProductModal = ({
                     type="button"
                     className="price-add-btn"
                     onClick={() => {
-                      // Encontrar la siguiente cantidad disponible
                       const cantidadesExistentes = precios.map(p => p.cantidad).sort((a, b) => a - b);
                       let nuevaCantidad = 1;
-                      
-                      // Si ya existe cantidad 1, buscar la siguiente disponible
                       if (cantidadesExistentes.includes(1)) {
                         nuevaCantidad = cantidadesExistentes[cantidadesExistentes.length - 1] + 1;
                       }
-                      
                       setPrecios([...precios, { cantidad: nuevaCantidad, precio: 0 }]);
                       setPreciosInput([...preciosInput, ""]);
+                      setCantidadInputs([...cantidadInputs, formatCantidadDisplay(nuevaCantidad)]);
                     }}
                     disabled={loading}
                   >
@@ -489,6 +621,7 @@ const ProductModal = ({
               if (priceIndexToDelete !== null) {
                 setPrecios(precios.filter((_, i) => i !== priceIndexToDelete));
                 setPreciosInput(preciosInput.filter((_, i) => i !== priceIndexToDelete));
+                setCantidadInputs(cantidadInputs.filter((_, i) => i !== priceIndexToDelete));
               }
               setShowDeleteWarning(false);
               setPriceIndexToDelete(null);

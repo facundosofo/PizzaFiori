@@ -18,6 +18,8 @@ export interface CartProductItem extends CartItemBase {
   producto_nombre: string;
   categoria_nombre: string;
   imagen?: string | null;
+  product_price_id?: number;
+  precio_cantidad?: number;
 }
 
 // Offer item in cart

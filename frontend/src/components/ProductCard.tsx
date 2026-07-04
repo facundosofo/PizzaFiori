@@ -37,17 +37,15 @@ const ProductCard = ({
 
   const imageUrl = producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png";
 
+  const isSameCantidad = (a: number, b: number) => Math.abs(a - b) < 1e-9;
   const formatCantidad = (cantidad: number): string => {
-    switch (cantidad) {
-      case 1:
-        return "Unidad";
-      case 6:
-        return "1/2 Docena";
-      case 12:
-        return "Docena";
-      default:
-        return `${cantidad} unid.`;
-    }
+    if (isSameCantidad(cantidad, 1)) return "Unidad";
+    if (isSameCantidad(cantidad, 0.5)) return "Porción 1/2";
+    if (isSameCantidad(cantidad, 0.25)) return "Porción 1/4";
+    if (isSameCantidad(cantidad, 0.125)) return "Porción 1/8";
+    if (isSameCantidad(cantidad, 6)) return "1/2 Docena";
+    if (isSameCantidad(cantidad, 12)) return "Docena";
+    return `${cantidad} unid.`;
   };
 
   const handleOpenModal = () => {

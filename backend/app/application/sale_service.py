@@ -17,6 +17,7 @@ DEFAULT_RECARGO_PERCENTAGE = Decimal("10.00")
 
 SUPER_MILAS_CATEGORY_NAME = "Super Milas"
 PAPAS_FRTAS_CATEGORY_NAME = "Papas Fritas"
+PAPAS_EXTRA_DEDUCTION_TRIGGER_SKU = "PIC-TEQNP-95208"
 
 
 @dataclass
@@ -46,27 +47,49 @@ class SaleService:
             return ""
         return re.sub(r"^pizza(\s+(de|con))?\s*", "", nombre, flags=re.IGNORECASE).strip()
 
-    def _get_product_price(self, producto, cantidad: int) -> Optional[Decimal]:
+    @staticmethod
+    def _normalize_qty(value: Decimal | int | float | str | None) -> Decimal:
+        if value is None:
+            return Decimal("0")
+        return Decimal(str(value)).quantize(Decimal("0.001"))
+
+    @staticmethod
+    def _format_qty_for_message(value: Decimal) -> str:
+        normalized = SaleService._normalize_qty(value)
+        if normalized == normalized.to_integral_value():
+            return str(int(normalized))
+        return format(normalized.normalize(), "f")
+
+    @staticmethod
+    def _matches_papas_extra_trigger_sku(sku: str | None) -> bool:
+        if not sku:
+            return False
+        normalized = sku.strip().upper()
+        if normalized.startswith("SKU:"):
+            normalized = normalized[4:].strip()
+        return normalized == PAPAS_EXTRA_DEDUCTION_TRIGGER_SKU
+
+    def _get_papas_extra_deduction(self, categoria_name: str | None, sku: str | None, base_qty: Decimal) -> Decimal:
+        if categoria_name == SUPER_MILAS_CATEGORY_NAME:
+            return base_qty
+        if self._matches_papas_extra_trigger_sku(sku):
+            return base_qty * Decimal("0.5")
+        return Decimal("0")
+
+    def _get_product_price(self, producto, cantidad: Decimal) -> Optional[Decimal]:
         """
-        Calcula el precio total usando sistema de rangos.
-        
-        Ejemplo: Si compras 7 empanadas con precios:
-        - 1 unidad: $1200
-        - 6 unidades: $6000
-        - 12 unidades: $10800
-        
-        Cálculo para 7:
-        - Primeras 6 al precio de 6: $6000
-        - La 7ma al precio de 1: $1200
-        - Total: $7200
-        
-        Retorna el precio TOTAL (no unitario), que luego se divide por la cantidad
-        para obtener el precio_unitario en la venta.
+        Calcula el precio unitario promedio usando el sistema de rangos.
+
+        Si la cantidad incluye fracciones, el exceso se valora al precio unitario
+        más pequeño disponible.
         """
         if not producto or not producto.activo:
             return None
         
         if not producto.precios:
+            return None
+        
+        if cantidad <= Decimal("0"):
             return None
         
         # Ordenar precios por cantidad descendente
@@ -77,24 +100,23 @@ class SaleService:
         
         # Aplicar rangos de mayor a menor
         for rango_precio in precios_ordenados:
-            if cantidad_restante >= rango_precio.cantidad:
-                # Cuántas veces entra este rango completo
-                veces = cantidad_restante // rango_precio.cantidad
+            rango_cantidad = Decimal(str(rango_precio.cantidad))
+            if cantidad_restante >= rango_cantidad:
+                veces = cantidad_restante // rango_cantidad
                 precio_total += rango_precio.precio * veces
-                cantidad_restante = cantidad_restante % rango_precio.cantidad
+                cantidad_restante = cantidad_restante % rango_cantidad
                 
                 if cantidad_restante == 0:
                     break
         
-        # Si quedan unidades, aplicar el precio del rango más pequeño
+        # Si quedan fracciones, aplicar el precio unitario del rango más pequeño
         if cantidad_restante > 0:
             precio_minimo = min(precios_ordenados, key=lambda p: p.cantidad)
-            # Calcular precio unitario del rango más pequeño
-            precio_unitario_minimo = precio_minimo.precio / precio_minimo.cantidad
+            precio_unitario_minimo = precio_minimo.precio / Decimal(str(precio_minimo.cantidad))
             precio_total += precio_unitario_minimo * cantidad_restante
         
-        # Retornar precio unitario promedio (para mantener compatibilidad con el resto del código)
-        return precio_total / cantidad
+        # Retornar precio unitario promedio redondeado a dos decimales
+        return (precio_total / cantidad).quantize(Decimal("0.01"))
 
     def _get_offer_price(self, oferta) -> Optional[Decimal]:
         """Obtiene el precio de una oferta."""
@@ -137,8 +159,8 @@ class SaleService:
         
         # Verificar cada OfferItem de la oferta
         for oferta_item in oferta.productos:
-            cantidad_requerida = oferta_item.cantidad
-            cantidad_seleccionada = 0
+            cantidad_requerida = self._normalize_qty(oferta_item.cantidad)
+            cantidad_seleccionada = Decimal("0")
             productos_de_este_item = []
             
             # Caso 1: OfferItem con producto(s) específico(s)
@@ -153,7 +175,7 @@ class SaleService:
                 for prod_id, cantidad in productos_seleccionados_validados.items():
                     if prod_id in productos_permitidos_ids and prod_id not in productos_usados:
                         productos_de_este_item.append(prod_id)
-                        cantidad_seleccionada = cantidad
+                        cantidad_seleccionada = self._normalize_qty(cantidad)
                         productos_usados.add(prod_id)
                         break
                 
@@ -176,7 +198,7 @@ class SaleService:
                         producto_temp = await uow.product_repo.get_by_id(prod_id)
                         if producto_temp and producto_temp.categoria_id == oferta_item.categoria_id:
                             productos_de_este_item.append(prod_id)
-                            cantidad_seleccionada += cantidad
+                            cantidad_seleccionada += self._normalize_qty(cantidad)
                             productos_usados.add(prod_id)
                 
                 if not productos_de_este_item:
@@ -187,9 +209,11 @@ class SaleService:
                     )
             
             # Validar que la cantidad coincida
-            if cantidad_seleccionada != cantidad_requerida:
+            if self._normalize_qty(cantidad_seleccionada) != cantidad_requerida:
+                cantidad_requerida_msg = self._format_qty_for_message(cantidad_requerida)
+                cantidad_seleccionada_msg = self._format_qty_for_message(cantidad_seleccionada)
                 return ServiceResult(
-                    error=f"La oferta '{oferta.nombre}' requiere {cantidad_requerida} unidades, pero se enviaron {cantidad_seleccionada}",
+                    error=f"La oferta '{oferta.nombre}' requiere {cantidad_requerida_msg} unidades, pero se enviaron {cantidad_seleccionada_msg}",
                     status_code=400,
                 )
         
@@ -210,6 +234,17 @@ class SaleService:
             if categoria.nombre == nombre:
                 return categoria.id
         return None
+
+    def _compute_total_items(self, sale) -> float:
+        total_items = Decimal("0")
+        for it in getattr(sale, "items", []) or []:
+            if getattr(it, "oferta_productos_snapshot", None):
+                for p in it.oferta_productos_snapshot:
+                    total_items += Decimal(str(p.cantidad or 0)) * Decimal(str(it.cantidad or 1))
+            else:
+                total_items += Decimal(str(it.cantidad or 0))
+
+        return float(total_items)
 
     async def create(
         self, 
@@ -252,13 +287,14 @@ class SaleService:
 
                 numero_orden_val = f"#ORD-{business_date.strftime('%y%m%d')}-{seq:05d}"
                 # dict para acumular descuentos de stock por categoria: {categoria_id: delta}
-                stock_deductions: dict[int, int] = {}
+                stock_deductions: dict[int, Decimal] = {}
                 # dict para acumular descuentos de stock por producto: {producto_id: delta}
-                product_stock_deductions: dict[int, int] = {}
+                product_stock_deductions: dict[int, Decimal] = {}
                 # map producto_id -> categoria_id para evitar re-fetch en el loop de descuento
                 producto_categoria_ids: dict[int, int] = {}
                 # ID de la categoría de Papas Fritas para deducción adicional de Super Milas
                 papas_category_id = await self._get_category_id_by_name(PAPAS_FRTAS_CATEGORY_NAME, uow)
+                category_name_cache: dict[int, str] = {}
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
                     precio_unitario = None
@@ -266,6 +302,7 @@ class SaleService:
                     item_descripcion = None
                     item_categoria = None
                     producto_sku = None
+                    precio_cantidad = None
                     oferta_productos_snapshot = []
                     
                     if item.producto_id:
@@ -287,18 +324,30 @@ class SaleService:
                         
                         # Guardar snapshot del producto
                         item_nombre = producto.nombre
+                        precio_cantidad = Decimal(str(item.precio_cantidad)) if item.precio_cantidad is not None else None
                         producto_sku = producto.sku
-                        item_categoria = producto.categoria.nombre if producto.categoria else 'Sin categoría'
+                        categoria_id = producto.categoria_id
+                        categoria_name = category_name_cache.get(categoria_id or 0)
+                        if categoria_name is None:
+                            categoria_name = producto.categoria.nombre if producto.categoria else 'Sin categoría'
+                            if categoria_id:
+                                category_name_cache[categoria_id] = categoria_name
+                        item_categoria = categoria_name
                         if producto.categoria_id:
                             stock_deductions[producto.categoria_id] = (
-                                stock_deductions.get(producto.categoria_id, 0) + item.cantidad
+                                stock_deductions.get(producto.categoria_id, Decimal("0")) + item.cantidad
                             )
-                        if producto.categoria and producto.categoria.nombre == SUPER_MILAS_CATEGORY_NAME and papas_category_id:
+                        papas_extra_deduction = self._get_papas_extra_deduction(
+                            categoria_name,
+                            producto.sku,
+                            item.cantidad,
+                        )
+                        if papas_extra_deduction > 0 and papas_category_id:
                             stock_deductions[papas_category_id] = (
-                                stock_deductions.get(papas_category_id, 0) + item.cantidad
+                                stock_deductions.get(papas_category_id, Decimal("0")) + papas_extra_deduction
                             )
                         product_stock_deductions[item.producto_id] = (
-                            product_stock_deductions.get(item.producto_id, 0) + item.cantidad
+                            product_stock_deductions.get(item.producto_id, Decimal("0")) + item.cantidad
                         )
                         if producto.categoria_id:
                             producto_categoria_ids[item.producto_id] = producto.categoria_id
@@ -356,15 +405,25 @@ class SaleService:
                                 if producto.categoria_id:
                                     deduccion_total = prod_sel.cantidad * item.cantidad
                                     stock_deductions[producto.categoria_id] = (
-                                        stock_deductions.get(producto.categoria_id, 0) + deduccion_total
+                                        stock_deductions.get(producto.categoria_id, Decimal("0")) + deduccion_total
                                     )
                                     product_stock_deductions[prod_sel.producto_id] = (
-                                        product_stock_deductions.get(prod_sel.producto_id, 0) + deduccion_total
+                                        product_stock_deductions.get(prod_sel.producto_id, Decimal("0")) + deduccion_total
                                     )
                                     producto_categoria_ids[prod_sel.producto_id] = producto.categoria_id
-                                    if producto.categoria and producto.categoria.nombre == SUPER_MILAS_CATEGORY_NAME and papas_category_id:
+                                    categoria_name = category_name_cache.get(producto.categoria_id or 0)
+                                    if categoria_name is None:
+                                        categoria_name = producto.categoria.nombre if producto.categoria else 'Sin categoría'
+                                        if producto.categoria_id:
+                                            category_name_cache[producto.categoria_id] = categoria_name
+                                    papas_extra_deduction = self._get_papas_extra_deduction(
+                                        categoria_name,
+                                        producto.sku,
+                                        deduccion_total,
+                                    )
+                                    if papas_extra_deduction > 0 and papas_category_id:
                                         stock_deductions[papas_category_id] = (
-                                            stock_deductions.get(papas_category_id, 0) + deduccion_total
+                                            stock_deductions.get(papas_category_id, Decimal("0")) + papas_extra_deduction
                                         )
                     
                     elif item.pizza_mitad_mitad:
@@ -414,6 +473,7 @@ class SaleService:
                         subtotal=subtotal,
                         # Referencia de negocio (solo productos tienen SKU)
                         producto_sku=producto_sku,
+                        precio_cantidad=precio_cantidad,
                         # Snapshot completo
                         item_nombre=item_nombre,
                         item_categoria=item_categoria,
@@ -531,16 +591,9 @@ class SaleService:
                 )
 
             try:
-                total_items = 0
-                for it in sale.items:
-                    if getattr(it, 'oferta_productos_snapshot', None):
-                        for p in it.oferta_productos_snapshot:
-                            total_items += (p.cantidad or 0) * (it.cantidad or 1)
-                    else:
-                        total_items += it.cantidad or 0
-                setattr(sale, 'total_items', total_items)
+                setattr(sale, 'total_items', self._compute_total_items(sale))
             except Exception:
-                setattr(sale, 'total_items', 0)
+                setattr(sale, 'total_items', 0.0)
 
             self.logger.info(
                 "Venta creada exitosamente",
@@ -573,16 +626,9 @@ class SaleService:
 
             # Compute total_items before returning
             try:
-                total_items = 0
-                for it in sale.items:
-                    if getattr(it, 'oferta_productos_snapshot', None):
-                        for p in it.oferta_productos_snapshot:
-                            total_items += (p.cantidad or 0) * (it.cantidad or 1)
-                    else:
-                        total_items += it.cantidad or 0
-                setattr(sale, 'total_items', total_items)
+                setattr(sale, 'total_items', self._compute_total_items(sale))
             except Exception:
-                setattr(sale, 'total_items', 0)
+                setattr(sale, 'total_items', 0.0)
 
             return ServiceResult(value=sale)
 
@@ -627,19 +673,12 @@ class SaleService:
             # Compute total_items for each sale to provide consistent API responses
             try:
                 for sale in sales:
-                    total_items = 0
-                    for it in sale.items:
-                        if getattr(it, 'oferta_productos_snapshot', None):
-                            for p in it.oferta_productos_snapshot:
-                                total_items += (p.cantidad or 0) * (it.cantidad or 1)
-                        else:
-                            total_items += it.cantidad or 0
-                    setattr(sale, 'total_items', total_items)
+                    setattr(sale, 'total_items', self._compute_total_items(sale))
             except Exception:
                 # If something fails, ensure attribute exists with zero
                 for sale in sales:
                     if not hasattr(sale, 'total_items'):
-                        setattr(sale, 'total_items', 0)
+                        setattr(sale, 'total_items', 0.0)
 
             # Registrar cantidad obtenida (útil para depuración cuando FE recibe lista vacía)
             try:
@@ -740,6 +779,7 @@ class SaleService:
                     item_descripcion = None
                     item_categoria = None
                     producto_sku = None
+                    precio_cantidad = None
                     oferta_productos_snapshot = []
                     
                     # Validar que el producto o oferta existe y cargar snapshot
@@ -753,6 +793,7 @@ class SaleService:
                         
                         # Guardar snapshot del producto
                         item_nombre = producto.nombre
+                        precio_cantidad = Decimal(str(item.precio_cantidad)) if item.precio_cantidad is not None else None
                         producto_sku = producto.sku
                         item_categoria = producto.categoria.nombre if producto.categoria else 'Sin categoría'
                         
@@ -814,6 +855,7 @@ class SaleService:
                         item_nombre=item_nombre,
                         item_categoria=item_categoria,
                         item_descripcion=item_descripcion,
+                        precio_cantidad=precio_cantidad,
                         # Identificador de pizza mitad-mitad
                         es_pizza_mitad_mitad=True if item.pizza_mitad_mitad else None,
                         oferta_productos_snapshot=oferta_productos_snapshot
@@ -993,15 +1035,13 @@ class SaleService:
 
     def _es_pizza(self, producto) -> bool:
         """Verifica si un producto es una pizza."""
-        # Opción 1: Por categoría (si existe categoría "Pizzas")
-        if producto.categoria and producto.categoria.nombre.lower() == "pizzas":
-            return True
-        
-        # Opción 2: Por nombre (contiene "pizza")
+        # Opción 1: Por nombre (contiene "pizza")
         if "pizza" in producto.nombre.lower():
             return True
         
-        # Opción 3: Por ID de categoría (ajustar según tu base de datos)
-        # Aquí podrías agregar IDs específicos de categorías de pizzas
+        # Opción 2: Por categoría ya cargada en memoria, si existe
+        categoria = getattr(producto, "categoria", None)
+        if categoria and getattr(categoria, "nombre", "").lower() == "pizzas":
+            return True
         
         return False

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +39,7 @@ class SqlAlchemyAuditRepository(
             entity_type=entity_type,
             entity_id=entity_id,
             action=action,
-            changes=changes,
+            changes=_normalize_json_value(changes),
             timestamp=datetime.now(),
         )
         
@@ -138,3 +139,28 @@ class SqlAlchemyAuditRepository(
         
         result = await self.session.execute(query)
         return result.scalar() or 0
+
+
+def _normalize_json_value(value):
+    if value is None:
+        return None
+
+    if isinstance(value, datetime):
+        return value.isoformat()
+
+    if isinstance(value, Decimal):
+        return float(value)
+
+    if isinstance(value, dict):
+        return {key: _normalize_json_value(inner_value) for key, inner_value in value.items()}
+
+    if isinstance(value, list):
+        return [_normalize_json_value(item) for item in value]
+
+    if isinstance(value, tuple):
+        return [_normalize_json_value(item) for item in value]
+
+    if isinstance(value, (int, float, str, bool)):
+        return value
+
+    return str(value)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import List, Optional
+from decimal import Decimal
 
 from app.domain.models.product_stock import ProductStock
 
@@ -26,6 +27,6 @@ class AbstractProductStockRepository(ABC):
         ...
 
     @abstractmethod
-    async def deduct(self, producto_id: int, cantidad: int) -> Optional[ProductStock]:
+    async def deduct(self, producto_id: int, cantidad: Decimal) -> Optional[ProductStock]:
         """Subtracts cantidad from product stock (min 0). Returns updated stock or None if not found."""
         ...

@@ -15,17 +15,24 @@ interface ProductQuickSelectorProps {
   categories: Category[];
   cartQuantities: Map<number, number>; // producto_id -> quantity in cart
   onAddProduct: (product: Product) => void;
+  onAddWholeProduct: (product: Product) => void;
+  onAddPortionProduct: (product: Product) => void;
   onUpdateProductQuantity: (productId: number, newQuantity: number) => void;
   onOpenPizzaMitadMitad?: () => void; // Nuevo prop para abrir modal de pizza mitad-mitad
 }
 
+function isSameCantidad(a: number, b: number): boolean {
+  return Math.abs(a - b) < 1e-9;
+}
+
 function formatCantidad(cantidad: number): string {
-  switch (cantidad) {
-    case 1: return "Unidad";
-    case 6: return "1/2 Docena";
-    case 12: return "Docena";
-    default: return `${cantidad} unid.`;
-  }
+  if (isSameCantidad(cantidad, 1)) return "Unidad";
+  if (isSameCantidad(cantidad, 0.5)) return "Porción 1/2";
+  if (isSameCantidad(cantidad, 0.25)) return "Porción 1/4";
+  if (isSameCantidad(cantidad, 0.125)) return "Porción 1/8";
+  if (isSameCantidad(cantidad, 6)) return "1/2 Docena";
+  if (isSameCantidad(cantidad, 12)) return "Docena";
+  return `${cantidad} unid.`;
 }
 
 const ProductQuickSelectorBase: React.FC<ProductQuickSelectorProps> = ({
@@ -33,6 +40,8 @@ const ProductQuickSelectorBase: React.FC<ProductQuickSelectorProps> = ({
   categories,
   cartQuantities,
   onAddProduct,
+  onAddWholeProduct,
+  onAddPortionProduct,
   onUpdateProductQuantity,
   onOpenPizzaMitadMitad,
 }) => {
@@ -173,7 +182,24 @@ const ProductQuickSelectorBase: React.FC<ProductQuickSelectorProps> = ({
                     </div>
 
                     <div className="product-qty-controls">
-                      {qtyInCart > 0 ? (
+                      {product.precios?.some((p) => p.cantidad < 1) ? (
+                        <div className="product-split-add-buttons">
+                          <button
+                            className="product-split-add-btn"
+                            onClick={() => onAddWholeProduct(product)}
+                            title="Agregar entera"
+                          >
+                            Agregar Entera
+                          </button>
+                          <button
+                            className="product-split-add-btn"
+                            onClick={() => onAddPortionProduct(product)}
+                            title="Agregar porción"
+                          >
+                            Agregar Porción
+                          </button>
+                        </div>
+                      ) : qtyInCart > 0 ? (
                         <div className="quantity-control">
                           <button
                             type="button"
@@ -211,7 +237,7 @@ const ProductQuickSelectorBase: React.FC<ProductQuickSelectorProps> = ({
                       ) : (
                         <button
                           className="product-qty-btn-add"
-                          onClick={() => handleIncrement(product)}
+                          onClick={() => onAddProduct(product)}
                           title="Agregar al carrito"
                         >
                           Agregar

@@ -9,7 +9,7 @@ import { getRecargoConfig } from "../services/configService";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import { OfferConfigModal } from "./OfferConfigModal";
 import RadioGroup, { type RadioOption } from "./shared/RadioGroup";
-import SearchableSelect from "./shared/SearchableSelect";
+import SearchableSelect, { type SelectOption } from "./shared/SearchableSelect";
 import "../styles/shared/quantity-controls.css";
 import "../styles/shared/add-button.css";
 import "../styles/sale-modal.css";
@@ -33,6 +33,11 @@ interface AddProductFormProps {
   selectedProductId: number;
   onSelectProduct: (productId: number) => void;
   products: Product[];
+  selectedPriceOptionId: number;
+  onSelectPriceOption: (priceOptionId: number) => void;
+  priceOptions: SelectOption[];
+  quantityMax: number;
+  quantityHint?: string;
   quantity: number;
   onQuantityChange: (nextValue: number) => void;
   onIncrement: () => void;
@@ -43,6 +48,11 @@ const AddProductForm = ({
   selectedProductId,
   onSelectProduct,
   products,
+  selectedPriceOptionId,
+  onSelectPriceOption,
+  priceOptions,
+  quantityMax,
+  quantityHint,
   quantity,
   onQuantityChange,
   onIncrement,
@@ -64,9 +74,22 @@ const AddProductForm = ({
         placeholder="Seleccionar producto..."
         searchPlaceholder="Buscar producto..."
       />
+
+      {selectedProductId > 0 && priceOptions.length > 0 && (
+        <div className="add-item-price-selector">
+          <label>Tipo de Precio</label>
+          <SearchableSelect
+            value={selectedPriceOptionId}
+            onChange={onSelectPriceOption}
+            options={priceOptions}
+            placeholder="Seleccionar tipo de precio..."
+            searchable={false}
+          />
+        </div>
+      )}
     </div>
 
-    <div className="form-group">
+    <div className="form-group add-item-qty-group">
       <label>Cantidad</label>
       <div className="quantity-control">
         <button
@@ -80,7 +103,7 @@ const AddProductForm = ({
         <input
           type="number"
           min="1"
-          max="1000"
+          max={quantityMax}
           className="qty-input"
           value={quantity}
           onFocus={(e) => e.target.select()}
@@ -95,6 +118,7 @@ const AddProductForm = ({
           <Icons.PlusIcon size={14} />
         </button>
       </div>
+      {quantityHint && <span className="add-item-quantity-hint">{quantityHint}</span>}
     </div>
   </>
 );
@@ -152,6 +176,95 @@ const SaleEditModal = ({
     return 0;
   };
 
+  const isSameQuantity = (a: number, b: number): boolean => Math.abs(a - b) < 1e-9;
+
+  const getPortionLabel = (baseQuantity?: number | null): string => {
+    const value = toNumber(baseQuantity);
+    if (isSameQuantity(value, 0.5)) return "1/2";
+    if (isSameQuantity(value, 0.25)) return "1/4";
+    if (isSameQuantity(value, 0.125)) return "1/8";
+    return "";
+  };
+
+  const isPortionItem = (item: SaleItemWithDetails): boolean => {
+    const baseQuantity = toNumber((item as any).precio_cantidad);
+    return baseQuantity > 0 && baseQuantity < 1;
+  };
+
+  const getQuantityStep = (item: SaleItemWithDetails): number => {
+    if (isPortionItem(item)) {
+      return toNumber((item as any).precio_cantidad);
+    }
+    return 1;
+  };
+
+  const getDisplayQuantity = (item: SaleItemWithDetails): number => {
+    const quantity = toNumber((item as any).cantidad);
+    const step = getQuantityStep(item);
+    if (isPortionItem(item)) {
+      return Math.max(1, Math.round(quantity / step));
+    }
+    return Math.round(quantity);
+  };
+
+  const getFractionLabel = (cantidad: number): string => {
+    if (isSameQuantity(cantidad, 0.5)) return "1/2";
+    if (isSameQuantity(cantidad, 0.25)) return "1/4";
+    if (isSameQuantity(cantidad, 0.125)) return "1/8";
+    return `${cantidad}`;
+  };
+
+  const getMaxQuantityForPortionPrice = (priceCantidad?: number): number | null => {
+    if (!priceCantidad || priceCantidad >= 1) return null;
+    const maxQuantity = Math.round(1 / priceCantidad) - 1;
+    return Number.isFinite(maxQuantity) && maxQuantity > 0 ? maxQuantity : null;
+  };
+
+  const getMaxPortionActualQuantity = (priceCantidad?: number): number | null => {
+    const maxPortionCount = getMaxQuantityForPortionPrice(priceCantidad);
+    if (!priceCantidad || priceCantidad >= 1 || maxPortionCount === null) return null;
+    return Number((maxPortionCount * priceCantidad).toFixed(3));
+  };
+
+  const getSelectableProductPriceRows = (product: Product) => {
+    if (!product.precios || product.precios.length === 0) return [];
+    return [...product.precios]
+      .filter((price) => Number(price.cantidad) <= 1)
+      .sort((a, b) => Number(b.cantidad) - Number(a.cantidad));
+  };
+
+  const getDefaultProductPriceRow = (product: Product) => {
+    const rows = getSelectableProductPriceRows(product);
+    return rows.find((row) => isSameQuantity(Number(row.cantidad), 1)) ?? rows[0];
+  };
+
+  const buildProductPriceOptions = (product: Product): SelectOption[] => {
+    return getSelectableProductPriceRows(product).map((row) => {
+      const amount = formatCurrency(Number(row.precio));
+      if (Number(row.cantidad) < 1) {
+        return {
+          value: row.id,
+          label: `Porción ${getFractionLabel(Number(row.cantidad))} - ${amount}`,
+        };
+      }
+
+      return {
+        value: row.id,
+        label: `Unidad entera - ${amount}`,
+      };
+    });
+  };
+
+  const getDisplayPrice = (item: SaleItemWithDetails): number => {
+    const unitPrice = toNumber((item as any).precio_unitario);
+    if (!isPortionItem(item)) return unitPrice;
+
+    const baseQuantity = getQuantityStep(item);
+    if (baseQuantity <= 0) return unitPrice;
+
+    return unitPrice * baseQuantity;
+  };
+
   // Detect if an offer is configurable (has categories or options, not just fixed products)
   const isOfferConfigurable = (offer: Offer): boolean => {
     if (!offer.productos || offer.productos.length === 0) return false;
@@ -189,6 +302,7 @@ const SaleEditModal = ({
   // Add item state
   const [itemType, setItemType] = useState<"" | "producto" | "oferta">("");
   const [selectedProductId, setSelectedProductId] = useState<number>(0);
+  const [selectedProductPriceId, setSelectedProductPriceId] = useState<number>(0);
   const [selectedOfferId, setSelectedOfferId] = useState<number>(0);
   const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
 
@@ -199,6 +313,18 @@ const SaleEditModal = ({
 
   const activeProducts = allProducts.filter((product) => product.activo);
   const activeOffers = allOffers.filter((offer) => offer.activo);
+  const selectedProduct = activeProducts.find((p) => p.id === selectedProductId);
+  const selectedProductPriceOptions = selectedProduct ? buildProductPriceOptions(selectedProduct) : [];
+  const selectedProductPriceRow = selectedProduct
+    ? getSelectableProductPriceRows(selectedProduct).find((price) => price.id === selectedProductPriceId)
+      ?? getDefaultProductPriceRow(selectedProduct)
+    : undefined;
+  const selectedProductPortionLabel = selectedProductPriceRow && Number(selectedProductPriceRow.cantidad) < 1
+    ? getFractionLabel(Number(selectedProductPriceRow.cantidad))
+    : undefined;
+  const addProductMaxQuantity = selectedProductPriceRow
+    ? getMaxQuantityForPortionPrice(Number(selectedProductPriceRow.cantidad)) ?? 1000
+    : 1000;
 
   // Offer configuration state
   const [selectedOfferForConfig, setSelectedOfferForConfig] = useState<Offer | null>(null);
@@ -238,6 +364,9 @@ const SaleEditModal = ({
                 ...item,
                 precio_unitario,
                 cantidad,
+                precio_cantidad: (item as any).precio_cantidad !== undefined && (item as any).precio_cantidad !== null
+                  ? toNumber((item as any).precio_cantidad)
+                  : undefined,
                 subtotal: subtotal || precio_unitario * cantidad,
               };
             });
@@ -255,14 +384,24 @@ const SaleEditModal = ({
   }, [saleId, isOpen, allProducts, allOffers]);
 
   const handleQuantityChange = (itemId: number, newQuantity: number) => {
-    if (newQuantity < 1 || newQuantity > 1000) return;
+    const targetItem = editedItems.find((item) => item.id === itemId);
+    if (!targetItem) return;
+
+    const step = getQuantityStep(targetItem);
+    const minQuantity = step;
+    const maxQuantity = isPortionItem(targetItem)
+      ? getMaxPortionActualQuantity(step) ?? 1000
+      : 1000;
+    const boundedQuantity = Math.max(minQuantity, Math.min(newQuantity, maxQuantity));
+
+    if (boundedQuantity < minQuantity || boundedQuantity > 1000) return;
 
     setEditedItems((prev) =>
       prev.map((item) => {
         if (item.id === itemId) {
           const precio = toNumber((item as any).precio_unitario);
-          const subtotal = precio * newQuantity;
-          return { ...item, cantidad: newQuantity, precio_unitario: precio, subtotal };
+          const subtotal = precio * boundedQuantity;
+          return { ...item, cantidad: boundedQuantity, precio_unitario: precio, subtotal };
         }
         return item;
       })
@@ -276,8 +415,11 @@ const SaleEditModal = ({
       prev.map((item) => {
         if (item.id === itemId) {
           const cantidad = toNumber((item as any).cantidad);
-          const subtotal = newPrice * cantidad;
-          return { ...item, cantidad, precio_unitario: newPrice, subtotal };
+          const effectiveUnitPrice = isPortionItem(item)
+            ? newPrice / Math.max(getQuantityStep(item), 0.000001)
+            : newPrice;
+          const subtotal = effectiveUnitPrice * cantidad;
+          return { ...item, cantidad, precio_unitario: effectiveUnitPrice, subtotal };
         }
         return item;
       })
@@ -290,21 +432,51 @@ const SaleEditModal = ({
 
   const handleNewItemQuantityChange = (change: number) => {
     const newQuantity = newItemQuantity + change;
-    if (newQuantity >= 1 && newQuantity <= 1000) {
-      setNewItemQuantity(newQuantity);
-    }
+    const boundedQuantity = Math.max(1, Math.min(newQuantity, addProductMaxQuantity));
+    setNewItemQuantity(boundedQuantity);
+  };
+
+  const handleNewItemQuantityInput = (nextValue: number) => {
+    const parsed = Number.isFinite(nextValue) ? Math.floor(nextValue) : 1;
+    const boundedQuantity = Math.max(1, Math.min(parsed || 1, addProductMaxQuantity));
+    setNewItemQuantity(boundedQuantity);
   };
 
   useEffect(() => {
     setSelectedProductId(0);
+    setSelectedProductPriceId(0);
     setSelectedOfferId(0);
     setNewItemQuantity(1);
     setConfiguredProducts([]);
   }, [itemType]);
 
+  useEffect(() => {
+    if (itemType !== "producto") return;
+
+    if (!selectedProduct) {
+      setSelectedProductPriceId(0);
+      return;
+    }
+
+    const availableRows = getSelectableProductPriceRows(selectedProduct);
+    if (!availableRows.length) {
+      setSelectedProductPriceId(0);
+      return;
+    }
+
+    if (!availableRows.some((row) => row.id === selectedProductPriceId)) {
+      setSelectedProductPriceId(availableRows[0].id);
+      setNewItemQuantity(1);
+    }
+  }, [itemType, selectedProductId, selectedProduct, selectedProductPriceId]);
+
+  useEffect(() => {
+    setNewItemQuantity((prev) => Math.max(1, Math.min(prev, addProductMaxQuantity)));
+  }, [addProductMaxQuantity]);
+
   const isAddDisabled =
     !itemType ||
-    (itemType === "producto" && selectedProductId === 0) ||
+    (itemType === "producto" && (selectedProductId === 0 || !selectedProductPriceRow)) ||
     (itemType === "oferta" && (
       selectedOfferId === 0 ||
       (selectedOfferId > 0 &&
@@ -326,8 +498,10 @@ const SaleEditModal = ({
       return;
     }
 
-    const quantityToUse = itemType === "producto" ? newItemQuantity : 1;
-    if (itemType === "producto" && (quantityToUse < 1 || quantityToUse > 1000)) {
+    let quantityToUse = itemType === "producto" ? newItemQuantity : 1;
+    let priceQuantityToUse: number | null = itemType === "producto" ? 1 : null;
+
+    if (itemType === "producto" && (quantityToUse < 1 || quantityToUse > addProductMaxQuantity * Number(priceQuantityToUse ?? 1))) {
       setError("Cantidad debe ser entre 1 y 1000");
       return;
     }
@@ -345,9 +519,19 @@ const SaleEditModal = ({
       if (product) {
         itemName = product.nombre;
         itemCategoria = product.categoria?.nombre || "Sin categoría";
-        // Get price for quantity 1 (default price)
-        const defaultPrice = product.precios?.find((p) => p.cantidad === 1);
-        precio = defaultPrice?.precio || 0;
+
+        const selectedPrice = getSelectableProductPriceRows(product).find((p) => p.id === selectedProductPriceId)
+          ?? getDefaultProductPriceRow(product);
+
+        const selectedCantidad = Number(selectedPrice?.cantidad ?? 1);
+        const selectedPrecio = Number(selectedPrice?.precio ?? 0);
+
+        priceQuantityToUse = selectedCantidad;
+        quantityToUse = Number((selectedCantidad * newItemQuantity).toFixed(3));
+
+        precio = selectedCantidad > 0
+          ? Number((selectedPrecio / selectedCantidad).toFixed(3))
+          : selectedPrecio;
       }
     } else {
       const offer = activeOffers.find((o) => o.id === selectedOfferId);
@@ -389,6 +573,7 @@ const SaleEditModal = ({
       producto_id: itemType === "producto" ? selectedProductId : null,
       oferta_id: itemType === "oferta" ? selectedOfferId : null,
       cantidad: quantityToUse,
+      precio_cantidad: itemType === "producto" ? priceQuantityToUse ?? 1 : null,
       precio_unitario: precio,
       subtotal: precio * quantityToUse,
       item_nombre: itemName,
@@ -404,7 +589,53 @@ const SaleEditModal = ({
       })),
     };
 
-    setEditedItems((prev) => [...prev, newItem]);
+    if (itemType === "producto" && newItem.producto_id !== null && newItem.precio_cantidad) {
+      const duplicateItem = editedItems.find((item) =>
+        item.producto_id === newItem.producto_id &&
+        toNumber((item as any).precio_cantidad) > 0 &&
+        isSameQuantity(toNumber((item as any).precio_cantidad), toNumber(newItem.precio_cantidad))
+      );
+
+      if (duplicateItem) {
+        const maxActualQuantity = getMaxPortionActualQuantity(toNumber(newItem.precio_cantidad));
+        const currentQuantity = toNumber((duplicateItem as any).cantidad);
+        const nextQuantity = Number((currentQuantity + newItem.cantidad).toFixed(3));
+
+        if (maxActualQuantity !== null && nextQuantity > maxActualQuantity + 1e-9) {
+          setError(`No puedes superar ${getMaxQuantityForPortionPrice(toNumber(newItem.precio_cantidad))} porciones de ${getPortionLabel(toNumber(newItem.precio_cantidad))}`);
+          return;
+        }
+      }
+    }
+
+    setEditedItems((prev) => {
+      if (itemType === "producto" && newItem.producto_id !== null) {
+        const duplicateIndex = prev.findIndex((item) =>
+          item.producto_id === newItem.producto_id &&
+          toNumber((item as any).precio_cantidad) > 0 &&
+          isSameQuantity(toNumber((item as any).precio_cantidad), toNumber(newItem.precio_cantidad))
+        );
+
+        if (duplicateIndex >= 0) {
+          const currentQuantity = toNumber((prev[duplicateIndex] as any).cantidad);
+          const nextQuantity = Number((currentQuantity + newItem.cantidad).toFixed(3));
+
+          return prev.map((item, index) => {
+            if (index !== duplicateIndex) return item;
+
+            const currentSubtotal = toNumber((item as any).subtotal);
+
+            return {
+              ...item,
+              cantidad: nextQuantity,
+              subtotal: Number((currentSubtotal + newItem.subtotal).toFixed(2)),
+            };
+          });
+        }
+      }
+
+      return [...prev, newItem];
+    });
 
     // Reset form
     setSelectedProductId(0);
@@ -439,6 +670,7 @@ const SaleEditModal = ({
           producto_id: item.producto_id || undefined,
           oferta_id: item.oferta_id || undefined,
           cantidad: item.cantidad,
+          precio_cantidad: item.precio_cantidad ?? undefined,
           precio_unitario: item.precio_unitario, // Incluir precio_unitario
           productos_seleccionados: item.oferta_productos_snapshot?.map((p) => ({
             producto_id: p.producto_id || p.id,
@@ -533,7 +765,7 @@ const SaleEditModal = ({
                       <div className="sale-items-header">
                         <div className="sale-item-col-name">Nombre</div>
                         <div className="sale-item-col-qty">Cantidad</div>
-                        <div className="sale-item-col-price">Precio unitario</div>
+                        <div className="sale-item-col-price">Precio</div>
                         <div className="sale-item-col-subtotal">Subtotal</div>
                         <div className="sale-item-col-actions">Acción</div>
                       </div>
@@ -559,25 +791,42 @@ const SaleEditModal = ({
                             ) : null}
                           </div>
                           <div className="sale-item-col-qty">
+                            {(() => {
+                              const portionItem = isPortionItem(item);
+                              const step = getQuantityStep(item);
+                              const displayQuantity = getDisplayQuantity(item);
+                              const minDisplayQuantity = 1;
+
+                              return (
                             <div className="quantity-control">
                               <button
                                 type="button"
                                 className="qty-btn qty-btn-minus"
                                 aria-label="Disminuir cantidad"
-                                onClick={() => handleQuantityChange(item.id, item.cantidad - 1)}
-                                disabled={saving || loading}
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    item.id,
+                                    portionItem ? Math.max(step, (displayQuantity - 1) * step) : item.cantidad - 1
+                                  )
+                                }
+                                disabled={saving || loading || displayQuantity <= minDisplayQuantity}
                               >
                                 <Icons.MinusIcon size={14} />
                               </button>
                               <input
                                 type="number"
                                 min="1"
-                                max="1000"
+                                max={portionItem ? Math.floor(1000 / step).toString() : "1000"}
                                 className="qty-input"
-                                value={item.cantidad}
+                                value={portionItem ? displayQuantity : item.cantidad}
                                 onFocus={(e) => e.target.select()}
                                 onChange={(e) =>
-                                  handleQuantityChange(item.id, parseInt(e.target.value) || 1)
+                                  handleQuantityChange(
+                                    item.id,
+                                    portionItem
+                                      ? Math.max(1, parseInt(e.target.value, 10) || 1) * step
+                                      : parseInt(e.target.value, 10) || 1
+                                  )
                                 }
                                 disabled={saving || loading}
                               />
@@ -585,12 +834,24 @@ const SaleEditModal = ({
                                 type="button"
                                 className="qty-btn qty-btn-plus"
                                 aria-label="Aumentar cantidad"
-                                onClick={() => handleQuantityChange(item.id, item.cantidad + 1)}
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    item.id,
+                                    portionItem ? (displayQuantity + 1) * step : item.cantidad + 1
+                                  )
+                                }
                                 disabled={saving || loading}
                               >
                                 <Icons.PlusIcon size={14} />
                               </button>
                             </div>
+                              );
+                            })()}
+                            {isPortionItem(item) && (
+                              <span className="sale-item-fraction-label">
+                                Porciones de {getPortionLabel((item as any).precio_cantidad)}
+                              </span>
+                            )}
                           </div>
                           <div className="sale-item-col-price">
                             <input
@@ -598,8 +859,8 @@ const SaleEditModal = ({
                               className="qty-input price-input"
                               value={
                                 editingPriceId === item.id
-                                  ? item.precio_unitario
-                                  : formatCurrency(item.precio_unitario)
+                                  ? getDisplayPrice(item)
+                                  : formatCurrency(getDisplayPrice(item))
                               }
                               onFocus={(e) => {
                                 setEditingPriceId(item.id);
@@ -689,8 +950,13 @@ const SaleEditModal = ({
                                   selectedProductId={selectedProductId}
                                   onSelectProduct={setSelectedProductId}
                                   products={activeProducts}
+                                  selectedPriceOptionId={selectedProductPriceId}
+                                  onSelectPriceOption={setSelectedProductPriceId}
+                                  priceOptions={selectedProductPriceOptions}
+                                  quantityMax={addProductMaxQuantity}
+                                  quantityHint={selectedProductPortionLabel ? `Porciones de ${selectedProductPortionLabel}` : undefined}
                                   quantity={newItemQuantity}
-                                  onQuantityChange={setNewItemQuantity}
+                                  onQuantityChange={handleNewItemQuantityInput}
                                   onIncrement={() => handleNewItemQuantityChange(1)}
                                   onDecrement={() => handleNewItemQuantityChange(-1)}
                                 />
@@ -703,7 +969,7 @@ const SaleEditModal = ({
                               )}
 
                               <div className="form-group add-item-action-group">
-                                <label>&nbsp;</label>
+                                <label className="add-item-action-label">Accion</label>
                                 <button
                                   className="btn-add-item"
                                   onClick={handleAddItem}

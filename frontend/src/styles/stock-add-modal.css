@@ -20,7 +20,7 @@
   border: 2px solid var(--color-border-strong);
   border-radius: 16px;
   width: 90%;
-  max-width: 400px;
+  max-width: 560px;
   overflow: hidden;
   box-shadow: 0 0 40px rgba(34, 197, 94, 0.15);
   z-index: 1101;
@@ -112,12 +112,122 @@
   color: var(--color-text);
 }
 
+.stock-add-current-value .stock-quantity-display,
+.stock-add-preview-value .stock-quantity-display {
+  display: inline-flex;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.stock-add-current-value .stock-quantity-display-main,
+.stock-add-preview-value .stock-quantity-display-main {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.stock-add-current-value .stock-quantity-display-fraction,
+.stock-add-preview-value .stock-quantity-display-fraction {
+  top: -0.35em;
+  font-size: 0.55em;
+}
+
+.stock-add-unit-suffix {
+  display: inline-block;
+  margin-left: 0.3rem;
+}
+
 /* Control - delta + */
 .stock-add-control-section {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
+}
+
+.stock-dual-counters {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+.stock-dual-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.stock-dual-counter-title {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.stock-dual-divider {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(148, 163, 184, 0.45),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+.stock-adjustment-mode {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.stock-adjustment-mode-btn {
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stock-adjustment-mode-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.stock-adjustment-mode-btn.active {
+  color: var(--color-accent);
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.stock-adjustment-mode-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stock-portion-mode-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .stock-dual-counters {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .stock-dual-divider {
+    display: none;
+  }
 }
 
 .stock-add-control {

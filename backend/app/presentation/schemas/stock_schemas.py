@@ -1,14 +1,15 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Any
 from datetime import datetime
+from decimal import Decimal
 
 
 class AddStockRequest(BaseModel):
-    cantidad: int = Field(..., description="Delta de stock (positivo = agregar, negativo = quitar)")
+    cantidad: Decimal = Field(..., description="Delta de stock (positivo = agregar, negativo = quitar)")
 
     @field_validator("cantidad")
     @classmethod
-    def cantidad_no_cero(cls, v: int) -> int:
+    def cantidad_no_cero(cls, v: Decimal) -> Decimal:
         if v == 0:
             raise ValueError("La cantidad no puede ser 0")
         return v
@@ -22,7 +23,7 @@ class ConfigureAlertsRequest(BaseModel):
 class CategoryStockResponse(BaseModel):
     categoria_id: int
     categoria_nombre: str
-    cantidad: int
+    cantidad: float
     umbral_amarillo: Optional[int] = None
     umbral_rojo: Optional[int] = None
     estado: str  # "ok" | "warning" | "critical" | "sin_stock"
@@ -38,7 +39,7 @@ class StockListResponse(BaseModel):
 class ProductStockResponse(BaseModel):
     producto_id: int
     producto_nombre: str
-    cantidad: int
+    cantidad: float
     umbral_amarillo: Optional[int] = None
     umbral_rojo: Optional[int] = None
     estado: str

@@ -194,8 +194,11 @@
 
 .cart-item-quantity {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
 .cart-item-subtotal {
@@ -204,6 +207,19 @@
   color: var(--color-accent);
   text-shadow: 0 0 6px rgba(34, 197, 94, 0.28);
   white-space: nowrap;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.cart-item-quantity-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.1;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 

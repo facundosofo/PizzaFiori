@@ -17,6 +17,10 @@ from app.domain.models.product_price import ProductPrice
 from app.domain.models.product_category import ProductCategory as Category
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.dashboard_schemas import TipoPeriodo, FiltroTiempo
+from app.application.analytics_utils import (
+    format_mixed_fraction_quantity,
+    infer_fraction_denominator,
+)
 
 
 @dataclass
@@ -208,7 +212,7 @@ class SalesAnalyticsService:
                 "fecha": row.date.strftime("%Y-%m-%d"),
                 "ingresos": float(row.revenue or 0),
                 "pedidos": int(row.pedidos or 0),
-                "cantidad": int(row.cantidad or 0),
+                "cantidad": float(row.cantidad or 0),
             }
             for row in rows
         ]
@@ -335,7 +339,7 @@ class SalesAnalyticsService:
                     "mes": f"{months[current_month - 1]} {current_year}",
                     "ingresos": float(row.revenue or 0) if row else 0,
                     "pedidos": int(row.pedidos or 0) if row else 0,
-                    "cantidad": int(row.cantidad or 0) if row else 0,
+                    "cantidad": float(row.cantidad or 0) if row else 0,
                 }
             )
 
@@ -475,7 +479,7 @@ class SalesAnalyticsService:
                     "semana": label,
                     "ingresos": float(row.revenue or 0) if row else 0,
                     "pedidos": int(row.pedidos or 0) if row else 0,
-                    "cantidad": int(row.cantidad or 0) if row else 0,
+                    "cantidad": float(row.cantidad or 0) if row else 0,
                 }
             )
             current += timedelta(weeks=1)
@@ -576,7 +580,7 @@ class SalesAnalyticsService:
             "año": str(int(row.year)),
             "ingresos": float(row.revenue or 0),
             "pedidos": int(row.pedidos or 0),
-            "cantidad": int(row.cantidad or 0),
+            "cantidad": float(row.cantidad or 0),
         } for row in rows}
         
         # Agregar años faltantes con 0 en ingresos
@@ -691,12 +695,33 @@ class SalesAnalyticsService:
         rows = result.fetchall()
         
         return [
-            {
-                "categoria": row.category or "Sin categoria",
-                "cantidad": int(row.total_quantity or 0),
-            }
+            self._build_category_quantity_payload(
+                category=row.category or "Sin categoria",
+                total_quantity=float(row.total_quantity or 0),
+            )
             for row in rows
         ]
+
+    @staticmethod
+    def _build_category_quantity_payload(category: str, total_quantity: float) -> dict:
+        denominator = infer_fraction_denominator(category=category)
+        quantity_display = format_mixed_fraction_quantity(total_quantity, denominator=denominator)
+
+        if denominator <= 1:
+            productos_vendidos = int(round(total_quantity))
+            porciones_vendidas = 0
+        else:
+            total_portions = int(round(total_quantity * denominator))
+            productos_vendidos = total_portions // denominator
+            porciones_vendidas = total_portions % denominator
+
+        return {
+            "categoria": category,
+            "cantidad": total_quantity,
+            "cantidad_display": quantity_display,
+            "productos_vendidos": productos_vendidos,
+            "porciones_vendidas": porciones_vendidas,
+        }
 
     async def _get_weekday_revenue_data(
         self,

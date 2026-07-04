@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Numeric, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -11,7 +11,7 @@ class CategoryStock(Base):
     categoria_id = Column(
         Integer, ForeignKey("productos_categorias.id"), primary_key=True
     )
-    cantidad = Column(Integer, nullable=False, default=0)
+    cantidad = Column(Numeric(10, 3), nullable=False, default=0)
     umbral_amarillo = Column(Integer, nullable=True)
     umbral_rojo = Column(Integer, nullable=True)
     fecha_actualizacion = Column(

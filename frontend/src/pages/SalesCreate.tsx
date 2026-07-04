@@ -154,65 +154,127 @@ export const SalesCreatePage: React.FC = () => {
     return totalPrice / quantity;
   };
 
-  // Get cart quantities map for ProductQuickSelector (memoized)
+  // Get cart quantities map for ProductQuickSelector (memoized).
+  // If a product has both whole and portion entries, sum them so the badge shows total.
   const cartQuantities = useMemo(() => {
     const quantities = new Map<number, number>();
     cartItems.forEach((item) => {
       if (item.tipo === 'producto') {
-        quantities.set(item.producto_id, item.cantidad);
+        quantities.set(
+          item.producto_id,
+          (quantities.get(item.producto_id) || 0) + item.cantidad,
+        );
       }
     });
     return quantities;
   }, [cartItems]);
 
-  // Add product to cart
-  const handleAddProduct = useCallback((product: Product) => {
+  const isSameCantidad = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+
+  const getMaxQuantityForPortionPrice = (priceCantidad?: number) => {
+    if (!priceCantidad || priceCantidad >= 1) return null;
+
+    const maxQuantity = Math.round(1 / priceCantidad) - 1;
+    return Number.isFinite(maxQuantity) && maxQuantity > 0 ? maxQuantity : null;
+  };
+
+  const getWholeProductPriceRow = (product: Product) => {
+    if (!product.precios || product.precios.length === 0) return undefined;
+    return (
+      product.precios.find((price) => isSameCantidad(price.cantidad, 1))
+      ?? product.precios.find((price) => price.cantidad > 1)
+      ?? product.precios[0]
+    );
+  };
+
+  const getPortionProductPriceRow = (product: Product) => {
+    return product.precios
+      ?.filter((price) => price.cantidad < 1)
+      .sort((a, b) => a.cantidad - b.cantidad)[0];
+  };
+
+  const addProductPriceItem = useCallback((product: Product, priceRow: NonNullable<Product['precios']>[number]) => {
+    const maxQuantity = getMaxQuantityForPortionPrice(Number(priceRow.cantidad));
+    let didChangeCart = false;
+
     setCartItems((prev) => {
-      // Check if product already exists in cart
-      const existingItemIndex = prev.findIndex(
-        (item) => item.tipo === 'producto' && item.producto_id === product.id
+      const existingItemIndex = prev.findIndex((item) =>
+        item.tipo === 'producto' &&
+        item.producto_id === product.id &&
+        item.product_price_id === priceRow.id
       );
 
       if (existingItemIndex >= 0) {
-        // Product exists, increment quantity
         return prev.map((item, index) => {
-          if (index === existingItemIndex && item.tipo === 'producto') {
-            const newQuantity = item.cantidad + 1;
-            const newPrice = Number(getProductPrice(product, newQuantity));
-            return {
-              ...item,
-              cantidad: newQuantity,
-              precio_unitario: newPrice,
-              subtotal: newPrice * newQuantity,
-            };
+          if (index !== existingItemIndex) return item;
+          if (maxQuantity !== null && item.cantidad >= maxQuantity) {
+            return item;
           }
-          return item;
+
+          const nextQuantity = maxQuantity !== null
+            ? Math.min(item.cantidad + 1, maxQuantity)
+            : item.cantidad + 1;
+
+          didChangeCart = true;
+
+          return {
+            ...item,
+            cantidad: nextQuantity,
+            subtotal: Number(priceRow.precio) * nextQuantity,
+          };
         });
-      } else {
-        // Product doesn't exist, create new item
-        const price = Number(getProductPrice(product, 1));
-        const category = categories.find((c) => c.id === product.categoria_id);
-
-        const newItem: CartProductItem = {
-          id: `producto-${product.id}-${Date.now()}`,
-          tipo: 'producto',
-          producto_id: product.id,
-          producto_nombre: product.nombre,
-          categoria_nombre: category?.nombre || 'Sin categoría',
-          imagen: product.imagen,
-          cantidad: 1,
-          precio_unitario: price,
-          subtotal: price,
-        };
-
-        return [...prev, newItem];
       }
+
+      const category = categories.find((c) => c.id === product.categoria_id);
+      const priceUnit = Number(priceRow.precio);
+
+      const newItem: CartProductItem = {
+        id: `producto-${product.id}-${priceRow.id}-${Date.now()}`,
+        tipo: 'producto',
+        producto_id: product.id,
+        producto_nombre: product.nombre,
+        categoria_nombre: category?.nombre || 'Sin categoría',
+        imagen: product.imagen,
+        cantidad: 1,
+        precio_unitario: priceUnit,
+        subtotal: priceUnit,
+        product_price_id: priceRow.id,
+        precio_cantidad: priceRow.cantidad,
+      };
+
+      didChangeCart = true;
+
+      return [...prev, newItem];
     });
-    
-    // Show toast feedback
-    setAddedItemToast(product.nombre);
-    setTimeout(() => setAddedItemToast(null), 2000);
+
+    if (didChangeCart) {
+      setAddedItemToast(product.nombre);
+      setTimeout(() => setAddedItemToast(null), 2000);
+    }
+
+    return didChangeCart;
   }, [categories]);
+
+  const handleAddProduct = useCallback((product: Product) => {
+    const priceRow = getWholeProductPriceRow(product);
+    if (priceRow) {
+      addProductPriceItem(product, priceRow);
+    }
+  }, [addProductPriceItem]);
+
+  const handleAddWholeProduct = useCallback((product: Product) => {
+    const priceRow = getWholeProductPriceRow(product);
+    if (priceRow) {
+      addProductPriceItem(product, priceRow);
+    }
+  }, [addProductPriceItem]);
+
+  const handleAddPortionProduct = useCallback((product: Product) => {
+    const priceRow = getPortionProductPriceRow(product);
+    if (priceRow) {
+      addProductPriceItem(product, priceRow);
+    }
+  }, [addProductPriceItem]);
 
   // Add pizza mitad-mitad to cart
   const handleAddPizzaMitadMitad = useCallback((pizzaMitadMitad: {
@@ -247,7 +309,7 @@ export const SalesCreatePage: React.FC = () => {
         return [{
           producto_id: item.productos[0].id,
           producto_nombre: item.productos[0].nombre,
-          cantidad: item.cantidad,
+          cantidad: Number(item.cantidad),
         }];
       }
       return [];
@@ -357,25 +419,28 @@ export const SalesCreatePage: React.FC = () => {
     setCartItems((prev) =>
       prev.map((item) => {
         if (item.id === itemId) {
+          const maxQuantity = item.tipo === 'producto'
+            ? getMaxQuantityForPortionPrice(item.precio_cantidad)
+            : null;
+
+          const boundedQuantity = maxQuantity !== null
+            ? Math.min(newQuantity, maxQuantity)
+            : newQuantity;
+
           // For products, recalculate price based on quantity
           if (item.tipo === 'producto') {
-            const product = products.find((p) => p.id === item.producto_id);
-            if (!product) return item;
-
-            const newPrice = Number(getProductPrice(product, newQuantity));
             return {
               ...item,
-              cantidad: newQuantity,
-              precio_unitario: newPrice,
-              subtotal: newPrice * newQuantity,
+              cantidad: boundedQuantity,
+              subtotal: Number(item.precio_unitario) * boundedQuantity,
             };
           }
 
           // For offers, just update quantity
           return {
             ...item,
-            cantidad: newQuantity,
-            subtotal: Number(item.precio_unitario) * newQuantity,
+            cantidad: boundedQuantity,
+            subtotal: Number(item.precio_unitario) * boundedQuantity,
           };
         }
         return item;
@@ -398,6 +463,44 @@ export const SalesCreatePage: React.FC = () => {
     setShowConfirmModal(false);
   };
 
+  const buildSaleItemsPayload = (items: CartItem[]): SaleItemRequest[] => {
+    const saleItems: SaleItemRequest[] = [];
+
+    for (const item of items) {
+      if (item.tipo === 'producto') {
+        saleItems.push({
+          producto_id: item.producto_id,
+          cantidad: Number(((item.precio_cantidad ?? 1) * item.cantidad).toFixed(3)),
+          precio_cantidad: item.precio_cantidad ?? 1,
+        });
+        continue;
+      }
+
+      if (item.tipo === 'oferta') {
+        saleItems.push({
+          oferta_id: item.oferta_id,
+          cantidad: item.cantidad,
+          productos_seleccionados: item.productos_seleccionados.map((p) => ({
+            producto_id: p.producto_id,
+            cantidad: Number(p.cantidad),
+          })),
+        });
+        continue;
+      }
+
+      saleItems.push({
+        pizza_mitad_mitad: {
+          producto_id_izquierda: item.producto_id_izquierda,
+          producto_id_derecha: item.producto_id_derecha,
+          cantidad: item.cantidad,
+        },
+        cantidad: item.cantidad,
+      });
+    }
+
+    return saleItems;
+  };
+
   // Confirm sale
   const handleConfirmSale = async () => {
     if (cartItems.length === 0) return;
@@ -407,35 +510,7 @@ export const SalesCreatePage: React.FC = () => {
       setError(null);
 
       // Build sale items payload
-      const saleItems: SaleItemRequest[] = cartItems.map((item) => {
-        if (item.tipo === 'producto') {
-          return {
-            producto_id: item.producto_id,
-            cantidad: item.cantidad,
-            // precio_unitario is optional for create (backend calculates)
-          };
-        } else if (item.tipo === 'oferta') {
-          // Offer items (Fase 2+)
-          return {
-            oferta_id: item.oferta_id,
-            cantidad: item.cantidad,
-            productos_seleccionados: item.productos_seleccionados.map((p) => ({
-              producto_id: p.producto_id,
-              cantidad: p.cantidad,
-            })),
-          };
-        } else {
-          // Pizza mitad-mitad items
-          return {
-            pizza_mitad_mitad: {
-              producto_id_izquierda: item.producto_id_izquierda,
-              producto_id_derecha: item.producto_id_derecha,
-              cantidad: item.cantidad,
-            },
-            cantidad: item.cantidad,
-          };
-        }
-      });
+      const saleItems: SaleItemRequest[] = buildSaleItemsPayload(cartItems);
 
       // Create sale
       await createSale({
@@ -513,6 +588,8 @@ export const SalesCreatePage: React.FC = () => {
                 categories={categories}
                 cartQuantities={cartQuantities}
                 onAddProduct={handleAddProduct}
+                onAddWholeProduct={handleAddWholeProduct}
+                onAddPortionProduct={handleAddPortionProduct}
                 onUpdateProductQuantity={handleUpdateProductQuantity}
                 onOpenPizzaMitadMitad={() => setIsPizzaMitadMitadModalOpen(true)}
               />

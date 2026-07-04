@@ -14,6 +14,7 @@ import * as Icons from "../components/shared/Icons";
 import type { Sale } from "../types/sale";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
+import type { SaleItem } from "../types/sale_item";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
 import "../styles/sales.css";
 
@@ -211,8 +212,50 @@ const SalesPage = () => {
     setSaleToDelete(null);
   };
 
+  const toNumber = (value: unknown): number => {
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    if (typeof value === "string") {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
+  const isSameQuantity = (a: number, b: number): boolean => Math.abs(a - b) < 1e-9;
+
+  const computePhysicalItemsFromLines = (items: SaleItem[] | undefined): number => {
+    if (!items?.length) return 0;
+
+    return items.reduce((sum, item) => {
+      const cantidad = toNumber((item as any).cantidad);
+      const baseQuantity = toNumber((item as any).precio_cantidad);
+
+      if (!Number.isFinite(cantidad) || cantidad <= 0) return sum;
+
+      if (baseQuantity > 0 && baseQuantity < 1) {
+        return sum + Math.max(1, Math.round(cantidad / baseQuantity));
+      }
+
+      if (isSameQuantity(cantidad, Math.round(cantidad))) {
+        return sum + Math.round(cantidad);
+      }
+
+      return sum + Math.max(1, Math.round(cantidad / 0.125));
+    }, 0);
+  };
+
   const getTotalItems = (sale: Sale): number => {
-    return typeof (sale as any).total_items === 'number' ? (sale as any).total_items : 0;
+    const fromItems = computePhysicalItemsFromLines(sale.items);
+    if (fromItems > 0) return fromItems;
+
+    const rawTotalItems = toNumber((sale as any).total_items);
+    if (rawTotalItems <= 0) return 0;
+
+    if (isSameQuantity(rawTotalItems, Math.round(rawTotalItems))) {
+      return Math.round(rawTotalItems);
+    }
+
+    return Math.max(1, Math.round(rawTotalItems / 0.125));
   };
 
   return (

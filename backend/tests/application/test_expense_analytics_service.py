@@ -4,8 +4,8 @@ Tests expense analytics operations with mocked session and UnitOfWork.
 """
 
 import pytest
-from datetime import date
-from unittest.mock import AsyncMock, MagicMock
+from datetime import date, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.application.expense_analytics_service import ExpenseAnalyticsService
 
@@ -75,7 +75,12 @@ async def test_get_expenses_by_period_daily(mock_uow, mock_logger):
     ]
     mock_uow.session.execute = AsyncMock(return_value=_mock_result(rows))
 
-    result = await service.get_expenses_by_period(period="daily", limit=15)
+    fixed_now = datetime(2026, 6, 15, 12, 0, 0)
+    with patch("app.application.expense_analytics_service.datetime") as mock_datetime:
+        mock_datetime.now.return_value = fixed_now
+        mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
+
+        result = await service.get_expenses_by_period(period="daily", limit=15)
 
     assert result.status_code == 200
     assert len(result.value) == 15

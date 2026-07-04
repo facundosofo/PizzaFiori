@@ -12,7 +12,13 @@ class OfferItemRequest(BaseModel):
     producto_id: Optional[int] = Field(None, gt=0, description="ID del producto")
     categoria_id: Optional[int] = Field(None, gt=0, description="ID de la categoría")
     producto_opciones: Optional[List[int]] = Field(None, min_length=2, description="Lista de IDs de productos alternativos (mínimo 2)")
-    cantidad: int = Field(default=1, gt=0, le=100, description="Cantidad del producto en la oferta")
+    cantidad: Decimal = Field(
+        default=Decimal("1"),
+        gt=Decimal("0"),
+        le=Decimal("1000"),
+        multiple_of=Decimal("0.125"),
+        description="Cantidad del item en la oferta (admite fracciones para producto/opciones)"
+    )
 
     @model_validator(mode="after")
     def validar_tipo_item(self):
@@ -32,6 +38,10 @@ class OfferItemRequest(BaseModel):
         if self.producto_opciones is not None:
             if len(self.producto_opciones) != len(set(self.producto_opciones)):
                 raise ValueError("La lista producto_opciones no puede contener IDs duplicados")
+
+        # Las categorías no aceptan porciones: solo cantidades enteras.
+        if self.categoria_id is not None and self.cantidad != int(self.cantidad):
+            raise ValueError("Las categorías no permiten porciones")
         
         return self
 
@@ -48,7 +58,7 @@ class ProductoOpcionSchema(BaseModel):
 class OfferItemResponse(BaseModel):
     id: int
     categoria_id: Optional[int] = None
-    cantidad: int
+    cantidad: Decimal
     categoria_nombre: Optional[str] = None
     productos: Optional[List[ProductoOpcionSchema]] = None
     

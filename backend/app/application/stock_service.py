@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Optional, List
 from datetime import datetime
+from decimal import Decimal
 import structlog
 
 from app.domain.models.category_stock import CategoryStock
@@ -16,11 +17,11 @@ class ServiceResult:
 
 
 def _compute_estado(
-    cantidad: int,
+    cantidad: Decimal,
     umbral_amarillo: Optional[int],
     umbral_rojo: Optional[int],
 ) -> str:
-    if cantidad == 0:
+    if cantidad == Decimal("0"):
         return "sin_stock"
     if umbral_rojo is not None and cantidad <= umbral_rojo:
         return "critical"
@@ -154,7 +155,7 @@ class StockService:
     async def add_stock(
         self,
         categoria_id: int,
-        cantidad: int,
+        cantidad: Decimal,
         username: str,
     ) -> ServiceResult:
         """Ajusta el stock de una categoría (positivo = agregar, negativo = quitar) y deja registro de auditoría."""
@@ -181,13 +182,13 @@ class StockService:
                 if stock is None:
                     stock = CategoryStock(
                         categoria_id=categoria_id,
-                        cantidad=0,
+                        cantidad=Decimal("0"),
                         fecha_actualizacion=datetime.now(),
                     )
                     await uow.stock_repo.upsert(stock)
 
                 stock_anterior = stock.cantidad
-                stock.cantidad = max(0, stock.cantidad + cantidad)
+                stock.cantidad = max(Decimal("0"), stock.cantidad + cantidad)
                 stock.fecha_actualizacion = datetime.now()
 
                 tipo_movimiento = "INGRESO" if cantidad > 0 else "AJUSTE_BAJA"
@@ -346,7 +347,7 @@ class StockService:
     async def add_product_stock(
         self,
         producto_id: int,
-        cantidad: int,
+        cantidad: Decimal,
         username: str,
     ) -> ServiceResult:
         """Ajusta el stock de un producto individual."""
@@ -361,7 +362,7 @@ class StockService:
 
                 stock = await uow.product_stock_repo.get_or_create(producto_id)
                 stock_anterior = stock.cantidad
-                stock.cantidad = max(0, stock.cantidad + cantidad)
+                stock.cantidad = max(Decimal("0"), stock.cantidad + cantidad)
                 stock.fecha_actualizacion = datetime.now()
 
                 tipo_movimiento = "INGRESO" if cantidad > 0 else "AJUSTE_BAJA"

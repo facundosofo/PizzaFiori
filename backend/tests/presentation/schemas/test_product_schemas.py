@@ -87,6 +87,19 @@ def test_precio_request_zero_precio():
     assert len(errors) > 0
 
 
+def test_precio_request_fractional_cantidad_valid():
+    """Test that fractional cantidad values are accepted."""
+    data = {
+        "cantidad": "0.125",
+        "precio": "1000.00"
+    }
+
+    precio = ProductoPrecioRequest(**data)
+
+    assert precio.cantidad == Decimal("0.125")
+    assert precio.precio == Decimal("1000.00")
+
+
 # ==================== ProductoCreateRequest Tests ====================
 
 def test_create_producto_valid():
@@ -274,6 +287,23 @@ def test_update_producto_partial_categoria():
     assert producto.nombre is None
     assert producto.categoria_id == 3
     assert producto.precios is None
+
+
+def test_update_producto_fractional_precios_valid():
+    """Test that fractional quantity values are accepted during update."""
+    data = {
+        "precios": [
+            {"cantidad": "0.125", "precio": "1000.00"},
+            {"cantidad": "1", "precio": "1000.00"}
+        ]
+    }
+
+    producto = ProductoUpdateRequest(**data)
+
+    assert producto.precios is not None
+    assert producto.precios[0].cantidad == Decimal("0.125")
+    assert producto.precios[0].precio == Decimal("1000.00")
+    assert producto.precios[1].cantidad == Decimal("1")
 
 
 def test_update_producto_empty_precios():

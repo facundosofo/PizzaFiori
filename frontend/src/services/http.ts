@@ -7,6 +7,48 @@ import type { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axio
 import env from '../config/env';
 import { translateErrorMessage } from '../constants/validationMessages';
 
+function extractErrorText(data: unknown): string {
+  if (!data || typeof data !== 'object') return '';
+
+  const payload = data as Record<string, unknown>;
+  const detail = payload.detail;
+  const message = payload.message;
+
+  if (typeof detail === 'string') return detail.toLowerCase();
+  if (typeof message === 'string') return message.toLowerCase();
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object' && 'msg' in item) {
+          const msg = (item as Record<string, unknown>).msg;
+          return typeof msg === 'string' ? msg : '';
+        }
+        return '';
+      })
+      .join(' ')
+      .toLowerCase();
+  }
+
+  return '';
+}
+
+function isTokenAuthError(error: AxiosError): boolean {
+  const text = extractErrorText(error.response?.data);
+
+  // Logout only when 401 is clearly due to JWT/session auth.
+  return [
+    'invalid or expired token',
+    'signature has expired',
+    'missing authentication token',
+    'www-authenticate',
+    'bearer',
+    'token',
+    'user not found',
+  ].some((tokenHint) => text.includes(tokenHint));
+}
+
 // Create Axios instance
 const api = axios.create({
   baseURL: env.API_BASE_URL,
@@ -78,8 +120,8 @@ api.interceptors.response.use(
     }
 
     // Handle authentication errors
-    if (error.response?.status === 401) {
-      // Unauthorized - token invalid or expired
+    if (error.response?.status === 401 && isTokenAuthError(error)) {
+      // Only force logout on token/session related 401 responses.
       clearAuth();
       window.location.href = '/login';
     } else if (error.response?.status === 403) {

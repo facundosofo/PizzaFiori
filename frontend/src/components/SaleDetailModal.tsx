@@ -4,6 +4,7 @@ import type { Sale } from "../types/sale";
 import type { SaleItemWithDetails } from "../types/sale_item";
 import { getSaleById } from "../services/salesService";
 import { formatCurrency, formatDateTimeDisplay } from "../utils/formatters";
+import { formatMixedFraction } from "../utils/soldQuantityFormatter";
 import "../styles/sale-modal.css";
 import * as Icons from './shared/Icons';
 import ErrorAlert from './shared/ErrorAlert';
@@ -26,6 +27,65 @@ const SaleDetailModal = ({
   const [sale, setSale] = useState<SaleWithDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const isSameQuantity = (a: number, b: number): boolean => Math.abs(a - b) < 1e-9;
+
+  const toNumber = (value: unknown): number => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
+  const formatQuantityForDetail = (
+    quantity: number,
+    baseQuantity?: number | null,
+    itemName?: string,
+    categoryName?: string,
+  ): string => {
+    if (!Number.isFinite(quantity) || quantity <= 0) return "0";
+    return formatMixedFraction(quantity, { baseQuantity, itemName, categoryName });
+  };
+
+  const formatFractionLabelForDetail = (quantity: number, baseQuantity?: number | null): string => {
+    if (!Number.isFinite(quantity) || quantity <= 0) return "";
+
+    if (isSameQuantity(quantity, Math.round(quantity))) {
+      return "Unidad entera";
+    }
+
+    if (baseQuantity && baseQuantity > 0) {
+      if (isSameQuantity(baseQuantity, 0.5)) return "Porción 1/2";
+      if (isSameQuantity(baseQuantity, 0.25)) return "Porción 1/4";
+      if (isSameQuantity(baseQuantity, 0.125)) return "Porción 1/8";
+    }
+
+    if (isSameQuantity(quantity, 0.5)) return "Porción 1/2";
+    if (isSameQuantity(quantity, 0.25)) return "Porción 1/4";
+    if (isSameQuantity(quantity, 0.125)) return "Porción 1/8";
+
+    const portionCount = Math.max(1, Math.round(quantity / 0.125));
+    const fractionMap: Record<number, string> = {
+      1: "Porción 1/8",
+      2: "Porción 1/4",
+      4: "Porción 1/2",
+    };
+
+    return fractionMap[portionCount] ?? `Porción ${portionCount}/8`;
+  };
+
+  const getSaleItemPriceDisplay = (item: SaleItemWithDetails): number => {
+    const baseQuantity = toNumber(item.precio_cantidad);
+    const unitPrice = toNumber(item.precio_unitario);
+
+    if (baseQuantity > 0 && baseQuantity < 1) {
+      return Number((unitPrice * baseQuantity).toFixed(2));
+    }
+
+    return unitPrice;
+  };
 
   useEffect(() => {
     if (saleId && isOpen) {
@@ -126,7 +186,7 @@ const SaleDetailModal = ({
                       <div className="sale-items-header">
                         <div className="sale-item-col-name">Nombre</div>
                         <div className="sale-item-col-qty">Cantidad</div>
-                        <div className="sale-item-col-price">Precio unitario</div>
+                        <div className="sale-item-col-price">Precio</div>
                         <div className="sale-item-col-subtotal">Subtotal</div>
                       </div>
 
@@ -140,6 +200,12 @@ const SaleDetailModal = ({
                               </div>
                             )}
 
+                            {Number(item.cantidad) < 1 && (
+                              <div className="sale-item-fraction-label">
+                                {formatFractionLabelForDetail(Number(item.cantidad), item.precio_cantidad)}
+                              </div>
+                            )}
+
                             {item.oferta_id && item.oferta_productos_snapshot?.length ? (
                               <div style={{ marginTop: 6, paddingLeft: 14 }}>
                                 {item.oferta_productos_snapshot.map((p) => (
@@ -150,9 +216,20 @@ const SaleDetailModal = ({
                               </div>
                             ) : null}
                           </div>
-                          <div className="sale-item-col-qty">{item.cantidad}</div>
+                          <div className="sale-item-col-qty">
+                            <div className="sale-quantity-stack">
+                              <span className="sale-quantity-main">
+                                {formatQuantityForDetail(
+                                  Number(item.cantidad),
+                                  item.precio_cantidad,
+                                  item.item_nombre,
+                                  item.item_categoria,
+                                )}
+                              </span>
+                            </div>
+                          </div>
                           <div className="sale-item-col-price">
-                            {formatCurrency(item.precio_unitario)}
+                            {formatCurrency(getSaleItemPriceDisplay(item))}
                           </div>
                           <div className="sale-item-col-subtotal">
                             {formatCurrency(item.subtotal)}

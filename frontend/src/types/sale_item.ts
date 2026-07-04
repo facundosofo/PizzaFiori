@@ -12,6 +12,7 @@ export interface SaleItem {
   producto_id?: number | null;
   oferta_id?: number | null;
   cantidad: number;
+  precio_cantidad?: number | null;
   precio_unitario: number;
   subtotal: number;
   // Campos de snapshot (preservan datos históricos)
@@ -26,6 +27,7 @@ export interface SaleItemRequest {
   producto_id?: number | null;
   oferta_id?: number | null;
   cantidad: number;
+  precio_cantidad?: number | null;
   precio_unitario?: number; // Requerido para updates
   productos_seleccionados?: { producto_id: number; cantidad: number }[];
   pizza_mitad_mitad?: {

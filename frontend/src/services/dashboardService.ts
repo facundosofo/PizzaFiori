@@ -53,12 +53,16 @@ export interface TopProduct {
   categoria: string;
   precio: number;
   cantidad: number;
+  cantidad_display?: string | null;
   enStock: boolean;
 }
 
 export interface SalesByCategory {
   categoria: string;
   cantidad: number;
+  cantidad_display?: string | null;
+  productos_vendidos?: number | null;
+  porciones_vendidas?: number | null;
 }
 
 export interface WeekdayRevenue {
@@ -108,6 +112,7 @@ export interface ProductSummary {
   producto_mas_vendido: string;
   categoria_mas_vendida: string;
   cantidad_mas_vendida: number;
+  cantidad_mas_vendida_display?: string | null;
   promocion_mas_vendida: string | null;
   cantidad_promocion: number;
   mes_actual: string;

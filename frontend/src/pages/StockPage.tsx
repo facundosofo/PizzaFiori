@@ -9,6 +9,7 @@ import StockAddModal from "../components/StockAddModal";
 import StockAlertsModal from "../components/StockAlertsModal";
 import StockConfigModal from "../components/StockConfigModal";
 import StockProductBreakdown from "../components/StockProductBreakdown";
+import StockQuantityDisplay from "../components/shared/StockQuantityDisplay";
 import type { CategoryStock, StockListResponse } from "../types/stock";
 import { STOCK_ESTADO_BADGE, STOCK_ESTADO_LABELS } from "../types/stock";
 import { getAllStocks } from "../services/stockService";
@@ -163,9 +164,11 @@ const StockPage = () => {
                   </div>
 
                   <div className="stock-card-quantity-row">
-                    <span className={`stock-card-quantity ${getQuantityClass(cat.estado)}`}>
-                      {cat.cantidad}
-                    </span>
+                    <StockQuantityDisplay
+                      value={cat.cantidad}
+                      className={`stock-card-quantity ${getQuantityClass(cat.estado)}`}
+                      formatOptions={cat.stock_por_producto ? { preferredDenominator: 4, reduceFraction: false } : undefined}
+                    />
                     <span className="stock-card-unit">unidades</span>
                   </div>
                   {/*

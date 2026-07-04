@@ -10,6 +10,7 @@ Lógica canónica de filtros temporales:
 """
 
 from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 from app.presentation.schemas.dashboard_schemas import FiltroTiempo
 
@@ -49,3 +50,60 @@ def get_start_date_for_time_filter(time_filter: FiltroTiempo) -> datetime | None
 
     # HISTORICO — sin límite de fecha
     return None
+
+
+def format_mixed_fraction_quantity(value: Decimal | float | int | str, denominator: int = 8) -> str:
+    """Formatea cantidades como entero o fracción mixta (ej: 1.25 -> '1 2/8')."""
+    if denominator <= 0:
+        denominator = 8
+
+    try:
+        quantity = Decimal(str(value or 0))
+    except (InvalidOperation, ValueError, TypeError):
+        quantity = Decimal("0")
+    sign = "-" if quantity < 0 else ""
+    quantity = abs(quantity)
+
+    whole = int(quantity)
+    fractional = quantity - Decimal(whole)
+    numerator = int(
+        (fractional * Decimal(denominator)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    )
+
+    if numerator == 0:
+        return f"{sign}{whole}"
+
+    if numerator == denominator:
+        return f"{sign}{whole + 1}"
+
+    if whole == 0:
+        return f"{sign}{numerator}/{denominator}"
+
+    return f"{sign}{whole} {numerator}/{denominator}"
+
+
+def infer_fraction_denominator(
+    *,
+    category: str | None = None,
+    item_name: str | None = None,
+    base_quantity: Decimal | float | int | str | None = None,
+    default: int = 8,
+) -> int:
+    """Infiere denominador para mostrar fracciones según base/categoría/nombre."""
+    if base_quantity is not None:
+        try:
+            base = Decimal(str(base_quantity))
+            if base > 0 and base < 1:
+                inverse = (Decimal("1") / base).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+                denominator = int(inverse)
+                if denominator in (2, 4, 8):
+                    return denominator
+        except (InvalidOperation, ValueError, TypeError, ZeroDivisionError):
+            pass
+
+    category_text = (category or "").lower()
+    item_text = (item_name or "").lower()
+    if "tarta" in category_text or "tarta" in item_text:
+        return 4
+
+    return default if default > 0 else 8

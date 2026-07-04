@@ -134,7 +134,7 @@ const ProductosCategoryConfigModal = ({
                 </div>
 
                 {categorias.length === 0 ? (
-                  <div className="empty-state">
+                  <div className="prod-cat-empty-state">
                     <Icons.LayersIcon size={48} />
                     <p>No hay categorías de productos</p>
                     <span>Crea categorías para comenzar a organizar tus productos.</span>
@@ -152,16 +152,16 @@ const ProductosCategoryConfigModal = ({
                         <tr key={cat.id}>
                           <td className="prod-cat-nombre">{cat.nombre}</td>
                           <td>
-                            <div className="action-buttons">
+                            <div className="prod-cat-action-buttons">
                               <button
-                                className="btn-action btn-edit"
+                                className="prod-cat-btn-action prod-cat-btn-edit"
                                 onClick={() => handleEditCategory(cat)}
                                 title="Editar categoría"
                               >
                                 <Icons.EditIcon size={16} />
                               </button>
                               <button
-                                className="btn-action btn-delete"
+                                className="prod-cat-btn-action prod-cat-btn-delete"
                                 onClick={() => handleDeleteCategoryClick(cat)}
                                 disabled={isDeleting}
                                 title="Desactivar categoría"

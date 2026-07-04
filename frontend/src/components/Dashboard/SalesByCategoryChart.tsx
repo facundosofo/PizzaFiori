@@ -30,6 +30,8 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
 
   // Calcular total
   const total = data.reduce((sum, item) => sum + item.cantidad, 0);
+  const totalProductos = data.reduce((sum, item) => sum + (item.productos_vendidos ?? 0), 0);
+  const totalPorciones = data.reduce((sum, item) => sum + (item.porciones_vendidas ?? 0), 0);
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -41,6 +43,8 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
     // Obtener el índice de la categoría para usar el color correcto
     const categoryIndex = data.findIndex(item => item.categoria === entry.name);
     const color = COLORS[categoryIndex % COLORS.length];
+
+    const categoryRow = data.find(item => item.categoria === entry.name);
 
     return (
       <div
@@ -65,7 +69,15 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
           <strong>{entry.name}</strong>
         </div>
         <div style={{ color: color, marginLeft: '18px' }}>
-          {entry.value} ({percentage}%)
+          {categoryRow?.cantidad_display ?? entry.value} ({percentage}%)
+        </div>
+        {!!categoryRow && categoryRow.productos_vendidos != null && categoryRow.porciones_vendidas != null && (
+          <div style={{ color: 'var(--color-text-muted)', marginLeft: '18px', marginTop: '4px' }}>
+            {categoryRow.productos_vendidos} productos + {categoryRow.porciones_vendidas} porciones
+          </div>
+        )}
+        <div style={{ color: 'var(--color-text-muted)', marginLeft: '18px', marginTop: '4px' }}>
+          Cantidad agregada (productos y porciones)
         </div>
       </div>
     );
@@ -134,7 +146,7 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
                     {item.categoria}
                   </td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text)', fontWeight: 500 }}>
-                    {item.cantidad}
+                    {item.cantidad_display ?? item.cantidad}
                   </td>
                   <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text-muted)' }}>
                     {percentage}%
@@ -147,7 +159,7 @@ const SalesByCategoryChart = memo(({ data, height = 300 }: SalesByCategoryChartP
             <tr style={{ borderTop: '1px solid var(--color-border-strong)' }}>
               <td style={{ padding: '10px 8px', color: 'var(--color-text)', fontWeight: 600 }}>Total</td>
               <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text)', fontWeight: 600 }}>
-                {total}
+                {`${totalProductos} productos + ${totalPorciones} porciones`}
               </td>
               <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--color-text)', fontWeight: 600 }}>
                 100%

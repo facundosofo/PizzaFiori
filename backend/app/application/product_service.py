@@ -177,7 +177,7 @@ class ProductService:
                     'fecha_actualizacion': producto.fecha_actualizacion.isoformat() if producto.fecha_actualizacion else None,
                     'precios': [
                         {
-                            'cantidad': p.cantidad,
+                            'cantidad': float(p.cantidad) if p.cantidad is not None else None,
                             'precio': float(p.precio) if p.precio else 0.0
                         }
                         for p in (producto.precios or [])
@@ -232,7 +232,7 @@ class ProductService:
                     'fecha_actualizacion': producto.fecha_actualizacion.isoformat() if producto.fecha_actualizacion else None,
                     'precios': [
                         {
-                            'cantidad': p.cantidad,
+                            'cantidad': float(p.cantidad) if p.cantidad is not None else None,
                             'precio': float(p.precio) if p.precio else 0.0
                         }
                         for p in (producto.precios or [])

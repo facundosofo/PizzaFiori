@@ -28,6 +28,9 @@ const OfferItemForm = ({
   const [productoId, setProductoId] = useState<number>(0);
   const [categoriaId, setCategoriaId] = useState<number>(0);
   const [productosSeleccionados, setProductosSeleccionados] = useState<number[]>([]);
+  const [cantidad, setCantidad] = useState<number>(1);
+  const [usarPorcionProducto, setUsarPorcionProducto] = useState<boolean>(false);
+  const [usarPorcionOpciones, setUsarPorcionOpciones] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
   const tipoOptions: RadioOption[] = [
@@ -39,19 +42,92 @@ const OfferItemForm = ({
   const productosActivos = productos.filter((p) => p.activo);
   const categoriasDisponibles = categorias; // Todas las categorías
 
-  const productosMultiSelect: MultiSelectItem[] = productosActivos.map((p) => ({
-    id: p.id,
-    label: p.nombre,
-    disabled: false,
-  }));
-
   // Reset fields cuando cambia el tipo
   useEffect(() => {
     setProductoId(0);
     setCategoriaId(0);
     setProductosSeleccionados([]);
+    setCantidad(1);
+    setUsarPorcionProducto(false);
+    setUsarPorcionOpciones(false);
     setError("");
   }, [tipo]);
+
+  const getProductPortionQuantity = (product: Product | undefined): number | null => {
+    if (!product?.precios || product.precios.length === 0) return null;
+    const portionPrice = product.precios
+      .map((price) => Number(price.cantidad))
+      .find((cantidadPrecio) => cantidadPrecio < 1);
+    return portionPrice ?? null;
+  };
+
+  const getPortionLabel = (portionQuantity: number | null): string => {
+    if (!portionQuantity) return "";
+    if (Math.abs(portionQuantity - 0.5) < 1e-9) return "1/2";
+    if (Math.abs(portionQuantity - 0.25) < 1e-9) return "1/4";
+    if (Math.abs(portionQuantity - 0.125) < 1e-9) return "1/8";
+    return String(portionQuantity);
+  };
+
+  const selectedProduct = productosActivos.find((p) => p.id === productoId);
+  const productPortionQuantity = getProductPortionQuantity(selectedProduct);
+  const productHasPortionPrice = Boolean(productPortionQuantity);
+  const productPortionLabel = getPortionLabel(productPortionQuantity);
+
+  const selectedOptionProducts = productosActivos.filter((p) => productosSeleccionados.includes(p.id));
+  const selectedOptionProductsHaveNonPortion = selectedOptionProducts.some((p) => !getProductPortionQuantity(p));
+  const optionProductsWithPortion = productosActivos.filter((p) => Boolean(getProductPortionQuantity(p)));
+  const optionPortionQuantity =
+    (selectedOptionProducts.length > 0
+      ? getProductPortionQuantity(selectedOptionProducts[0])
+      : getProductPortionQuantity(optionProductsWithPortion[0])) ?? null;
+
+  const productsForOptionSelect = usarPorcionOpciones ? optionProductsWithPortion : productosActivos;
+
+  useEffect(() => {
+    if (tipo === "producto" && productoId > 0) {
+      if (productHasPortionPrice && usarPorcionProducto) {
+        setCantidad(productPortionQuantity ?? 1);
+      } else {
+        setCantidad(1);
+      }
+    }
+  }, [tipo, productoId, productPortionQuantity, productHasPortionPrice, usarPorcionProducto]);
+
+  useEffect(() => {
+    if (tipo === "producto" && !productHasPortionPrice && usarPorcionProducto) {
+      setUsarPorcionProducto(false);
+    }
+  }, [tipo, productHasPortionPrice, usarPorcionProducto]);
+
+  useEffect(() => {
+    if (tipo !== "opciones") return;
+    if (usarPorcionOpciones) {
+      setCantidad(optionPortionQuantity ?? 1);
+    } else {
+      setCantidad(1);
+    }
+  }, [tipo, usarPorcionOpciones, optionPortionQuantity]);
+
+  useEffect(() => {
+    if (tipo === "opciones" && usarPorcionOpciones) {
+      setProductosSeleccionados((prev) =>
+        prev.filter((id) => {
+          const product = productosActivos.find((p) => p.id === id);
+          return Boolean(getProductPortionQuantity(product));
+        })
+      );
+    }
+  }, [tipo, usarPorcionOpciones, productosActivos]);
+
+  const handleTogglePorcionOpciones = (checked: boolean) => {
+    setError("");
+    if (checked && selectedOptionProductsHaveNonPortion) {
+      setError("No puedes activar porción si seleccionaste productos sin porciones");
+      return;
+    }
+    setUsarPorcionOpciones(checked);
+  };
 
   const handleAdd = () => {
     setError("");
@@ -73,7 +149,7 @@ const OfferItemForm = ({
 
     // Construir el item según el tipo
     const item: OfferItemRequest = {
-      cantidad: 1,
+      cantidad,
     };
 
     if (tipo === "producto") {
@@ -86,6 +162,12 @@ const OfferItemForm = ({
 
     onAdd(item);
   };
+
+  const productosMultiSelect: MultiSelectItem[] = productsForOptionSelect.map((p) => ({
+    id: p.id,
+    label: p.nombre,
+    disabled: false,
+  }));
 
   return (
     <div className="offer-item-form">
@@ -115,6 +197,39 @@ const OfferItemForm = ({
               placeholder="Seleccionar producto..."
               searchPlaceholder="Buscar producto..."
             />
+          </div>
+        )}
+
+        {tipo === "producto" && productHasPortionPrice && (
+          <div className="form-group">
+            <label htmlFor="usar-porcion-producto" className="portion-toggle-label">
+              <input
+                id="usar-porcion-producto"
+                type="checkbox"
+                className="portion-toggle-checkbox"
+                checked={usarPorcionProducto}
+                onChange={(e) => setUsarPorcionProducto(e.target.checked)}
+              />
+              <span className="portion-toggle-chip">{`PORCION ${productPortionLabel}`}</span>
+            </label>
+          </div>
+        )}
+
+        {tipo === "opciones" && (
+          <div className="form-group">
+            <label htmlFor="usar-porcion-opciones" className="portion-toggle-label">
+              <input
+                id="usar-porcion-opciones"
+                type="checkbox"
+                className="portion-toggle-checkbox"
+                checked={usarPorcionOpciones}
+                onChange={(e) => handleTogglePorcionOpciones(e.target.checked)}
+              />
+              <span className="portion-toggle-chip">PORCION</span>
+            </label>
+            {usarPorcionOpciones && (
+              <span className="portion-toggle-hint">Solo se muestran productos con porción configurada</span>
+            )}
           </div>
         )}
 

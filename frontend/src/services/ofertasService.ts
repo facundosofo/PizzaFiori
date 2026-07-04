@@ -10,10 +10,14 @@ export const getOfertas = async (active?: boolean): Promise<Offer[]> => {
       params: active !== undefined ? { active } : undefined,
     });
     if (!Array.isArray(response.data)) return [];
-    // Ensure precio is a number
+    // Ensure numeric fields from API decimals are mapped as numbers in frontend.
     return response.data.map(offer => ({
       ...offer,
-      precio: Number(offer.precio)
+      precio: Number(offer.precio),
+      productos: offer.productos?.map((item) => ({
+        ...item,
+        cantidad: Number(item.cantidad),
+      })),
     }));
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
@@ -24,7 +28,14 @@ export const getOfertas = async (active?: boolean): Promise<Offer[]> => {
 export const getOfertaById = async (id: number): Promise<Offer> => {
   try {
     const response = await api.get<Offer>(`/ofertas/${id}`);
-    return response.data;
+    return {
+      ...response.data,
+      precio: Number(response.data.precio),
+      productos: response.data.productos?.map((item) => ({
+        ...item,
+        cantidad: Number(item.cantidad),
+      })),
+    };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     throw new Error(errorMessage);

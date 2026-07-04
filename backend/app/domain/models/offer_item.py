@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Table
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -19,7 +19,7 @@ class OfferItem(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     oferta_id = Column(Integer, ForeignKey("Ofertas.id"), nullable=False)
     categoria_id = Column(Integer, ForeignKey("productos_categorias.id"), nullable=True)
-    cantidad = Column(Integer, nullable=False, default=1)
+    cantidad = Column(Numeric(10, 3), nullable=False, default=1)
 
     oferta = relationship(
         "Offer",

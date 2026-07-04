@@ -14,7 +14,7 @@ class ProductPrice(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     producto_id = Column(Integer, ForeignKey("Productos.id"), nullable=False)
-    cantidad = Column(Integer, nullable=False)
+    cantidad = Column(Numeric(10, 3), nullable=False)
     precio = Column(Numeric(10, 2), nullable=False)
     fecha_creacion = Column(DateTime, default=datetime.now)
     fecha_actualizacion = Column(DateTime, default=datetime.now)
