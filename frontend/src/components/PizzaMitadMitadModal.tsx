@@ -33,6 +33,18 @@ export const PizzaMitadMitadModal: React.FC<PizzaMitadMitadModalProps> = ({
   const [selectedPizzaIds, setSelectedPizzaIds] = useState<number[]>([]);
   const [cantidad, setCantidad] = useState(1);
 
+  const isSameCantidad = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+
+  const getUnitPrice = (product: Product): number => {
+    if (!product.precios || product.precios.length === 0) return 0;
+
+    const unitPriceRow = product.precios.find((p) => isSameCantidad(Number(p.cantidad), 1));
+    if (unitPriceRow) return Number(unitPriceRow.precio);
+
+    const fallbackRow = [...product.precios].sort((a, b) => Number(a.cantidad) - Number(b.cantidad))[0];
+    return Number(fallbackRow?.precio ?? 0);
+  };
+
   // Filter only pizza products
   const pizzaProducts = products.filter(product => {
     const category = categories.find(cat => cat.id === product.categoria_id);
@@ -42,7 +54,7 @@ export const PizzaMitadMitadModal: React.FC<PizzaMitadMitadModalProps> = ({
 
   // Convert to MultiSelect format: label sin precio (chips), optionLabel con precio (dropdown)
   const pizzaMultiSelect: MultiSelectItem[] = pizzaProducts.map(product => {
-    const priceForOne = product.precios?.find(p => p.cantidad === 1)?.precio || 0;
+    const priceForOne = getUnitPrice(product);
     return {
       id: product.id,
       label: product.nombre, // Solo nombre para los chips seleccionados
@@ -67,12 +79,6 @@ export const PizzaMitadMitadModal: React.FC<PizzaMitadMitadModalProps> = ({
     // Get the selected products
     const selectedProducts = pizzaProducts.filter(p => selectedPizzaIds.includes(p.id));
     if (selectedProducts.length !== 2) return 0;
-    
-    // Get price for 1 unit of each pizza
-    const getUnitPrice = (product: Product) => {
-      const priceForOne = product.precios?.find(p => p.cantidad === 1);
-      return priceForOne?.precio || 0;
-    };
     
     const price1 = getUnitPrice(selectedProducts[0]);
     const price2 = getUnitPrice(selectedProducts[1]);
