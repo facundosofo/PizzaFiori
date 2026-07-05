@@ -1,7 +1,8 @@
 import sys as _sys
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Dict
+from decimal import Decimal
 from pathlib import Path
 
 # Resolve .env relative to the backend/ directory regardless of cwd.
@@ -13,6 +14,33 @@ if getattr(_sys, 'frozen', False):
 else:
     _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent.parent
 _ENV_FILE = _BACKEND_DIR / ".env"
+
+
+class StockExtraDeductionRule(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    categoria: list[str] = Field(default_factory=list)
+    producto: list[str] = Field(default_factory=list)
+    cantidad: Decimal = Decimal("1.000")
+    producto_a_descontar: str = Field(alias="productoADescontar")
+
+
+def _default_stock_extra_deduction_rules() -> list[StockExtraDeductionRule]:
+    # Backward-compatible defaults for current business behavior.
+    return [
+        StockExtraDeductionRule(
+            categoria=["Super Milas"],
+            producto=[],
+            cantidad=Decimal("1.000"),
+            producto_a_descontar="Papas Fritas",
+        ),
+        StockExtraDeductionRule(
+            categoria=[],
+            producto=["PIC-TEQNP-95208"],
+            cantidad=Decimal("0.500"),
+            producto_a_descontar="Papas Fritas",
+        ),
+    ]
 
 
 class Settings(BaseSettings):
@@ -76,6 +104,13 @@ class Settings(BaseSettings):
     seed_admin_password: Optional[str] = Field(default=None, alias="SEED_ADMIN_PASSWORD")
     seed_admin_first_name: Optional[str] = Field(default=None, alias="SEED_ADMIN_FIRST_NAME")
     seed_admin_last_name: Optional[str] = Field(default=None, alias="SEED_ADMIN_LAST_NAME")
+
+    # Reglas de descuento de stock adicionales al vender un producto.
+    # Se cargan desde JSON en .env (alias: STOCK_EXTRA_DEDUCTION_RULES).
+    stock_extra_deduction_rules: list[StockExtraDeductionRule] = Field(
+        default_factory=_default_stock_extra_deduction_rules,
+        alias="STOCK_EXTRA_DEDUCTION_RULES",
+    )
 
 
 settings = Settings()

@@ -9,16 +9,12 @@ from app.domain.models.sale import Sale
 from app.domain.models.sale_item import SaleItem
 from app.domain.models.sale_item_offer_product import SaleItemOfferProduct
 from app.domain.unit_of_work import AbstractUnitOfWork
+from app.infrastructure.config.settings import settings, StockExtraDeductionRule
 from app.presentation.schemas.sale_schemas import SaleCreateRequest
 
 
 RECARGO_KEY = "recargo_transferencia"
 DEFAULT_RECARGO_PERCENTAGE = Decimal("10.00")
-
-SUPER_MILAS_CATEGORY_NAME = "Super Milas"
-PAPAS_FRTAS_CATEGORY_NAME = "Papas Fritas"
-PAPAS_EXTRA_DEDUCTION_TRIGGER_SKU = "PIC-TEQNP-95208"
-
 
 @dataclass
 class ServiceResult:
@@ -61,20 +57,43 @@ class SaleService:
         return format(normalized.normalize(), "f")
 
     @staticmethod
-    def _matches_papas_extra_trigger_sku(sku: str | None) -> bool:
+    def _normalize_sku(sku: str | None) -> str:
         if not sku:
-            return False
+            return ""
         normalized = sku.strip().upper()
         if normalized.startswith("SKU:"):
             normalized = normalized[4:].strip()
-        return normalized == PAPAS_EXTRA_DEDUCTION_TRIGGER_SKU
+        return normalized
 
-    def _get_papas_extra_deduction(self, categoria_name: str | None, sku: str | None, base_qty: Decimal) -> Decimal:
-        if categoria_name == SUPER_MILAS_CATEGORY_NAME:
-            return base_qty
-        if self._matches_papas_extra_trigger_sku(sku):
-            return base_qty * Decimal("0.5")
-        return Decimal("0")
+    def _rule_matches(self, rule: StockExtraDeductionRule, categoria_name: str | None, normalized_sku: str) -> bool:
+        if categoria_name and categoria_name in rule.categoria:
+            return True
+        if not normalized_sku:
+            return False
+        for configured_sku in rule.producto:
+            if self._normalize_sku(configured_sku) == normalized_sku:
+                return True
+        return False
+
+    def _get_configured_extra_stock_deductions(
+        self,
+        categoria_name: str | None,
+        sku: str | None,
+        base_qty: Decimal,
+    ) -> list[tuple[str, Decimal]]:
+        normalized_sku = self._normalize_sku(sku)
+        deductions: list[tuple[str, Decimal]] = []
+
+        for rule in settings.stock_extra_deduction_rules:
+            if not rule.producto_a_descontar:
+                continue
+            if not self._rule_matches(rule, categoria_name, normalized_sku):
+                continue
+            deduction_qty = base_qty * Decimal(str(rule.cantidad))
+            if deduction_qty > 0:
+                deductions.append((rule.producto_a_descontar, deduction_qty))
+
+        return deductions
 
     def _get_product_price(self, producto, cantidad: Decimal) -> Optional[Decimal]:
         """
@@ -292,8 +311,8 @@ class SaleService:
                 product_stock_deductions: dict[int, Decimal] = {}
                 # map producto_id -> categoria_id para evitar re-fetch en el loop de descuento
                 producto_categoria_ids: dict[int, int] = {}
-                # ID de la categoría de Papas Fritas para deducción adicional de Super Milas
-                papas_category_id = await self._get_category_id_by_name(PAPAS_FRTAS_CATEGORY_NAME, uow)
+                # Cache target_category_name -> category_id para reglas dinámicas.
+                extra_target_category_ids: dict[str, Optional[int]] = {}
                 category_name_cache: dict[int, str] = {}
                 # Validar y calcular precios para cada item
                 for item in sale_create.items:
@@ -337,15 +356,20 @@ class SaleService:
                             stock_deductions[producto.categoria_id] = (
                                 stock_deductions.get(producto.categoria_id, Decimal("0")) + item.cantidad
                             )
-                        papas_extra_deduction = self._get_papas_extra_deduction(
+                        extra_stock_deductions = self._get_configured_extra_stock_deductions(
                             categoria_name,
                             producto.sku,
                             item.cantidad,
                         )
-                        if papas_extra_deduction > 0 and papas_category_id:
-                            stock_deductions[papas_category_id] = (
-                                stock_deductions.get(papas_category_id, Decimal("0")) + papas_extra_deduction
-                            )
+                        for target_category_name, extra_qty in extra_stock_deductions:
+                            target_category_id = extra_target_category_ids.get(target_category_name)
+                            if target_category_name not in extra_target_category_ids:
+                                target_category_id = await self._get_category_id_by_name(target_category_name, uow)
+                                extra_target_category_ids[target_category_name] = target_category_id
+                            if target_category_id:
+                                stock_deductions[target_category_id] = (
+                                    stock_deductions.get(target_category_id, Decimal("0")) + extra_qty
+                                )
                         product_stock_deductions[item.producto_id] = (
                             product_stock_deductions.get(item.producto_id, Decimal("0")) + item.cantidad
                         )
@@ -416,15 +440,20 @@ class SaleService:
                                         categoria_name = producto.categoria.nombre if producto.categoria else 'Sin categoría'
                                         if producto.categoria_id:
                                             category_name_cache[producto.categoria_id] = categoria_name
-                                    papas_extra_deduction = self._get_papas_extra_deduction(
+                                    extra_stock_deductions = self._get_configured_extra_stock_deductions(
                                         categoria_name,
                                         producto.sku,
                                         deduccion_total,
                                     )
-                                    if papas_extra_deduction > 0 and papas_category_id:
-                                        stock_deductions[papas_category_id] = (
-                                            stock_deductions.get(papas_category_id, Decimal("0")) + papas_extra_deduction
-                                        )
+                                    for target_category_name, extra_qty in extra_stock_deductions:
+                                        target_category_id = extra_target_category_ids.get(target_category_name)
+                                        if target_category_name not in extra_target_category_ids:
+                                            target_category_id = await self._get_category_id_by_name(target_category_name, uow)
+                                            extra_target_category_ids[target_category_name] = target_category_id
+                                        if target_category_id:
+                                            stock_deductions[target_category_id] = (
+                                                stock_deductions.get(target_category_id, Decimal("0")) + extra_qty
+                                            )
                     
                     elif item.pizza_mitad_mitad:
                         # Validar y procesar pizza mitad-mitad

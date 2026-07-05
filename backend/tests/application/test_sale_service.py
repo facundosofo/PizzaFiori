@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 from decimal import Decimal
 
 from app.application.sale_service import SaleService, ServiceResult
+from app.infrastructure.config.settings import settings, StockExtraDeductionRule
 from app.presentation.schemas.sale_schemas import (
     SaleCreateRequest,
     SaleItemRequest
@@ -363,6 +364,64 @@ async def test_create_sale_super_milas_adds_papas_stock_deduction(mock_uow, mock
     assert result.value is not None
     assert any(call.args[0] == 9 for call in mock_uow.product_category_repo.get_by_id.await_args_list)
     assert any(call.args[0] == 9 for call in mock_uow.stock_repo.get_by_categoria_id.await_args_list)
+
+
+@pytest.mark.asyncio
+async def test_create_sale_sku_rule_adds_half_papas_stock_deduction_from_env_rules(mock_uow, mock_logger):
+    """Test that SKU-based rule deducts 0.5 from target stock using env-configured rules."""
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+
+    papas_category = build_category_model(id=9, nombre="Papas Fritas")
+    empanadas_category = build_category_model(id=1, nombre="Empanadas")
+
+    product = build_product_model(
+        id=2,
+        nombre="Promo Teque",
+        sku="SKU: PIC-TEQNP-95208",
+        categoria_id=1,
+        precios=[build_product_price_model(1, 2, 1, 2500.0)],
+    )
+    product.categoria = empanadas_category
+
+    mock_uow.product_repo.get_by_id.return_value = product
+    mock_uow.product_category_repo.list.return_value = [papas_category, empanadas_category]
+
+    async def mock_get_category_by_id(category_id):
+        if category_id == 9:
+            return papas_category
+        if category_id == 1:
+            return empanadas_category
+        return None
+
+    mock_uow.product_category_repo.get_by_id = AsyncMock(side_effect=mock_get_category_by_id)
+    mock_uow.stock_repo.get_by_categoria_id = AsyncMock(
+        side_effect=lambda categoria_id: build_stock_model(categoria_id=categoria_id, cantidad=10)
+    )
+    mock_uow.sale_repo.refresh = AsyncMock()
+
+    request = SaleCreateRequest(items=[SaleItemRequest(producto_id=2, cantidad=1)])
+
+    custom_rules = [
+        StockExtraDeductionRule(
+            categoria=[],
+            producto=["PIC-TEQNP-95208"],
+            cantidad=Decimal("0.500"),
+            producto_a_descontar="Papas Fritas",
+        )
+    ]
+
+    with patch.object(settings, "stock_extra_deduction_rules", custom_rules):
+        result = await service.create(request)
+
+    assert result.status_code == 201
+    assert result.value is not None
+
+    papas_stock_updates = [
+        call for call in mock_uow.audit_repo.log_action.await_args_list
+        if call.kwargs.get("entity_type") == "Stock" and call.kwargs.get("entity_id") == 9
+    ]
+    assert papas_stock_updates
+    assert papas_stock_updates[0].kwargs["changes"]["cantidad_descontada"] == Decimal("0.500")
 
 
 @pytest.mark.asyncio
