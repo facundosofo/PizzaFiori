@@ -12,6 +12,8 @@ interface StockAddModalCategoriaProps {
   mode: "categoria";
   isOpen: boolean;
   target: CategoryStock | null;
+  /** Tamaño de la porción compartida por los productos de la categoría. */
+  portionSize?: number | null;
   onClose: () => void;
   onSave: (updated: CategoryStock) => void;
 }
@@ -49,10 +51,10 @@ const StockAddModal = (props: StockAddModalProps) => {
   const round3 = (value: number): number => Number(value.toFixed(3));
   const fixedPortionSize = props.mode === "producto"
     ? ((props as StockAddModalProductoProps).productPortionSize ?? null)
-    : null;
+    : ((props as StockAddModalCategoriaProps).portionSize ?? null);
   const hasFixedPortion = typeof fixedPortionSize === "number" && fixedPortionSize > 0 && fixedPortionSize < 1;
   const effectivePortionSize = hasFixedPortion ? fixedPortionSize : 0.125;
-  const useDualCounters = props.mode === "producto" && hasFixedPortion;
+  const useDualCounters = hasFixedPortion;
   const effectiveDelta = useDualCounters
     ? round3(unitsDelta + portionCount * effectivePortionSize)
     : singleDelta;

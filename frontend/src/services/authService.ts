@@ -90,19 +90,14 @@ class AuthService {
   }
 
   /**
-   * Check if user is authenticated (has valid non-expired token)
+   * Check whether a session token is stored locally.
+   *
+   * The API is the authority that validates JWT expiry. Checking the expiry
+   * against the browser clock here can prematurely discard a valid session
+   * when the device clock is out of sync with the server.
    */
   isAuthenticated(): boolean {
-    const token = this.getToken();
-    if (!token) return false;
-
-    // Check if token is expired
-    if (this.isTokenExpired()) {
-      this.clearAuth();
-      return false;
-    }
-
-    return true;
+    return !!this.getToken();
   }
 
   /**

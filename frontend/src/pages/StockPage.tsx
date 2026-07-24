@@ -13,6 +13,8 @@ import StockQuantityDisplay from "../components/shared/StockQuantityDisplay";
 import type { CategoryStock, StockListResponse } from "../types/stock";
 import { STOCK_ESTADO_BADGE, STOCK_ESTADO_LABELS } from "../types/stock";
 import { getAllStocks } from "../services/stockService";
+import { getProductos } from "../services/productsService";
+import type { Product } from "../types/product";
 import "../styles/stock.css";
 
 const StockPage = () => {
@@ -20,6 +22,7 @@ const StockPage = () => {
   const isAdmin = user?.role === "ADMIN";
 
   const [stocks, setStocks] = useState<CategoryStock[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const loadingRef = useRef(loading);
@@ -42,8 +45,12 @@ const StockPage = () => {
   const fetchStocks = useCallback(async () => {
     try {
       setError(null);
-      const data: StockListResponse = await getAllStocks();
+      const [data, productsData]: [StockListResponse, Product[]] = await Promise.all([
+        getAllStocks(),
+        getProductos(),
+      ]);
       setStocks(Array.isArray(data.categorias) ? data.categorias : []);
+      setProducts(productsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar el stock");
     } finally {
@@ -73,6 +80,18 @@ const StockPage = () => {
   const handleOpenAddModal = (cat: CategoryStock) => {
     setSelectedForAdd(cat);
     setIsAddModalOpen(true);
+  };
+
+  // El stock compartido de una categoría se expresa en unidades, por eso se
+  // usa el tamaño de porción más pequeño configurado en sus productos.
+  const getCategoryPortionSize = (categoriaId: number): number | null => {
+    const portionSizes = products
+      .filter((product) => product.categoria_id === categoriaId)
+      .flatMap((product) => product.precios ?? [])
+      .map((price) => Number(price.cantidad))
+      .filter((cantidad) => Number.isFinite(cantidad) && cantidad > 0 && cantidad < 1);
+
+    return portionSizes.length > 0 ? Math.min(...portionSizes) : null;
   };
 
   const handleOpenAlertsModal = (cat: CategoryStock) => {
@@ -302,6 +321,7 @@ const StockPage = () => {
             mode="categoria"
             isOpen={isAddModalOpen}
             target={selectedForAdd}
+            portionSize={selectedForAdd ? getCategoryPortionSize(selectedForAdd.categoria_id) : null}
             onClose={() => {
               setIsAddModalOpen(false);
               setSelectedForAdd(null);

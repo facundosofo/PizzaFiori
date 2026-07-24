@@ -63,15 +63,9 @@ const api = axios.create({
  */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Check if token is expired BEFORE sending request (proactive check)
-    const expiresAt = localStorage.getItem('token_expires_at');
-    if (expiresAt && Date.now() > parseInt(expiresAt)) {
-      clearAuth();
-      window.location.href = '/login';
-      return Promise.reject(new Error('Token expired'));
-    }
-
-    // Add Bearer token to Authorization header
+    // Add the stored token. JWT expiry is validated by the API, rather than
+    // by the browser clock, so a device with an incorrect clock cannot force
+    // an early logout.
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
