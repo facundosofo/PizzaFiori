@@ -1,6 +1,6 @@
 import sys as _sys
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, Dict
 from decimal import Decimal
 from pathlib import Path
@@ -111,6 +111,22 @@ class Settings(BaseSettings):
         default_factory=_default_stock_extra_deduction_rules,
         alias="STOCK_EXTRA_DEDUCTION_RULES",
     )
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def normalize_debug_value(cls, value):
+        """Accept the deployment profile values used by common launchers.
+
+        Pydantic already handles normal boolean spellings.  Some hosts export
+        ``DEBUG=release`` (or ``production``) to identify a non-debug build;
+        interpret those as ``False`` instead of preventing the application
+        from starting.
+        """
+        if isinstance(value, str) and value.strip().lower() in {
+            "release", "production", "prod",
+        }:
+            return False
+        return value
 
 
 settings = Settings()

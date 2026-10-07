@@ -25,10 +25,16 @@ const LoginPage = () => {
 
   // Handle success message from navigation state (e.g., after registration)
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const reason = params.get('reason');
+
     if (location.state?.message) {
       setSuccess(location.state.message);
       // Clear the state to prevent message from showing on refresh
-      window.history.replaceState({}, document.title);
+      window.history.replaceState({}, document.title, location.pathname);
+    } else if (reason === 'session-expired') {
+      setError('Tu sesión ha expirado. Inicia sesión nuevamente.');
+      window.history.replaceState({}, document.title, location.pathname);
     }
   }, [location]);
 

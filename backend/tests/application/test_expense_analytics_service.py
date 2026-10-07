@@ -99,7 +99,12 @@ async def test_get_expenses_by_period_weekly(mock_uow, mock_logger):
     ]
     mock_uow.session.execute = AsyncMock(return_value=_mock_result(rows))
 
-    result = await service.get_expenses_by_period(period="weekly", limit=12)
+    fixed_now = datetime(2026, 6, 15, 12, 0, 0)
+    with patch("app.application.expense_analytics_service.datetime") as mock_datetime:
+        mock_datetime.now.return_value = fixed_now
+        mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
+
+        result = await service.get_expenses_by_period(period="weekly", limit=12)
 
     assert result.status_code == 200
     assert len(result.value) == 12

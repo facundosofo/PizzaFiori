@@ -49,6 +49,15 @@ function isTokenAuthError(error: AxiosError): boolean {
   ].some((tokenHint) => text.includes(tokenHint));
 }
 
+function redirectToLogin(reason: string = 'session-expired'): void {
+  const currentPath = `${window.location.pathname}${window.location.search}`;
+  const target = `/login?reason=${encodeURIComponent(reason)}`;
+
+  if (currentPath !== target) {
+    window.location.assign(target);
+  }
+}
+
 // Create Axios instance
 const api = axios.create({
   baseURL: env.API_BASE_URL,
@@ -114,10 +123,11 @@ api.interceptors.response.use(
     }
 
     // Handle authentication errors
-    if (error.response?.status === 401 && isTokenAuthError(error)) {
-      // Only force logout on token/session related 401 responses.
+    const isLoginAttempt = error.config?.url?.includes('/auth/login');
+
+    if (error.response?.status === 401 && (isTokenAuthError(error) || !isLoginAttempt)) {
       clearAuth();
-      window.location.href = '/login';
+      redirectToLogin();
     } else if (error.response?.status === 403) {
       // Forbidden - insufficient permissions
     }
@@ -134,6 +144,7 @@ function clearAuth(): void {
   localStorage.removeItem('user');
   localStorage.removeItem('token_expires_in');
   localStorage.removeItem('token_expires_at');
+  window.dispatchEvent(new Event('auth:logout'));
 }
 
 export default api;

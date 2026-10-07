@@ -505,6 +505,11 @@ async def async_client(
     Uses container overrides to inject mocked services.
     Bypasses JWT middleware by mocking it with a test admin user.
     """
+    # A previous TestClient can have built and cached the middleware stack.
+    # BaseHTTPMiddleware captures ``dispatch`` when that stack is built, so
+    # rebuild it for each client while the JWT bypass patch is active.
+    application.middleware_stack = None
+
     # Mock admin user for all tests
     mock_admin_user = {"id": 1, "username": "admin_test", "role": "ADMIN"}
 
@@ -557,6 +562,7 @@ async def async_client(
         container.product_analytics_service.reset_override()
         container.expense_analytics_service.reset_override()
         application.dependency_overrides.clear()
+        application.middleware_stack = None
 
 
 # ==================== Reusable Model Fixtures ====================

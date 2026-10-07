@@ -11,6 +11,7 @@ Lógica canónica de filtros temporales:
 
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
+from math import gcd
 
 from app.presentation.schemas.dashboard_schemas import FiltroTiempo
 
@@ -82,6 +83,19 @@ def format_mixed_fraction_quantity(value: Decimal | float | int | str, denominat
     return f"{sign}{whole} {numerator}/{denominator}"
 
 
+def resolve_fraction_denominator(*denominators: int | None, default: int = 8) -> int:
+    """Resuelve un denominador común para una mezcla de fracciones."""
+    values = [int(value) for value in denominators if value is not None and int(value) > 0]
+    if not values:
+        return default if default > 0 else 8
+
+    common_denominator = 1
+    for value in values:
+        common_denominator = common_denominator // gcd(common_denominator, value) * value
+
+    return common_denominator if common_denominator > 0 else (default if default > 0 else 8)
+
+
 def infer_fraction_denominator(
     *,
     category: str | None = None,
@@ -100,10 +114,5 @@ def infer_fraction_denominator(
                     return denominator
         except (InvalidOperation, ValueError, TypeError, ZeroDivisionError):
             pass
-
-    category_text = (category or "").lower()
-    item_text = (item_name or "").lower()
-    if "tarta" in category_text or "tarta" in item_text:
-        return 4
 
     return default if default > 0 else 8

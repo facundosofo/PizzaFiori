@@ -37,9 +37,14 @@ from reportlab.platypus import (
 )
 
 from app.domain.models.expense import Expense
+from app.domain.models.product import Product
 from app.domain.models.sale import Sale
 from app.domain.unit_of_work import AbstractUnitOfWork
-from app.application.analytics_utils import format_mixed_fraction_quantity, infer_fraction_denominator
+from app.application.analytics_utils import (
+    format_mixed_fraction_quantity,
+    infer_fraction_denominator,
+    resolve_fraction_denominator,
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -223,6 +228,58 @@ class ReportService:
         self.uow    = uow
         self.logger = logger or structlog.get_logger(__name__)
 
+    async def _load_products_for_sales(self, sales: List[Sale], uow: AbstractUnitOfWork) -> dict[int, Product]:
+        product_ids: set[int] = set()
+        for sale in sales:
+            for item in sale.items:
+                if getattr(item, "producto_id", None) is not None:
+                    product_ids.add(item.producto_id)
+                if getattr(item, "oferta_productos_snapshot", None):
+                    for prod in item.oferta_productos_snapshot:
+                        if getattr(prod, "producto_id", None) is not None:
+                            product_ids.add(prod.producto_id)
+        if not product_ids:
+            return {}
+        products = await uow.product_repo.get_by_ids(list(product_ids))
+        return {product.id: product for product in products}
+
+    @staticmethod
+    def _get_fraction_base_quantity_from_product(product: Product) -> Decimal | None:
+        precios = getattr(product, "precios", None)
+        if not precios:
+            return None
+        fractional_quantities = [
+            precio.cantidad
+            for precio in precios
+            if precio.cantidad is not None and Decimal(str(precio.cantidad)) < 1
+        ]
+        return min(fractional_quantities) if fractional_quantities else None
+
+    def _get_base_quantity_for_sale_item(self, item, product_lookup: dict[int, Product] | None = None) -> Decimal | None:
+        precio_cantidad = getattr(item, "precio_cantidad", None)
+        if precio_cantidad is not None:
+            return precio_cantidad
+        if product_lookup is None:
+            return None
+        producto_id = getattr(item, "producto_id", None)
+        if producto_id is None:
+            return None
+        product = product_lookup.get(producto_id)
+        if product is None:
+            return None
+        return self._get_fraction_base_quantity_from_product(product)
+
+    def _get_base_quantity_for_snapshot_product(self, snapshot_product, product_lookup: dict[int, Product] | None = None) -> Decimal | None:
+        if product_lookup is None:
+            return None
+        producto_id = getattr(snapshot_product, "producto_id", None)
+        if producto_id is None:
+            return None
+        product = product_lookup.get(producto_id)
+        if product is None:
+            return None
+        return self._get_fraction_base_quantity_from_product(product)
+
     # ── Punto de entrada ─────────────────────────────────────────────────────
 
     async def generate_sales_report(
@@ -257,6 +314,7 @@ class ReportService:
                     fecha_desde=fecha_desde_dt,
                     fecha_hasta=fecha_hasta_dt,
                 )
+                product_lookup = await self._load_products_for_sales(sales, uow)
 
             if not sales:
                 return ReportResult(error="No hay ventas en el período seleccionado", status_code=404)
@@ -275,6 +333,7 @@ class ReportService:
                 mostrar_resumen_categoria,
                 mostrar_resumen_productos,
                 mostrar_detalle_ventas,
+                product_lookup=product_lookup,
             )
             self.logger.info("Reporte OK", total_ventas=total_ventas)
             return ReportResult(pdf_bytes=pdf_bytes)
@@ -349,6 +408,7 @@ class ReportService:
         mostrar_resumen_categoria: bool = True,
         mostrar_resumen_productos: bool = True,
         mostrar_detalle_ventas: bool = True,
+        product_lookup: dict[int, Product] | None = None,
     ) -> bytes:
         buffer  = BytesIO()
         w, h    = A4
@@ -389,6 +449,7 @@ class ReportService:
             mostrar_resumen_categoria,
             mostrar_resumen_productos,
             mostrar_detalle_ventas,
+            product_lookup,
         )
 
         # Pass 1: contar páginas
@@ -412,6 +473,7 @@ class ReportService:
             sales, total_ventas, total_ingresos,
             fecha_desde, fecha_hasta, chart_data,
             styles, content_w, modo,
+            product_lookup=product_lookup,
         )
         count_doc.build(flowables_count)
         page_count_holder[0] = count_doc.page
@@ -434,6 +496,7 @@ class ReportService:
         mostrar_resumen_categoria: bool = True,
         mostrar_resumen_productos: bool = True,
         mostrar_detalle_ventas: bool = True,
+        product_lookup: dict[int, Product] | None = None,
     ) -> list:
         many_rows = len(sales) > 20
         elements  = []
@@ -455,30 +518,34 @@ class ReportService:
                 if item.oferta_id and item.oferta_productos_snapshot:
                     for prod in item.oferta_productos_snapshot:
                         quantity = Decimal(str(prod.cantidad * item.cantidad))
+                        base_quantity = self._get_base_quantity_for_snapshot_product(prod, product_lookup)
                         denominator = infer_fraction_denominator(
                             category=prod.categoria_nombre,
                             item_name=prod.producto_nombre,
+                            base_quantity=base_quantity,
                             default=1,
                         )
                         portions = self._portion_count_for_quantity(
                             quantity,
                             category=prod.categoria_nombre,
                             item_name=prod.producto_nombre,
+                            base_quantity=base_quantity,
                         )
                         portions_by_denominator[denominator] += portions
                 else:
                     quantity = Decimal(str(item.cantidad))
+                    base_quantity = self._get_base_quantity_for_sale_item(item, product_lookup)
                     denominator = infer_fraction_denominator(
                         category=item.item_categoria,
                         item_name=item.item_nombre,
-                        base_quantity=getattr(item, "precio_cantidad", None),
+                        base_quantity=base_quantity,
                         default=1,
                     )
                     portions = self._portion_count_for_quantity(
                         quantity,
                         category=item.item_categoria,
                         item_name=item.item_nombre,
-                        base_quantity=getattr(item, "precio_cantidad", None),
+                        base_quantity=base_quantity,
                     )
                     portions_by_denominator[denominator] += portions
 
@@ -497,14 +564,14 @@ class ReportService:
         if mostrar_resumen_dia:
             elements.append(Paragraph("Resumen por Día", styles["section"]))
             elements.append(Spacer(1, 0.15 * cm))
-            elements.append(self._daily_summary_table(sales, styles, content_w, modo))
+            elements.append(self._daily_summary_table(sales, styles, content_w, modo, product_lookup=product_lookup))
             elements.append(Spacer(1, 0.5 * cm))
 
         # Resumen por Mes
         if mostrar_resumen_mes:
             elements.append(Paragraph("Resumen por Mes", styles["section"]))
             elements.append(Spacer(1, 0.15 * cm))
-            elements.append(self._monthly_summary_table(sales, styles, content_w, modo))
+            elements.append(self._monthly_summary_table(sales, styles, content_w, modo, product_lookup=product_lookup))
             elements.append(Spacer(1, 0.5 * cm))
 
         """
@@ -521,21 +588,21 @@ class ReportService:
         if mostrar_resumen_categoria:
             elements.append(Paragraph("Resumen por Categoría", styles["section"]))
             elements.append(Spacer(1, 0.25 * cm))
-            elements.append(self._category_summary_table(sales, styles, content_w))
+            elements.append(self._category_summary_table(sales, styles, content_w, product_lookup=product_lookup))
             elements.append(Spacer(1, 0.5 * cm))
 
         # Tabla de agrupado
         if mostrar_resumen_productos:
             elements.append(Paragraph("Resumen de Productos Vendidos", styles["section"]))
             elements.append(Spacer(1, 0.25 * cm))
-            elements.append(self._grouped_items_table(sales, styles, content_w))
+            elements.append(self._grouped_items_table(sales, styles, content_w, product_lookup=product_lookup))
             elements.append(Spacer(1, 0.5 * cm))
 
         # Tabla de detalle
         if mostrar_detalle_ventas:
             elements.append(Paragraph("Detalle de Ventas", styles["section"]))
             elements.append(Spacer(1, 0.25 * cm))
-            elements.append(self._sales_table(sales, styles, content_w))
+            elements.append(self._sales_table(sales, styles, content_w, product_lookup=product_lookup))
 
         return elements
 
@@ -650,11 +717,18 @@ class ReportService:
         ]))
         return t
 
-    def _category_summary_table(self, sales: List[Sale], styles: dict, content_w: float) -> Table:
+    def _category_summary_table(
+        self,
+        sales: List[Sale],
+        styles: dict,
+        content_w: float,
+        product_lookup: dict[int, Product] | None = None,
+    ) -> Table:
         """Agrupa cantidades vendidas por categoría, desglosando ofertas."""
         from collections import defaultdict
 
-        categories: dict = defaultdict(int)
+        categories: dict = defaultdict(Decimal)
+        category_denominators: dict = defaultdict(list)
 
         for sale in sales:
             for item in sale.items:
@@ -662,10 +736,26 @@ class ReportService:
                 if es_oferta and item.oferta_productos_snapshot:
                     for prod in item.oferta_productos_snapshot:
                         cat = prod.categoria_nombre or "Sin Categoría"
-                        categories[cat] += prod.cantidad * item.cantidad
+                        categories[cat] += Decimal(str(prod.cantidad * item.cantidad))
+                        base_quantity = self._get_base_quantity_for_snapshot_product(prod, product_lookup)
+                        denominator = infer_fraction_denominator(
+                            category=prod.categoria_nombre,
+                            item_name=prod.producto_nombre,
+                            base_quantity=base_quantity,
+                            default=1,
+                        )
+                        category_denominators[cat].append(denominator)
                 else:
                     cat = item.item_categoria or "Sin Categoría"
-                    categories[cat] += item.cantidad
+                    categories[cat] += Decimal(str(item.cantidad))
+                    base_quantity = self._get_base_quantity_for_sale_item(item, product_lookup)
+                    denominator = infer_fraction_denominator(
+                        category=item.item_categoria,
+                        item_name=item.item_nombre,
+                        base_quantity=base_quantity,
+                        default=1,
+                    )
+                    category_denominators[cat].append(denominator)
 
         sorted_cats = sorted(categories.items(), key=lambda x: x[1], reverse=True)
 
@@ -676,13 +766,14 @@ class ReportService:
         rows = [headers]
 
         for cat_name, cantidad in sorted_cats:
+            denominator = resolve_fraction_denominator(
+                *category_denominators.get(cat_name, [8]),
+                default=8,
+            )
             rows.append([
                 Paragraph(cat_name,    styles["td_item"]),
                 Paragraph(
-                    format_mixed_fraction_quantity(
-                        cantidad,
-                        denominator=infer_fraction_denominator(category=cat_name),
-                    ),
+                    format_mixed_fraction_quantity(cantidad, denominator=denominator),
                     styles["td"],
                 ),
             ])
@@ -713,11 +804,22 @@ class ReportService:
         ]))
         return t
 
-    def _grouped_items_table(self, sales: List[Sale], styles: dict, content_w: float) -> Table:
+    def _grouped_items_table(
+        self,
+        sales: List[Sale],
+        styles: dict,
+        content_w: float,
+        product_lookup: dict[int, Product] | None = None,
+    ) -> Table:
         """Agrupa ítems vendidos por producto, desglosando los que están dentro de ofertas."""
         from collections import defaultdict
 
-        grouped: dict = defaultdict(lambda: {"nombre": "", "categoria": "", "cantidad": 0})
+        grouped: dict = defaultdict(lambda: {
+            "nombre": "",
+            "categoria": "",
+            "cantidad": Decimal("0"),
+            "base_quantity": None,
+        })
 
         for sale in sales:
             for item in sale.items:
@@ -725,14 +827,24 @@ class ReportService:
                 if es_oferta and item.oferta_productos_snapshot:
                     for prod in item.oferta_productos_snapshot:
                         key = f"{prod.producto_nombre}:{prod.categoria_nombre}"
-                        grouped[key]["nombre"]    = prod.producto_nombre
+                        grouped[key]["nombre"] = prod.producto_nombre
                         grouped[key]["categoria"] = prod.categoria_nombre or "-"
-                        grouped[key]["cantidad"] += prod.cantidad * item.cantidad
+                        grouped[key]["cantidad"] += Decimal(str(prod.cantidad * item.cantidad))
+                        if grouped[key]["base_quantity"] is None:
+                            grouped[key]["base_quantity"] = self._get_base_quantity_for_snapshot_product(
+                                prod,
+                                product_lookup,
+                            )
                 else:
                     key = f"{item.item_nombre}:{item.item_categoria}"
-                    grouped[key]["nombre"]    = item.item_nombre
+                    grouped[key]["nombre"] = item.item_nombre
                     grouped[key]["categoria"] = item.item_categoria
-                    grouped[key]["cantidad"] += item.cantidad
+                    grouped[key]["cantidad"] += Decimal(str(item.cantidad))
+                    if grouped[key]["base_quantity"] is None:
+                        grouped[key]["base_quantity"] = self._get_base_quantity_for_sale_item(
+                            item,
+                            product_lookup,
+                        )
 
         sorted_items = sorted(grouped.items(), key=lambda x: x[1]["cantidad"], reverse=True)
 
@@ -753,6 +865,7 @@ class ReportService:
                         denominator=infer_fraction_denominator(
                             category=data["categoria"],
                             item_name=data["nombre"],
+                            base_quantity=data["base_quantity"],
                         ),
                     ),
                     styles["td"],
@@ -786,7 +899,14 @@ class ReportService:
         ]))
         return t
 
-    def _daily_summary_table(self, sales: List[Sale], styles: dict, content_w: float, modo: str) -> Table:
+    def _daily_summary_table(
+        self,
+        sales: List[Sale],
+        styles: dict,
+        content_w: float,
+        modo: str,
+        product_lookup: dict[int, Product] | None = None,
+    ) -> Table:
         from collections import defaultdict
         import datetime as dt_mod
 
@@ -805,30 +925,34 @@ class ReportService:
                 if item.oferta_id and item.oferta_productos_snapshot:
                     for prod in item.oferta_productos_snapshot:
                         quantity = Decimal(str(prod.cantidad * item.cantidad))
+                        base_quantity = self._get_base_quantity_for_snapshot_product(prod, product_lookup)
                         denominator = infer_fraction_denominator(
                             category=prod.categoria_nombre,
                             item_name=prod.producto_nombre,
+                            base_quantity=base_quantity,
                             default=1,
                         )
                         portions = self._portion_count_for_quantity(
                             quantity,
                             category=prod.categoria_nombre,
                             item_name=prod.producto_nombre,
+                            base_quantity=base_quantity,
                         )
                         daily[day]["portions_by_denominator"][denominator] += portions
                 else:
                     quantity = Decimal(str(item.cantidad))
+                    base_quantity = self._get_base_quantity_for_sale_item(item, product_lookup)
                     denominator = infer_fraction_denominator(
                         category=item.item_categoria,
                         item_name=item.item_nombre,
-                        base_quantity=getattr(item, "precio_cantidad", None),
+                        base_quantity=base_quantity,
                         default=1,
                     )
                     portions = self._portion_count_for_quantity(
                         quantity,
                         category=item.item_categoria,
                         item_name=item.item_nombre,
-                        base_quantity=getattr(item, "precio_cantidad", None),
+                        base_quantity=base_quantity,
                     )
                     daily[day]["portions_by_denominator"][denominator] += portions
 
@@ -880,7 +1004,14 @@ class ReportService:
         ]))
         return t
 
-    def _monthly_summary_table(self, sales: List[Sale], styles: dict, content_w: float, modo: str) -> Table:
+    def _monthly_summary_table(
+        self,
+        sales: List[Sale],
+        styles: dict,
+        content_w: float,
+        modo: str,
+        product_lookup: dict[int, Product] | None = None,
+    ) -> Table:
         from collections import defaultdict
         import datetime as dt_mod
 
@@ -897,20 +1028,23 @@ class ReportService:
                 if item.oferta_id and item.oferta_productos_snapshot:
                     for prod in item.oferta_productos_snapshot:
                         quantity = Decimal(str(prod.cantidad * item.cantidad))
+                        base_quantity = self._get_base_quantity_for_snapshot_product(prod, product_lookup)
                         monthly[m]["productos"] += quantity
                         monthly[m]["porciones"] += self._portion_count_for_quantity(
                             quantity,
                             category=prod.categoria_nombre,
                             item_name=prod.producto_nombre,
+                            base_quantity=base_quantity,
                         )
                 else:
                     quantity = Decimal(str(item.cantidad))
+                    base_quantity = self._get_base_quantity_for_sale_item(item, product_lookup)
                     monthly[m]["productos"] += quantity
                     monthly[m]["porciones"] += self._portion_count_for_quantity(
                         quantity,
                         category=item.item_categoria,
                         item_name=item.item_nombre,
-                        base_quantity=getattr(item, "precio_cantidad", None),
+                        base_quantity=base_quantity,
                     )
 
         sorted_months = sorted(monthly.keys())
@@ -960,7 +1094,13 @@ class ReportService:
 
     # ── Tabla de ventas ──────────────────────────────────────────────────────
 
-    def _sales_table(self, sales: List[Sale], styles: dict, content_w: float) -> Table:
+    def _sales_table(
+        self,
+        sales: List[Sale],
+        styles: dict,
+        content_w: float,
+        product_lookup: dict[int, Product] | None = None,
+    ) -> Table:
         """
         Tabla de detalle de ventas.
 
@@ -1005,6 +1145,7 @@ class ReportService:
 
                 if es_oferta and item.oferta_productos_snapshot:
                     # ── fila cabecera de oferta ───────────────────────────────
+                    header_base_quantity = self._get_base_quantity_for_sale_item(item, product_lookup)
                     rows.append([
                         Paragraph(fecha_str if first_row else "",          styles["td"]),
                         Paragraph(order_str if first_row else "",          styles["td_order"]),
@@ -1016,7 +1157,7 @@ class ReportService:
                                 denominator=infer_fraction_denominator(
                                     category=item.item_categoria,
                                     item_name=item.item_nombre,
-                                    base_quantity=getattr(item, "precio_cantidad", None),
+                                    base_quantity=header_base_quantity,
                                 ),
                             ),
                             styles["td"],
@@ -1028,6 +1169,7 @@ class ReportService:
 
                     # ── filas de desglose de la oferta ────────────────────────
                     for prod in item.oferta_productos_snapshot:
+                        prod_base_quantity = self._get_base_quantity_for_snapshot_product(prod, product_lookup)
                         rows.append([
                             Paragraph("", styles["td"]),
                             Paragraph("", styles["td"]),
@@ -1039,6 +1181,7 @@ class ReportService:
                                     denominator=infer_fraction_denominator(
                                         category=prod.categoria_nombre,
                                         item_name=prod.producto_nombre,
+                                        base_quantity=prod_base_quantity,
                                     ),
                                 ),
                                 styles["td"],
@@ -1049,6 +1192,7 @@ class ReportService:
 
                 else:
                     # ── fila de ítem regular ──────────────────────────────────
+                    regular_base_quantity = self._get_base_quantity_for_sale_item(item, product_lookup)
                     rows.append([
                         Paragraph(fecha_str if first_row else "",         styles["td"]),
                         Paragraph(order_str if first_row else "",         styles["td_order"]),
@@ -1060,7 +1204,7 @@ class ReportService:
                                 denominator=infer_fraction_denominator(
                                     category=item.item_categoria,
                                     item_name=item.item_nombre,
-                                    base_quantity=getattr(item, "precio_cantidad", None),
+                                    base_quantity=regular_base_quantity,
                                 ),
                             ),
                             styles["td"],

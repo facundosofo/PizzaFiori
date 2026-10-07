@@ -16,7 +16,11 @@ from app.domain.models.product_price import ProductPrice
 from app.domain.models.product_category import ProductCategory as Category
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.dashboard_schemas import FiltroTiempo
-from app.application.analytics_utils import format_mixed_fraction_quantity, infer_fraction_denominator
+from app.application.analytics_utils import (
+    format_mixed_fraction_quantity,
+    infer_fraction_denominator,
+    resolve_fraction_denominator,
+)
 
 
 @dataclass
