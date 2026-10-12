@@ -5,10 +5,12 @@ Diseño dark-mode según guía UX/UI PizzaFiori (Enero 2026)
 
 from __future__ import annotations
 
+import asyncio
 import os
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP
+from functools import partial
 from io import BytesIO
 from typing import List, Optional, Tuple
 
@@ -122,6 +124,7 @@ def _decorate_page_with_theme(
     doc: BaseDocTemplate,
     mode: str = "dark",
     report_title: str = "Reporte de Ventas",
+    include_footer: bool = True,
 ):
     """
     onPage callback: dibuja fondo, header y footer ANTES que Platypus
@@ -172,47 +175,69 @@ def _decorate_page_with_theme(
     now_str = datetime.now().strftime("%d/%m/%Y  %H:%M")
     canvas.drawRightString(w - 2 * cm, h - HEADER_H / 2 - 0.15 * cm, f"Generado: {now_str}")
 
-    # ── Footer ─────────────────────────────────────────────────────────────────
+    canvas.restoreState()
+    if include_footer:
+        _draw_page_footer(
+            canvas,
+            mode,
+            report_title,
+            doc.page,
+            getattr(doc, "_pagecount", "?"),
+        )
+
+
+def _draw_page_footer(
+    canvas: rl_canvas.Canvas,
+    mode: str,
+    report_title: str,
+    page_number: int,
+    total_pages: int | str,
+) -> None:
+    colors_ = get_theme_colors(mode)
+    w, _ = A4
+    canvas.saveState()
     canvas.setFillColor(colors_["BG_SECOND"])
     canvas.rect(0, 0, w, FOOTER_H, fill=1, stroke=0)
-
     canvas.setStrokeColor(colors_["BORDER_MAIN"])
     canvas.setLineWidth(0.5)
     canvas.line(0, FOOTER_H, w, FOOTER_H)
-
     canvas.setFillColor(colors_["TEXT_MUTED"])
     canvas.setFont("Helvetica", 7)
     canvas.drawCentredString(
         w / 2,
         FOOTER_H / 2 - 0.1 * cm,
-        f"PizzaFiori  •  {report_title}  •  Página {doc.page} de {doc._pagecount if hasattr(doc, '_pagecount') else '?'}",
+        f"PizzaFiori  •  {report_title}  •  Página {page_number} de {total_pages}",
     )
-
     canvas.restoreState()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Two-pass doc para saber el total de páginas antes de pintar
+#  Canvas de una pasada con numeración total de páginas
 # ─────────────────────────────────────────────────────────────────────────────
-class TwoPassDoc(BaseDocTemplate):
-    """
-    Primer pass: cuenta páginas.
-    Segundo pass: pinta con el total correcto en el footer.
-    """
-
-    def __init__(self, *args, **kwargs):
+class NumberedCanvas(rl_canvas.Canvas):
+    def __init__(self, *args, mode: str, report_title: str, **kwargs):
         super().__init__(*args, **kwargs)
-        self._pagecount = 0
+        self._saved_page_states = []
+        self._mode = mode
+        self._report_title = report_title
 
-    def handle_pageEnd(self):
-        self._pagecount = self.page
-        super().handle_pageEnd()
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
 
-    def build(self, flowables, **kwargs):
-        from io import BytesIO as _BytesIO
-        tmp = _BytesIO()
-        self._pagecount = 0
-        super().build(flowables, **kwargs)
+    def save(self):
+        total_pages = len(self._saved_page_states)
+        for page_number, state in enumerate(self._saved_page_states, start=1):
+            self.__dict__.update(state)
+            _draw_page_footer(
+                self,
+                self._mode,
+                self._report_title,
+                page_number,
+                total_pages,
+            )
+            super().showPage()
+        super().save()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -309,12 +334,25 @@ class ReportService:
                     if fecha_hasta
                     else None
                 )
+                needs_item_data = any((
+                    mostrar_resumen_periodo,
+                    mostrar_resumen_dia,
+                    mostrar_resumen_mes,
+                    mostrar_resumen_categoria,
+                    mostrar_resumen_productos,
+                    mostrar_detalle_ventas,
+                ))
                 sales = await uow.sale_repo.list(
                     skip=0, limit=10_000,
                     fecha_desde=fecha_desde_dt,
                     fecha_hasta=fecha_hasta_dt,
+                    include_items=needs_item_data,
                 )
-                product_lookup = await self._load_products_for_sales(sales, uow)
+                product_lookup = (
+                    await self._load_products_for_sales(sales, uow)
+                    if needs_item_data
+                    else {}
+                )
 
             if not sales:
                 return ReportResult(error="No hay ventas en el período seleccionado", status_code=404)
@@ -323,7 +361,8 @@ class ReportService:
             total_ingresos = sum(s.total for s in sales)
             chart_data     = self._prepare_chart_data(sales)
 
-            pdf_bytes = await self._create_pdf(
+            pdf_bytes = await asyncio.to_thread(
+                self._create_pdf,
                 sales, total_ventas, total_ingresos,
                 fecha_desde, fecha_hasta, chart_data,
                 modo,
@@ -393,7 +432,7 @@ class ReportService:
 
     # ── Construcción del PDF ─────────────────────────────────────────────────
 
-    async def _create_pdf(
+    def _create_pdf(
         self,
         sales: List[Sale],
         total_ventas: int,
@@ -421,10 +460,8 @@ class ReportService:
             topMargin=TOP_PAD, bottomMargin=BOT_PAD,
         )
 
-        page_count_holder = [1]
-
         def on_page(canvas, doc):
-            _decorate_page_with_theme(canvas, doc, modo)
+            _decorate_page_with_theme(canvas, doc, modo, include_footer=False)
 
         frame = Frame(
             MARGIN, BOT_PAD,
@@ -452,35 +489,14 @@ class ReportService:
             product_lookup,
         )
 
-        # Pass 1: contar páginas
-        from reportlab.platypus import SimpleDocTemplate
-        count_buf = BytesIO()
-        count_doc = BaseDocTemplate(
-            count_buf, pagesize=A4,
-            rightMargin=MARGIN, leftMargin=MARGIN,
-            topMargin=TOP_PAD, bottomMargin=BOT_PAD,
+        doc.build(
+            flowables,
+            canvasmaker=partial(
+                NumberedCanvas,
+                mode=modo,
+                report_title="Reporte de Ventas",
+            ),
         )
-        count_frame = Frame(
-            MARGIN, BOT_PAD,
-            w - 2 * MARGIN, h - TOP_PAD - BOT_PAD,
-            id="main",
-            leftPadding=0, rightPadding=0,
-            topPadding=0, bottomPadding=0,
-        )
-        count_doc.addPageTemplates([PageTemplate(id="count", frames=[count_frame])])
-
-        flowables_count = self._build_story(
-            sales, total_ventas, total_ingresos,
-            fecha_desde, fecha_hasta, chart_data,
-            styles, content_w, modo,
-            product_lookup=product_lookup,
-        )
-        count_doc.build(flowables_count)
-        page_count_holder[0] = count_doc.page
-        count_buf.close()
-
-        # Pass 2: render real con total de páginas correcto
-        doc.build(flowables)
         pdf_bytes = buffer.getvalue()
         buffer.close()
         return pdf_bytes
@@ -512,46 +528,48 @@ class ReportService:
         # Calcular totales incluyendo desglose de ofertas
         from collections import defaultdict
 
-        portions_by_denominator = defaultdict(int)
-        for sale in sales:
-            for item in sale.items:
-                if item.oferta_id and item.oferta_productos_snapshot:
-                    for prod in item.oferta_productos_snapshot:
-                        quantity = Decimal(str(prod.cantidad * item.cantidad))
-                        base_quantity = self._get_base_quantity_for_snapshot_product(prod, product_lookup)
+        total_productos = total_porciones = 0
+        if mostrar_resumen_periodo:
+            portions_by_denominator = defaultdict(int)
+            for sale in sales:
+                for item in sale.items:
+                    if item.oferta_id and item.oferta_productos_snapshot:
+                        for prod in item.oferta_productos_snapshot:
+                            quantity = Decimal(str(prod.cantidad * item.cantidad))
+                            base_quantity = self._get_base_quantity_for_snapshot_product(prod, product_lookup)
+                            denominator = infer_fraction_denominator(
+                                category=prod.categoria_nombre,
+                                item_name=prod.producto_nombre,
+                                base_quantity=base_quantity,
+                                default=1,
+                            )
+                            portions = self._portion_count_for_quantity(
+                                quantity,
+                                category=prod.categoria_nombre,
+                                item_name=prod.producto_nombre,
+                                base_quantity=base_quantity,
+                            )
+                            portions_by_denominator[denominator] += portions
+                    else:
+                        quantity = Decimal(str(item.cantidad))
+                        base_quantity = self._get_base_quantity_for_sale_item(item, product_lookup)
                         denominator = infer_fraction_denominator(
-                            category=prod.categoria_nombre,
-                            item_name=prod.producto_nombre,
+                            category=item.item_categoria,
+                            item_name=item.item_nombre,
                             base_quantity=base_quantity,
                             default=1,
                         )
                         portions = self._portion_count_for_quantity(
                             quantity,
-                            category=prod.categoria_nombre,
-                            item_name=prod.producto_nombre,
+                            category=item.item_categoria,
+                            item_name=item.item_nombre,
                             base_quantity=base_quantity,
                         )
                         portions_by_denominator[denominator] += portions
-                else:
-                    quantity = Decimal(str(item.cantidad))
-                    base_quantity = self._get_base_quantity_for_sale_item(item, product_lookup)
-                    denominator = infer_fraction_denominator(
-                        category=item.item_categoria,
-                        item_name=item.item_nombre,
-                        base_quantity=base_quantity,
-                        default=1,
-                    )
-                    portions = self._portion_count_for_quantity(
-                        quantity,
-                        category=item.item_categoria,
-                        item_name=item.item_nombre,
-                        base_quantity=base_quantity,
-                    )
-                    portions_by_denominator[denominator] += portions
 
-        total_productos, total_porciones = self._normalize_products_and_portions_by_denominator(
-            portions_by_denominator
-        )
+            total_productos, total_porciones = self._normalize_products_and_portions_by_denominator(
+                portions_by_denominator
+            )
 
         # KPIs
         if mostrar_resumen_periodo:
@@ -1439,7 +1457,8 @@ class ReportService:
                 return ReportResult(error="No hay costos en el período seleccionado", status_code=404)
             total_costos = sum(e.monto for e in expenses)
             cantidad     = len(expenses)
-            pdf_bytes    = await self._create_costs_pdf(
+            pdf_bytes    = await asyncio.to_thread(
+                self._create_costs_pdf,
                 expenses, total_costos, cantidad,
                 fecha_desde, fecha_hasta, modo,
                 mostrar_resumen_periodo, mostrar_resumen_categoria,
@@ -1451,7 +1470,7 @@ class ReportService:
             self.logger.error("Error reporte costos", error=str(e), exc_info=True)
             return ReportResult(error=str(e), status_code=500)
 
-    async def _create_costs_pdf(
+    def _create_costs_pdf(
         self,
         expenses: List[Expense],
         total_costos,
@@ -1470,7 +1489,13 @@ class ReportService:
         BOT_PAD = FOOTER_H + 0.5 * cm
 
         def on_page(canvas, doc):
-            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte de Costos")
+            _decorate_page_with_theme(
+                canvas,
+                doc,
+                modo,
+                report_title="Reporte de Costos",
+                include_footer=False,
+            )
 
         doc = BaseDocTemplate(
             buffer, pagesize=A4,
@@ -1485,33 +1510,20 @@ class ReportService:
         styles    = self._styles(modo)
         content_w = w - 2 * MARGIN
 
-        # Pass 1: contar páginas
-        count_buf = BytesIO()
-        count_doc = BaseDocTemplate(
-            count_buf, pagesize=A4,
-            rightMargin=MARGIN, leftMargin=MARGIN,
-            topMargin=TOP_PAD, bottomMargin=BOT_PAD,
-        )
-        count_frame = Frame(
-            MARGIN, BOT_PAD, w - 2 * MARGIN, h - TOP_PAD - BOT_PAD,
-            id="main", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
-        )
-        count_doc.addPageTemplates([PageTemplate(id="count", frames=[count_frame])])
-        flowables_count = self._build_costs_story(
-            expenses, total_costos, cantidad, fecha_desde, fecha_hasta,
-            styles, content_w, modo,
-        )
-        count_doc.build(flowables_count)
-        count_buf.close()
-
-        # Pass 2: render real
         flowables = self._build_costs_story(
             expenses, total_costos, cantidad, fecha_desde, fecha_hasta,
             styles, content_w, modo,
             mostrar_resumen_periodo, mostrar_resumen_categoria,
             mostrar_resumen_mes, mostrar_detalle_costos,
         )
-        doc.build(flowables)
+        doc.build(
+            flowables,
+            canvasmaker=partial(
+                NumberedCanvas,
+                mode=modo,
+                report_title="Reporte de Costos",
+            ),
+        )
         pdf_bytes = buffer.getvalue()
         buffer.close()
         return pdf_bytes
@@ -1826,6 +1838,10 @@ class ReportService:
                     skip=0, limit=10_000,
                     fecha_desde=fecha_desde_dt,
                     fecha_hasta=fecha_hasta_dt,
+                    include_items=any((
+                        mostrar_resumen_categoria_ventas,
+                        mostrar_resumen_productos,
+                    )),
                 )
                 expenses = await uow.expense_repo.list_for_report(
                     fecha_desde=fecha_desde,
@@ -1837,7 +1853,8 @@ class ReportService:
             total_gastos   = sum(e.monto for e in expenses) if expenses else Decimal("0")
             resultado_neto = total_ingresos - total_gastos
             margen_neto    = float(resultado_neto / total_ingresos * 100) if total_ingresos > 0 else 0.0
-            pdf_bytes = await self._create_general_pdf(
+            pdf_bytes = await asyncio.to_thread(
+                self._create_general_pdf,
                 sales, expenses,
                 total_ingresos, total_gastos, resultado_neto, margen_neto,
                 fecha_desde, fecha_hasta, modo,
@@ -1851,7 +1868,7 @@ class ReportService:
             self.logger.error("Error reporte general", error=str(e), exc_info=True)
             return ReportResult(error=str(e), status_code=500)
 
-    async def _create_general_pdf(
+    def _create_general_pdf(
         self,
         sales: List[Sale],
         expenses: List[Expense],
@@ -1874,39 +1891,16 @@ class ReportService:
         BOT_PAD = FOOTER_H + 0.5 * cm
 
         def on_page(canvas, doc):
-            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte General")
+            _decorate_page_with_theme(
+                canvas,
+                doc,
+                modo,
+                report_title="Reporte General",
+                include_footer=False,
+            )
 
         styles    = self._styles(modo)
         content_w = w - 2 * MARGIN
-
-        # Pass 1: contar páginas
-        count_buf = BytesIO()
-        count_doc = BaseDocTemplate(
-            count_buf, pagesize=A4,
-            rightMargin=MARGIN, leftMargin=MARGIN,
-            topMargin=TOP_PAD, bottomMargin=BOT_PAD,
-        )
-        count_frame = Frame(
-            MARGIN, BOT_PAD, w - 2 * MARGIN, h - TOP_PAD - BOT_PAD,
-            id="main", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
-        )
-        count_doc.addPageTemplates([PageTemplate(id="count_gen", frames=[count_frame])])
-        flowables_count = self._build_general_story(
-            sales, expenses,
-            total_ingresos, total_gastos, resultado_neto, margen_neto,
-            fecha_desde, fecha_hasta, styles, content_w, modo,
-            mostrar_resumen_periodo, mostrar_resumen_mes,
-            mostrar_resumen_categoria_ventas, mostrar_resumen_productos,
-            mostrar_resumen_categoria_costos,
-        )
-        count_doc.build(flowables_count)
-        total_pages = count_doc.page
-        count_buf.close()
-
-        # Pass 2: render real
-        def on_page_real(canvas, doc):
-            doc._pagecount = total_pages
-            _decorate_page_with_theme(canvas, doc, modo, report_title="Reporte General")
 
         doc2 = BaseDocTemplate(
             buffer, pagesize=A4,
@@ -1917,7 +1911,7 @@ class ReportService:
             MARGIN, BOT_PAD, w - 2 * MARGIN, h - TOP_PAD - BOT_PAD,
             id="main", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
         )
-        doc2.addPageTemplates([PageTemplate(id="general2", frames=[frame2], onPage=on_page_real)])
+        doc2.addPageTemplates([PageTemplate(id="general", frames=[frame2], onPage=on_page)])
         flowables_real = self._build_general_story(
             sales, expenses,
             total_ingresos, total_gastos, resultado_neto, margen_neto,
@@ -1926,7 +1920,14 @@ class ReportService:
             mostrar_resumen_categoria_ventas, mostrar_resumen_productos,
             mostrar_resumen_categoria_costos,
         )
-        doc2.build(flowables_real)
+        doc2.build(
+            flowables_real,
+            canvasmaker=partial(
+                NumberedCanvas,
+                mode=modo,
+                report_title="Reporte General",
+            ),
+        )
         buffer.seek(0)
         return buffer.read()
 

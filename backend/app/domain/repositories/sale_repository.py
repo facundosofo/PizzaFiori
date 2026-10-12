@@ -23,6 +23,7 @@ class AbstractSaleRepository(ABC):
         limit: int = 100,
         fecha_desde: Optional[datetime] = None,
         fecha_hasta: Optional[datetime] = None,
+        include_items: bool = True,
     ) -> List[Sale]:
         ...
 

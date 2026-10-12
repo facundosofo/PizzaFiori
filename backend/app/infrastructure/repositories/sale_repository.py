@@ -39,14 +39,14 @@ class SqlAlchemySaleRepository(
         limit: int = 100,
         fecha_desde: Optional[datetime] = None,
         fecha_hasta: Optional[datetime] = None,
+        include_items: bool = True,
     ) -> List[Sale]:
-        query = (
-            select(Sale)
-            .options(
+        query = select(Sale)
+        if include_items:
+            query = query.options(
                 selectinload(Sale.items)
                 .selectinload(SaleItem.oferta_productos_snapshot)
             )
-        )
 
         # Filtros index-friendly: transformar el parámetro en vez de la columna.
         # Equivalencia: CAST(fecha_creacion - '6h' AS DATE) >= fecha_desde
