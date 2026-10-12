@@ -8,32 +8,36 @@ import { ShieldOffIcon } from "../components/shared/Icons";
 import { useAuth } from "../contexts/AuthContext";
 import "../styles/reports.css";
 
-const buildDefaultConfig = (): ReportRequest => ({
-  reportType: "ventas",
-  dateRangeMode: "rango",
-  dateFrom: null,
-  dateTo: null,
-  selectedMonth: new Date().getMonth(),
-  selectedYear: new Date().getFullYear(),
-  mode: "light",
-  sections: {
-    resumenPeriodo: true,
-    resumenDia: true,
-    resumenMes: true,
-    resumenCategoria: true,
-    resumenProductos: true,
-    detalleVentas: true,
-    costoResumenPeriodo: true,
-    costoResumenCategoria: true,
-    costoResumenMes: true,
-    costoDetalleCostos: true,
-    generalResumenPeriodo: true,
-    generalResumenMes: true,
-    generalResumenCategoriaVentas: true,
-    generalResumenProductos: true,
-    generalResumenCategoriaGastos: true,
-  },
-});
+const buildDefaultConfig = (): ReportRequest => {
+  const today = new Date();
+
+  return {
+    reportType: "ventas",
+    dateRangeMode: "rango",
+    dateFrom: today,
+    dateTo: today,
+    selectedMonth: today.getMonth(),
+    selectedYear: today.getFullYear(),
+    mode: "light",
+    sections: {
+      resumenPeriodo: true,
+      resumenDia: true,
+      resumenMes: true,
+      resumenCategoria: true,
+      resumenProductos: true,
+      detalleVentas: true,
+      costoResumenPeriodo: true,
+      costoResumenCategoria: true,
+      costoResumenMes: true,
+      costoDetalleCostos: true,
+      generalResumenPeriodo: true,
+      generalResumenMes: true,
+      generalResumenCategoriaVentas: true,
+      generalResumenProductos: true,
+      generalResumenCategoriaGastos: true,
+    },
+  };
+};
 
 const ReportsPage = () => {
   const { user } = useAuth();
