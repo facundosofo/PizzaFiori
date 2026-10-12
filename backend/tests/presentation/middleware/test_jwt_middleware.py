@@ -1,8 +1,9 @@
+import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse
 
@@ -54,11 +55,11 @@ async def test_dispatch_rejects_missing_token_on_protected_route(monkeypatch):
 
     monkeypatch.setattr(jwt_middleware_module.JWTService, "extract_bearer_token", lambda _header: None)
 
-    with pytest.raises(HTTPException) as exc_info:
-        await middleware.dispatch(request, call_next)
+    response = await middleware.dispatch(request, call_next)
 
-    assert exc_info.value.status_code == 401
-    assert exc_info.value.detail == "Missing authentication token"
+    assert response.status_code == 401
+    assert json.loads(response.body) == {"detail": "Missing authentication token"}
+    assert response.headers["www-authenticate"] == "Bearer"
 
 
 @pytest.mark.asyncio
@@ -118,11 +119,11 @@ async def test_dispatch_rejects_invalid_token(monkeypatch):
 
     monkeypatch.setattr(jwt_middleware_module.JWTService, "decode_token", _decode_raises)
 
-    with pytest.raises(HTTPException) as exc_info:
-        await middleware.dispatch(request, call_next)
+    response = await middleware.dispatch(request, call_next)
 
-    assert exc_info.value.status_code == 401
-    assert exc_info.value.detail == "Token inválido"
+    assert response.status_code == 401
+    assert json.loads(response.body) == {"detail": "Token inválido"}
+    assert response.headers["www-authenticate"] == "Bearer"
 
 
 @pytest.mark.asyncio
@@ -144,11 +145,11 @@ async def test_dispatch_rejects_when_token_user_not_found(monkeypatch):
     fake_uow.users = SimpleNamespace(get_by_id=AsyncMock(return_value=None))
     monkeypatch.setattr(jwt_middleware_module, "SqlAlchemyUnitOfWork", lambda: fake_uow)
 
-    with pytest.raises(HTTPException) as exc_info:
-        await middleware.dispatch(request, call_next)
+    response = await middleware.dispatch(request, call_next)
 
-    assert exc_info.value.status_code == 401
-    assert exc_info.value.detail == "User not found"
+    assert response.status_code == 401
+    assert json.loads(response.body) == {"detail": "User not found"}
+    assert response.headers["www-authenticate"] == "Bearer"
 
 
 def test_is_public_route_for_known_public_paths():

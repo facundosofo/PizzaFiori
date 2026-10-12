@@ -2,8 +2,8 @@
 JWT Authentication Middleware for validating Bearer tokens.
 """
 
-from datetime import datetime
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import structlog
 
@@ -83,9 +83,10 @@ class JWTMiddleware(BaseHTTPMiddleware):
                             user_id=user_id,
                             path=request.url.path,
                         )
-                        raise HTTPException(
+                        return JSONResponse(
                             status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="User not found",
+                            content={"detail": "User not found"},
+                            headers={"WWW-Authenticate": "Bearer"},
                         )
 
                 # Populate request state with current user
@@ -108,9 +109,9 @@ class JWTMiddleware(BaseHTTPMiddleware):
                     error=str(e),
                     path=request.url.path,
                 )
-                raise HTTPException(
+                return JSONResponse(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=str(e),
+                    content={"detail": str(e)},
                     headers={"WWW-Authenticate": "Bearer"},
                 )
         
@@ -128,9 +129,9 @@ class JWTMiddleware(BaseHTTPMiddleware):
                 path=request.url.path,
                 method=request.method,
             )
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Missing authentication token",
+                content={"detail": "Missing authentication token"},
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
