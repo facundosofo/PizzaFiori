@@ -10,6 +10,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from app.application.expense_analytics_service import ExpenseAnalyticsService
 
 
+def test_previous_complete_month_uses_exclusive_start_of_current_month(mock_uow, mock_logger):
+    service = ExpenseAnalyticsService(uow=mock_uow, logger=mock_logger)
+
+    start, end = service._get_previous_complete_month(datetime(2026, 2, 19, 18, 0))
+
+    assert start == datetime(2026, 1, 1)
+    assert end == datetime(2026, 2, 1)
+
+
 def _make_row(**kwargs):
     row = MagicMock()
     for k, v in kwargs.items():

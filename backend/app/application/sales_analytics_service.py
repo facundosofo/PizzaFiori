@@ -94,12 +94,16 @@ class SalesAnalyticsService:
     async def get_weekday_revenue(
         self,
         category: str | None = None,
+        time_filter: FiltroTiempo = FiltroTiempo.HISTORICO,
     ) -> ServiceResult:
         """Obtiene el promedio de ventas por día de semana"""
         try:
             async with self.uow:
-                self.logger.info(f"Getting weekday revenue with category: {category}")
-                result = await self._get_weekday_revenue_data(None, None, category)
+                self.logger.info(
+                    f"Getting weekday revenue with category: {category}, time_filter: {time_filter}"
+                )
+                start_date = self._get_start_date_for_time_filter(time_filter)
+                result = await self._get_weekday_revenue_data(start_date, None, category)
                 self.logger.info(f"Weekday revenue result count: {len(result)}")
                 return ServiceResult(value=result)
                 
@@ -730,15 +734,64 @@ class SalesAnalyticsService:
         category: str | None = None,
     ) -> List[dict]:
         """Obtiene promedio de ingresos y cantidad por día de semana"""
-        from sqlalchemy import text
+        from sqlalchemy import text, union_all
         
         adjusted_fecha = Sale.fecha_creacion - text("INTERVAL '6 hours'")
         
+        category_sales_subq = None
+        if category:
+            direct_sales = select(SaleItem.venta_id.label("sale_id")).select_from(
+                SaleItem
+            ).outerjoin(
+                Product, SaleItem.producto_id == Product.id
+            ).outerjoin(
+                Category, Product.categoria_id == Category.id
+            ).where(
+                and_(
+                    SaleItem.producto_id.isnot(None),
+                    func.coalesce(Category.nombre, SaleItem.item_categoria) == category,
+                )
+            )
+            offer_sales = select(SaleItem.venta_id.label("sale_id")).select_from(
+                SaleItem
+            ).join(
+                SaleItemOfferProduct,
+                SaleItemOfferProduct.venta_item_id == SaleItem.id,
+            ).outerjoin(
+                Product, SaleItemOfferProduct.producto_id == Product.id
+            ).outerjoin(
+                Category, Product.categoria_id == Category.id
+            ).where(
+                and_(
+                    SaleItem.oferta_id.isnot(None),
+                    func.coalesce(Category.nombre, SaleItemOfferProduct.categoria_nombre) == category,
+                )
+            )
+            mitad_mitad_sales = select(SaleItem.venta_id.label("sale_id")).where(
+                and_(
+                    SaleItem.es_pizza_mitad_mitad == True,
+                    SaleItem.item_categoria == category,
+                )
+            )
+            category_sales_subq = union_all(
+                direct_sales,
+                offer_sales,
+                mitad_mitad_sales,
+            ).subquery()
+
         sales_filter = select(Sale.id)
         if start_date is not None:
-            sales_filter = sales_filter.where(Sale.fecha_creacion >= start_date)
+            sales_filter = sales_filter.where(
+                Sale.fecha_creacion >= start_date + timedelta(hours=6)
+            )
         if end_date is not None:
-            sales_filter = sales_filter.where(Sale.fecha_creacion < end_date)
+            sales_filter = sales_filter.where(
+                Sale.fecha_creacion < end_date + timedelta(hours=6)
+            )
+        if category_sales_subq is not None:
+            sales_filter = sales_filter.where(
+                Sale.id.in_(select(category_sales_subq.c.sale_id))
+            )
         
         sales_subq = sales_filter.subquery()
         
@@ -764,7 +817,9 @@ class SalesAnalyticsService:
         
         offer_items_query = select(
             SaleItem.venta_id,
-            func.sum(SaleItemOfferProduct.cantidad).label("offer_qty")
+            func.sum(
+                SaleItemOfferProduct.cantidad * SaleItem.cantidad
+            ).label("offer_qty")
         ).select_from(SaleItem).join(
             SaleItemOfferProduct, SaleItemOfferProduct.venta_item_id == SaleItem.id
         ).join(
@@ -899,7 +954,7 @@ class SalesAnalyticsService:
                 
                 # Período actual: 1° del mes actual hasta hoy
                 current_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                current_end = now
+                current_end = now - timedelta(hours=6)
                 
                 # Obtener ventas del período actual
                 current_total = await self._get_sales_total_between_dates(current_start, current_end)
@@ -954,12 +1009,14 @@ class SalesAnalyticsService:
             Total de ventas en pesos, o None si no hay datos
         """
         try:
+            business_start = start_date + timedelta(hours=6)
+            business_end = end_date + timedelta(hours=6)
             query = select(
                 func.sum(Sale.total).label("total_sales")
             ).where(
                 and_(
-                    Sale.fecha_creacion >= start_date,
-                    Sale.fecha_creacion < end_date
+                    Sale.fecha_creacion >= business_start,
+                    Sale.fecha_creacion < business_end
                 )
             )
             

@@ -242,7 +242,7 @@ class ExpenseAnalyticsService:
     def _get_previous_complete_month(self, date: datetime) -> tuple[datetime, datetime]:
         """Retorna el mes completo anterior.
         
-        Ej: si hoy es 25 febrero, retorna (1 enero, 31 enero)
+        Ej: si hoy es 25 febrero, retorna [1 enero, 1 febrero).
         """
         if date.month == 1:
             prev_year = date.year - 1
@@ -252,11 +252,7 @@ class ExpenseAnalyticsService:
             prev_month = date.month - 1
         
         start = datetime(prev_year, prev_month, 1)
-        # Último día del mes anterior
-        if prev_month == 12:
-            end = datetime(prev_year + 1, 1, 1) - timedelta(days=1)
-        else:
-            end = datetime(prev_year, prev_month + 1, 1) - timedelta(days=1)
+        end = datetime(date.year, date.month, 1)
         
         return (start, end)
 

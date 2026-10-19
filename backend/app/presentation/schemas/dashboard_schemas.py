@@ -14,8 +14,8 @@ class FiltroTiempo(str, Enum):
     """Filtro de tiempo para análisis de ventas y productos."""
     HOY = "today"
     ULTIMOS_7_DIAS = "last_7_days"
-    ULTIMO_MES = "last_month"  # 30 días
-    ULTIMO_ANO = "last_year"  # 12 meses
+    ULTIMO_MES = "last_month"  # Mes calendario actual hasta hoy
+    ULTIMO_ANO = "last_year"  # Año calendario actual hasta hoy
     HISTORICO = "all_time"
 
 
@@ -366,4 +366,3 @@ class MonthlyBalanceListResponse(BaseModel):
             }
         }
     )
-

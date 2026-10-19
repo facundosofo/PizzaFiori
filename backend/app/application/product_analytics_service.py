@@ -86,15 +86,7 @@ class ProductAnalyticsService:
                 most_sold_offer = await self._get_most_sold_offer(start_date)
                 
                 if not most_sold:
-                    # Sin datos para el período solicitado: reintentar con histórico completo
-                    self.logger.warning(
-                        f"No hay datos para time_filter={time_filter}, reintentando con histórico completo"
-                    )
-                    most_sold = await self._get_most_sold_product(None)
-                    most_sold_offer = await self._get_most_sold_offer(None)
-                
-                if not most_sold:
-                    # Base de datos vacía: devolver respuesta vacía con 200
+                    # No hay ventas en el período solicitado.
                     now = datetime.now()
                     month_names = [
                         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -105,8 +97,8 @@ class ProductAnalyticsService:
                         "categoria_mas_vendida": "",
                         "cantidad_mas_vendida": 0,
                         "cantidad_mas_vendida_display": "0",
-                        "promocion_mas_vendida": None,
-                        "cantidad_promocion": 0,
+                        "promocion_mas_vendida": most_sold_offer["nombre"] if most_sold_offer else None,
+                        "cantidad_promocion": most_sold_offer["cantidad"] if most_sold_offer else 0,
                         "mes_actual": f"{month_names[now.month - 1]} {now.year}",
                     })
                 
@@ -544,4 +536,3 @@ class ProductAnalyticsService:
             }
         
         return None
-

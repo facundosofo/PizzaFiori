@@ -5,6 +5,8 @@ Enfocados en verificar respuestas HTTP correctas con diferentes params.
 import pytest
 from httpx import AsyncClient
 
+from app.presentation.schemas.dashboard_schemas import FiltroTiempo
+
 
 # --- Tests GET /dashboard/revenue ---
 # This endpoint uses SalesAnalyticsService (not DashboardService)
@@ -116,11 +118,17 @@ async def test_get_weekday_revenue_con_categoria(async_client: AsyncClient, mock
         {"dia_semana": "Viernes", "promedio_ingresos": 12000.0, "promedio_pedidos": 6.0, "promedio_cantidad": 35.0},
     ]
     
-    response = await async_client.get("/dashboard/revenue/weekday?category=Pizzas")
+    response = await async_client.get(
+        "/dashboard/revenue/weekday?category=Pizzas&time_filter=last_month"
+    )
     
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
+    mock_sales_analytics_service.get_weekday_revenue.assert_awaited_once_with(
+        category="Pizzas",
+        time_filter=FiltroTiempo.ULTIMO_MES,
+    )
 
 
 @pytest.mark.asyncio

@@ -16,6 +16,15 @@ interface WeekdayChartProps {
   height?: number;
 }
 
+type ChartData = {
+  diaSemana: string;
+  promedioIngresos: number;
+  promedioPedidos: number;
+  promedioCantidad: number;
+};
+
+type MetricKey = 'promedioIngresos' | 'promedioPedidos' | 'promedioCantidad';
+
 const WeekdayChart = memo(({ 
   data, 
   selectedMetric,
@@ -32,8 +41,7 @@ const WeekdayChart = memo(({
         maximumFractionDigits: 0,
       }).format(value);
     }
-    // Para pedidos e items, mostrar con 1 decimal
-    return value.toFixed(1);
+    return value.toLocaleString('es-AR', { maximumFractionDigits: 2 });
   };
 
   // Formatear eje Y según métrica
@@ -47,8 +55,7 @@ const WeekdayChart = memo(({
       }
       return `$${value.toFixed(0)}`;
     }
-    // Para pedidos e items - permitir decimales
-    return value.toFixed(0);
+    return value.toLocaleString('es-AR', { maximumFractionDigits: 2 });
   };
 
   // Calcular ticks del eje Y (exactamente 5 valores)
@@ -57,14 +64,14 @@ const WeekdayChart = memo(({
     if (!currentData || currentData.length === 0) return undefined;
 
     const seriesConfig = getSeriesConfig();
-    const values = currentData.map(item => (item as any)[seriesConfig.key] || 0);
+    const values = currentData.map(item => item[seriesConfig.key] || 0);
     const maxValue = Math.max(...values);
 
     if (maxValue === 0) {
       if (selectedMetric === 'ingresos') {
         return [0, 1000, 2000, 3000, 4000];
       }
-      return [0, 5, 10, 15, 20];
+      return [0, 0.25, 0.5, 0.75, 1];
     }
 
     // Calcular intervalo: dividir máximo entre 4 (para generar 5 ticks)
@@ -84,7 +91,7 @@ const WeekdayChart = memo(({
   };
 
   // Preparar datos para el chart
-  const getChartData = () => {
+  const getChartData = (): ChartData[] => {
     return data.map((item) => ({
       diaSemana: item.dia_semana,
       promedioIngresos: item.promedio_ingresos,
@@ -94,7 +101,7 @@ const WeekdayChart = memo(({
   };
 
   // Obtener configuración de la serie según métrica
-  const getSeriesConfig = () => {
+  const getSeriesConfig = (): { key: MetricKey; name: string; color: string } => {
     if (selectedMetric === 'ingresos') {
       return {
         key: 'promedioIngresos',
@@ -135,7 +142,7 @@ const WeekdayChart = memo(({
         yAxisFormatter={formatYAxis}
         yAxisTicks={calculateYTicks()}
         yAxisDomain={calculateYDomain()}
-        allowDecimals={false}
+        allowDecimals={selectedMetric !== 'ingresos'}
         gridOpacity={0.05}
       />
     </div>

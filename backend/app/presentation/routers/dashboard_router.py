@@ -82,7 +82,7 @@ async def get_revenue(
     "/revenue/weekday",
     response_model=List[WeekdayRevenueResponse],
     summary="Obtener promedio de ventas por día de semana",
-    description="Devuelve el promedio de ingresos y cantidad por día de semana (histórico, con ajuste de horario de negocio 16:00-06:00).",
+    description="Devuelve el promedio de ingresos y cantidad por día de semana para el filtro temporal elegido, con ajuste de horario de negocio (16:00-06:00). Al filtrar por categoría, ingresos es el total de los pedidos que contienen esa categoría.",
     responses={
         500: {"description": "Error interno del servidor"},
     },
@@ -90,17 +90,24 @@ async def get_revenue(
 @inject
 async def get_weekday_revenue(
     category: str | None = Query(None, description="Filtrar por categoría (opcional)"),
+    time_filter: FiltroTiempo = Query(
+        FiltroTiempo.HISTORICO,
+        description="Filtro temporal: today, last_7_days, last_month, last_year o all_time",
+    ),
     service: SalesAnalyticsService = Depends(Provide[Container.sales_analytics_service]),
 ):
     """
-    Obtiene promedio de ventas por día de semana ajustado al horario de negocio (datos históricos).
+    Obtiene el promedio de ventas por día de semana ajustado al horario de negocio y al filtro temporal seleccionado.
     
     **Horario de negocio:** 16:00 a 06:00  
     Las ventas entre 00:00 y 05:59 se asignan al día anterior (día que abrió a las 16:00).
     
     Retorna 7 registros ordenados de Lunes a Domingo.
     """
-    result = await service.get_weekday_revenue(category=category)
+    result = await service.get_weekday_revenue(
+        category=category,
+        time_filter=time_filter,
+    )
     
     if result.error:
         raise HTTPException(

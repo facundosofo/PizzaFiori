@@ -142,6 +142,7 @@ class DashboardService:
     async def get_weekday_revenue(
         self,
         category: str | None = None,
+        time_filter: FiltroTiempo = FiltroTiempo.HISTORICO,
     ) -> ServiceResult:
         """
         Obtiene el promedio de ventas por día de semana (con ajuste de horario de negocio).
@@ -157,9 +158,11 @@ class DashboardService:
         """
         try:
             async with self.uow:
-                self.logger.info(f"Getting weekday revenue with category: {category}")
-                # Siempre usar 'historic' (sin filtro de fechas)
-                result = await self._get_weekday_revenue_data(None, None, category)
+                self.logger.info(
+                    f"Getting weekday revenue with category: {category}, time_filter: {time_filter}"
+                )
+                start_date = self._get_start_date_for_time_filter(time_filter)
+                result = await self._get_weekday_revenue_data(start_date, None, category)
                 self.logger.info(f"Weekday revenue result count: {len(result)}")
                 return ServiceResult(value=result)
                 
@@ -1016,9 +1019,13 @@ class DashboardService:
         # PASO 2: Pre-filtrar ventas por fecha (índice en fecha_creacion)
         sales_filter = select(Sale.id)
         if start_date is not None:
-            sales_filter = sales_filter.where(Sale.fecha_creacion >= start_date)
+            sales_filter = sales_filter.where(
+                Sale.fecha_creacion >= start_date + timedelta(hours=6)
+            )
         if end_date is not None:
-            sales_filter = sales_filter.where(Sale.fecha_creacion < end_date)
+            sales_filter = sales_filter.where(
+                Sale.fecha_creacion < end_date + timedelta(hours=6)
+            )
         
         sales_subq = sales_filter.subquery()
         
@@ -1198,6 +1205,7 @@ class DashboardService:
                 # Período actual: 1° del mes actual hasta hoy
                 current_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 current_end = now
+                current_sales_end = now - timedelta(hours=6)
                 
                 # Período anterior: mes calendario anterior completo (día 1 hasta último día)
                 if now.month == 1:
@@ -1212,7 +1220,7 @@ class DashboardService:
                 mom_end = current_start
                 
                 # Obtener ventas
-                current_sales = await self._get_sales_total_between_dates(current_start, current_end)
+                current_sales = await self._get_sales_total_between_dates(current_start, current_sales_end)
                 mom_sales = await self._get_sales_total_between_dates(mom_start, mom_end)
                 
                 # Obtener gastos
@@ -1399,14 +1407,16 @@ class DashboardService:
         start_date: datetime,
         end_date: datetime,
     ) -> float:
-        """Obtiene el total de ventas entre dos fechas"""
+        """Obtiene el total de ventas entre dos fechas        """
         try:
+            business_start = start_date + timedelta(hours=6)
+            business_end = end_date + timedelta(hours=6)
             query = select(
                 func.sum(Sale.total).label("total_sales")
             ).where(
                 and_(
-                    Sale.fecha_creacion >= start_date,
-                    Sale.fecha_creacion < end_date
+                    Sale.fecha_creacion >= business_start,
+                    Sale.fecha_creacion < business_end
                 )
             )
             

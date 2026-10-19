@@ -67,24 +67,13 @@ import '../styles/shared/page-header.css';
 type DashboardTab = 'general' | 'balance' | 'ventas' | 'gastos' | 'productos';
 
 const DashboardOverview = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [activeTab, setActiveTab] = useState<DashboardTab>('general');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isAdmin) {
-    return (
-      <div className="user-management-container">
-        <div className="access-denied">
-          <ShieldOffIcon size={64} color="#ef4444" />
-          <h1>Acceso Denegado</h1>
-          <p>Solo los administradores pueden acceder a esta página.</p>
-        </div>
-      </div>
-    );
-  }
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>('monthly');
@@ -210,7 +199,7 @@ const DashboardOverview = () => {
 
   const fetchSalesByCategory = useCallback(async () => {
     try {
-      const salesByCategory = await getSalesByCategory(8, salesByCategoryTimeFilter);
+      const salesByCategory = await getSalesByCategory(undefined, salesByCategoryTimeFilter);
       setData((prev) => (prev ? { ...prev, salesByCategory } : prev));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar ventas por categoria';
@@ -353,7 +342,7 @@ const DashboardOverview = () => {
 
   const fetchGeneralSalesByCategory = useCallback(async () => {
     try {
-      const result = await getSalesByCategory(8, generalSalesCategoryFilter);
+      const result = await getSalesByCategory(undefined, generalSalesCategoryFilter);
       setGeneralSalesByCategory(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar ventas por categoría';
@@ -395,81 +384,83 @@ const DashboardOverview = () => {
   }, []);
 
   useEffect(() => {
+    if (authLoading || !isAdmin) return;
     fetchDashboardData();
-  }, [fetchDashboardData]);
+  }, [authLoading, isAdmin, fetchDashboardData]);
 
   useEffect(() => {
-    if (activeTab !== 'ventas') return;
+    if (authLoading || !isAdmin || activeTab !== 'ventas') return;
     fetchSalesByCategory();
-  }, [activeTab, fetchSalesByCategory]);
+  }, [authLoading, isAdmin, activeTab, fetchSalesByCategory]);
 
   useEffect(() => {
-    if (activeTab !== 'productos') return;
+    if (authLoading || !isAdmin || activeTab !== 'productos') return;
     fetchTopProducts();
-  }, [activeTab, fetchTopProducts]);
+  }, [authLoading, isAdmin, activeTab, fetchTopProducts]);
 
   useEffect(() => {
-    if (activeTab !== 'ventas') return;
+    if (authLoading || !isAdmin || activeTab !== 'ventas') return;
     fetchWeekdayRevenue();
-  }, [activeTab, fetchWeekdayRevenue]);
+  }, [authLoading, isAdmin, activeTab, fetchWeekdayRevenue]);
 
   useEffect(() => {
-    if (activeTab !== 'gastos') return;
+    if (authLoading || !isAdmin || activeTab !== 'gastos') return;
     fetchExpensesByPeriod();
-  }, [activeTab, fetchExpensesByPeriod]);
+  }, [authLoading, isAdmin, activeTab, fetchExpensesByPeriod]);
 
   useEffect(() => {
-    if (activeTab !== 'gastos') return;
+    if (authLoading || !isAdmin || activeTab !== 'gastos') return;
     fetchExpensesByCategory();
-  }, [activeTab, fetchExpensesByCategory]);
+  }, [authLoading, isAdmin, activeTab, fetchExpensesByCategory]);
 
   useEffect(() => {
-    if (activeTab !== 'gastos') return;
+    if (authLoading || !isAdmin || activeTab !== 'gastos') return;
     fetchExpensesSummary();
-  }, [activeTab, fetchExpensesSummary]);
+  }, [authLoading, isAdmin, activeTab, fetchExpensesSummary]);
 
   useEffect(() => {
-    if (activeTab !== 'productos') return;
+    if (authLoading || !isAdmin || activeTab !== 'productos') return;
     fetchProductsSummary();
-  }, [activeTab, fetchProductsSummary]);
+  }, [authLoading, isAdmin, activeTab, fetchProductsSummary]);
 
   useEffect(() => {
-    if (activeTab !== 'balance') return;
+    if (authLoading || !isAdmin || activeTab !== 'balance') return;
     fetchBalanceMetrics();
     fetchMonthlyBalanceData();
-  }, [activeTab, balancePeriod, fetchBalanceMetrics, fetchMonthlyBalanceData]);
+  }, [authLoading, isAdmin, activeTab, balancePeriod, fetchBalanceMetrics, fetchMonthlyBalanceData]);
 
   useEffect(() => {
-    if (activeTab !== 'general') return;
+    if (authLoading || !isAdmin || activeTab !== 'general') return;
     fetchGeneralBalanceMetrics();
-  }, [activeTab, fetchGeneralBalanceMetrics]);
+  }, [authLoading, isAdmin, activeTab, fetchGeneralBalanceMetrics]);
 
   useEffect(() => {
-    if (activeTab !== 'general') return;
+    if (authLoading || !isAdmin || activeTab !== 'general') return;
     fetchGeneralBalanceData();
-  }, [activeTab, fetchGeneralBalanceData]);
+  }, [authLoading, isAdmin, activeTab, fetchGeneralBalanceData]);
 
   useEffect(() => {
-    if (activeTab !== 'general') return;
+    if (authLoading || !isAdmin || activeTab !== 'general') return;
     fetchGeneralSalesByCategory();
-  }, [activeTab, fetchGeneralSalesByCategory]);
+  }, [authLoading, isAdmin, activeTab, fetchGeneralSalesByCategory]);
 
   useEffect(() => {
-    if (activeTab !== 'general') return;
+    if (authLoading || !isAdmin || activeTab !== 'general') return;
     fetchGeneralExpensesByCategory();
-  }, [activeTab, fetchGeneralExpensesByCategory]);
+  }, [authLoading, isAdmin, activeTab, fetchGeneralExpensesByCategory]);
 
   useEffect(() => {
-    if (activeTab !== 'general') return;
+    if (authLoading || !isAdmin || activeTab !== 'general') return;
     fetchGeneralTopProducts();
-  }, [activeTab, fetchGeneralTopProducts]);
+  }, [authLoading, isAdmin, activeTab, fetchGeneralTopProducts]);
 
   useEffect(() => {
-    if (activeTab !== 'general') return;
+    if (authLoading || !isAdmin || activeTab !== 'general') return;
     fetchGeneralWeekdayRevenue();
-  }, [activeTab, fetchGeneralWeekdayRevenue]);
+  }, [authLoading, isAdmin, activeTab, fetchGeneralWeekdayRevenue]);
 
   useEffect(() => {
+    if (authLoading || !isAdmin) return;
     const saleEventKey = 'pizza_fiori:sale_created_at';
 
     const handleSaleCreated = async () => {
@@ -494,7 +485,7 @@ const DashboardOverview = () => {
       window.removeEventListener('sale:created', handleSaleCreated);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [fetchDashboardData, fetchSalesByCategory, fetchTopProducts, fetchWeekdayRevenue]);
+  }, [authLoading, isAdmin, fetchDashboardData, fetchSalesByCategory, fetchTopProducts, fetchWeekdayRevenue]);
 
   const renderGeneralTab = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -811,6 +802,11 @@ const DashboardOverview = () => {
       <div className="chart-section chart-main">
         <div className="section-header">
           <h2 className="chart-title">Promedio de Ventas por Día de Semana</h2>
+          {weekdayCategory && weekdayMetric !== 'items' && (
+            <span className="chart-subtitle">
+              Solo pedidos con {weekdayCategory}; ingresos corresponde al total del pedido
+            </span>
+          )}
           <div style={{ display: 'flex', gap: '12px' }}>
             <WeekdayMetricSelector 
               selectedMetric={weekdayMetric} 
@@ -1160,6 +1156,33 @@ const DashboardOverview = () => {
       </div>
     </div>
   );
+
+  if (authLoading) {
+    return (
+      <div className="dashboard-container">
+        <div className="page-header">
+          <h1 className="page-title">Dashboard</h1>
+        </div>
+        <div className="dashboard-content">
+          <div className="dashboard-skeleton">
+            <div className="skeleton-chart"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="user-management-container">
+        <div className="access-denied">
+          <ShieldOffIcon size={64} color="#ef4444" />
+          <h1>Acceso Denegado</h1>
+          <p>Solo los administradores pueden acceder a esta página.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

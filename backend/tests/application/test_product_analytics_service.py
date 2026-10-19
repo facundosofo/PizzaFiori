@@ -4,7 +4,8 @@ Tests product analytics operations with mocked session and UnitOfWork.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.application.product_analytics_service import ProductAnalyticsService
 
@@ -104,6 +105,27 @@ async def test_get_products_summary_success(mock_uow, mock_logger):
     result = await service.get_products_summary()
 
     assert result.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_get_products_summary_does_not_fall_back_to_historical_sales(mock_uow, mock_logger):
+    service = ProductAnalyticsService(uow=mock_uow, logger=mock_logger)
+    start_date = datetime(2026, 10, 1)
+    get_product = AsyncMock(return_value=None)
+    get_offer = AsyncMock(return_value={"nombre": "Combo", "cantidad": 2})
+
+    with patch.object(service, "_get_start_date_for_time_filter", return_value=start_date):
+        with patch.object(service, "_get_most_sold_product", new=get_product):
+            with patch.object(service, "_get_most_sold_offer", new=get_offer):
+                result = await service.get_products_summary(time_filter="last_month")
+
+    assert result.status_code == 200
+    assert result.value["producto_mas_vendido"] == "Sin datos"
+    assert result.value["cantidad_mas_vendida"] == 0
+    assert result.value["promocion_mas_vendida"] == "Combo"
+    assert result.value["cantidad_promocion"] == 2
+    get_product.assert_awaited_once_with(start_date)
+    get_offer.assert_awaited_once_with(start_date)
 
 
 @pytest.mark.asyncio

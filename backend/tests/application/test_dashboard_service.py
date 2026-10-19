@@ -3,7 +3,7 @@ Tests for DashboardService.
 Focus on orchestration, time filtering, and response mapping.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -53,6 +53,23 @@ async def test_get_revenue_by_period_handles_exception(mock_uow, mock_logger):
     assert result.value is None
     assert result.error is not None
     assert result.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_sales_total_uses_business_date_boundaries(mock_uow, mock_logger):
+    service = DashboardService(uow=mock_uow, logger=mock_logger)
+    start_date = datetime(2026, 10, 1)
+    end_date = datetime(2026, 11, 1)
+    mock_uow.session.execute = AsyncMock(
+        return_value=SimpleNamespace(scalar_one_or_none=lambda: 100.0)
+    )
+
+    total = await service._get_sales_total_between_dates(start_date, end_date)
+
+    query = mock_uow.session.execute.await_args.args[0]
+    assert total == 100.0
+    assert start_date + timedelta(hours=6) in query.compile().params.values()
+    assert end_date + timedelta(hours=6) in query.compile().params.values()
 
 
 def test_get_start_date_for_time_filter(mock_uow, mock_logger):

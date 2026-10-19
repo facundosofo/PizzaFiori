@@ -196,7 +196,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
     getRevenueByPeriod('monthly', 12) as Promise<MonthlyRevenue[]>,
     getRevenueByPeriod('yearly', 5) as Promise<YearlyRevenue[]>,
     getTopProducts(5, 'last_year'),
-    getSalesByCategory(8, 'last_year'),
+    getSalesByCategory(undefined, 'last_year'),
   ]);
 
   return {
@@ -273,7 +273,7 @@ export const getSalesByCategory = async (
 };
 
 /**
- * Obtener promedio de ventas por día de semana (datos históricos)
+ * Obtener promedio de ventas por día de semana según filtros
  * 
  * GET /api/dashboard/revenue/weekday?category={category}&time_filter={time_filter}
  */

@@ -5,7 +5,7 @@ Tests sales analytics operations with mocked session and UnitOfWork.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from app.application.sales_analytics_service import SalesAnalyticsService
 
@@ -181,6 +181,39 @@ async def test_get_weekday_revenue_success(mock_uow, mock_logger):
     result = await service.get_weekday_revenue()
 
     assert result.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_get_weekday_revenue_applies_time_filter(mock_uow, mock_logger):
+    service = SalesAnalyticsService(uow=mock_uow, logger=mock_logger)
+    start_date = datetime(2026, 10, 1)
+
+    with patch.object(service, "_get_start_date_for_time_filter", return_value=start_date) as get_start:
+        with patch.object(
+            service,
+            "_get_weekday_revenue_data",
+            new=AsyncMock(return_value=[]),
+        ) as get_data:
+            result = await service.get_weekday_revenue(time_filter="last_month")
+
+    assert result.status_code == 200
+    get_start.assert_called_once_with("last_month")
+    get_data.assert_awaited_once_with(start_date, None, None)
+
+
+@pytest.mark.asyncio
+async def test_weekday_query_filters_by_business_date_and_category(mock_uow, mock_logger):
+    service = SalesAnalyticsService(uow=mock_uow, logger=mock_logger)
+    start_date = datetime(2026, 10, 1)
+    mock_uow.session.execute = AsyncMock(return_value=_mock_result([]))
+
+    await service._get_weekday_revenue_data(start_date, None, "Pizzas")
+
+    query = mock_uow.session.execute.await_args.args[0]
+    compiled = query.compile()
+    assert start_date + timedelta(hours=6) in compiled.params.values()
+    assert "Pizzas" in compiled.params.values()
+    assert "fecha_creacion >=" in str(query)
 
 
 @pytest.mark.asyncio
