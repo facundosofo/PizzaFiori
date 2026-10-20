@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+from threading import Barrier
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -180,6 +181,41 @@ def test_r2_storage_uploads_images_before_public_catalog(tmp_path: Path, monkeyp
     )
 
 
+def test_r2_storage_uploads_images_concurrently_before_catalog(tmp_path: Path, monkeypatch):
+    config = SimpleNamespace(
+        r2_enabled=True,
+        r2_account_id="account",
+        r2_access_key_id="access",
+        r2_secret_access_key="secret",
+        r2_bucket_name="catalog",
+        r2_public_base_url="https://cdn.example.test",
+    )
+    images = []
+    for name in ("pizza-a.jpg", "pizza-b.jpg"):
+        image = tmp_path / name
+        image.write_bytes(b"image")
+        images.append((image, f"catalogo/imagenes/{name}", "image/jpeg"))
+
+    barrier = Barrier(2)
+    uploaded = []
+    client = Mock()
+    client.upload_file.side_effect = lambda *args, **kwargs: (
+        barrier.wait(timeout=3),
+        uploaded.append(args[2]),
+    )
+    monkeypatch.setattr("boto3.client", lambda *args, **kwargs: client)
+
+    R2CatalogStorage(config).publish(
+        b'{"version":1}',
+        "catalogo/hash.json",
+        b'{"catalogo_version":"hash"}',
+        images,
+    )
+
+    assert set(uploaded) == {image[1] for image in images}
+    assert client.put_object.call_count == 2
+
+
 def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
     category = SimpleNamespace(id=1, nombre="Pizzas", activo=True)
     product = SimpleNamespace(
@@ -192,13 +228,23 @@ def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
     )
     storage = Mock()
     storage.object_url.side_effect = lambda key: f"https://cdn.example.test/{key}"
+    config_values = {}
+
+    async def set_config_value(key, value):
+        config_values[key] = SimpleNamespace(value=value)
+        return config_values[key]
+
+    app_config_repo = SimpleNamespace(
+        get_by_key=AsyncMock(side_effect=lambda key: config_values.get(key)),
+        set_value=AsyncMock(side_effect=set_config_value),
+    )
     unit_of_work = SimpleNamespace(
         product_category_repo=SimpleNamespace(
             list_by_active=AsyncMock(return_value=[category])
         ),
         product_repo=SimpleNamespace(list=AsyncMock(return_value=[product])),
         offer_repo=SimpleNamespace(list=AsyncMock(return_value=[])),
-        app_config_repo=SimpleNamespace(set_value=AsyncMock()),
+        app_config_repo=app_config_repo,
         commit=AsyncMock(),
     )
 
@@ -215,6 +261,67 @@ def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
     assert pointer["catalogo_url"] == f"https://cdn.example.test/{catalog_key}"
     assert result.catalogo_version == expected_hash
     assert result.catalogo_url == pointer["catalogo_url"]
+    assert result.actualizado is True
     assert images == []
-    unit_of_work.app_config_repo.set_value.assert_awaited_once()
+    assert app_config_repo.set_value.await_count == 3
     unit_of_work.commit.assert_awaited_once()
+
+    first_published_at = result.publicado_en
+    unchanged_result = asyncio.run(
+        PublicCatalogService(storage=storage, uploads_root=tmp_path).publish(unit_of_work)
+    )
+
+    assert unchanged_result.actualizado is False
+    assert unchanged_result.publicado_en == first_published_at
+    assert unchanged_result.catalogo_version == result.catalogo_version
+    assert storage.publish.call_count == 1
+    unit_of_work.commit.assert_awaited_once()
+
+
+def test_publish_skips_previously_uploaded_content_hashed_images(tmp_path: Path):
+    uploads = tmp_path / "uploads"
+    uploads.mkdir()
+    image = uploads / "pizza.jpg"
+    image.write_bytes(b"image")
+    category = SimpleNamespace(id=1, nombre="Pizzas", activo=True)
+    product = SimpleNamespace(
+        id=10,
+        nombre="Muzzarella",
+        categoria_id=1,
+        activo=True,
+        imagen=str(image),
+        precios=[SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("12000"))],
+    )
+    config_values = {}
+
+    async def set_config_value(key, value):
+        config_values[key] = SimpleNamespace(value=value)
+        return config_values[key]
+
+    app_config_repo = SimpleNamespace(
+        get_by_key=AsyncMock(side_effect=lambda key: config_values.get(key)),
+        set_value=AsyncMock(side_effect=set_config_value),
+    )
+    unit_of_work = SimpleNamespace(
+        product_category_repo=SimpleNamespace(
+            list_by_active=AsyncMock(return_value=[category])
+        ),
+        product_repo=SimpleNamespace(list=AsyncMock(return_value=[product])),
+        offer_repo=SimpleNamespace(list=AsyncMock(return_value=[])),
+        app_config_repo=app_config_repo,
+        commit=AsyncMock(),
+    )
+    storage = Mock()
+    storage.object_url.side_effect = lambda key: f"https://cdn.example.test/{key}"
+    service = PublicCatalogService(storage=storage, uploads_root=uploads)
+
+    first_result = asyncio.run(service.publish(unit_of_work))
+    product.precios[0].precio = Decimal("13000")
+    second_result = asyncio.run(service.publish(unit_of_work))
+
+    first_uploads = storage.publish.call_args_list[0].args[3]
+    second_uploads = storage.publish.call_args_list[1].args[3]
+    assert first_result.actualizado is True
+    assert second_result.actualizado is True
+    assert len(first_uploads) == 1
+    assert second_uploads == []

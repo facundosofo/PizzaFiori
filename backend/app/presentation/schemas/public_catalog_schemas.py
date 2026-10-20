@@ -61,6 +61,7 @@ class PublicCatalogPublishResponse(BaseModel):
     categorias: int
     productos: int
     ofertas: int
+    actualizado: bool
 
 
 class PublicCatalogPublishStatus(BaseModel):

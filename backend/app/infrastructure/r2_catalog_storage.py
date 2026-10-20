@@ -1,5 +1,6 @@
 import logging
 import mimetypes
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Sequence, Tuple
 from urllib.parse import urlparse
@@ -9,6 +10,7 @@ from app.infrastructure.config.settings import Settings, settings
 
 logger = logging.getLogger(__name__)
 CATALOG_MAX_AGE_SECONDS = 15_552_000
+MAX_PARALLEL_IMAGE_UPLOADS = 4
 
 
 class CatalogStorageConfigurationError(Exception):
@@ -99,18 +101,26 @@ class R2CatalogStorage:
                 config=Config(signature_version="s3v4"),
             )
 
-            for image_path, object_key, content_type in images:
-                client.upload_file(
-                    str(image_path),
-                    self.config.r2_bucket_name,
-                    object_key,
-                    ExtraArgs={
-                        "ContentType": content_type,
-                        "CacheControl": (
-                            f"public, max-age={CATALOG_MAX_AGE_SECONDS}, immutable"
-                        ),
-                    },
-                )
+            if images:
+                worker_count = min(MAX_PARALLEL_IMAGE_UPLOADS, len(images))
+                with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                    uploads = [
+                        executor.submit(
+                            client.upload_file,
+                            str(image_path),
+                            self.config.r2_bucket_name,
+                            object_key,
+                            ExtraArgs={
+                                "ContentType": content_type,
+                                "CacheControl": (
+                                    f"public, max-age={CATALOG_MAX_AGE_SECONDS}, immutable"
+                                ),
+                            },
+                        )
+                        for image_path, object_key, content_type in images
+                    ]
+                    for upload in as_completed(uploads):
+                        upload.result()
 
             client.put_object(
                 Bucket=self.config.r2_bucket_name,

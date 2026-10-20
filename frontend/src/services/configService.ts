@@ -10,9 +10,12 @@ export interface CatalogPublishStatus {
 
 export interface CatalogPublishResult {
   publicado_en: string;
+  catalogo_version: string;
+  catalogo_url: string;
   categorias: number;
   productos: number;
   ofertas: number;
+  actualizado: boolean;
 }
 
 export const getCatalogPublishStatus = async (): Promise<CatalogPublishStatus> => {

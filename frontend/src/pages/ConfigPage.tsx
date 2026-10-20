@@ -324,8 +324,11 @@ export default function ConfigPage() {
                 {catalogResult && (
                   <div className="success-message" role="status">
                     <Icons.CheckIcon size={18} />
-                    Catálogo publicado: {catalogResult.productos} productos,{" "}
-                    {catalogResult.categorias} categorías y {catalogResult.ofertas} ofertas.
+                    {catalogResult.actualizado
+                      ? "Catálogo actualizado"
+                      : "El catálogo ya estaba actualizado"}
+                    : {catalogResult.productos} productos, {catalogResult.categorias}{" "}
+                    categorías y {catalogResult.ofertas} ofertas.
                   </div>
                 )}
               </div>

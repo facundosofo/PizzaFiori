@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,6 +30,9 @@ from app.presentation.schemas.public_catalog_schemas import (
 
 logger = logging.getLogger(__name__)
 CATALOG_PUBLISHED_AT_KEY = "public_catalog_published_at"
+CATALOG_CONTENT_HASH_KEY = "public_catalog_content_hash"
+CATALOG_VERSION_KEY = "public_catalog_version"
+CATALOG_IMAGE_KEY_PREFIX = "public_catalog_image_"
 
 
 def build_public_catalog(
@@ -143,6 +147,13 @@ class PublicCatalogService:
         categories = await uow.product_category_repo.list_by_active(activo=True)
         products = await uow.product_repo.list(active=True)
         offers = await uow.offer_repo.list(active=True)
+        published_at_config = await uow.app_config_repo.get_by_key(
+            CATALOG_PUBLISHED_AT_KEY
+        )
+        content_hash_config = await uow.app_config_repo.get_by_key(
+            CATALOG_CONTENT_HASH_KEY
+        )
+        version_config = await uow.app_config_repo.get_by_key(CATALOG_VERSION_KEY)
         active_category_ids = {category.id for category in categories}
 
         sellable_products = [
@@ -159,6 +170,29 @@ class PublicCatalogService:
             image_urls,
             published_at,
         )
+        content_hash = self._catalog_content_hash(catalog)
+        previously_published_at = decode_publish_timestamp(
+            published_at_config.value if published_at_config else None
+        )
+        if (
+            content_hash_config
+            and content_hash_config.value == content_hash
+            and version_config
+            and version_config.value
+            and previously_published_at
+        ):
+            return PublicCatalogPublishResponse(
+                publicado_en=previously_published_at,
+                catalogo_version=version_config.value,
+                catalogo_url=self.storage.object_url(
+                    f"catalogo/{version_config.value}.json"
+                ),
+                categorias=len(catalog.categorias),
+                productos=len(catalog.productos),
+                ofertas=len(catalog.ofertas),
+                actualizado=False,
+            )
+
         catalog_json = catalog.model_dump_json(by_alias=True).encode("utf-8")
         catalog_version = hashlib.sha256(catalog_json).hexdigest()
         catalog_key = f"catalogo/{catalog_version}.json"
@@ -169,18 +203,31 @@ class PublicCatalogService:
             catalogo_url=catalog_url,
         ).model_dump_json(by_alias=True).encode("utf-8")
 
+        images_to_upload = []
+        for image in image_objects:
+            image_config_key = self._image_config_key(image[1])
+            if await uow.app_config_repo.get_by_key(image_config_key) is None:
+                images_to_upload.append(image)
+
         await asyncio.to_thread(
             self.storage.publish,
             catalog_json,
             catalog_key,
             pointer_json,
-            image_objects,
+            images_to_upload,
         )
 
+        for _, object_key, _ in images_to_upload:
+            await uow.app_config_repo.set_value(
+                self._image_config_key(object_key),
+                object_key,
+            )
         await uow.app_config_repo.set_value(
             CATALOG_PUBLISHED_AT_KEY,
             published_at.isoformat(),
         )
+        await uow.app_config_repo.set_value(CATALOG_CONTENT_HASH_KEY, content_hash)
+        await uow.app_config_repo.set_value(CATALOG_VERSION_KEY, catalog_version)
         await uow.commit()
 
         return PublicCatalogPublishResponse(
@@ -190,7 +237,27 @@ class PublicCatalogService:
             categorias=len(catalog.categorias),
             productos=len(catalog.productos),
             ofertas=len(catalog.ofertas),
+            actualizado=True,
         )
+
+    @staticmethod
+    def _catalog_content_hash(catalog: PublicCatalogResponse) -> str:
+        content = catalog.model_dump(
+            mode="json",
+            by_alias=True,
+            exclude={"publicado_en"},
+        )
+        serialized_content = json.dumps(
+            content,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(serialized_content).hexdigest()
+
+    @staticmethod
+    def _image_config_key(object_key: str) -> str:
+        return f"{CATALOG_IMAGE_KEY_PREFIX}{Path(object_key).name}"
 
     async def _prepare_images(
         self,
@@ -199,6 +266,7 @@ class PublicCatalogService:
         image_urls: Dict[int, str] = {}
         image_objects: List[Tuple[Path, str, str]] = []
         prepared_by_path: Dict[Path, Tuple[str, str]] = {}
+        prepared_by_key: Dict[str, Tuple[Path, str]] = {}
 
         for product in products:
             if not product.imagen:
@@ -216,7 +284,9 @@ class PublicCatalogService:
                 extension = ".jpg" if content_type == "image/jpeg" else ".png"
                 object_key = f"catalogo/imagenes/{digest}{extension}"
                 prepared_by_path[image_path] = (object_key, content_type)
-                image_objects.append((image_path, object_key, content_type))
+                if object_key not in prepared_by_key:
+                    prepared_by_key[object_key] = (image_path, content_type)
+                    image_objects.append((image_path, object_key, content_type))
 
             object_key, _ = prepared_by_path[image_path]
             image_urls[product.id] = self.storage.object_url(object_key)
