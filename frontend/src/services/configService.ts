@@ -4,6 +4,27 @@ export interface RecargoConfig {
   porcentaje_recargo: number;
 }
 
+export interface CatalogPublishStatus {
+  publicado_en: string | null;
+}
+
+export interface CatalogPublishResult {
+  publicado_en: string;
+  categorias: number;
+  productos: number;
+  ofertas: number;
+}
+
+export const getCatalogPublishStatus = async (): Promise<CatalogPublishStatus> => {
+  const response = await api.get<CatalogPublishStatus>("/config/catalog/status");
+  return response.data;
+};
+
+export const publishCatalog = async (): Promise<CatalogPublishResult> => {
+  const response = await api.post<CatalogPublishResult>("/config/catalog/publish");
+  return response.data;
+};
+
 /**
  * Get current surcharge percentage configuration
  */

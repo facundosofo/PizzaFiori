@@ -26,6 +26,7 @@ PUBLIC_ROUTES = {
 API_PREFIXES = (
     "/auth/",
     "/auth",
+    "/config",
     "/users",
     "/productos",
     "/productos-categorias",

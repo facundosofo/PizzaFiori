@@ -7,6 +7,20 @@ from app.presentation.schemas.config_schemas import (
     RecargoConfigResponse,
     RecargoConfigUpdateRequest,
 )
+from app.application.public_catalog_service import (
+    CATALOG_PUBLISHED_AT_KEY,
+    PublicCatalogService,
+    decode_publish_timestamp,
+)
+from app.infrastructure.r2_catalog_storage import (
+    CatalogStorageConfigurationError,
+    CatalogStorageError,
+)
+from app.infrastructure.logging import get_logger
+from app.presentation.schemas.public_catalog_schemas import (
+    PublicCatalogPublishResponse,
+    PublicCatalogPublishStatus,
+)
 
 router = APIRouter(
     prefix="/config",
@@ -16,6 +30,7 @@ router = APIRouter(
 
 DEFAULT_RECARGO_PERCENTAGE = 10
 RECARGO_KEY = "recargo_transferencia"
+catalog_logger = get_logger("catalog.publish")
 
 
 @router.get(
@@ -60,3 +75,45 @@ async def update_recargo_config(
         config = await unit.app_config_repo.set_value(RECARGO_KEY, str(body.porcentaje_recargo))
         await unit.commit()
         return RecargoConfigResponse(porcentaje_recargo=float(config.value))
+
+
+@router.get(
+    "/catalog/status",
+    response_model=PublicCatalogPublishStatus,
+    summary="Consultar el estado de publicación del catálogo",
+)
+async def get_catalog_publish_status(
+    _admin: dict = Depends(require_admin),
+    uow=Depends(get_uow),
+):
+    config = await uow.app_config_repo.get_by_key(CATALOG_PUBLISHED_AT_KEY)
+    return PublicCatalogPublishStatus(
+        publicado_en=decode_publish_timestamp(config.value if config else None)
+    )
+
+
+@router.post(
+    "/catalog/publish",
+    response_model=PublicCatalogPublishResponse,
+    summary="Publicar el catálogo público en Cloudflare R2",
+    responses={
+        409: {"description": "Falta una imagen local o no se puede publicar"},
+        502: {"description": "Error al publicar los objetos en R2"},
+        503: {"description": "R2 no está configurado"},
+    },
+)
+async def publish_public_catalog(
+    _admin: dict = Depends(require_admin),
+    uow=Depends(get_uow),
+):
+    try:
+        return await PublicCatalogService().publish(uow)
+    except CatalogStorageConfigurationError as exc:
+        catalog_logger.error("Configuración de publicación del catálogo incompleta", error=str(exc))
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        catalog_logger.error("No se pudo encontrar una imagen del catálogo", error=str(exc))
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except CatalogStorageError as exc:
+        catalog_logger.error("No se pudo publicar el catálogo", error=str(exc))
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc

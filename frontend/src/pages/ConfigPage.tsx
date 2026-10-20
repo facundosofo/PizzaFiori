@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
-import { getRecargoConfig, updateRecargoConfig } from "../services/configService";
+import {
+  getCatalogPublishStatus,
+  getRecargoConfig,
+  publishCatalog,
+  updateRecargoConfig,
+  type CatalogPublishResult,
+} from "../services/configService";
 import ErrorAlert from "../components/shared/ErrorAlert";
 import * as Icons from "../components/shared/Icons";
 import "../styles/shared/page-header.css";
@@ -31,16 +37,24 @@ export default function ConfigPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [catalogPublishedAt, setCatalogPublishedAt] = useState<string | null>(null);
+  const [catalogPublishing, setCatalogPublishing] = useState(false);
+  const [catalogResult, setCatalogResult] = useState<CatalogPublishResult | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadConfig = async () => {
       try {
         setLoading(true);
         setError(null);
-        const config = await getRecargoConfig();
+        const [config, catalogStatus] = await Promise.all([
+          getRecargoConfig(),
+          getCatalogPublishStatus(),
+        ]);
         const value = String(config.porcentaje_recargo ?? "10");
         setConfigValues({ recargo_transferencia: value });
         setOriginalValues({ recargo_transferencia: value });
+        setCatalogPublishedAt(catalogStatus.publicado_en);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido";
         setError(errorMessage);
@@ -97,6 +111,22 @@ export default function ConfigPage() {
       setError(errorMessage);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePublishCatalog = async () => {
+    try {
+      setCatalogError(null);
+      setCatalogResult(null);
+      setCatalogPublishing(true);
+      const result = await publishCatalog();
+      setCatalogPublishedAt(result.publicado_en);
+      setCatalogResult(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al publicar el catálogo";
+      setCatalogError(errorMessage);
+    } finally {
+      setCatalogPublishing(false);
     }
   };
 
@@ -238,8 +268,71 @@ export default function ConfigPage() {
             </div>
           </div>
         </motion.div>
+
+        <motion.div
+          className="config-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <div className="config-card">
+            <div className="config-card-header">
+              <div className="config-card-title-group">
+                <div className="config-card-icon">
+                  <Icons.SaveIcon size={24} />
+                </div>
+                <div>
+                  <h2 className="config-card-title">Catálogo para pedidos</h2>
+                  <p className="config-card-description">
+                    Publica en la web de pedidos los productos, precios e imágenes disponibles.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="config-card-body">
+              <div className="catalog-publish-panel">
+                <p className="catalog-published-at">
+                  Última publicación:{" "}
+                  <strong>
+                    {catalogPublishedAt
+                      ? new Date(catalogPublishedAt).toLocaleString()
+                      : "Todavía no se publicó"}
+                  </strong>
+                </p>
+                {catalogError && (
+                  <ErrorAlert
+                    message={catalogError}
+                    onClose={() => setCatalogError(null)}
+                  />
+                )}
+                <div className="form-actions">
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={handlePublishCatalog}
+                    disabled={catalogPublishing || loading}
+                  >
+                    {catalogPublishing ? (
+                      <>
+                        <Icons.SpinnerIcon size={16} /> Publicando...
+                      </>
+                    ) : (
+                      "Publicar catálogo"
+                    )}
+                  </button>
+                </div>
+                {catalogResult && (
+                  <div className="success-message" role="status">
+                    <Icons.CheckIcon size={18} />
+                    Catálogo publicado: {catalogResult.productos} productos,{" "}
+                    {catalogResult.categorias} categorías y {catalogResult.ofertas} ofertas.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
 }
-

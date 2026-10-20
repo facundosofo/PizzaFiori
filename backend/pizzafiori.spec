@@ -35,6 +35,8 @@ extra_datas, extra_bins, extra_hidden = _collect(
     'pydantic_settings',
     'alembic',
     'matplotlib',
+    'boto3',
+    'botocore',
 )
 
 a = Analysis(

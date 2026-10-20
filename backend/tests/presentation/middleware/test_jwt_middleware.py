@@ -160,4 +160,6 @@ def test_is_public_route_for_known_public_paths():
 def test_is_public_route_for_api_prefixes_and_spa_routes():
     assert JWTMiddleware._is_public_route("/stock") is False
     assert JWTMiddleware._is_public_route("/stock/movements") is False
+    assert JWTMiddleware._is_public_route("/config") is False
+    assert JWTMiddleware._is_public_route("/config/catalog/publish") is False
     assert JWTMiddleware._is_public_route("/mi-pagina-react") is True

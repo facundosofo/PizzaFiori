@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
   const proxyRoutes = [
     '/auth',
     '/audit',
+    '/config',
     '/dashboard',
     '/gastos',
     '/gastos-categorias',
