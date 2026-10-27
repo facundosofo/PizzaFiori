@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   AlertCircle,
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   Check,
   Clock3,
   CreditCard,
@@ -30,6 +32,12 @@ import {
 
 const POINTER_URL = import.meta.env.VITE_CATALOG_POINTER_URL ?? "";
 const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE ?? "";
+const HIDDEN_CATEGORY_NAMES = new Set(
+  (import.meta.env.VITE_HIDDEN_CATEGORIES ?? "")
+    .split(",")
+    .map((name) => name.trim().toLocaleLowerCase("es-AR"))
+    .filter(Boolean),
+);
 const PLACEHOLDER_IMAGE = "/logo.png";
 const THEME_STORAGE_KEY = "pizza-fiori-theme";
 type Theme = "light" | "dark";
@@ -188,27 +196,30 @@ function buildWhatsAppMessage(
   const fulfillmentLabel = order.fulfillment === "delivery" ? "Delivery" : "Retiro por el local";
   const deliveryLines =
     order.fulfillment === "delivery"
-      ? [`Dirección: ${order.address.trim()}`]
+      ? [`\u{1F4CD} *Dirección:* ${order.address.trim()}`]
       : [];
 
   return [
-    "Hola! Quiero hacer un pedido en PIZZA FIORI.",
+    "\u{1F355} *¡Hola, Pizza Fiori!* Quiero hacer este pedido:",
     "",
-    "PRODUCTOS",
+    "\u{1F6D2} *MI PEDIDO*",
     "",
     ...productLines,
-    `Subtotal: ${formatCents(totalCents)}`,
-    "Envío: A confirmar",
-    `Total estimado: ${formatCents(totalCents)}`,
     "",
-    `Nombre: ${order.name.trim()}`,
-    `Entrega: ${fulfillmentLabel}`,
+    `\u{1F4B0} *Subtotal:* ${formatCents(totalCents)}`,
+    "\u{1F6F5} *Envío:* A confirmar",
+    `\u{1F4B5} *Total estimado:* ${formatCents(totalCents)}`,
+    "",
+    "*_Los importes y el envío quedan sujetos a confirmación del local._*",
+    "",
+    "\u{1F4CB} *DATOS DEL PEDIDO*",
+    `\u{1F464} *Nombre:* ${order.name.trim()}`,
+    `\u{1F3E0} *Entrega:* ${fulfillmentLabel}`,
     ...deliveryLines,
-    `Pago: ${order.paymentMethod}`,
-    `Observaciones: ${order.notes.trim() || "Sin observaciones"}`,
+    `\u{1F4B3} *Pago:* ${order.paymentMethod}`,
+    `\u{1F4DD} *Observaciones:* ${order.notes.trim() || "Sin observaciones"}`,
     "",
-    "Los importes y el envío quedan sujetos a confirmación del local.",
-    "Quedo atento a la confirmación. Gracias!",
+    "\u{1F64F} Quedo atento a la confirmación. ¡Muchas gracias!",
   ].join("\n");
 }
 
@@ -317,15 +328,20 @@ function CartAndCheckout({
   setCart,
   order,
   setOrder,
+  isOpen,
+  onClose,
 }: {
   catalog: PublicCatalog;
   cart: CartItem[];
   setCart: (cart: CartItem[]) => void;
   order: OrderForm;
   setOrder: (order: OrderForm) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }) {
   const [errors, setErrors] = useState<OrderFormErrors>({});
   const [validated, setValidated] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState<"cart" | "details" | "confirm">("cart");
   const whatsappPhone = normalizeWhatsAppPhone(WHATSAPP_PHONE);
   const products = new Map(catalog.productos.map((product) => [product.id, product]));
   const offers = new Map(catalog.ofertas.map((offer) => [offer.id, offer]));
@@ -360,9 +376,19 @@ function CartAndCheckout({
   const whatsappMessage = validated
     ? buildWhatsAppMessage(resolvedCart, order, totalCents)
     : "";
+  const encodedWhatsAppMessage = encodeURIComponent(whatsappMessage).replace(/\*/g, "%2A");
   const whatsappUrl = whatsappPhone
-    ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(whatsappMessage)}`
+    ? `https://wa.me/${whatsappPhone}?text=${encodedWhatsAppMessage}`
     : null;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
 
   const updateCount = (target: CartItem, adjustment: number) => {
     setCart(cart.flatMap((item) => {
@@ -401,15 +427,94 @@ function CartAndCheckout({
       nextErrors.paymentMethod = "Elegí un medio de pago.";
     }
     setErrors(nextErrors);
-    setValidated(Object.keys(nextErrors).length === 0);
+    const isValid = Object.keys(nextErrors).length === 0;
+    setValidated(isValid);
+    if (isValid) {
+      setCheckoutStep("confirm");
+      requestAnimationFrame(() => {
+        document.getElementById("pedido")?.scrollTo({
+          top: 0,
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "instant"
+            : "smooth",
+        });
+      });
+    }
   };
 
+  const changeCheckoutStep = (step: "cart" | "details" | "confirm") => {
+    setCheckoutStep(step);
+    requestAnimationFrame(() => {
+      document.getElementById("pedido")?.scrollTo({
+        top: 0,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      });
+    });
+  };
+
+  const closeCheckout = () => {
+    setCheckoutStep("cart");
+    onClose();
+  };
+
+  const navigateFromCheckout = (targetId: string) => {
+    closeCheckout();
+    requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      });
+    });
+  };
+
+  const returnToMenu = () => navigateFromCheckout("menu");
+
+  if (!isOpen) return null;
+
   return (
-    <section className="order-section" id="pedido" aria-labelledby="order-title">
+    <section
+      className="order-section checkout-fullscreen"
+      id="pedido"
+      aria-labelledby="order-title"
+    >
+      <div className="checkout-topbar">
+        <div className="checkout-topbar-inner">
+          <a
+            className="checkout-brand"
+            href="#inicio"
+            onClick={(event) => {
+              event.preventDefault();
+              navigateFromCheckout("inicio");
+            }}
+          >
+            <span className="brand-pizza">PIZZA</span>{" "}
+            <strong className="brand-fiori">FIORI</strong>
+          </a>
+          <button className="checkout-exit" type="button" onClick={returnToMenu}>
+            <ArrowLeft size={17} aria-hidden="true" />
+            Volver al menú
+          </button>
+        </div>
+      </div>
       <div className="section-heading order-heading">
         <div>
-          <span className="eyebrow">TU SELECCIÓN</span>
-          <h2 id="order-title">Revisá tu pedido</h2>
+          <span className="eyebrow">
+            {checkoutStep === "cart"
+              ? "PASO 1 DE 3"
+              : checkoutStep === "details"
+                ? "PASO 2 DE 3"
+                : "PASO 3 DE 3"}
+          </span>
+          <h2 id="order-title">
+            {checkoutStep === "cart"
+              ? "Tu pedido"
+              : checkoutStep === "details"
+                ? "Datos de entrega"
+                : "Confirmación"}
+          </h2>
         </div>
         {totalItems > 0 && (
           <span className="order-item-count">
@@ -425,14 +530,60 @@ function CartAndCheckout({
           </span>
           <h3>Tu pedido está vacío</h3>
           <p>Elegí una presentación del menú para empezar.</p>
-          <a className="text-link" href="#menu">Volver al menú</a>
+          <a
+            className="text-link"
+            href="#menu"
+            onClick={(event) => {
+              event.preventDefault();
+              returnToMenu();
+            }}
+          >
+            Volver al menú
+          </a>
         </div>
       ) : (
-        <div className="checkout-layout">
+        <>
+          <nav className="checkout-steps" aria-label="Pasos del pedido">
+            <div
+              className={`checkout-step${checkoutStep === "cart" ? " active" : " complete"}`}
+              aria-current={checkoutStep === "cart" ? "step" : undefined}
+            >
+              <span>{checkoutStep !== "cart" ? <Check size={15} aria-hidden="true" /> : "1"}</span>
+              <strong>Carrito</strong>
+            </div>
+            <div className="checkout-step-divider" aria-hidden="true" />
+            <div
+              className={`checkout-step${checkoutStep === "details" ? " active" : checkoutStep === "confirm" ? " complete" : ""}`}
+              aria-current={checkoutStep === "details" ? "step" : undefined}
+            >
+              <span>{checkoutStep === "confirm" ? <Check size={15} aria-hidden="true" /> : "2"}</span>
+              <strong>Entrega y pago</strong>
+            </div>
+            <div className="checkout-step-divider" aria-hidden="true" />
+            <div
+              className={`checkout-step${checkoutStep === "confirm" ? " active" : ""}`}
+              aria-current={checkoutStep === "confirm" ? "step" : undefined}
+            >
+              <span>3</span>
+              <strong>Confirmación</strong>
+            </div>
+          </nav>
+
+          {checkoutStep === "cart" ? (
+            <div className="cart-stage">
           <div className="cart-card">
             <div className="cart-card-heading">
               <h3>Tu carrito</h3>
-              <a className="text-link" href="#menu">Seguir mirando</a>
+              <a
+                className="text-link"
+                href="#menu"
+                onClick={(event) => {
+                  event.preventDefault();
+                  returnToMenu();
+                }}
+              >
+                Seguir mirando
+              </a>
             </div>
             <div className="cart-lines">
               {resolvedCart.map((item) => (
@@ -513,96 +664,39 @@ function CartAndCheckout({
               <p>Envío y total final a confirmar por el local.</p>
             </div>
           </div>
-
-          {validated ? (
-            <section className="order-review" aria-labelledby="order-review-title">
-              <div className="form-title">
-                <span className="state-icon">
-                  <Check size={22} aria-hidden="true" />
-                </span>
-                <div>
-                  <h3 id="order-review-title">Revisá tu pedido</h3>
-                </div>
-              </div>
-              <ul className="review-products">
-                {resolvedCart.map((item) => (
-                  <li key={item.key}>
-                    <span>
-                      {item.type === "product"
-                        ? `${item.count} x ${item.product.nombre}`
-                        : `${item.count} x Promo: ${item.offer.nombre}`}
-                      {item.type === "product" ? (
-                        <small>{formatProductPresentation(item.presentation)}</small>
-                      ) : (
-                        <small>
-                          {item.selections.map(formatOfferSelection).join(", ")}
-                        </small>
-                      )}
-                    </span>
-                    <strong>{formatCents(item.subtotalCents)}</strong>
-                  </li>
-                ))}
-              </ul>
-              <dl className="review-details">
-                <div>
-                  <dt>Nombre</dt>
-                  <dd>{order.name.trim()}</dd>
-                </div>
-                <div>
-                  <dt>Entrega</dt>
-                  <dd>
-                    {order.fulfillment === "delivery"
-                      ? `Delivery · ${order.address.trim()}`
-                      : "Retiro por el local"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Medio de pago</dt>
-                  <dd>{order.paymentMethod}</dd>
-                </div>
-                <div>
-                  <dt>Observaciones</dt>
-                  <dd>{order.notes.trim() || "Sin observaciones"}</dd>
-                </div>
-              </dl>
-              <div className="order-review-totals">
-                <div><span>Subtotal</span><strong>{formatCents(totalCents)}</strong></div>
-                <div><span>Envío</span><strong>A confirmar</strong></div>
-                <div className="review-total">
-                  <span>Total estimado</span>
-                  <strong>{formatCents(totalCents)}</strong>
-                </div>
-              </div>
-              {whatsappUrl ? (
+              <div className="cart-stage-actions">
                 <a
-                  className="whatsapp-button"
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  className="back-to-menu"
+                  href="#menu"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    returnToMenu();
+                  }}
                 >
-                  <MessageCircle size={19} aria-hidden="true" />
-                  Continuar a WhatsApp
+                  <ArrowLeft size={16} aria-hidden="true" />
+                  Seguir mirando
                 </a>
-              ) : (
-                <p className="whatsapp-config-error" role="alert">
-                  Falta configurar un número de WhatsApp válido en{" "}
-                  <code>VITE_WHATSAPP_PHONE</code> para habilitar el envío.
-                </p>
-              )}
-              <p className="whatsapp-disclaimer" role="note">
-                Se abrirá WhatsApp. Tocá «Enviar» para hacer el pedido; el local
-                confirmará disponibilidad y envío.
-              </p>
-              <button
-                className="edit-order-button"
-                type="button"
-                onClick={() => setValidated(false)}
-              >
-                Volver a editar los datos
-              </button>
-            </section>
-          ) : (
-          <form className="order-form" onSubmit={validateOrder} noValidate>
+                <button
+                  className="continue-button"
+                  type="button"
+                  onClick={() => changeCheckoutStep("details")}
+                >
+                  Continuar
+                  <ArrowRight size={17} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          ) : checkoutStep === "details" ? (
+            <div className="details-stage">
+              <div className="checkout-summary">
+                <ShoppingBag size={18} aria-hidden="true" />
+                <span>
+                  {totalItems} {totalItems === 1 ? "producto" : "productos"} en tu pedido
+                </span>
+                <strong>{formatCents(totalCents)}</strong>
+              </div>
+
+              <form className="order-form" onSubmit={validateOrder} noValidate>
             <div className="form-title">
               <span className="state-icon">
                 <Truck size={22} aria-hidden="true" />
@@ -719,15 +813,133 @@ function CartAndCheckout({
               />
             </div>
 
-            <button className="continue-button" type="submit">
-              Revisar pedido <ArrowDown size={17} aria-hidden="true" />
-            </button>
+            <div className="details-navigation">
+              <button
+                className="back-to-cart-button"
+                type="button"
+                onClick={() => changeCheckoutStep("cart")}
+              >
+                <ArrowLeft size={16} aria-hidden="true" />
+                Volver
+              </button>
+              <button className="continue-button" type="submit">
+                Revisar pedido <ArrowRight size={17} aria-hidden="true" />
+              </button>
+            </div>
             <p className="form-footnote">
               No se solicitan datos de tarjeta ni se realizan pagos en línea.
             </p>
-          </form>
+              </form>
+            </div>
+          ) : (
+            <div className="details-stage">
+              <div className="checkout-summary">
+                <ShoppingBag size={18} aria-hidden="true" />
+                <span>
+                  {totalItems} {totalItems === 1 ? "producto" : "productos"} en tu pedido
+                </span>
+                <strong>{formatCents(totalCents)}</strong>
+              </div>
+              <section className="order-review" aria-labelledby="order-review-title">
+              <div className="form-title">
+                <span className="state-icon">
+                  <Check size={22} aria-hidden="true" />
+                </span>
+                <div>
+                  <h3 id="order-review-title">Revisá y confirmá tu pedido</h3>
+                </div>
+              </div>
+              <ul className="review-products">
+                {resolvedCart.map((item) => (
+                  <li key={item.key}>
+                    <span>
+                      {item.type === "product"
+                        ? `${item.count} x ${item.product.nombre}`
+                        : `${item.count} x Promo: ${item.offer.nombre}`}
+                      {item.type === "product" ? (
+                        <small>{formatProductPresentation(item.presentation)}</small>
+                      ) : (
+                        <small>
+                          {item.selections.map(formatOfferSelection).join(", ")}
+                        </small>
+                      )}
+                    </span>
+                    <strong>{formatCents(item.subtotalCents)}</strong>
+                  </li>
+                ))}
+              </ul>
+              <dl className="review-details">
+                <div>
+                  <dt>Nombre</dt>
+                  <dd>{order.name.trim()}</dd>
+                </div>
+                <div>
+                  <dt>Entrega</dt>
+                  <dd>
+                    {order.fulfillment === "delivery"
+                      ? `Delivery · ${order.address.trim()}`
+                      : "Retiro por el local"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Medio de pago</dt>
+                  <dd>{order.paymentMethod}</dd>
+                </div>
+                <div>
+                  <dt>Observaciones</dt>
+                  <dd>{order.notes.trim() || "Sin observaciones"}</dd>
+                </div>
+              </dl>
+              <div className="order-review-totals">
+                <div><span>Subtotal</span><strong>{formatCents(totalCents)}</strong></div>
+                <div><span>Envío</span><strong>A confirmar</strong></div>
+                <div className="review-total">
+                  <span>Total estimado</span>
+                  <strong>{formatCents(totalCents)}</strong>
+                </div>
+              </div>
+              {whatsappUrl ? (
+                <a
+                  className="whatsapp-button"
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle size={19} aria-hidden="true" />
+                  Enviar pedido por WhatsApp
+                </a>
+              ) : (
+                <p className="whatsapp-config-error" role="alert">
+                  Falta configurar un número de WhatsApp válido en{" "}
+                  <code>VITE_WHATSAPP_PHONE</code> para habilitar el envío.
+                </p>
+              )}
+              <p className="whatsapp-disclaimer" role="note">
+                Se abrirá WhatsApp. Tocá «Enviar» para hacer el pedido; el local
+                confirmará disponibilidad y envío.
+              </p>
+              <button
+                className="edit-order-button"
+                type="button"
+                onClick={() => {
+                  setValidated(false);
+                  changeCheckoutStep("details");
+                }}
+              >
+                Editar datos
+              </button>
+              <button
+                className="back-to-cart-button"
+                type="button"
+                onClick={() => changeCheckoutStep("cart")}
+              >
+                <ArrowLeft size={16} aria-hidden="true" />
+                Volver al carrito
+              </button>
+              </section>
+            </div>
           )}
-        </div>
+        </>
       )}
     </section>
   );
@@ -1069,6 +1281,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [order, setOrder] = useState<OrderForm>({
     name: "",
     fulfillment: "",
@@ -1085,6 +1298,11 @@ function App() {
       return grouped;
     }, new Map<number, CatalogProduct[]>());
   }, [catalog]);
+  const visibleCategories = catalog?.categorias.filter(
+    (category) =>
+      productsByCategory.has(category.id) &&
+      !HIDDEN_CATEGORY_NAMES.has(category.nombre.trim().toLocaleLowerCase("es-AR")),
+  ) ?? [];
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -1124,7 +1342,7 @@ function App() {
     };
   }, [attempt]);
 
-  const hasProducts = Boolean(catalog?.productos.length);
+  const hasProducts = visibleCategories.length > 0 || Boolean(catalog?.ofertas.length);
   const cartItemCount = cart.reduce((count, item) => count + item.count, 0);
   const cartTotalCents = cart.reduce((total, item) => {
     if (!catalog) return total;
@@ -1187,12 +1405,7 @@ function App() {
   };
 
   const goToCart = () => {
-    document.getElementById("pedido")?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "instant"
-        : "smooth",
-      block: "start",
-    });
+    setIsCheckoutOpen(true);
   };
 
   return (
@@ -1243,12 +1456,10 @@ function App() {
           </div>
           <div className="hero-art" aria-hidden="true">
             <div className="hero-brand-seal">
-              <span className="hero-seal-top">DAL FORNO AL CUORE</span>
               <div className="hero-seal-name">
                 <span>PIZZA</span>
                 <strong>FIORI</strong>
               </div>
-              <span className="hero-seal-rule" />
               <span className="hero-seal-bottom">FRESCO · CASERO · FIORI</span>
             </div>
             <span className="hero-seal-spark spark-one">✳</span>
@@ -1308,13 +1519,11 @@ function App() {
                     Promos
                   </a>
                 )}
-                {catalog.categorias
-                  .filter((category) => productsByCategory.has(category.id))
-                  .map((category) => (
-                    <a key={category.id} href={`#categoria-${category.id}`}>
-                      {category.nombre}
-                    </a>
-                  ))}
+                {visibleCategories.map((category) => (
+                  <a key={category.id} href={`#categoria-${category.id}`}>
+                    {category.nombre}
+                  </a>
+                ))}
               </nav>
               {catalog.ofertas.length > 0 && (
                 <section
@@ -1341,38 +1550,36 @@ function App() {
                 </section>
               )}
               <div className="category-list">
-                {catalog.categorias
-                  .filter((category) => productsByCategory.has(category.id))
-                  .map((category) => (
-                    <section
-                      className="category-section"
-                      id={`categoria-${category.id}`}
-                      key={category.id}
-                    >
-                      <div className="category-heading">
-                        <span className="category-flower" aria-hidden="true">
-                          ✳
-                        </span>
-                        <h3>{category.nombre}</h3>
-                        <span className="category-count">
-                          {productsByCategory.get(category.id)?.length ?? 0}{" "}
-                          {productsByCategory.get(category.id)?.length === 1
-                            ? "opción"
-                            : "opciones"}
-                        </span>
-                      </div>
-                      <div className="product-grid">
-                        {productsByCategory.get(category.id)?.map((product) => (
-                          <ProductCard
-                            key={product.id}
-                            product={product}
-                            cart={cart}
-                            onAdjust={adjustProductCount}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  ))}
+                {visibleCategories.map((category) => (
+                  <section
+                    className="category-section"
+                    id={`categoria-${category.id}`}
+                    key={category.id}
+                  >
+                    <div className="category-heading">
+                      <span className="category-flower" aria-hidden="true">
+                ✳
+                      </span>
+                      <h3>{category.nombre}</h3>
+                      <span className="category-count">
+                {productsByCategory.get(category.id)?.length ?? 0}{" "}
+                {productsByCategory.get(category.id)?.length === 1
+                  ? "opción"
+                  : "opciones"}
+                      </span>
+                    </div>
+                    <div className="product-grid">
+                      {productsByCategory.get(category.id)?.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  cart={cart}
+                  onAdjust={adjustProductCount}
+                />
+                      ))}
+                    </div>
+                  </section>
+                ))}
               </div>
               <p className="price-disclaimer">
                 Precios sujetos a confirmación.
@@ -1388,6 +1595,8 @@ function App() {
             setCart={setCart}
             order={order}
             setOrder={setOrder}
+            isOpen={isCheckoutOpen}
+            onClose={() => setIsCheckoutOpen(false)}
           />
         )}
 
