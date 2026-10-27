@@ -288,10 +288,9 @@ function buildWhatsAppMessage(
       : [];
   const deliveryFeeLines =
     order.fulfillment === "delivery"
-      ? [`${EMOJI.scooter} *Envío:* A confirmar`]
+      ? [`${EMOJI.scooter} *Envío:* Gratis`]
       : [];
-  const estimatedTotalLabel =
-    order.fulfillment === "delivery" ? "Total estimado (sin envío)" : "Total estimado";
+  const estimatedTotalLabel = "Total estimado";
 
   return [
     `${EMOJI.pizza} *¡Hola, Pizza Fiori!* Quiero hacer este pedido:`,
@@ -307,7 +306,7 @@ function buildWhatsAppMessage(
     ...deliveryFeeLines,
     `${EMOJI.cash} *${estimatedTotalLabel}:* ${formatCents(estimatedTotalCents)}`,
     "",
-    "*_Los importes y el envío quedan sujetos a confirmación del local._*",
+    "*_Los importes quedan sujetos a confirmación del local._*",
     "",
     `${EMOJI.clipboard} *DATOS DEL PEDIDO*`,
     `${EMOJI.person} *Nombre:* ${order.name.trim()}`,
@@ -689,6 +688,16 @@ function CartAndCheckout({
   });
   const totalCents = resolvedCart.reduce((sum, item) => sum + item.subtotalCents, 0);
   const totalItems = resolvedCart.reduce((sum, item) => sum + item.count, 0);
+  const deliveryMinimumCents =
+    catalog.monto_minimo_delivery === null
+      ? null
+      : Math.round(Number(catalog.monto_minimo_delivery) * 100);
+  const isDeliveryEligible =
+    deliveryMinimumCents !== null && totalCents >= deliveryMinimumCents;
+  const deliveryAmountRemainingCents =
+    deliveryMinimumCents === null
+      ? null
+      : Math.max(0, deliveryMinimumCents - totalCents);
   const surchargePercentage =
     catalog.porcentaje_recargo_transferencia === null
       ? null
@@ -723,6 +732,13 @@ function CartAndCheckout({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isDeliveryEligible || order.fulfillment !== "delivery") return;
+    setOrder({ ...order, fulfillment: "", address: "" });
+    setErrors((current) => ({ ...current, fulfillment: undefined, address: undefined }));
+    setValidated(false);
+  }, [isDeliveryEligible, order, setOrder]);
+
   const updateCount = (target: CartItem, adjustment: number) => {
     setCart(cart.flatMap((item) => {
       if (item.key !== target.key) return [item];
@@ -752,6 +768,12 @@ function CartAndCheckout({
     if (!order.name.trim()) nextErrors.name = "Ingresá tu nombre.";
     if (!order.fulfillment) {
       nextErrors.fulfillment = "Elegí delivery o retiro por el local.";
+    }
+    if (order.fulfillment === "delivery" && !isDeliveryEligible) {
+      nextErrors.fulfillment = deliveryMinimumCents === null
+        ? "El mínimo de delivery todavía no está publicado. Elegí Retiro o pedí que actualicen el catálogo."
+        : `El delivery gratis está disponible a partir de ${formatCents(deliveryMinimumCents)}. ` +
+          `Te faltan ${formatCents(deliveryAmountRemainingCents ?? 0)}.`;
     }
     if (order.fulfillment === "delivery" && !order.address.trim()) {
       nextErrors.address = "Ingresá la dirección para el delivery.";
@@ -1083,12 +1105,15 @@ function CartAndCheckout({
             <fieldset className="form-field fulfillment-field">
               <legend>¿Cómo lo recibís? <span>*</span></legend>
               <div className="fulfillment-options">
-                <label className={order.fulfillment === "delivery" ? "selected" : ""}>
+                <label
+                  className={`${order.fulfillment === "delivery" ? "selected" : ""}${!isDeliveryEligible ? " disabled" : ""}`}
+                >
                   <input
                     type="radio"
                     name="fulfillment"
                     value="delivery"
                     checked={order.fulfillment === "delivery"}
+                    disabled={!isDeliveryEligible}
                     onChange={() => updateField("fulfillment", "delivery")}
                   />
                   <Truck size={18} aria-hidden="true" />
@@ -1106,6 +1131,13 @@ function CartAndCheckout({
                   Retiro
                 </label>
               </div>
+              <p className="fulfillment-note" role="status">
+                {deliveryMinimumCents === null
+                  ? "El mínimo de delivery todavía no está publicado. Por ahora podés elegir Retiro."
+                  : isDeliveryEligible
+                    ? `Delivery gratis desde ${formatCents(deliveryMinimumCents)}.`
+                    : `Delivery gratis desde ${formatCents(deliveryMinimumCents)}. Te faltan ${formatCents(deliveryAmountRemainingCents ?? 0)} para habilitarlo.`}
+              </p>
               {errors.fulfillment && (
                 <span className="field-error" id="fulfillment-error">
                   {errors.fulfillment}
@@ -1278,13 +1310,11 @@ function CartAndCheckout({
                   </div>
                 )}
                 {order.fulfillment === "delivery" && (
-                  <div><span>Envío</span><strong>A confirmar</strong></div>
+                  <div><span>Envío</span><strong>Gratis</strong></div>
                 )}
                 <div className="review-total">
                   <span>
-                    {order.fulfillment === "delivery"
-                      ? "Total estimado (sin envío)"
-                      : "Total estimado"}
+                    Total estimado
                   </span>
                   <strong>{formatCents(estimatedTotalCents)}</strong>
                 </div>
@@ -1307,7 +1337,7 @@ function CartAndCheckout({
               )}
               <p className="whatsapp-disclaimer" role="note">
                 Se abrirá WhatsApp. Tocá «Enviar» para hacer el pedido; el local
-                confirmará disponibilidad y envío.
+                confirmará disponibilidad del pedido.
               </p>
               <button
                 className="edit-order-button"

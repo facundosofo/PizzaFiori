@@ -4,6 +4,10 @@ export interface RecargoConfig {
   porcentaje_recargo: number;
 }
 
+export interface DeliveryMinimumConfig {
+  monto_minimo_delivery: number;
+}
+
 export interface CatalogPublishStatus {
   publicado_en: string | null;
 }
@@ -54,4 +58,18 @@ export const updateRecargoConfig = async (porcentaje_recargo: number): Promise<R
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     throw new Error(errorMessage);
   }
+};
+
+export const getDeliveryMinimumConfig = async (): Promise<DeliveryMinimumConfig> => {
+  const response = await api.get<DeliveryMinimumConfig>("/config/delivery-minimum");
+  return response.data;
+};
+
+export const updateDeliveryMinimumConfig = async (
+  monto_minimo_delivery: number,
+): Promise<DeliveryMinimumConfig> => {
+  const response = await api.put<DeliveryMinimumConfig>("/config/delivery-minimum", {
+    monto_minimo_delivery,
+  });
+  return response.data;
 };

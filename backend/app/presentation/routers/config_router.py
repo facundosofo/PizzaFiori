@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from typing import Any
+from decimal import Decimal, InvalidOperation
 
 from app.infrastructure.unit_of_work import get_uow
 from app.presentation.routers.dependencies import get_current_user, require_admin
 from app.presentation.schemas.config_schemas import (
+    DeliveryMinimumConfigResponse,
+    DeliveryMinimumConfigUpdateRequest,
     RecargoConfigResponse,
     RecargoConfigUpdateRequest,
 )
 from app.application.public_catalog_service import (
     CATALOG_PUBLISHED_AT_KEY,
+    DEFAULT_DELIVERY_MINIMUM,
     DEFAULT_RECARGO_PERCENTAGE,
+    DELIVERY_MINIMUM_KEY,
     PublicCatalogService,
     RECARGO_KEY,
     decode_publish_timestamp,
@@ -75,6 +79,57 @@ async def update_recargo_config(
         config = await unit.app_config_repo.set_value(RECARGO_KEY, str(body.porcentaje_recargo))
         await unit.commit()
         return RecargoConfigResponse(porcentaje_recargo=float(config.value))
+
+
+@router.get(
+    "/delivery-minimum",
+    response_model=DeliveryMinimumConfigResponse,
+    summary="Obtener el monto mínimo para delivery gratis",
+)
+async def get_delivery_minimum_config(
+    uow=Depends(get_uow),
+):
+    async with uow as unit:
+        config = await unit.app_config_repo.get_by_key(DELIVERY_MINIMUM_KEY)
+        if config is None:
+            return DeliveryMinimumConfigResponse(
+                monto_minimo_delivery=DEFAULT_DELIVERY_MINIMUM
+            )
+
+        try:
+            monto_minimo = Decimal(str(config.value))
+        except (InvalidOperation, ValueError, TypeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="El monto mínimo de delivery guardado no es válido.",
+            ) from exc
+        if not monto_minimo.is_finite() or monto_minimo < 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="El monto mínimo de delivery guardado no es válido.",
+            )
+        return DeliveryMinimumConfigResponse(monto_minimo_delivery=monto_minimo)
+
+
+@router.put(
+    "/delivery-minimum",
+    response_model=DeliveryMinimumConfigResponse,
+    summary="Actualizar el monto mínimo para delivery gratis",
+    responses={403: {"description": "Admin access required"}},
+)
+async def update_delivery_minimum_config(
+    body: DeliveryMinimumConfigUpdateRequest,
+    _admin: dict = Depends(require_admin),
+    uow=Depends(get_uow),
+):
+    async with uow as unit:
+        config = await unit.app_config_repo.set_value(
+            DELIVERY_MINIMUM_KEY, str(body.monto_minimo_delivery)
+        )
+        await unit.commit()
+        return DeliveryMinimumConfigResponse(
+            monto_minimo_delivery=Decimal(str(config.value))
+        )
 
 
 @router.get(

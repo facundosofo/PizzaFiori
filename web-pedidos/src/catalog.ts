@@ -34,6 +34,7 @@ export interface PublicCatalog {
   version: number;
   publicado_en: string;
   porcentaje_recargo_transferencia: string | null;
+  monto_minimo_delivery: string | null;
   categorias: CatalogCategory[];
   productos: CatalogProduct[];
   ofertas: CatalogOffer[];
@@ -160,6 +161,10 @@ function parseCatalog(value: unknown): PublicCatalog {
   const surchargePercentage = isRecord(value)
     ? value.porcentaje_recargo_transferencia
     : undefined;
+  const deliveryMinimum = isRecord(value) ? value.monto_minimo_delivery : undefined;
+  const hasValidDeliveryMinimum =
+    deliveryMinimum === undefined ||
+    (isFiniteNumberString(deliveryMinimum) && Number(deliveryMinimum) >= 0);
   const hasValidSurchargePercentage =
     surchargePercentage === undefined ||
     (typeof surchargePercentage === "string" &&
@@ -173,6 +178,7 @@ function parseCatalog(value: unknown): PublicCatalog {
     !Number.isInteger(value.version) ||
     typeof value.publicado_en !== "string" ||
     !hasValidSurchargePercentage ||
+    !hasValidDeliveryMinimum ||
     !Array.isArray(value.categorias) ||
     !Array.isArray(value.productos) ||
     !Array.isArray(value.ofertas) ||
@@ -188,6 +194,8 @@ function parseCatalog(value: unknown): PublicCatalog {
     publicado_en: value.publicado_en,
     porcentaje_recargo_transferencia:
       typeof surchargePercentage === "string" ? surchargePercentage : null,
+    monto_minimo_delivery:
+      typeof deliveryMinimum === "string" ? deliveryMinimum : null,
     categorias: value.categorias,
     productos: value.productos,
     ofertas: value.ofertas,

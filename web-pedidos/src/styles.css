@@ -1898,6 +1898,18 @@ textarea:focus-visible {
   color: var(--green-dark);
 }
 
+.fulfillment-options label.disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.fulfillment-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .fulfillment-options input {
   width: 15px;
   min-height: unset;
@@ -2733,6 +2745,10 @@ textarea:focus-visible {
   border-color: #82997a;
   background: #303d2e;
   color: #e5eee0;
+}
+
+[data-theme="dark"] .fulfillment-options label.disabled {
+  opacity: 0.45;
 }
 
 [data-theme="dark"] .closing-note {

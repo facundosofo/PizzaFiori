@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PublicCatalogCategory(BaseModel):
@@ -43,6 +43,7 @@ class PublicCatalogResponse(BaseModel):
     version: int = 1
     publicado_en: datetime
     porcentaje_recargo_transferencia: Decimal
+    monto_minimo_delivery: Decimal = Field(..., ge=0)
     categorias: List[PublicCatalogCategory]
     productos: List[PublicCatalogProduct]
     ofertas: List[PublicCatalogOffer]

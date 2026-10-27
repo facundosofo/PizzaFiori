@@ -88,11 +88,13 @@ def test_build_public_catalog_exposes_only_sellable_public_fields():
         {10: "https://cdn.example.test/catalogo/imagenes/pizza.jpg"},
         published_at,
         Decimal("7.5"),
+        Decimal("13000"),
     )
     payload = catalog.model_dump(mode="json")
 
     assert payload["version"] == 1
     assert payload["porcentaje_recargo_transferencia"] == "7.5"
+    assert payload["monto_minimo_delivery"] == "13000"
     parsed_timestamp = datetime.fromisoformat(
         payload["publicado_en"].replace("Z", "+00:00")
     )
@@ -130,6 +132,7 @@ def test_build_public_catalog_keeps_public_products_without_images():
 
     assert catalog.productos[0].imagen_url is None
     assert catalog.porcentaje_recargo_transferencia == Decimal("10")
+    assert catalog.monto_minimo_delivery == Decimal("13000")
 
 
 def test_resolve_image_path_rejects_files_outside_uploads(tmp_path: Path):
@@ -233,6 +236,7 @@ def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
     storage.object_url.side_effect = lambda key: f"https://cdn.example.test/{key}"
     config_values = {
         "recargo_transferencia": SimpleNamespace(value="12.5"),
+        "monto_minimo_delivery": SimpleNamespace(value="13000"),
     }
 
     async def set_config_value(key, value):
@@ -266,6 +270,7 @@ def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
     assert pointer["catalogo_version"] == expected_hash
     assert pointer["catalogo_url"] == f"https://cdn.example.test/{catalog_key}"
     assert published_catalog["porcentaje_recargo_transferencia"] == "12.5"
+    assert published_catalog["monto_minimo_delivery"] == "13000"
     assert result.catalogo_version == expected_hash
     assert result.catalogo_url == pointer["catalogo_url"]
     assert result.actualizado is True

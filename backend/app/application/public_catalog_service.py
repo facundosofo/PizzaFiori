@@ -3,7 +3,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -36,6 +36,8 @@ CATALOG_VERSION_KEY = "public_catalog_version"
 CATALOG_IMAGE_KEY_PREFIX = "public_catalog_image_"
 RECARGO_KEY = "recargo_transferencia"
 DEFAULT_RECARGO_PERCENTAGE = Decimal("10")
+DELIVERY_MINIMUM_KEY = "monto_minimo_delivery"
+DEFAULT_DELIVERY_MINIMUM = Decimal("13000")
 
 
 def build_public_catalog(
@@ -45,6 +47,7 @@ def build_public_catalog(
     image_urls: Dict[int, str],
     published_at: datetime,
     porcentaje_recargo_transferencia: Decimal = DEFAULT_RECARGO_PERCENTAGE,
+    monto_minimo_delivery: Decimal = DEFAULT_DELIVERY_MINIMUM,
 ) -> PublicCatalogResponse:
     active_categories = {
         category.id: category
@@ -131,6 +134,7 @@ def build_public_catalog(
     return PublicCatalogResponse(
         publicado_en=published_at,
         porcentaje_recargo_transferencia=porcentaje_recargo_transferencia,
+        monto_minimo_delivery=monto_minimo_delivery,
         categorias=public_categories,
         productos=public_products,
         ofertas=public_offers,
@@ -163,6 +167,21 @@ class PublicCatalogService:
             or not Decimal("0") <= porcentaje_recargo_transferencia <= Decimal("100")
         ):
             raise ValueError("El porcentaje de recargo configurado debe estar entre 0 y 100.")
+        delivery_minimum_config = await uow.app_config_repo.get_by_key(
+            DELIVERY_MINIMUM_KEY
+        )
+        try:
+            monto_minimo_delivery = (
+                Decimal(str(delivery_minimum_config.value))
+                if delivery_minimum_config is not None
+                else DEFAULT_DELIVERY_MINIMUM
+            )
+        except (InvalidOperation, ValueError, TypeError) as exc:
+            raise ValueError(
+                "El monto mínimo para delivery configurado no es válido."
+            ) from exc
+        if not monto_minimo_delivery.is_finite() or monto_minimo_delivery < 0:
+            raise ValueError("El monto mínimo para delivery debe ser mayor o igual a 0.")
         published_at_config = await uow.app_config_repo.get_by_key(
             CATALOG_PUBLISHED_AT_KEY
         )
@@ -186,6 +205,7 @@ class PublicCatalogService:
             image_urls,
             published_at,
             porcentaje_recargo_transferencia,
+            monto_minimo_delivery,
         )
         content_hash = self._catalog_content_hash(catalog)
         previously_published_at = decode_publish_timestamp(
