@@ -91,6 +91,7 @@ type OrderForm = {
   fulfillment: FulfillmentMethod | "";
   address: string;
   paymentMethod: string;
+  foodNotes: string;
   notes: string;
 };
 
@@ -223,6 +224,12 @@ function buildWhatsAppMessage(
           `${EMOJI.money} *Recargo por transferencia (${formatPercentage(surchargePercentage)}%):* ${formatCents(surchargeCents)}`,
         ]
       : [];
+  const deliveryFeeLines =
+    order.fulfillment === "delivery"
+      ? [`${EMOJI.scooter} *Envío:* A confirmar`]
+      : [];
+  const estimatedTotalLabel =
+    order.fulfillment === "delivery" ? "Total estimado (sin envío)" : "Total estimado";
 
   return [
     `${EMOJI.pizza} *¡Hola, Pizza Fiori!* Quiero hacer este pedido:`,
@@ -231,10 +238,12 @@ function buildWhatsAppMessage(
     "",
     ...productLines,
     "",
+    `${EMOJI.memo} *Observaciones:* ${order.foodNotes.trim() || "Sin observaciones"}`,
+    "",
     `${EMOJI.money} *Subtotal:* ${formatCents(subtotalCents)}`,
     ...surchargeLines,
-    `${EMOJI.scooter} *Envío:* A confirmar`,
-    `${EMOJI.cash} *Total estimado (sin envío):* ${formatCents(estimatedTotalCents)}`,
+    ...deliveryFeeLines,
+    `${EMOJI.cash} *${estimatedTotalLabel}:* ${formatCents(estimatedTotalCents)}`,
     "",
     "*_Los importes y el envío quedan sujetos a confirmación del local._*",
     "",
@@ -529,15 +538,19 @@ function CartAndCheckout({
       <div className="checkout-topbar">
         <div className="checkout-topbar-inner">
           <a
-            className="checkout-brand"
+            className="brand checkout-brand"
             href="#inicio"
+            aria-label="PIZZA FIORI, inicio"
             onClick={(event) => {
               event.preventDefault();
               navigateFromCheckout("inicio");
             }}
           >
-            <span className="brand-pizza">PIZZA</span>{" "}
-            <strong className="brand-fiori">FIORI</strong>
+            <img className="brand-logo" src="/logo.png" alt="" />
+            <span className="brand-name">
+              <span className="brand-pizza">PIZZA</span>{" "}
+              <strong className="brand-fiori">FIORI</strong>
+            </span>
           </a>
           <button className="checkout-exit" type="button" onClick={returnToMenu}>
             <ArrowLeft size={17} aria-hidden="true" />
@@ -620,16 +633,6 @@ function CartAndCheckout({
           <div className="cart-card">
             <div className="cart-card-heading">
               <h3>Tu carrito</h3>
-              <a
-                className="text-link"
-                href="#menu"
-                onClick={(event) => {
-                  event.preventDefault();
-                  returnToMenu();
-                }}
-              >
-                Seguir mirando
-              </a>
             </div>
             <div className="cart-lines">
               {resolvedCart.map((item) => (
@@ -694,26 +697,24 @@ function CartAndCheckout({
                 </article>
               ))}
             </div>
+            <div className="form-field cart-food-notes">
+              <label htmlFor="food-notes">
+                Observaciones{" "}
+                <span className="optional-label">Opcional</span>
+              </label>
+              <textarea
+                id="food-notes"
+                rows={3}
+                value={order.foodNotes}
+                onChange={(event) => updateField("foodNotes", event.target.value)}
+                placeholder="Extras, sustituciones o detalles de preparación"
+              />
+            </div>
             <div className="cart-totals">
-              <div>
-                <span>Subtotal estimado</span>
-                <strong>{formatCents(totalCents)}</strong>
-              </div>
-              <div>
-                <span>Envío</span>
-                <strong>A confirmar</strong>
-              </div>
               <div className="estimated-total">
-                <span>Total estimado (sin recargo ni envío)</span>
+                <span>Total estimado</span>
                 <strong>{formatCents(totalCents)}</strong>
               </div>
-              <p>
-                El envío queda a confirmar. Al pagar por transferencia se suma un
-                recargo del{" "}
-                {surchargePercentage === null
-                  ? "porcentaje aún no publicado"
-                  : `${formatPercentage(surchargePercentage)}%`}.
-              </p>
             </div>
           </div>
               <div className="cart-stage-actions">
@@ -740,14 +741,6 @@ function CartAndCheckout({
             </div>
           ) : checkoutStep === "details" ? (
             <div className="details-stage">
-              <div className="checkout-summary">
-                <ShoppingBag size={18} aria-hidden="true" />
-                <span>
-                  Subtotal de {totalItems} {totalItems === 1 ? "producto" : "productos"}
-                </span>
-                <strong>{formatCents(totalCents)}</strong>
-              </div>
-
               <form className="order-form" onSubmit={validateOrder} noValidate>
             <div className="form-title">
               <span className="state-icon">
@@ -866,13 +859,16 @@ function CartAndCheckout({
             </div>
 
             <div className="form-field">
-              <label htmlFor="order-notes">Observaciones <span className="optional-label">Opcional</span></label>
+              <label htmlFor="order-notes">
+                Observaciones{" "}
+                <span className="optional-label">Opcional</span>
+              </label>
               <textarea
                 id="order-notes"
                 rows={3}
                 value={order.notes}
                 onChange={(event) => updateField("notes", event.target.value)}
-                placeholder="Algún detalle para tener en cuenta"
+                placeholder="Referencias para encontrar el domicilio u otra indicación"
               />
             </div>
 
@@ -896,13 +892,6 @@ function CartAndCheckout({
             </div>
           ) : (
             <div className="details-stage">
-              <div className="checkout-summary">
-                <ShoppingBag size={18} aria-hidden="true" />
-                <span>
-                  {totalItems} {totalItems === 1 ? "producto" : "productos"} en tu pedido
-                </span>
-                <strong>{formatCents(totalCents)}</strong>
-              </div>
               <section className="order-review" aria-labelledby="order-review-title">
               <div className="form-title">
                 <span className="state-icon">
@@ -949,8 +938,12 @@ function CartAndCheckout({
                   <dd>{order.paymentMethod}</dd>
                 </div>
                 <div>
-                  <dt>Observaciones</dt>
-                  <dd>{order.notes.trim() || "Sin observaciones"}</dd>
+                  <dt>Comida</dt>
+                  <dd>{order.foodNotes.trim() || "Sin indicaciones"}</dd>
+                </div>
+                <div>
+                  <dt>Entrega o pago</dt>
+                  <dd>{order.notes.trim() || "Sin indicaciones"}</dd>
                 </div>
               </dl>
               <div className="order-review-totals">
@@ -963,9 +956,15 @@ function CartAndCheckout({
                     <strong>{formatCents(surchargeCents)}</strong>
                   </div>
                 )}
-                <div><span>Envío</span><strong>A confirmar</strong></div>
+                {order.fulfillment === "delivery" && (
+                  <div><span>Envío</span><strong>A confirmar</strong></div>
+                )}
                 <div className="review-total">
-                  <span>Total estimado (sin envío)</span>
+                  <span>
+                    {order.fulfillment === "delivery"
+                      ? "Total estimado (sin envío)"
+                      : "Total estimado"}
+                  </span>
                   <strong>{formatCents(estimatedTotalCents)}</strong>
                 </div>
               </div>
@@ -1358,6 +1357,7 @@ function App() {
     fulfillment: "",
     address: "",
     paymentMethod: "",
+    foodNotes: "",
     notes: "",
   });
   const productsByCategory = useMemo(() => {

@@ -1030,9 +1030,7 @@ textarea:focus-visible {
 }
 
 .checkout-brand {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
+  flex: 0 0 auto;
 }
 
 .checkout-exit {
@@ -1327,7 +1325,9 @@ textarea:focus-visible {
 .remove-item { color: #a65a49; }
 .remove-item:hover { background: #f8eae5; }
 
-.cart-totals { padding-top: 15px; }
+.cart-food-notes { margin-top: 8px; }
+
+.cart-totals { padding-top: 6px; }
 
 .cart-totals > div {
   display: flex;
@@ -1341,7 +1341,7 @@ textarea:focus-visible {
 .cart-totals > div strong { color: #41463d; }
 
 .cart-totals .estimated-total {
-  margin: 13px 0 0;
+  margin: 6px 0 0;
   padding-top: 13px;
   border-top: 1px solid var(--line);
   color: var(--green-dark);
@@ -1962,7 +1962,6 @@ textarea:focus-visible {
   }
   .checkout-topbar { margin: 0 -16px 19px; padding-inline: 16px; }
   .checkout-topbar-inner { min-height: 58px; }
-  .checkout-brand { font-size: 13px; }
   .checkout-exit { min-height: 40px; padding-inline: 7px; font-size: 11px; }
   .checkout-fullscreen .order-heading { margin-bottom: 18px; }
   .order-heading { align-items: end; flex-direction: row; }
