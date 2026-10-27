@@ -18,7 +18,7 @@ const CONFIG_FIELDS = [
     key: "recargo_transferencia",
     label: "Recargo por transferencia/débito",
     description:
-      "Porcentaje que se aplica a las ventas pagadas por transferencia o débito.",
+      "Porcentaje que se aplica a las ventas pagadas por transferencia o débito. Después de cambiarlo, publicá nuevamente el catálogo para actualizar la web de pedidos.",
     suffix: "%",
   },
 ];
@@ -284,7 +284,7 @@ export default function ConfigPage() {
                 <div>
                   <h2 className="config-card-title">Catálogo para pedidos</h2>
                   <p className="config-card-description">
-                    Publica en la web de pedidos los productos, precios e imágenes disponibles.
+                    Publica en la web de pedidos los productos, precios, imágenes y recargo por transferencia configurado.
                   </p>
                 </div>
               </div>

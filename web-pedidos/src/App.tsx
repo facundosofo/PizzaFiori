@@ -62,15 +62,7 @@ function getInitialTheme(): Theme {
   return "dark";
 }
 
-const configuredPaymentMethods = (
-  import.meta.env.VITE_ORDER_PAYMENT_METHODS || "Efectivo,Transferencia"
-)
-  .split(",")
-  .map((method) => method.trim())
-  .filter((method, index, methods) => method.length > 0 && methods.indexOf(method) === index);
-const PAYMENT_METHODS = configuredPaymentMethods.length
-  ? configuredPaymentMethods
-  : ["Efectivo", "Transferencia"];
+const PAYMENT_METHODS = ["Efectivo", "Transferencia"] as const;
 
 type CartItem = {
   type: "product";
@@ -125,6 +117,12 @@ const currencyFormatter = new Intl.NumberFormat("es-AR", {
 
 function formatCents(cents: number): string {
   return currencyFormatter.format(cents / 100);
+}
+
+function formatPercentage(percentage: number): string {
+  return new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 }).format(
+    percentage,
+  );
 }
 
 function formatPrice(price: string): string {
@@ -194,7 +192,10 @@ function normalizeWhatsAppPhone(value: string): string | null {
 function buildWhatsAppMessage(
   items: ResolvedCartItem[],
   order: OrderForm,
-  totalCents: number,
+  subtotalCents: number,
+  surchargeCents: number,
+  estimatedTotalCents: number,
+  surchargePercentage: number | null,
 ): string {
   const productLines = items.flatMap((item) => {
     if (item.type === "product") {
@@ -216,6 +217,12 @@ function buildWhatsAppMessage(
     order.fulfillment === "delivery"
       ? [`${EMOJI.pin} *Dirección:* ${order.address.trim()}`]
       : [];
+  const surchargeLines =
+    order.paymentMethod === "Transferencia" && surchargePercentage !== null
+      ? [
+          `${EMOJI.money} *Recargo por transferencia (${formatPercentage(surchargePercentage)}%):* ${formatCents(surchargeCents)}`,
+        ]
+      : [];
 
   return [
     `${EMOJI.pizza} *¡Hola, Pizza Fiori!* Quiero hacer este pedido:`,
@@ -224,9 +231,10 @@ function buildWhatsAppMessage(
     "",
     ...productLines,
     "",
-    `${EMOJI.money} *Subtotal:* ${formatCents(totalCents)}`,
+    `${EMOJI.money} *Subtotal:* ${formatCents(subtotalCents)}`,
+    ...surchargeLines,
     `${EMOJI.scooter} *Envío:* A confirmar`,
-    `${EMOJI.cash} *Total estimado:* ${formatCents(totalCents)}`,
+    `${EMOJI.cash} *Total estimado (sin envío):* ${formatCents(estimatedTotalCents)}`,
     "",
     "*_Los importes y el envío quedan sujetos a confirmación del local._*",
     "",
@@ -391,8 +399,25 @@ function CartAndCheckout({
   });
   const totalCents = resolvedCart.reduce((sum, item) => sum + item.subtotalCents, 0);
   const totalItems = resolvedCart.reduce((sum, item) => sum + item.count, 0);
+  const surchargePercentage =
+    catalog.porcentaje_recargo_transferencia === null
+      ? null
+      : Number(catalog.porcentaje_recargo_transferencia);
+  const isTransferPayment = order.paymentMethod === "Transferencia";
+  const surchargeCents =
+    isTransferPayment && surchargePercentage !== null
+      ? Math.round((totalCents * surchargePercentage) / 100)
+      : 0;
+  const estimatedTotalCents = totalCents + surchargeCents;
   const whatsappMessage = validated
-    ? buildWhatsAppMessage(resolvedCart, order, totalCents)
+    ? buildWhatsAppMessage(
+        resolvedCart,
+        order,
+        totalCents,
+        surchargeCents,
+        estimatedTotalCents,
+        surchargePercentage,
+      )
     : "";
   const encodedWhatsAppMessage = encodeURIComponent(whatsappMessage).replace(/\*/g, "%2A");
   const whatsappUrl = whatsappPhone
@@ -443,6 +468,9 @@ function CartAndCheckout({
     }
     if (!order.paymentMethod) {
       nextErrors.paymentMethod = "Elegí un medio de pago.";
+    } else if (order.paymentMethod === "Transferencia" && surchargePercentage === null) {
+      nextErrors.paymentMethod =
+        "El recargo de transferencia no está publicado. Pedí que actualicen el catálogo.";
     }
     setErrors(nextErrors);
     const isValid = Object.keys(nextErrors).length === 0;
@@ -676,10 +704,16 @@ function CartAndCheckout({
                 <strong>A confirmar</strong>
               </div>
               <div className="estimated-total">
-                <span>Total estimado</span>
+                <span>Total estimado (sin recargo ni envío)</span>
                 <strong>{formatCents(totalCents)}</strong>
               </div>
-              <p>Envío y total final a confirmar por el local.</p>
+              <p>
+                El envío queda a confirmar. Al pagar por transferencia se suma un
+                recargo del{" "}
+                {surchargePercentage === null
+                  ? "porcentaje aún no publicado"
+                  : `${formatPercentage(surchargePercentage)}%`}.
+              </p>
             </div>
           </div>
               <div className="cart-stage-actions">
@@ -709,7 +743,7 @@ function CartAndCheckout({
               <div className="checkout-summary">
                 <ShoppingBag size={18} aria-hidden="true" />
                 <span>
-                  {totalItems} {totalItems === 1 ? "producto" : "productos"} en tu pedido
+                  Subtotal de {totalItems} {totalItems === 1 ? "producto" : "productos"}
                 </span>
                 <strong>{formatCents(totalCents)}</strong>
               </div>
@@ -809,12 +843,23 @@ function CartAndCheckout({
                 >
                   <option value="">Elegí un medio de pago</option>
                   {PAYMENT_METHODS.map((method) => (
-                    <option key={method} value={method}>{method}</option>
+                    <option key={method} value={method}>
+                      {method === "Transferencia" && surchargePercentage !== null
+                        ? `${method} (+${formatPercentage(surchargePercentage)}%)`
+                        : method}
+                    </option>
                   ))}
                 </select>
               </div>
+              {order.paymentMethod === "Transferencia" &&
+                surchargePercentage !== null && (
+                  <p className="payment-surcharge-note">
+                    Se sumará un recargo del {formatPercentage(surchargePercentage)}%
+                    al subtotal del pedido.
+                  </p>
+                )}
               {errors.paymentMethod && (
-                <span className="field-error" id="payment-method-error">
+                <span className="field-error" id="payment-method-error" role="alert">
                   {errors.paymentMethod}
                 </span>
               )}
@@ -910,10 +955,18 @@ function CartAndCheckout({
               </dl>
               <div className="order-review-totals">
                 <div><span>Subtotal</span><strong>{formatCents(totalCents)}</strong></div>
+                {isTransferPayment && surchargePercentage !== null && (
+                  <div>
+                    <span>
+                      Recargo por transferencia ({formatPercentage(surchargePercentage)}%)
+                    </span>
+                    <strong>{formatCents(surchargeCents)}</strong>
+                  </div>
+                )}
                 <div><span>Envío</span><strong>A confirmar</strong></div>
                 <div className="review-total">
-                  <span>Total estimado</span>
-                  <strong>{formatCents(totalCents)}</strong>
+                  <span>Total estimado (sin envío)</span>
+                  <strong>{formatCents(estimatedTotalCents)}</strong>
                 </div>
               </div>
               {whatsappUrl ? (

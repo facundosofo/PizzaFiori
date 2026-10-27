@@ -33,6 +33,7 @@ export interface CatalogOffer {
 export interface PublicCatalog {
   version: number;
   publicado_en: string;
+  porcentaje_recargo_transferencia: string | null;
   categorias: CatalogCategory[];
   productos: CatalogProduct[];
   ofertas: CatalogOffer[];
@@ -156,11 +157,22 @@ function parsePointer(value: unknown, expectedOrigin: string): CatalogPointer {
 }
 
 function parseCatalog(value: unknown): PublicCatalog {
+  const surchargePercentage = isRecord(value)
+    ? value.porcentaje_recargo_transferencia
+    : undefined;
+  const hasValidSurchargePercentage =
+    surchargePercentage === undefined ||
+    (typeof surchargePercentage === "string" &&
+      surchargePercentage.trim().length > 0 &&
+      isFiniteNumberString(surchargePercentage) &&
+      Number(surchargePercentage) >= 0 &&
+      Number(surchargePercentage) <= 100);
   if (
     !isRecord(value) ||
     typeof value.version !== "number" ||
     !Number.isInteger(value.version) ||
     typeof value.publicado_en !== "string" ||
+    !hasValidSurchargePercentage ||
     !Array.isArray(value.categorias) ||
     !Array.isArray(value.productos) ||
     !Array.isArray(value.ofertas) ||
@@ -174,6 +186,8 @@ function parseCatalog(value: unknown): PublicCatalog {
   return {
     version: value.version,
     publicado_en: value.publicado_en,
+    porcentaje_recargo_transferencia:
+      typeof surchargePercentage === "string" ? surchargePercentage : null,
     categorias: value.categorias,
     productos: value.productos,
     ofertas: value.ofertas,

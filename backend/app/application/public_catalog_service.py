@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -33,6 +34,8 @@ CATALOG_PUBLISHED_AT_KEY = "public_catalog_published_at"
 CATALOG_CONTENT_HASH_KEY = "public_catalog_content_hash"
 CATALOG_VERSION_KEY = "public_catalog_version"
 CATALOG_IMAGE_KEY_PREFIX = "public_catalog_image_"
+RECARGO_KEY = "recargo_transferencia"
+DEFAULT_RECARGO_PERCENTAGE = Decimal("10")
 
 
 def build_public_catalog(
@@ -41,6 +44,7 @@ def build_public_catalog(
     offers: Sequence[Offer],
     image_urls: Dict[int, str],
     published_at: datetime,
+    porcentaje_recargo_transferencia: Decimal = DEFAULT_RECARGO_PERCENTAGE,
 ) -> PublicCatalogResponse:
     active_categories = {
         category.id: category
@@ -126,6 +130,7 @@ def build_public_catalog(
 
     return PublicCatalogResponse(
         publicado_en=published_at,
+        porcentaje_recargo_transferencia=porcentaje_recargo_transferencia,
         categorias=public_categories,
         productos=public_products,
         ofertas=public_offers,
@@ -147,6 +152,17 @@ class PublicCatalogService:
         categories = await uow.product_category_repo.list_by_active(activo=True)
         products = await uow.product_repo.list(active=True)
         offers = await uow.offer_repo.list(active=True)
+        recargo_config = await uow.app_config_repo.get_by_key(RECARGO_KEY)
+        porcentaje_recargo_transferencia = (
+            Decimal(str(recargo_config.value))
+            if recargo_config is not None
+            else DEFAULT_RECARGO_PERCENTAGE
+        )
+        if (
+            not porcentaje_recargo_transferencia.is_finite()
+            or not Decimal("0") <= porcentaje_recargo_transferencia <= Decimal("100")
+        ):
+            raise ValueError("El porcentaje de recargo configurado debe estar entre 0 y 100.")
         published_at_config = await uow.app_config_repo.get_by_key(
             CATALOG_PUBLISHED_AT_KEY
         )
@@ -169,6 +185,7 @@ class PublicCatalogService:
             offers,
             image_urls,
             published_at,
+            porcentaje_recargo_transferencia,
         )
         content_hash = self._catalog_content_hash(catalog)
         previously_published_at = decode_publish_timestamp(

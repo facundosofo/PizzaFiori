@@ -1665,6 +1665,12 @@ textarea:focus-visible {
   font-size: 12px;
 }
 
+.payment-surcharge-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .continue-button {
   display: inline-flex;
   min-height: 48px;

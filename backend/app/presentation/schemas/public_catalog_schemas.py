@@ -42,6 +42,7 @@ class PublicCatalogResponse(BaseModel):
 
     version: int = 1
     publicado_en: datetime
+    porcentaje_recargo_transferencia: Decimal
     categorias: List[PublicCatalogCategory]
     productos: List[PublicCatalogProduct]
     ofertas: List[PublicCatalogOffer]

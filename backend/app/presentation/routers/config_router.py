@@ -9,7 +9,9 @@ from app.presentation.schemas.config_schemas import (
 )
 from app.application.public_catalog_service import (
     CATALOG_PUBLISHED_AT_KEY,
+    DEFAULT_RECARGO_PERCENTAGE,
     PublicCatalogService,
+    RECARGO_KEY,
     decode_publish_timestamp,
 )
 from app.infrastructure.r2_catalog_storage import (
@@ -28,8 +30,6 @@ router = APIRouter(
     dependencies=[Depends(get_current_user)],
 )
 
-DEFAULT_RECARGO_PERCENTAGE = 10
-RECARGO_KEY = "recargo_transferencia"
 catalog_logger = get_logger("catalog.publish")
 
 
