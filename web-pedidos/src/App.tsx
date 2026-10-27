@@ -21,7 +21,6 @@ import {
   Sun,
   Trash2,
   Truck,
-  X,
 } from "lucide-react";
 import {
   fetchPublicCatalog,
@@ -588,7 +587,7 @@ function CartAndCheckout({
             <ShoppingBag size={23} aria-hidden="true" />
           </span>
           <h3>Tu pedido está vacío</h3>
-          <p>Elegí una presentación del menú para empezar.</p>
+          <p>Agrega un producto del menú para empezar.</p>
           <a
             className="text-link"
             href="#menu"
@@ -1134,10 +1133,28 @@ function OfferCard({
     <article className="offer-card">
       <div className="offer-label">
         <Flame className="promo-flame" size={14} aria-hidden="true" />
-        PROMO DEL LOCAL
+        PROMO PARA COMPARTIR
       </div>
       <h3>{offer.nombre}</h3>
       {offer.descripcion && <p className="offer-description">{offer.descripcion}</p>}
+      <div className="offer-footer">
+        <strong className="offer-price">{formatPrice(offer.precio)}</strong>
+        <button
+          className="offer-add-button"
+          type="button"
+          onClick={() => {
+            if (configurableItems.length > 0) {
+              setIsConfiguring(true);
+              return;
+            }
+            const selections = selectionsForCart();
+            if (selections.length > 0) onAddOffer(offer, selections);
+          }}
+        >
+          <Plus size={15} aria-hidden="true" />
+          Agregar promo
+        </button>
+      </div>
       {offer.items.length > 0 && (
         <ul className="offer-items">
           {offer.items.map((item, index) => {
@@ -1159,31 +1176,6 @@ function OfferCard({
           })}
         </ul>
       )}
-      <div className="offer-footer">
-        <strong className="offer-price">{formatPrice(offer.precio)}</strong>
-        {configurableItems.length > 0 ? (
-          <button
-            className="offer-add-button"
-            type="button"
-            onClick={() => setIsConfiguring(true)}
-          >
-            <Plus size={15} aria-hidden="true" />
-            Agregar promo
-          </button>
-        ) : (
-          <button
-            className="offer-add-button"
-            type="button"
-            onClick={() => {
-              const selections = selectionsForCart();
-              if (selections.length > 0) onAddOffer(offer, selections);
-            }}
-          >
-            <Plus size={15} aria-hidden="true" />
-            Agregar promo
-          </button>
-        )}
-      </div>
       {configurableItems.length > 0 && (
         <dialog
           ref={configDialogRef}
@@ -1199,18 +1191,18 @@ function OfferCard({
           }}
         >
           <div className="offer-dialog-header">
-            <div>
-              <span className="eyebrow">CONFIGURÁ TU PROMO</span>
-              <h2 id={`offer-dialog-title-${offer.id}`}>{offer.nombre}</h2>
-            </div>
             <button
-              className="offer-dialog-close"
+              className="offer-dialog-back"
               type="button"
-              aria-label="Cerrar selección de promo"
               onClick={() => setIsConfiguring(false)}
             >
-              <X size={20} aria-hidden="true" />
+              <ArrowLeft size={17} aria-hidden="true" />
+              Volver a promos
             </button>
+            <div>
+              <span className="eyebrow">ARMA TU PROMO</span>
+              <h2 id={`offer-dialog-title-${offer.id}`}>{offer.nombre}</h2>
+            </div>
           </div>
           {offer.descripcion && (
             <p className="offer-dialog-description">{offer.descripcion}</p>
@@ -1228,9 +1220,11 @@ function OfferCard({
                 return (
                   <fieldset className="offer-config-group" key={index}>
                     <legend>
-                      Elegí {formatOfferQuantity(Number(item.cantidad))} en{" "}
+                      Elegí {formatOfferQuantity(Number(item.cantidad))} {" "}
                       {categoryNames.get(item.categoria_id ?? -1) ?? "la categoría"}
-                      <small>{selectedTotal} de {formatOfferQuantity(Number(item.cantidad))}</small>
+                      <small className="offer-selection-count">
+                        {selectedTotal} de {formatOfferQuantity(Number(item.cantidad))}
+                      </small>
                     </legend>
                     {categoryProducts.map((product) => {
                       const quantity = selections?.get(product.id) ?? 0;
@@ -1490,9 +1484,6 @@ function App() {
           </span>
         </a>
         <div className="header-actions">
-          <a className="header-link" href="#menu">
-            Menú <ArrowDown size={16} aria-hidden="true" />
-          </a>
           <button
             className="theme-toggle"
             type="button"
