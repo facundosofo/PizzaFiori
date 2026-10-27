@@ -70,6 +70,12 @@ type CartItem = {
   presentation: string;
   count: number;
 } | {
+  type: "halfPizza";
+  key: string;
+  leftProductId: number;
+  rightProductId: number;
+  count: number;
+} | {
   type: "offer";
   key: string;
   offerId: number;
@@ -107,7 +113,16 @@ type ResolvedOfferCartItem = Extract<CartItem, { type: "offer" }> & {
   subtotalCents: number;
 };
 
-type ResolvedCartItem = ResolvedProductCartItem | ResolvedOfferCartItem;
+type ResolvedHalfPizzaCartItem = Extract<CartItem, { type: "halfPizza" }> & {
+  leftProduct: CatalogProduct;
+  rightProduct: CatalogProduct;
+  subtotalCents: number;
+};
+
+type ResolvedCartItem =
+  | ResolvedProductCartItem
+  | ResolvedHalfPizzaCartItem
+  | ResolvedOfferCartItem;
 
 const currencyFormatter = new Intl.NumberFormat("es-AR", {
   style: "currency",
@@ -130,6 +145,49 @@ function formatPrice(price: string): string {
   return Number.isFinite(numericPrice)
     ? formatCents(Math.round(numericPrice * 100))
     : "Consultar";
+}
+
+function getProductUnitPriceCents(product: CatalogProduct): number | null {
+  const prices = [...product.precios]
+    .map((price) => ({ quantity: Number(price.cantidad), price: Number(price.precio) }))
+    .filter((price) => price.quantity > 0 && Number.isFinite(price.price))
+    .sort((first, second) => second.quantity - first.quantity);
+  if (prices.length === 0) return null;
+
+  let remaining = 1;
+  let total = 0;
+  for (const price of prices) {
+    if (remaining < price.quantity) continue;
+    const multiples = Math.floor((remaining + Number.EPSILON) / price.quantity);
+    total += price.price * multiples;
+    remaining %= price.quantity;
+    if (remaining < Number.EPSILON * 10) {
+      remaining = 0;
+      break;
+    }
+  }
+
+  if (remaining > 0) {
+    const smallestPrice = prices.reduce((smallest, current) =>
+      current.quantity < smallest.quantity ? current : smallest,
+    );
+    total += (smallestPrice.price / smallestPrice.quantity) * remaining;
+  }
+
+  return Math.round(total * 100);
+}
+
+function isPizzaProduct(
+  product: CatalogProduct,
+  categories: PublicCatalog["categorias"],
+): boolean {
+  const categoryName = categories.find(
+    (category) => category.id === product.categoria_id,
+  )?.nombre.toLocaleLowerCase("es-AR");
+  return (
+    product.nombre.toLocaleLowerCase("es-AR").includes("pizza") ||
+    categoryName === "pizzas"
+  );
 }
 
 function formatQuantity(quantity: string): string {
@@ -205,6 +263,11 @@ function buildWhatsAppMessage(
         : "";
       return [
         `-\u00A0${item.count} x ${item.product.nombre}${portionLabel} — ${formatCents(item.subtotalCents)}`,
+      ];
+    }
+    if (item.type === "halfPizza") {
+      return [
+        `-\u00A0${item.count} x Pizza mitad/mitad: ${item.leftProduct.nombre} / ${item.rightProduct.nombre} — ${formatCents(item.subtotalCents)}`,
       ];
     }
     return [
@@ -356,6 +419,210 @@ function ProductCard({
   );
 }
 
+function PizzaHalfBuilder({
+  products,
+  onAdd,
+}: {
+  products: Array<{ product: CatalogProduct; unitPriceCents: number }>;
+  onAdd: (leftProduct: CatalogProduct, rightProduct: CatalogProduct) => void;
+}) {
+  const [isConfiguring, setIsConfiguring] = useState(false);
+  const [firstProductId, setFirstProductId] = useState<number | null>(null);
+  const [secondProductId, setSecondProductId] = useState<number | null>(null);
+  const [activeSelection, setActiveSelection] = useState<"first" | "second">("first");
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const firstProduct = products.find(({ product }) => product.id === firstProductId);
+  const secondProduct = products.find(({ product }) => product.id === secondProductId);
+  const selectedPrice =
+    firstProduct && secondProduct
+      ? Math.max(firstProduct.unitPriceCents, secondProduct.unitPriceCents)
+      : null;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (isConfiguring && !dialog.open) dialog.showModal();
+    if (!isConfiguring && dialog.open) dialog.close();
+  }, [isConfiguring]);
+
+  const closeAndReset = () => {
+    setIsConfiguring(false);
+    setFirstProductId(null);
+    setSecondProductId(null);
+    setActiveSelection("first");
+  };
+
+  const chooseProduct = (productId: number) => {
+    if (activeSelection === "first") {
+      setFirstProductId(productId);
+      setActiveSelection("second");
+      return;
+    }
+    if (productId === firstProductId) return;
+    setSecondProductId(productId);
+  };
+
+  return (
+    <>
+      <article className="product-card half-pizza-product-card">
+        <div className="product-image-wrap">
+          <img
+            className="product-image"
+            src="/pizza-mitad.png"
+            alt="Pizza mitad y mitad con dos sabores"
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.src = PLACEHOLDER_IMAGE;
+            }}
+          />
+        </div>
+        <div className="product-info half-pizza-product-info">
+          <h3>
+            Pizza Mitad y Mitad
+          </h3>
+          <p className="half-pizza-description">
+            Combiná dos sabores
+          </p>
+          <button
+            className="add-to-cart-button half-pizza-entry-button"
+            type="button"
+            onClick={() => setIsConfiguring(true)}
+          >
+            <Plus size={15} aria-hidden="true" />
+            Armar
+          </button>
+        </div>
+      </article>
+      <dialog
+        ref={dialogRef}
+        className="half-pizza-dialog"
+        aria-labelledby="half-pizza-title"
+        onClose={() => {
+          if (isConfiguring) setIsConfiguring(false);
+        }}
+        onCancel={(event) => {
+          event.preventDefault();
+          closeAndReset();
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeAndReset();
+        }}
+      >
+        <div className="offer-dialog-header">
+          <button
+            className="offer-dialog-back"
+            type="button"
+            onClick={closeAndReset}
+          >
+            <ArrowLeft size={17} aria-hidden="true" />
+            Volver a pizzas
+          </button>
+          <div>
+            <span className="eyebrow">ARMA TU PIZZA</span>
+            <h2 id="half-pizza-title">Mitad/mitad</h2>
+          </div>
+        </div>
+        <p className="offer-dialog-description">
+          Elegí dos sabores distintos. El precio será el de la pizza más cara.
+        </p>
+        <div className="half-pizza-config">
+          <div className="half-pizza-selected">
+            <button
+              className={`half-pizza-slot${activeSelection === "first" ? " active" : ""}`}
+              type="button"
+              onClick={() => setActiveSelection("first")}
+            >
+              <span>Primer sabor</span>
+              <strong>{firstProduct?.product.nombre ?? "Elegí un sabor"}</strong>
+              {firstProduct && (
+                <img
+                  src={firstProduct.product.imagen_url || PLACEHOLDER_IMAGE}
+                  alt=""
+                  onError={(event) => {
+                    event.currentTarget.src = PLACEHOLDER_IMAGE;
+                  }}
+                />
+              )}
+            </button>
+            <button
+              className={`half-pizza-slot${activeSelection === "second" ? " active" : ""}`}
+              type="button"
+              disabled={!firstProduct}
+              onClick={() => setActiveSelection("second")}
+            >
+              <span>Segundo sabor</span>
+              <strong>{secondProduct?.product.nombre ?? "Elegí otro sabor"}</strong>
+              {secondProduct && (
+                <img
+                  src={secondProduct.product.imagen_url || PLACEHOLDER_IMAGE}
+                  alt=""
+                  onError={(event) => {
+                    event.currentTarget.src = PLACEHOLDER_IMAGE;
+                  }}
+                />
+              )}
+            </button>
+          </div>
+          <h3 className="half-pizza-step-title">
+            {activeSelection === "first" ? "Elegí el primer sabor" : "Elegí el segundo sabor"}
+          </h3>
+          <div className="half-pizza-options">
+            {products.map(({ product, unitPriceCents }) => {
+              const isSelected =
+                product.id === firstProductId || product.id === secondProductId;
+              const isUnavailable =
+                (activeSelection === "first" && product.id === secondProductId) ||
+                (activeSelection === "second" && product.id === firstProductId);
+              return (
+                <button
+                  className={`half-pizza-option${isSelected ? " selected" : ""}`}
+                  key={product.id}
+                  type="button"
+                  disabled={isUnavailable}
+                  aria-pressed={isSelected}
+                  onClick={() => chooseProduct(product.id)}
+                >
+                  <img
+                    src={product.imagen_url || PLACEHOLDER_IMAGE}
+                    alt=""
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.src = PLACEHOLDER_IMAGE;
+                    }}
+                  />
+                  <span className="half-pizza-option-info">
+                    <strong>{product.nombre}</strong>
+                    <small>{formatCents(unitPriceCents)}</small>
+                  </span>
+                  {isSelected && <Check size={19} aria-hidden="true" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="offer-dialog-footer half-pizza-dialog-footer">
+          <strong>
+            {selectedPrice === null ? "Elegí los dos sabores" : formatCents(selectedPrice)}
+          </strong>
+          <button
+            className="offer-add-button"
+            type="button"
+            disabled={!firstProduct || !secondProduct}
+            onClick={() => {
+              if (!firstProduct || !secondProduct) return;
+              onAdd(firstProduct.product, secondProduct.product);
+              closeAndReset();
+            }}
+          >
+            <Plus size={15} aria-hidden="true" />
+            Agregar al pedido
+          </button>
+        </div>
+      </dialog>
+    </>
+  );
+}
+
 function CartAndCheckout({
   catalog,
   cart,
@@ -390,6 +657,21 @@ function CartAndCheckout({
         ...item,
         product,
         subtotalCents: Math.round(Number(price.precio) * 100) * item.count,
+      }];
+    }
+
+    if (item.type === "halfPizza") {
+      const leftProduct = products.get(item.leftProductId);
+      const rightProduct = products.get(item.rightProductId);
+      if (!leftProduct || !rightProduct) return [];
+      const leftPrice = getProductUnitPriceCents(leftProduct);
+      const rightPrice = getProductUnitPriceCents(rightProduct);
+      if (leftPrice === null || rightPrice === null) return [];
+      return [{
+        ...item,
+        leftProduct,
+        rightProduct,
+        subtotalCents: Math.max(leftPrice, rightPrice) * item.count,
       }];
     }
 
@@ -636,7 +918,9 @@ function CartAndCheckout({
             <div className="cart-lines">
               {resolvedCart.map((item) => (
                 <article
-                  className={`cart-line cart-line-${item.type}`}
+                  className={`cart-line cart-line-${
+                    item.type === "product" ? "product" : "offer"
+                  }`}
                   key={item.key}
                 >
                   {item.type === "product" && (
@@ -649,9 +933,17 @@ function CartAndCheckout({
                     />
                   )}
                   <div className="cart-line-details">
-                    <h4>{item.type === "product" ? item.product.nombre : item.offer.nombre}</h4>
+                    <h4>
+                      {item.type === "product"
+                        ? item.product.nombre
+                        : item.type === "halfPizza"
+                          ? "Pizza mitad/mitad"
+                          : item.offer.nombre}
+                    </h4>
                     {item.type === "product" ? (
                       <p>{formatProductPresentation(item.presentation)}</p>
+                    ) : item.type === "halfPizza" ? (
+                      <p>{item.leftProduct.nombre} / {item.rightProduct.nombre}</p>
                     ) : (
                       <ul className="cart-offer-selections">
                         {item.selections.map((selection, index) => (
@@ -666,11 +958,23 @@ function CartAndCheckout({
                   <div className="cart-line-actions">
                     <div
                       className="quantity-control"
-                      aria-label={`Cantidad de ${item.type === "product" ? item.product.nombre : item.offer.nombre}`}
+                      aria-label={`Cantidad de ${
+                        item.type === "product"
+                          ? item.product.nombre
+                          : item.type === "halfPizza"
+                            ? `pizza mitad/mitad ${item.leftProduct.nombre} y ${item.rightProduct.nombre}`
+                            : item.offer.nombre
+                      }`}
                     >
                       <button
                         type="button"
-                        aria-label={`Quitar una unidad de ${item.type === "product" ? item.product.nombre : item.offer.nombre}`}
+                        aria-label={`Quitar una unidad de ${
+                          item.type === "product"
+                            ? item.product.nombre
+                            : item.type === "halfPizza"
+                              ? "pizza mitad/mitad"
+                              : item.offer.nombre
+                        }`}
                         onClick={() => updateCount(item, -1)}
                       >
                         <Minus size={14} aria-hidden="true" />
@@ -678,7 +982,13 @@ function CartAndCheckout({
                       <span aria-live="polite">{item.count}</span>
                       <button
                         type="button"
-                        aria-label={`Agregar una unidad de ${item.type === "product" ? item.product.nombre : item.offer.nombre}`}
+                        aria-label={`Agregar una unidad de ${
+                          item.type === "product"
+                            ? item.product.nombre
+                            : item.type === "halfPizza"
+                              ? "pizza mitad/mitad"
+                              : item.offer.nombre
+                        }`}
                         onClick={() => updateCount(item, 1)}
                       >
                         <Plus size={14} aria-hidden="true" />
@@ -687,7 +997,13 @@ function CartAndCheckout({
                     <button
                       className="remove-item"
                       type="button"
-                      aria-label={`Eliminar ${item.type === "product" ? item.product.nombre : item.offer.nombre}, del pedido`}
+                      aria-label={`Eliminar ${
+                        item.type === "product"
+                          ? item.product.nombre
+                          : item.type === "halfPizza"
+                            ? "pizza mitad/mitad"
+                            : item.offer.nombre
+                      }, del pedido`}
                       onClick={() => removeItem(item)}
                     >
                       <Trash2 size={15} aria-hidden="true" />
@@ -906,9 +1222,15 @@ function CartAndCheckout({
                     <span>
                       {item.type === "product"
                         ? `${item.count} x ${item.product.nombre}`
-                        : `${item.count} x Promo: ${item.offer.nombre}`}
+                        : item.type === "halfPizza"
+                          ? `${item.count} x Pizza mitad/mitad`
+                          : `${item.count} x Promo: ${item.offer.nombre}`}
                       {item.type === "product" ? (
                         <small>{formatProductPresentation(item.presentation)}</small>
+                      ) : item.type === "halfPizza" ? (
+                        <small>
+                          {item.leftProduct.nombre} / {item.rightProduct.nombre}
+                        </small>
                       ) : (
                         <small>
                           {item.selections.map(formatOfferSelection).join(", ")}
@@ -1368,6 +1690,24 @@ function App() {
       productsByCategory.has(category.id) &&
       !HIDDEN_CATEGORY_NAMES.has(category.nombre.trim().toLocaleLowerCase("es-AR")),
   ) ?? [];
+  const visibleCategoryIds = new Set(visibleCategories.map((category) => category.id));
+  const halfPizzaProducts = catalog?.productos.flatMap((product) => {
+    if (!visibleCategoryIds.has(product.categoria_id) || !catalog) return [];
+    if (!isPizzaProduct(product, catalog.categorias)) return [];
+    const unitPriceCents = getProductUnitPriceCents(product);
+    return unitPriceCents === null
+      ? []
+      : [{ product, unitPriceCents }];
+  }) ?? [];
+  const halfPizzaCategoryId =
+    halfPizzaProducts.length < 2
+      ? undefined
+      : visibleCategories.find(
+          (category) => category.nombre.trim().toLocaleLowerCase("es-AR") === "pizzas",
+        )?.id ??
+        visibleCategories.find((category) =>
+          halfPizzaProducts.some(({ product }) => product.categoria_id === category.id),
+        )?.id;
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -1415,6 +1755,19 @@ function App() {
       const offer = catalog.ofertas.find((entry) => entry.id === item.offerId);
       return offer
         ? total + Math.round(Number(offer.precio) * 100) * item.count
+        : total;
+    }
+    if (item.type === "halfPizza") {
+      const leftProduct = catalog.productos.find(
+        (entry) => entry.id === item.leftProductId,
+      );
+      const rightProduct = catalog.productos.find(
+        (entry) => entry.id === item.rightProductId,
+      );
+      const leftPrice = leftProduct ? getProductUnitPriceCents(leftProduct) : null;
+      const rightPrice = rightProduct ? getProductUnitPriceCents(rightProduct) : null;
+      return leftPrice !== null && rightPrice !== null
+        ? total + Math.max(leftPrice, rightPrice) * item.count
         : total;
     }
     const product = catalog.productos.find((entry) => entry.id === item.productId);
@@ -1465,6 +1818,22 @@ function App() {
         offerId: offer.id,
         count: 1,
         selections,
+      },
+    ]);
+  };
+
+  const addHalfPizzaToCart = (
+    leftProduct: CatalogProduct,
+    rightProduct: CatalogProduct,
+  ) => {
+    setCart((currentCart) => [
+      ...currentCart,
+      {
+        type: "halfPizza",
+        key: crypto.randomUUID(),
+        leftProductId: leftProduct.id,
+        rightProductId: rightProduct.id,
+        count: 1,
       },
     ]);
   };
@@ -1631,6 +2000,12 @@ function App() {
                       </span>
                     </div>
                     <div className="product-grid">
+                      {category.id === halfPizzaCategoryId && (
+                        <PizzaHalfBuilder
+                          products={halfPizzaProducts}
+                          onAdd={addHalfPizzaToCart}
+                        />
+                      )}
                       {productsByCategory.get(category.id)?.map((product) => (
                 <ProductCard
                   key={product.id}
