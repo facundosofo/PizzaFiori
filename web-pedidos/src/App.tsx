@@ -40,6 +40,20 @@ const HIDDEN_CATEGORY_NAMES = new Set(
 );
 const PLACEHOLDER_IMAGE = "/logo.png";
 const THEME_STORAGE_KEY = "pizza-fiori-theme";
+const EMOJI = {
+  pizza: String.fromCodePoint(0x1f355),
+  cart: String.fromCodePoint(0x1f6d2),
+  money: String.fromCodePoint(0x1f4b0),
+  scooter: String.fromCodePoint(0x1f6f5),
+  cash: String.fromCodePoint(0x1f4b5),
+  clipboard: String.fromCodePoint(0x1f4cb),
+  person: String.fromCodePoint(0x1f464),
+  house: String.fromCodePoint(0x1f3e0),
+  card: String.fromCodePoint(0x1f4b3),
+  memo: String.fromCodePoint(0x1f4dd),
+  pray: String.fromCodePoint(0x1f64f),
+  pin: String.fromCodePoint(0x1f4cd),
+} as const;
 type Theme = "light" | "dark";
 
 function getInitialTheme(): Theme {
@@ -184,42 +198,46 @@ function buildWhatsAppMessage(
 ): string {
   const productLines = items.flatMap((item) => {
     if (item.type === "product") {
+      const presentation = Number(item.presentation);
+      const portionLabel = presentation > 0 && presentation < 1
+        ? ` (${formatProductPresentation(item.presentation)})`
+        : "";
       return [
-        `- ${item.count} x ${item.product.nombre} (${formatProductPresentation(item.presentation)}) — ${formatCents(item.subtotalCents)}`,
+        `-\u00A0${item.count} x ${item.product.nombre}${portionLabel} — ${formatCents(item.subtotalCents)}`,
       ];
     }
     return [
-      `- ${item.count} x Promo: ${item.offer.nombre} — ${formatCents(item.subtotalCents)}`,
-      ...item.selections.map((selection) => `  - ${formatOfferSelection(selection)}`),
+      `-\u00A0${item.count} x Promo: ${item.offer.nombre} — ${formatCents(item.subtotalCents)}`,
+      ...item.selections.map((selection) => `  -\u00A0${formatOfferSelection(selection)}`),
     ];
   });
   const fulfillmentLabel = order.fulfillment === "delivery" ? "Delivery" : "Retiro por el local";
   const deliveryLines =
     order.fulfillment === "delivery"
-      ? [`\u{1F4CD} *Dirección:* ${order.address.trim()}`]
+      ? [`${EMOJI.pin} *Dirección:* ${order.address.trim()}`]
       : [];
 
   return [
-    "\u{1F355} *¡Hola, Pizza Fiori!* Quiero hacer este pedido:",
+    `${EMOJI.pizza} *¡Hola, Pizza Fiori!* Quiero hacer este pedido:`,
     "",
-    "\u{1F6D2} *MI PEDIDO*",
+    `${EMOJI.cart} *MI PEDIDO*`,
     "",
     ...productLines,
     "",
-    `\u{1F4B0} *Subtotal:* ${formatCents(totalCents)}`,
-    "\u{1F6F5} *Envío:* A confirmar",
-    `\u{1F4B5} *Total estimado:* ${formatCents(totalCents)}`,
+    `${EMOJI.money} *Subtotal:* ${formatCents(totalCents)}`,
+    `${EMOJI.scooter} *Envío:* A confirmar`,
+    `${EMOJI.cash} *Total estimado:* ${formatCents(totalCents)}`,
     "",
     "*_Los importes y el envío quedan sujetos a confirmación del local._*",
     "",
-    "\u{1F4CB} *DATOS DEL PEDIDO*",
-    `\u{1F464} *Nombre:* ${order.name.trim()}`,
-    `\u{1F3E0} *Entrega:* ${fulfillmentLabel}`,
+    `${EMOJI.clipboard} *DATOS DEL PEDIDO*`,
+    `${EMOJI.person} *Nombre:* ${order.name.trim()}`,
+    `${EMOJI.house} *Entrega:* ${fulfillmentLabel}`,
     ...deliveryLines,
-    `\u{1F4B3} *Pago:* ${order.paymentMethod}`,
-    `\u{1F4DD} *Observaciones:* ${order.notes.trim() || "Sin observaciones"}`,
+    `${EMOJI.card} *Pago:* ${order.paymentMethod}`,
+    `${EMOJI.memo} *Observaciones:* ${order.notes.trim() || "Sin observaciones"}`,
     "",
-    "\u{1F64F} Quedo atento a la confirmación. ¡Muchas gracias!",
+    `${EMOJI.pray} Quedo atento a la confirmación. ¡Muchas gracias!`,
   ].join("\n");
 }
 
@@ -378,7 +396,7 @@ function CartAndCheckout({
     : "";
   const encodedWhatsAppMessage = encodeURIComponent(whatsappMessage).replace(/\*/g, "%2A");
   const whatsappUrl = whatsappPhone
-    ? `https://wa.me/${whatsappPhone}?text=${encodedWhatsAppMessage}`
+    ? `https://api.whatsapp.com/send?phone=${whatsappPhone}&text=${encodedWhatsAppMessage}`
     : null;
 
   useEffect(() => {
