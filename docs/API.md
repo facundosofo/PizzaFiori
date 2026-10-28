@@ -17,6 +17,69 @@ FastAPI proporciona documentación interactiva automática:
 
 ## Endpoints Disponibles
 
+### Publicación del catálogo de pedidos
+
+Estos endpoints son de uso interno y requieren autenticación de administrador. La publicación lee los productos, categorías, precios y ofertas disponibles desde la base local, y los sube a Cloudflare R2. No crea pedidos ni expone credenciales.
+
+#### Consultar y actualizar el mínimo de delivery gratis
+
+```http
+GET /config/delivery-minimum
+PUT /config/delivery-minimum
+```
+
+El `GET` requiere una sesión válida. El `PUT` requiere rol administrador y recibe un importe no negativo con hasta dos decimales:
+
+```json
+{
+  "monto_minimo_delivery": 13000
+}
+```
+
+Ambos endpoints devuelven `monto_minimo_delivery`. El valor inicial es `$13.000`; un valor de `0` habilita delivery sin mínimo. Después de actualizarlo, se debe publicar nuevamente el catálogo para que la web de pedidos aplique el nuevo umbral. La elegibilidad se calcula usando el subtotal de productos y promociones, antes del recargo por transferencia.
+
+#### Consultar la última publicación
+
+```http
+GET /config/catalog/status
+```
+
+**Respuesta (200):**
+
+```json
+{
+  "publicado_en": "2026-10-20T20:00:00Z"
+}
+```
+
+`publicado_en` es `null` si todavía no se publicó el catálogo.
+
+#### Publicar el catálogo
+
+```http
+POST /config/catalog/publish
+```
+
+La aplicación interna permite ejecutar esta acción desde **Configuración → Catálogo para pedidos**. Las imágenes locales se copian primero a R2 y `catalogo-actual.json` se actualiza al final.
+
+**Respuesta exitosa (200):**
+
+```json
+{
+  "publicado_en": "2026-10-20T20:00:00Z",
+  "catalogo_version": "sha256-del-catalogo",
+  "catalogo_url": "https://catalogo.ejemplo.com/catalogo/sha256-del-catalogo.json",
+  "categorias": 3,
+  "productos": 18,
+  "ofertas": 2,
+  "actualizado": true
+}
+```
+
+**Errores:** `401` si no hay sesión válida, `403` si el usuario no es administrador, `409` si falta una imagen local, `502` si falla la carga a R2 y `503` si falta configurar R2 en el backend.
+
+`actualizado` es `false` cuando el catálogo publicado ya coincide con los datos actuales; en ese caso no se vuelven a subir objetos ni se cambia la fecha de publicación. Cuando hay cambios, las imágenes nuevas se cargan en paralelo (hasta cuatro a la vez), luego se publica el catálogo inmutable a `{R2_PUBLIC_BASE_URL}/catalogo/{hash}.json` y, al final, se actualiza `{R2_PUBLIC_BASE_URL}/catalogo-actual.json`. Las claves de imagen basadas en su contenido permiten no volver a cargar imágenes ya registradas como publicadas. La web pública consulta ese pequeño índice para obtener la URL versionada. El índice exige revalidación; el catálogo y las imágenes se pueden cachear por 180 días. Si se configura una regla de caché en Cloudflare, debe excluirse `catalogo-actual.json` de caché y permitir caché larga para las rutas versionadas. Solo el catálogo versionado contiene los DTOs públicos (`version`, `publicado_en`, `porcentaje_recargo_transferencia`, `monto_minimo_delivery`, `categorias`, `productos` y `ofertas`). El recargo se lee de `recargo_transferencia` y el mínimo de delivery de `monto_minimo_delivery` en la configuración administrativa al publicar; después de modificar cualquiera de esos valores, se debe volver a publicar el catálogo para que la web lo refleje. Las credenciales de escritura se configuran únicamente en el `.env` del backend local.
+
 ### Productos
 
 #### Crear un Producto
