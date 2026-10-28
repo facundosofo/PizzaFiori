@@ -338,13 +338,20 @@ textarea:focus-visible {
 
 .hero-seal-spark {
   position: absolute;
+  width: 25px;
+  height: 25px;
   color: var(--green);
-  font-size: 25px;
-  animation: flame-flicker 2.8s ease-in-out infinite;
+  animation: sparkle-float 2.4s ease-in-out infinite;
 }
 
 .spark-one { top: 17%; right: 14%; }
-.spark-two { bottom: 17%; left: 13%; font-size: 18px; animation-delay: 500ms; }
+.spark-two {
+  bottom: 17%;
+  left: 13%;
+  width: 18px;
+  height: 18px;
+  animation-delay: 500ms;
+}
 
 @keyframes seal-enter {
   from { opacity: 0; transform: scale(0.94) rotate(-3deg); }
@@ -823,8 +830,30 @@ textarea:focus-visible {
 }
 
 .category-flower {
+  width: 23px;
+  height: 23px;
+  flex: 0 0 auto;
   color: var(--terracotta);
-  font-size: 23px;
+}
+
+.category-sparkle {
+  animation: sparkle-float 2.4s ease-in-out infinite;
+}
+
+.category-flame {
+  color: var(--terracotta);
+  animation: flame-flicker 1.8s ease-in-out infinite;
+}
+
+@keyframes sparkle-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-8deg) scale(0.94);
+  }
+
+  50% {
+    transform: translateY(-3px) rotate(8deg) scale(1.08);
+  }
 }
 
 .category-heading h3 {
@@ -2050,7 +2079,17 @@ textarea:focus-visible {
   font-style: italic;
 }
 
-.closing-flower { color: var(--terracotta); font-size: 22px; }
+.closing-flower {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  color: var(--terracotta);
+  animation: sparkle-float 2.4s ease-in-out infinite;
+}
+
+.closing-flower:last-of-type {
+  animation-delay: 350ms;
+}
 
 .site-footer {
   display: flex;
@@ -2078,6 +2117,62 @@ textarea:focus-visible {
   color: var(--brand-red);
   text-shadow: var(--brand-red-glow);
 }
+
+.footer-socials {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-socials a {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(233, 233, 222, 0.35);
+  border-radius: 50%;
+  color: #e9e9de;
+  place-items: center;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.footer-socials a:hover {
+  transform: translateY(-2px);
+  border-color: #e9e9de;
+  background: rgba(233, 233, 222, 0.12);
+}
+
+.footer-socials a:focus-visible {
+  outline: 2px solid #e9e9de;
+  outline-offset: 3px;
+}
+
+.footer-socials a > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.footer-whatsapp-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.footer-whatsapp-icon > svg:first-child {
+  width: 21px;
+  height: 21px;
+}
+
+.footer-whatsapp-icon > svg:last-child {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  stroke-width: 3;
+}
+
 .footer-credit { color: #bfcbb6; font-size: 8px; letter-spacing: 1.5px; }
 
 .skeleton {

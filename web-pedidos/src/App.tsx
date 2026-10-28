@@ -7,7 +7,9 @@ import {
   Check,
   Clock3,
   CreditCard,
+  Facebook,
   Flame,
+  Instagram,
   Leaf,
   LoaderCircle,
   MapPin,
@@ -15,8 +17,10 @@ import {
   Moon,
   Minus,
   Plus,
+  Phone,
   RefreshCw,
   ShoppingBag,
+  Sparkles,
   Store,
   Sun,
   Trash2,
@@ -31,6 +35,18 @@ import {
 
 const POINTER_URL = import.meta.env.VITE_CATALOG_POINTER_URL ?? "";
 const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE ?? "";
+const FOOTER_WHATSAPP_PHONE = normalizeWhatsAppPhone(WHATSAPP_PHONE);
+const INSTAGRAM_URL = getSafeExternalUrl(import.meta.env.VITE_INSTAGRAM_URL);
+const FACEBOOK_URL = getSafeExternalUrl(import.meta.env.VITE_FACEBOOK_URL);
+const GOOGLE_MAPS_URL = getSafeExternalUrl(import.meta.env.VITE_GOOGLE_MAPS_URL);
+const WHATSAPP_URL =
+  getSafeExternalUrl(import.meta.env.VITE_WHATSAPP_URL) ??
+  (FOOTER_WHATSAPP_PHONE
+    ? `https://wa.me/${FOOTER_WHATSAPP_PHONE}`
+    : null);
+const PHONE_NUMBER = normalizeWhatsAppPhone(
+  import.meta.env.VITE_PHONE_NUMBER ?? WHATSAPP_PHONE,
+);
 const HIDDEN_CATEGORY_NAMES = new Set(
   (import.meta.env.VITE_HIDDEN_CATEGORIES ?? "")
     .split(",")
@@ -245,6 +261,19 @@ function formatPublishDate(value: string): string {
 function normalizeWhatsAppPhone(value: string): string | null {
   const digits = value.replace(/\D/g, "");
   return /^\d{8,15}$/.test(digits) ? digits : null;
+}
+
+function getSafeExternalUrl(value: string | undefined): string | null {
+  if (!value?.trim()) return null;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function buildWhatsAppMessage(
@@ -1923,8 +1952,8 @@ function App() {
               </div>
               <span className="hero-seal-bottom">FRESCO · CASERO · FIORI</span>
             </div>
-            <span className="hero-seal-spark spark-one">✳</span>
-            <span className="hero-seal-spark spark-two">✳</span>
+            <Sparkles className="hero-seal-spark spark-one" />
+            <Sparkles className="hero-seal-spark spark-two" />
           </div>
         </section>
 
@@ -1993,9 +2022,10 @@ function App() {
                   aria-labelledby="offers-title"
                 >
                   <div className="category-heading offers-heading">
-                    <span className="category-flower" aria-hidden="true">
-                      ✳
-                    </span>
+                    <Flame
+                      className="category-flower category-flame"
+                      aria-hidden="true"
+                    />
                     <h3 id="offers-title">Promos para compartir</h3>
                   </div>
                   <div className="offers-grid">
@@ -2018,9 +2048,10 @@ function App() {
                     key={category.id}
                   >
                     <div className="category-heading">
-                      <span className="category-flower" aria-hidden="true">
-                ✳
-                      </span>
+                      <Sparkles
+                        className="category-flower category-sparkle"
+                        aria-hidden="true"
+                      />
                       <h3>{category.nombre}</h3>
                       <span className="category-count">
                 {productsByCategory.get(category.id)?.length ?? 0}{" "}
@@ -2068,9 +2099,9 @@ function App() {
         )}
 
         <section className="closing-note">
-          <span className="closing-flower" aria-hidden="true">✳</span>
+          <Sparkles className="closing-flower" aria-hidden="true" />
           <p>Hecho para compartir.</p>
-          <span className="closing-flower" aria-hidden="true">✳</span>
+          <Sparkles className="closing-flower" aria-hidden="true" />
         </section>
       </main>
 
@@ -2080,6 +2111,64 @@ function App() {
           <strong className="brand-fiori">FIORI</strong>
         </a>
         <span>Pedidos por WhatsApp</span>
+        <nav className="footer-socials" aria-label="Redes sociales y contacto">
+          {GOOGLE_MAPS_URL && (
+            <a
+              href={GOOGLE_MAPS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Ubicación de Pizza Fiori en Google Maps"
+              title="Ubicación"
+            >
+              <MapPin aria-hidden="true" />
+            </a>
+          )}
+          {INSTAGRAM_URL && (
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram de Pizza Fiori"
+              title="Instagram"
+            >
+              <Instagram aria-hidden="true" />
+            </a>
+          )}
+          {FACEBOOK_URL && (
+            <a
+              href={FACEBOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook de Pizza Fiori"
+              title="Facebook"
+            >
+              <Facebook aria-hidden="true" />
+            </a>
+          )}
+          {WHATSAPP_URL && (
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="WhatsApp de Pizza Fiori"
+              title="WhatsApp"
+            >
+              <span className="footer-whatsapp-icon" aria-hidden="true">
+                <MessageCircle />
+                <Phone />
+              </span>
+            </a>
+          )}
+          {PHONE_NUMBER && (
+            <a
+              href={`tel:+${PHONE_NUMBER}`}
+              aria-label="Llamar a Pizza Fiori"
+              title="Teléfono"
+            >
+              <Phone aria-hidden="true" />
+            </a>
+          )}
+        </nav>
       </footer>
 
       {isLoading && (
