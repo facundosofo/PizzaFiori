@@ -235,6 +235,23 @@ function formatOfferQuantity(quantity: number): string {
   return formatQuantity(String(quantity));
 }
 
+function formatCategoryOfferDescription(quantity: number, categoryName: string): string {
+  let quantityLabel: string;
+  if ([0.125, 0.25, 0.5].some((portion) => Math.abs(quantity - portion) < 1e-9)) {
+    quantityLabel = "1 porción";
+  } else if (Math.abs(quantity - 6) < 1e-9) {
+    quantityLabel = "1/2 docena";
+  } else if (quantity >= 12 && quantity % 12 === 0) {
+    const dozens = quantity / 12;
+    quantityLabel = `${formatQuantity(String(dozens))} docena${dozens === 1 ? "" : "s"}`;
+  } else {
+    quantityLabel = new Intl.NumberFormat("es-AR", {
+      maximumFractionDigits: 6,
+    }).format(quantity);
+  }
+  return `${quantityLabel} de ${categoryName.toLocaleLowerCase("es-AR")} a elección`;
+}
+
 function formatOfferSelection(selection: SelectedOfferProduct): string {
   if (selection.quantity < 1) {
     return `${formatProductPresentation(selection.quantity)} de ${selection.productName}`;
@@ -1541,7 +1558,10 @@ function OfferCard({
           {offer.items.map((item, index) => {
             const type = getOfferItemType(item);
             const itemDescription = type === "category"
-              ? `a elección en ${categoryNames.get(item.categoria_id ?? -1) ?? "la categoría"}`
+              ? formatCategoryOfferDescription(
+                  Number(item.cantidad),
+                  categoryNames.get(item.categoria_id ?? -1) ?? "la categoría",
+                )
               : type === "options"
                 ? `elegí entre ${item.producto_ids
                     .map((productId) => productNames.get(productId))
@@ -1550,7 +1570,11 @@ function OfferCard({
                 : productNames.get(item.producto_ids[0]) ?? "Producto";
             return (
               <li key={`${offer.id}-${index}`}>
-                <span>{formatOfferQuantity(Number(item.cantidad))} ×</span>{" "}
+                {type !== "category" && (
+                  <>
+                    <span>{formatOfferQuantity(Number(item.cantidad))} ×</span>{" "}
+                  </>
+                )}
                 {itemDescription}
               </li>
             );

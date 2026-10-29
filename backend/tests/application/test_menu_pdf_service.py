@@ -482,6 +482,34 @@ async def test_generates_pdf_with_variable_presentations_and_natural_promo_detai
                 )
             ],
         ),
+        SimpleNamespace(
+            id=43,
+            nombre="Media docena de empanadas",
+            descripcion=None,
+            precio=Decimal("6500"),
+            activo=True,
+            productos=[
+                SimpleNamespace(
+                    cantidad=Decimal("6"),
+                    categoria_id=3,
+                    productos=[],
+                )
+            ],
+        ),
+        SimpleNamespace(
+            id=44,
+            nombre="Muchas empanadas",
+            descripcion=None,
+            precio=Decimal("99000"),
+            activo=True,
+            productos=[
+                SimpleNamespace(
+                    cantidad=Decimal("99"),
+                    categoria_id=3,
+                    productos=[],
+                )
+            ],
+        ),
     ]
     uow = SimpleNamespace(
         product_category_repo=SimpleNamespace(
@@ -512,6 +540,12 @@ async def test_generates_pdf_with_variable_presentations_and_natural_promo_detai
     assert descriptions["Promo faina"] == "1 porción de Faina"
     assert descriptions["Docenas de empanadas"] == (
         "2 docenas de empanadas a elección"
+    )
+    assert descriptions["Media docena de empanadas"] == (
+        "1/2 docena de empanadas a elección"
+    )
+    assert descriptions["Muchas empanadas"] == (
+        "99 de empanadas a elección"
     )
 
 

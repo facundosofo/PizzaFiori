@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Offer, OfferItem } from '../types/offer';
 import type { Product } from '../types/product';
 import { formatMixedFraction } from '../utils/soldQuantityFormatter';
+import { formatCategoryOfferDescription } from '../utils/offerFormatters';
 import '../styles/shared/quantity-controls.css';
 import '../styles/offer-config-modal.css';
 import * as Icons from './shared/Icons';
@@ -254,7 +255,10 @@ export const OfferConfigModal: React.FC<OfferConfigModalProps> = ({
                     <div className="offer-config-category">
                       <div className="offer-config-category-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
                         <h3 className="offer-config-category-title" style={{ margin: 0 }}>
-                          {item.categoria_nombre || 'Productos disponibles'} ({toNumber(item.cantidad)}x)
+                          {formatCategoryOfferDescription(
+                            toNumber(item.cantidad),
+                            item.categoria_nombre || 'Productos disponibles',
+                          )}
                         </h3>
                         <div className="offer-config-counter">
                           {(() => {

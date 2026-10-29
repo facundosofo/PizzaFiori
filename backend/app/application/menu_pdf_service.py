@@ -296,9 +296,6 @@ def _offer_description(offer: PublicCatalogOffer, catalog: PublicCatalogResponse
         product.id: _title_case_if_uppercase(product.nombre)
         for product in catalog.productos
     }
-    products_by_category: dict[int, list[str]] = {}
-    for product in catalog.productos:
-        products_by_category.setdefault(product.categoria_id, []).append(product.nombre)
     categories = {
         category.id: _title_case_if_uppercase(category.nombre)
         for category in catalog.categorias
@@ -312,17 +309,9 @@ def _offer_description(offer: PublicCatalogOffer, catalog: PublicCatalogResponse
             category_name = categories.get(item.categoria_id)
             if not category_name:
                 continue
-            if amount == Decimal("1"):
-                options = products_by_category.get(item.categoria_id, [])
-                if len(options) > 1:
-                    entries.append(f"Elegí 1: {' / '.join(options)}")
-                    continue
-            if amount >= Decimal("12") and amount % Decimal("12") == 0:
-                entries.append(f"{quantity_text} de {category_name.lower()} a elección")
-            elif amount in (Decimal("0.125"), Decimal("0.25"), Decimal("0.5")):
-                entries.append(f"{quantity_text} de {category_name}")
-            else:
-                entries.append(f"{quantity_text} a elección de {category_name}")
+            entries.append(
+                f"{quantity_text} de {category_name.lower()} a elección"
+            )
             continue
 
         names = [
