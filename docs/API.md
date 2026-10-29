@@ -80,6 +80,23 @@ La aplicación interna permite ejecutar esta acción desde **Configuración → 
 
 `actualizado` es `false` cuando el catálogo publicado ya coincide con los datos actuales; en ese caso no se vuelven a subir objetos ni se cambia la fecha de publicación. Cuando hay cambios, las imágenes nuevas se cargan en paralelo (hasta cuatro a la vez), luego se publica el catálogo inmutable a `{R2_PUBLIC_BASE_URL}/catalogo/{hash}.json` y, al final, se actualiza `{R2_PUBLIC_BASE_URL}/catalogo-actual.json`. Las claves de imagen basadas en su contenido permiten no volver a cargar imágenes ya registradas como publicadas. La web pública consulta ese pequeño índice para obtener la URL versionada. El índice exige revalidación; el catálogo y las imágenes se pueden cachear por 180 días. Si se configura una regla de caché en Cloudflare, debe excluirse `catalogo-actual.json` de caché y permitir caché larga para las rutas versionadas. Solo el catálogo versionado contiene los DTOs públicos (`version`, `publicado_en`, `porcentaje_recargo_transferencia`, `monto_minimo_delivery`, `categorias`, `productos` y `ofertas`). El recargo se lee de `recargo_transferencia` y el mínimo de delivery de `monto_minimo_delivery` en la configuración administrativa al publicar; después de modificar cualquiera de esos valores, se debe volver a publicar el catálogo para que la web lo refleje. Las credenciales de escritura se configuran únicamente en el `.env` del backend local.
 
+#### Descargar el menú para compartir
+
+```http
+GET /config/menu/pdf
+```
+
+Requiere sesión de administrador. El backend genera y devuelve un PDF con las categorías, productos activos que tengan precio y promociones disponibles de la base de datos. No depende de publicar el catálogo en R2.
+
+**Respuesta exitosa (200):** archivo `application/pdf` descargado como `menu-pizza-fiori.pdf`.
+
+**Errores:** `401` si no hay sesión válida, `403` si el usuario no es administrador y `404` si no hay productos activos con precios.
+
+El backend omite por defecto la categoría `Extras` del PDF. Se puede configurar
+`MENU_PDF_HIDDEN_CATEGORIES` con una lista separada por comas, por ejemplo
+`MENU_PDF_HIDDEN_CATEGORIES="Extras,Cafetería"`. La comparación ignora espacios
+alrededor, mayúsculas y tildes.
+
 ### Productos
 
 #### Crear un Producto

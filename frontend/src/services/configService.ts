@@ -1,3 +1,4 @@
+import axios from "axios";
 import api from "./http";
 
 export interface RecargoConfig {
@@ -30,6 +31,37 @@ export const getCatalogPublishStatus = async (): Promise<CatalogPublishStatus> =
 export const publishCatalog = async (): Promise<CatalogPublishResult> => {
   const response = await api.post<CatalogPublishResult>("/config/catalog/publish");
   return response.data;
+};
+
+export const downloadMenuPdf = async (): Promise<Blob> => {
+  try {
+    const response = await api.get<Blob>("/config/menu/pdf", {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+      const body = await error.response.data.text();
+      if (body) {
+        try {
+          const payload: unknown = JSON.parse(body);
+          if (
+            typeof payload === "object" &&
+            payload !== null &&
+            "detail" in payload &&
+            typeof payload.detail === "string"
+          ) {
+            throw new Error(payload.detail);
+          }
+        } catch (parseError) {
+          if (parseError instanceof Error && parseError.name !== "SyntaxError") {
+            throw parseError;
+          }
+        }
+      }
+    }
+    throw error;
+  }
 };
 
 /**

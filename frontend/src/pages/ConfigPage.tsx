@@ -5,6 +5,7 @@ import {
   getCatalogPublishStatus,
   getDeliveryMinimumConfig,
   getRecargoConfig,
+  downloadMenuPdf,
   publishCatalog,
   updateDeliveryMinimumConfig,
   updateRecargoConfig,
@@ -43,6 +44,9 @@ export default function ConfigPage() {
   const [catalogPublishing, setCatalogPublishing] = useState(false);
   const [catalogResult, setCatalogResult] = useState<CatalogPublishResult | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [menuPdfDownloading, setMenuPdfDownloading] = useState(false);
+  const [menuPdfDownloaded, setMenuPdfDownloaded] = useState(false);
+  const [menuPdfError, setMenuPdfError] = useState<string | null>(null);
   const [deliveryMinimum, setDeliveryMinimum] = useState("13000");
   const [originalDeliveryMinimum, setOriginalDeliveryMinimum] = useState("13000");
   const [deliverySaving, setDeliverySaving] = useState(false);
@@ -138,6 +142,30 @@ export default function ConfigPage() {
       setCatalogError(errorMessage);
     } finally {
       setCatalogPublishing(false);
+    }
+  };
+
+  const handleDownloadMenuPdf = async () => {
+    try {
+      setMenuPdfError(null);
+      setMenuPdfDownloaded(false);
+      setMenuPdfDownloading(true);
+      const pdf = await downloadMenuPdf();
+      const url = window.URL.createObjectURL(pdf);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "menu-pizza-fiori.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      setMenuPdfDownloaded(true);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al generar el PDF del menú";
+      setMenuPdfError(errorMessage);
+    } finally {
+      setMenuPdfDownloading(false);
     }
   };
 
@@ -350,7 +378,7 @@ export default function ConfigPage() {
                       </label>
                       <p className="form-help">
                         Se calcula sobre productos y promociones, antes del recargo por transferencia.
-                        El valor inicial es $13.000. Guardá el cambio y publicá el catálogo para actualizar
+                        Guardá el cambio y publicá el catálogo para actualizar
                         la web de pedidos. Usá $0 para habilitar delivery sin mínimo.
                       </p>
                     </div>
@@ -423,6 +451,59 @@ export default function ConfigPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <div className="config-card">
+            <div className="config-card-header">
+              <div className="config-card-title-group">
+                <div className="config-card-icon">
+                  <Icons.PizzaIcon size={24} color="currentColor" />
+                </div>
+                <div>
+                  <h2 className="config-card-title">Menú Digital</h2>
+                  <p className="config-card-description">
+                    Genera el menu digital como un PDF con los productos, precios y promociones activos de la base de datos.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="config-card-body">
+              {menuPdfError && (
+                <ErrorAlert
+                  message={menuPdfError}
+                  onClose={() => setMenuPdfError(null)}
+                />
+              )}
+              <div className="form-actions">
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={handleDownloadMenuPdf}
+                  disabled={menuPdfDownloading}
+                >
+                  {menuPdfDownloading ? (
+                    <>
+                      <Icons.SpinnerIcon size={16} /> Generando PDF...
+                    </>
+                  ) : (
+                    "Generar y descargar menú PDF"
+                  )}
+                </button>
+              </div>
+              {menuPdfDownloaded && (
+                <div className="success-message" role="status">
+                  <Icons.CheckIcon size={18} />
+                  Menú descargado, listo para compartir con los clientes.
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="config-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.16 }}
         >
           <div className="config-card">
             <div className="config-card-header">

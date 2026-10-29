@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import Response
 from decimal import Decimal, InvalidOperation
 
 from app.infrastructure.unit_of_work import get_uow
@@ -18,6 +19,7 @@ from app.application.public_catalog_service import (
     RECARGO_KEY,
     decode_publish_timestamp,
 )
+from app.application.menu_pdf_service import MenuCatalogEmptyError, MenuPdfService
 from app.infrastructure.r2_catalog_storage import (
     CatalogStorageConfigurationError,
     CatalogStorageError,
@@ -172,3 +174,38 @@ async def publish_public_catalog(
     except CatalogStorageError as exc:
         catalog_logger.error("No se pudo publicar el catálogo", error=str(exc))
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+
+@router.get(
+    "/menu/pdf",
+    summary="Generar PDF del menú actual",
+    description="Genera un PDF con los productos, precios y promociones activos de la base de datos.",
+    responses={
+        200: {
+            "description": "PDF del menú generado",
+            "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}},
+        },
+        403: {"description": "Se requiere rol administrador"},
+        404: {"description": "No hay productos disponibles para el menú"},
+    },
+)
+async def download_menu_pdf(
+    _admin: dict = Depends(require_admin),
+    uow=Depends(get_uow),
+):
+    try:
+        pdf_bytes = await MenuPdfService().generate(uow)
+    except MenuCatalogEmptyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": 'attachment; filename="menu-pizza-fiori.pdf"',
+            "Cache-Control": "no-store",
+        },
+    )
