@@ -127,6 +127,32 @@ async def test_get_producto_categoria_id_invalido_retorna_422(async_client: Asyn
     assert response.status_code == 422
 
 
+@pytest.mark.asyncio
+async def test_reorder_productos_categorias_exitoso(
+    async_client: AsyncClient, mock_product_category_service
+):
+    response = await async_client.put(
+        "/productos-categorias/orden",
+        json={"categoria_ids": [2, 1]},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"actualizado": True}
+    mock_product_category_service.reorder.assert_awaited_once_with([2, 1])
+
+
+@pytest.mark.asyncio
+async def test_reorder_productos_categorias_requiere_lista(
+    async_client: AsyncClient,
+):
+    response = await async_client.put(
+        "/productos-categorias/orden",
+        json={"categoria_ids": "2,1"},
+    )
+
+    assert response.status_code == 422
+
+
 # --- Tests de actualización ---
 
 @pytest.mark.asyncio

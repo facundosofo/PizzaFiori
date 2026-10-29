@@ -33,7 +33,9 @@ def mock_product_category_repo():
     
     # Default behaviors
     repo.add = AsyncMock(return_value=None)
+    repo.list = AsyncMock(return_value=[])
     repo.get_all = AsyncMock(return_value=[])
+    repo.list_by_active = AsyncMock(return_value=[])
     repo.get_by_id = AsyncMock(return_value=None)
     repo.update = AsyncMock(return_value=None)
     repo.delete = AsyncMock(return_value=None)
@@ -262,6 +264,7 @@ def mock_product_category_service():
     service.get_by_id = AsyncMock(return_value=result)
     service.update = AsyncMock(return_value=result)
     service.deactivate = AsyncMock(return_value=result)
+    service.reorder = AsyncMock(return_value=result)
     
     return service
 

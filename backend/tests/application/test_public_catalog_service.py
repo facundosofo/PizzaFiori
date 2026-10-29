@@ -135,6 +135,30 @@ def test_build_public_catalog_keeps_public_products_without_images():
     assert catalog.monto_minimo_delivery == Decimal("13000")
 
 
+def test_build_public_catalog_uses_category_order():
+    categories = [
+        SimpleNamespace(id=1, nombre="Empanadas", activo=True, orden=2),
+        SimpleNamespace(id=2, nombre="Pizzas", activo=True, orden=0),
+        SimpleNamespace(id=3, nombre="Bebidas", activo=True, orden=1),
+    ]
+    products = [
+        SimpleNamespace(
+            id=category.id,
+            nombre=f"Producto {category.id}",
+            categoria_id=category.id,
+            activo=True,
+            precios=[SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("10"))],
+        )
+        for category in categories
+    ]
+
+    catalog = build_public_catalog(
+        categories, products, [], {}, datetime.now(timezone.utc)
+    )
+
+    assert [category.id for category in catalog.categorias] == [2, 3, 1]
+
+
 def test_resolve_image_path_rejects_files_outside_uploads(tmp_path: Path):
     service = PublicCatalogService(uploads_root=tmp_path / "uploads")
     uploads = tmp_path / "uploads"

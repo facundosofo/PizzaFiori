@@ -42,8 +42,10 @@ class ProductCategoryService:
             )
 
             async with self.uow as uow:
+                categorias = await uow.product_category_repo.list()
                 categoria = ProductCategory(
                     nombre=categoria_create.nombre,
+                    orden=max((item.orden for item in categorias), default=-1) + 1,
                     fecha_creacion=datetime.now(),
                     fecha_actualizacion=datetime.now(),
                 )
@@ -74,6 +76,39 @@ class ProductCategoryService:
                 error=str(e),
                 categoria_nombre=categoria_create.nombre,
                 exc_info=True
+            )
+            return ServiceResult(error=str(e), status_code=400)
+
+    async def reorder(self, categoria_ids: List[int]) -> ServiceResult:
+        try:
+            async with self.uow as uow:
+                categorias = await uow.product_category_repo.list_by_active(True)
+                ids_actuales = {categoria.id for categoria in categorias}
+                if (
+                    len(categoria_ids) != len(set(categoria_ids))
+                    or set(categoria_ids) != ids_actuales
+                ):
+                    return ServiceResult(
+                        error="El orden debe incluir exactamente todas las categorías activas.",
+                        status_code=400,
+                    )
+
+                categorias_por_id = {
+                    categoria.id: categoria for categoria in categorias
+                }
+                for orden, categoria_id in enumerate(categoria_ids):
+                    categoria = categorias_por_id[categoria_id]
+                    categoria.orden = orden
+                    categoria.fecha_actualizacion = datetime.now()
+
+                await uow.commit()
+                self.cache_service.clear_all()
+                return ServiceResult()
+        except Exception as e:
+            self.logger.error(
+                "Error al reordenar categorías de producto",
+                error=str(e),
+                exc_info=True,
             )
             return ServiceResult(error=str(e), status_code=400)
 

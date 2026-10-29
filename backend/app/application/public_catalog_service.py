@@ -127,7 +127,10 @@ def build_public_catalog(
 
     public_categories = [
         PublicCatalogCategory(id=category.id, nombre=category.nombre)
-        for category in sorted(active_categories.values(), key=lambda value: value.id)
+        for category in sorted(
+            active_categories.values(),
+            key=lambda value: (getattr(value, "orden", value.id), value.id),
+        )
         if products_by_category.get(category.id)
     ]
 

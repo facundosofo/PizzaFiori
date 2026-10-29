@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
+from typing import List, Optional
 
 # ---------------------------
 # Request Models
@@ -10,6 +10,9 @@ class ProductoCategoriaCreateRequest(BaseModel):
 class ProductoCategoriaUpdateRequest(BaseModel):
     nombre: Optional[str] = Field(None, min_length=1, max_length=50)
 
+class ProductoCategoriaOrderRequest(BaseModel):
+    categoria_ids: List[int]
+
 # ---------------------------
 # Response Models
 # ---------------------------
@@ -18,4 +21,5 @@ class ProductoCategoriaResponse(BaseModel):
 
     id: int
     nombre: str
+    orden: int = 0
     activo: bool

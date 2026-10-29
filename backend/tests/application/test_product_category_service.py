@@ -100,6 +100,44 @@ async def test_get_all_categories_filtered_by_active(mock_uow, mock_cache_servic
     mock_uow.product_category_repo.list_by_active.assert_called_once_with(True)
 
 
+@pytest.mark.asyncio
+async def test_reorder_categories_persists_requested_order(
+    mock_uow, mock_cache_service, mock_logger
+):
+    service = ProductCategoryService(
+        uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger,
+    )
+    categories = [build_category_model(1), build_category_model(2)]
+    mock_uow.product_category_repo.list_by_active.return_value = categories
+
+    result = await service.reorder([2, 1])
+
+    assert result.error is None
+    assert categories[0].orden == 1
+    assert categories[1].orden == 0
+    mock_uow.commit.assert_awaited_once()
+    mock_cache_service.clear_all.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_reorder_categories_rejects_missing_ids(
+    mock_uow, mock_cache_service, mock_logger
+):
+    service = ProductCategoryService(
+        uow=mock_uow, cache_service=mock_cache_service, logger=mock_logger,
+    )
+    mock_uow.product_category_repo.list_by_active.return_value = [
+        build_category_model(1),
+        build_category_model(2),
+    ]
+
+    result = await service.reorder([1])
+
+    assert result.status_code == 400
+    assert result.error
+    mock_uow.commit.assert_not_awaited()
+
+
 # ==================== Get By ID Tests ====================
 
 @pytest.mark.asyncio

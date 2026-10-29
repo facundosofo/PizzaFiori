@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GripVertical } from "lucide-react";
 import * as Icons from "./shared/Icons";
 import ProductosCategoryModal from "./ProductosCategoryModal";
 import ConfirmDialog from "./shared/ConfirmDialog";
 import type { ProductoCategoria } from "../types/product_category";
 import type { Product } from "../types/product";
 import type { Offer } from "../types/offer";
-import { deactivateProductoCategoria } from "../services/productosCategoriasService";
+import {
+  deactivateProductoCategoria,
+  reorderProductoCategorias,
+} from "../services/productosCategoriasService";
 import { getProductos } from "../services/productsService";
 import { getOfertas } from "../services/ofertasService";
 import "../styles/productos-categorias-modal.css";
@@ -15,7 +19,7 @@ interface ProductosCategoryConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
   categorias: ProductoCategoria[];
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
 }
 
 const ProductosCategoryConfigModal = ({
@@ -24,6 +28,10 @@ const ProductosCategoryConfigModal = ({
   categorias,
   onRefresh,
 }: ProductosCategoryConfigModalProps) => {
+  const [orderedCategories, setOrderedCategories] = useState(categorias);
+  const [draggedCategoryId, setDraggedCategoryId] = useState<number | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [selectedCategoria, setSelectedCategoria] = useState<ProductoCategoria | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -32,6 +40,10 @@ const ProductosCategoryConfigModal = ({
   const [affectedProducts, setAffectedProducts] = useState<Product[]>([]);
   const [affectedOffers, setAffectedOffers] = useState<Offer[]>([]);
   const [loadingAffected, setLoadingAffected] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) setOrderedCategories(categorias);
+  }, [categorias, isOpen]);
 
   const handleCreateCategory = () => {
     setSelectedCategoria({ id: 0, nombre: "" });
@@ -98,6 +110,52 @@ const ProductosCategoryConfigModal = ({
     onRefresh();
   };
 
+  const handleCategoryDrop = async (targetCategoryId: number) => {
+    if (draggedCategoryId === null || draggedCategoryId === targetCategoryId) return;
+
+    const previousOrder = orderedCategories;
+    const nextOrder = [...previousOrder];
+    const sourceIndex = nextOrder.findIndex(
+      (category) => category.id === draggedCategoryId,
+    );
+    const targetIndex = nextOrder.findIndex(
+      (category) => category.id === targetCategoryId,
+    );
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    const [movedCategory] = nextOrder.splice(sourceIndex, 1);
+    nextOrder.splice(targetIndex, 0, movedCategory);
+    setOrderedCategories(nextOrder);
+    setDraggedCategoryId(null);
+    setOrderError(null);
+    setIsSavingOrder(true);
+
+    try {
+      await reorderProductoCategorias({
+        categoria_ids: nextOrder.map((category) => category.id),
+      });
+    } catch (err) {
+      setOrderedCategories(previousOrder);
+      setOrderError(
+        err instanceof Error ? err.message : "No se pudo guardar el orden.",
+      );
+      setIsSavingOrder(false);
+      return;
+    }
+
+    try {
+      await onRefresh();
+    } catch (err) {
+      setOrderError(
+        err instanceof Error
+          ? `El orden se guardó, pero no se pudo actualizar la lista: ${err.message}`
+          : "El orden se guardó, pero no se pudo actualizar la lista.",
+      );
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -128,12 +186,23 @@ const ProductosCategoryConfigModal = ({
 
               <div className="prod-cat-config-body">
                 <div className="prod-cat-config-actions-bar">
-                  <button className="btn-new-prod-category" onClick={handleCreateCategory}>
+                  <button
+                    className="btn-new-prod-category"
+                    onClick={handleCreateCategory}
+                    disabled={isSavingOrder}
+                  >
                     <Icons.PlusIcon size={14} /> Nueva Categoría
                   </button>
                 </div>
+                <p className="prod-cat-order-hint">
+                  Arrastrá las categorías para cambiar su orden. Para reflejarlo en la
+                  web de pedidos, publicá nuevamente el catálogo desde Configuración.
+                </p>
+                {orderError && (
+                  <p className="prod-cat-order-error" role="alert">{orderError}</p>
+                )}
 
-                {categorias.length === 0 ? (
+                {orderedCategories.length === 0 ? (
                   <div className="prod-cat-empty-state">
                     <Icons.LayersIcon size={48} />
                     <p>No hay categorías de productos</p>
@@ -143,19 +212,45 @@ const ProductosCategoryConfigModal = ({
                   <table className="prod-cat-table">
                     <thead>
                       <tr>
+                        <th aria-label="Orden"></th>
                         <th>Nombre</th>
                         <th>Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {categorias.map((cat) => (
-                        <tr key={cat.id}>
+                      {orderedCategories.map((cat) => (
+                        <tr
+                          key={cat.id}
+                          draggable={!isSavingOrder}
+                          className={draggedCategoryId === cat.id ? "prod-cat-row-dragging" : ""}
+                          onDragStart={(event) => {
+                            setDraggedCategoryId(cat.id);
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData("text/plain", String(cat.id));
+                          }}
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            void handleCategoryDrop(cat.id);
+                          }}
+                          onDragEnd={() => setDraggedCategoryId(null)}
+                        >
+                          <td className="prod-cat-drag-cell">
+                            <span
+                              className="prod-cat-drag-handle"
+                              title="Arrastrar para reordenar"
+                              aria-label={`Arrastrar ${cat.nombre} para reordenar`}
+                            >
+                              <GripVertical size={18} />
+                            </span>
+                          </td>
                           <td className="prod-cat-nombre">{cat.nombre}</td>
                           <td>
                             <div className="prod-cat-action-buttons">
                               <button
                                 className="prod-cat-btn-action prod-cat-btn-edit"
                                 onClick={() => handleEditCategory(cat)}
+                                disabled={isSavingOrder}
                                 title="Editar categoría"
                               >
                                 <Icons.EditIcon size={16} />
@@ -163,7 +258,7 @@ const ProductosCategoryConfigModal = ({
                               <button
                                 className="prod-cat-btn-action prod-cat-btn-delete"
                                 onClick={() => handleDeleteCategoryClick(cat)}
-                                disabled={isDeleting}
+                                disabled={isDeleting || isSavingOrder}
                                 title="Desactivar categoría"
                               >
                                 <Icons.TrashIcon size={16} />
@@ -174,6 +269,9 @@ const ProductosCategoryConfigModal = ({
                       ))}
                     </tbody>
                   </table>
+                )}
+                {isSavingOrder && (
+                  <p className="prod-cat-order-saving" role="status">Guardando orden...</p>
                 )}
               </div>
             </motion.div>

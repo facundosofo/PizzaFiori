@@ -7,6 +7,7 @@ from app.infrastructure.cache.cache_service import CacheService
 from app.containers import Container
 from app.presentation.schemas.product_category_schemas import (
     ProductoCategoriaCreateRequest,
+    ProductoCategoriaOrderRequest,
     ProductoCategoriaUpdateRequest,
     ProductoCategoriaResponse,
 )
@@ -67,6 +68,25 @@ async def get_productos_categorias(
     cache_service.set(cache_key, response_data)
 
     return response_data
+
+
+@router.put(
+    "/orden",
+    summary="Reordenar categorías de productos",
+    description="Guarda el orden de todas las categorías activas.",
+    responses={400: {"description": "El orden enviado no coincide con las categorías activas"}},
+)
+@inject
+async def reorder_productos_categorias(
+    request: Request,
+    orden: ProductoCategoriaOrderRequest = Body(...),
+    admin_user: dict = Depends(require_admin),
+    service: ProductCategoryService = Depends(Provide[Container.product_category_service]),
+):
+    result: ServiceResult = await service.reorder(orden.categoria_ids)
+    if result.error:
+        raise HTTPException(status_code=result.status_code, detail=result.error)
+    return {"actualizado": True}
 
 
 @router.get(
