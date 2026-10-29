@@ -498,8 +498,10 @@ textarea:focus-visible {
 .offer-card h3 {
   margin: 9px 0 0;
   color: var(--green-dark);
-  font-family: var(--serif);
+  font-family: inherit;
   font-size: 21px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .offer-description {
