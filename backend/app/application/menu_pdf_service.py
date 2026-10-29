@@ -563,7 +563,7 @@ def _paragraph_styles(
             fontName=sans_bold,
             fontSize=10,
             leading=13.5,
-            textColor=MENU_THEME["green"],
+            textColor=MENU_THEME["text"],
             alignment=TA_CENTER,
         ),
         "pizza_half_and_half_note": ParagraphStyle(
