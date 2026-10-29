@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape
 
 import structlog
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
@@ -512,6 +512,14 @@ def _paragraph_styles(
             leading=13,
             textColor=MENU_THEME["text"],
             alignment=TA_RIGHT,
+        ),
+        "pizza_half_and_half_note": ParagraphStyle(
+            "MenuPizzaHalfAndHalfNote",
+            fontName="Helvetica-Oblique",
+            fontSize=8.25,
+            leading=10.5,
+            textColor=MENU_THEME["muted"],
+            alignment=TA_CENTER,
         ),
         "promo_label": ParagraphStyle(
             "MenuPromoLabel",
@@ -1201,7 +1209,19 @@ def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
             column_widths,
             h_align,
         )
-        story.append(KeepTogether([category_heading, first_rows]))
+        initial_category_content: list[Flowable] = [category_heading]
+        if _normalize_category_name(category.nombre) == "pizzas":
+            initial_category_content.extend(
+                [
+                    Paragraph(
+                        "Pizzas mitad y mitad: se abona el precio de la variedad más cara.",
+                        styles["pizza_half_and_half_note"],
+                    ),
+                    Spacer(1, 6),
+                ]
+            )
+        initial_category_content.append(first_rows)
+        story.append(KeepTogether(initial_category_content))
         if len(rows) > initial_rows:
             remaining_rows = _product_table(
                 rows[initial_rows:],

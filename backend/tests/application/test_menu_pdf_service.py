@@ -395,3 +395,8 @@ async def test_editorial_layout_handles_mixed_presentations_and_stays_within_thr
         assert "Extra de prueba" not in extracted
         assert "Café de prueba" not in extracted
         assert "Promo de Extra de prueba" not in extracted
+        assert (
+            "Pizzas mitad y mitad: se abona el precio de la variedad más cara."
+            in extracted
+        )
+        assert extracted.count("Pizzas mitad y mitad:") == 1
