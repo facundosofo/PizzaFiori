@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from io import BytesIO
 import os
 from pathlib import Path
@@ -40,6 +40,7 @@ from app.domain.models.product import Product
 from app.domain.models.product_category import ProductCategory
 from app.domain.unit_of_work import AbstractUnitOfWork
 from app.presentation.schemas.public_catalog_schemas import (
+    PublicCatalogCategory,
     PublicCatalogOffer,
     PublicCatalogProduct,
     PublicCatalogResponse,
@@ -52,19 +53,20 @@ MENU_THEME = {
     "background": colors.HexColor("#0D0D0D"),
     "surface": colors.HexColor("#141414"),
     "text": colors.HexColor("#F5F5F5"),
-    "muted": colors.HexColor("#9CA3AF"),
-    "tertiary": colors.HexColor("#6B7280"),
+    "muted": colors.HexColor("#B6BCC6"),
+    "tertiary": colors.HexColor("#9CA3AF"),
+    "leader": colors.HexColor("#3A3A3A"),
     "green": colors.HexColor("#22C55E"),
     "red": colors.HexColor("#EF4444"),
     "divider": colors.HexColor("#2A2A2A"),
 }
-PAGE_MARGIN = 1.7 * cm
+PAGE_MARGIN = 1.9 * cm
 FIRST_PAGE_TOP_MARGIN = 4.1 * cm
-LATER_PAGE_TOP_MARGIN = 1.7 * cm
+LATER_PAGE_TOP_MARGIN = 1.9 * cm
 BOTTOM_MARGIN = 1.8 * cm
 PROMO_GUTTER = 1.4 * cm
-PRODUCT_GUTTER = 1.4 * cm
-PRICE_COLUMN_WIDTH = 54
+PRODUCT_GUTTER = 1.6 * cm
+PRICE_COLUMN_WIDTH = 59
 PROMO_PRICE_COLUMN_WIDTH = 74
 FONT_SERIF_BOLD = "Helvetica-Bold"
 FONT_SERIF_ITALIC_BOLD = "Helvetica-BoldOblique"
@@ -156,7 +158,7 @@ def _format_product_presentation(
     quantity: Decimal,
     portion_quantities: set[Decimal],
 ) -> str:
-    label = _format_presentation(quantity).upper()
+    label = _format_presentation(quantity)
     if quantity < Decimal("1") and len(portion_quantities) > 1:
         fraction_labels = {
             Decimal("0.125"): "1/8",
@@ -167,6 +169,44 @@ def _format_product_presentation(
         if fraction:
             return f"{label} {fraction}"
     return label
+
+
+def _title_case_if_uppercase(text: str) -> str:
+    if not text or not any(character.islower() for character in text):
+        connectors = {
+            "a", "al", "con", "de", "del", "el", "en", "la", "las",
+            "los", "por", "sin", "y",
+        }
+
+        def title_segment(segment: str, is_first_word: bool) -> str:
+            word_index = 0
+
+            def title_word(match: re.Match[str]) -> str:
+                nonlocal word_index
+                word = match.group(0)
+                is_first = is_first_word and word_index == 0
+                word_index += 1
+                lowered = word.lower()
+                if not is_first and lowered in connectors:
+                    return lowered
+                if len(word) <= 3 and word.isupper():
+                    return word
+                return lowered[0].upper() + lowered[1:]
+
+            return re.sub(r"[^\W\d_]+", title_word, segment, flags=re.UNICODE)
+
+        pieces = re.split(r"(\([^()]*\))", text)
+        first_word = True
+        normalized = []
+        for piece in pieces:
+            if piece.startswith("(") and piece.endswith(")"):
+                normalized.append(piece)
+                continue
+            normalized.append(title_segment(piece, first_word))
+            if re.search(r"[^\W\d_]", piece, flags=re.UNICODE):
+                first_word = False
+        return "".join(normalized)
+    return text
 
 
 def _format_offer_quantity(quantity: Decimal) -> str:
@@ -252,11 +292,17 @@ def _without_hidden_categories(
 
 
 def _offer_description(offer: PublicCatalogOffer, catalog: PublicCatalogResponse) -> str:
-    products = {product.id: product.nombre for product in catalog.productos}
+    products = {
+        product.id: _title_case_if_uppercase(product.nombre)
+        for product in catalog.productos
+    }
     products_by_category: dict[int, list[str]] = {}
     for product in catalog.productos:
         products_by_category.setdefault(product.categoria_id, []).append(product.nombre)
-    categories = {category.id: category.nombre for category in catalog.categorias}
+    categories = {
+        category.id: _title_case_if_uppercase(category.nombre)
+        for category in catalog.categorias
+    }
     entries = []
 
     for item in offer.items:
@@ -307,7 +353,7 @@ def _limited_lines(
     max_width: float,
     max_lines: int = 2,
 ) -> list[str]:
-    words = text.upper().split()
+    words = text.split()
     if not words:
         return [""]
 
@@ -370,10 +416,12 @@ def _tracked_text(
     baseline: float,
     color: colors.Color,
     tracking: float,
+    align_right: bool = False,
 ) -> None:
     text_width = pdfmetrics.stringWidth(text, font_name, font_size)
     total_width = text_width + tracking * max(0, len(text) - 1)
-    text_object = canvas.beginText(center_x - total_width / 2, baseline)
+    origin_x = center_x - total_width if align_right else center_x - total_width / 2
+    text_object = canvas.beginText(origin_x, baseline)
     text_object.setFont(font_name, font_size)
     text_object.setFillColor(color)
     text_object.setCharSpace(tracking)
@@ -467,7 +515,7 @@ class _PageCountCanvas(Canvas):
         self.rect(center_x + flag_width / 6, flag_y, flag_width / 3, 2, fill=1, stroke=0)
 
         self.setFillColor(MENU_THEME["tertiary"])
-        self.setFont(self._footer_font, 8)
+        self.setFont(self._footer_font, 8.5)
         footer = (
             "Precios sujetos a confirmación por el local · "
             f" Pág. {page_number} de {total_pages}"
@@ -493,53 +541,69 @@ def _paragraph_styles(
     return {
         "product_name": ParagraphStyle(
             "MenuProductName",
-            fontName=serif_bold,
+            fontName=sans,
             fontSize=10.5,
-            leading=13,
+            leading=14.2,
             textColor=MENU_THEME["text"],
         ),
         "product_description": ParagraphStyle(
             "MenuProductDescription",
             fontName=sans,
-            fontSize=8.5,
-            leading=11,
+            fontSize=9,
+            leading=12.15,
             textColor=MENU_THEME["muted"],
         ),
         "product_price": ParagraphStyle(
             "MenuProductPrice",
             fontName=sans_bold,
             fontSize=10.5,
-            leading=13,
+            leading=14.2,
             textColor=MENU_THEME["text"],
             alignment=TA_RIGHT,
+        ),
+        "category_offer_label": ParagraphStyle(
+            "MenuCategoryOfferLabel",
+            fontName=sans_bold,
+            fontSize=9,
+            leading=12.15,
+            textColor=MENU_THEME["tertiary"],
+            alignment=TA_CENTER,
+        ),
+        "category_offer_price": ParagraphStyle(
+            "MenuCategoryOfferPrice",
+            fontName=sans_bold,
+            fontSize=10,
+            leading=13.5,
+            textColor=MENU_THEME["green"],
+            alignment=TA_CENTER,
         ),
         "pizza_half_and_half_note": ParagraphStyle(
             "MenuPizzaHalfAndHalfNote",
             fontName="Helvetica-Oblique",
-            fontSize=8.25,
-            leading=10.5,
+            fontSize=9,
+            leading=12.15,
             textColor=MENU_THEME["muted"],
             alignment=TA_CENTER,
         ),
         "promo_label": ParagraphStyle(
             "MenuPromoLabel",
             fontName=sans_bold,
-            fontSize=7.5,
-            leading=10,
+            fontSize=8,
+            leading=10.8,
             textColor=MENU_THEME["tertiary"],
         ),
         "promo_name": ParagraphStyle(
             "MenuPromoName",
             fontName=serif_bold,
-            fontSize=10.5,
-            leading=13,
+            fontSize=11.5,
+            leading=14.4,
             textColor=MENU_THEME["text"],
         ),
         "promo_detail": ParagraphStyle(
             "MenuPromoDetail",
             fontName=sans,
-            fontSize=8.5,
-            leading=11,
+            fontSize=9,
+            leading=12.15,
             textColor=MENU_THEME["muted"],
             leftIndent=9,
             firstLineIndent=-9,
@@ -547,16 +611,16 @@ def _paragraph_styles(
         "promo_price": ParagraphStyle(
             "MenuPromoPrice",
             fontName=sans_bold,
-            fontSize=14,
-            leading=17,
+            fontSize=12,
+            leading=15,
             textColor=MENU_THEME["green"],
             alignment=TA_RIGHT,
         ),
         "notice": ParagraphStyle(
             "MenuNotice",
             fontName=sans,
-            fontSize=8.5,
-            leading=11,
+            fontSize=9,
+            leading=12.15,
             textColor=MENU_THEME["muted"],
         ),
     }
@@ -578,23 +642,28 @@ class _PresentationHeader(Flowable):
         super().__init__()
         self.target_width = width
         self.presentations = sorted(presentations)
-        self.height = 12
+        self.height = 14
 
     def wrap(self, availWidth: float, _availHeight: float) -> tuple[float, float]:
         self.width = min(self.target_width, availWidth)
         return self.width, self.height
 
     def draw(self) -> None:
-        self.canv.setFont(FONT_SANS_BOLD, 7.5)
         self.canv.setFillColor(MENU_THEME["tertiary"])
         for index, quantity in enumerate(self.presentations):
             column_right = self.width - (
                 len(self.presentations) - index - 1
             ) * PRICE_COLUMN_WIDTH
-            self.canv.drawRightString(
+            _tracked_text(
+                self.canv,
+                _format_presentation(quantity).upper(),
+                FONT_SANS_BOLD,
+                8,
                 column_right,
                 2,
-                _format_presentation(quantity).upper(),
+                MENU_THEME["tertiary"],
+                0.8,
+                align_right=True,
             )
 
 
@@ -614,11 +683,12 @@ class _ProductBlock(Flowable):
         self.category_quantities = category_quantities
         self.common_presentations = common_presentations
         self.price_column_count = max(1, len(category_quantities))
-        self.spaceAfter = 7
+        self.spaceAfter = 9
         self._name_paragraph: Paragraph | None = None
         self._description_paragraph: Paragraph | None = None
         self._name_width = width
         self._name_height = 0
+        self._name_lines: list[str] = []
         self._description_height = 0
         self._price_cells: list[tuple[int, Paragraph, str | None]] = []
         self._labels_height = 0
@@ -629,16 +699,18 @@ class _ProductBlock(Flowable):
             Decimal(str(price.cantidad)): Decimal(str(price.precio))
             for price in self.product.precios
         }
-        self._name_width = max(
-            38,
-            self.width - self.price_column_count * PRICE_COLUMN_WIDTH - 8,
-        )
+        reserved_price_width = (
+            10 if self.price_column_count >= 2 else 8
+        ) + self.price_column_count * PRICE_COLUMN_WIDTH
+        self._name_width = max(38, self.width - reserved_price_width)
+        product_name = _title_case_if_uppercase(self.product.nombre)
         name_lines = _limited_lines(
-            self.product.nombre,
+            product_name,
             self.styles["product_name"].fontName,
             self.styles["product_name"].fontSize,
             self._name_width,
         )
+        self._name_lines = name_lines
         self._name_paragraph = Paragraph(
             "<br/>".join(escape(line) for line in name_lines),
             self.styles["product_name"],
@@ -674,12 +746,12 @@ class _ProductBlock(Flowable):
             )
             price.wrap(PRICE_COLUMN_WIDTH, availHeight)
             self._price_cells.append((column_index, price, label))
-        self._labels_height = 9 if any(label for _, _, label in self._price_cells) else 0
+        self._labels_height = 11 if any(label for _, _, label in self._price_cells) else 0
 
         description = getattr(self.product, "descripcion", None)
         if description:
             self._description_paragraph = Paragraph(
-                escape(str(description)),
+                escape(_title_case_if_uppercase(str(description))),
                 self.styles["product_description"],
             )
             _, self._description_height = self._description_paragraph.wrap(
@@ -700,7 +772,9 @@ class _ProductBlock(Flowable):
         description_gap = 2 if self._description_paragraph else 0
         description_block_height = description_gap + self._description_height
         name_bottom = self.spaceAfter + description_block_height
-        price_bottom = name_bottom + max(0, self._name_height - 13)
+        price_bottom = name_bottom + max(
+            0, self._name_height - self.styles["product_name"].leading
+        )
         self._name_paragraph.drawOn(self.canv, 0, name_bottom)
         for column_index, price, label in self._price_cells:
             column_right = self.width - (
@@ -712,9 +786,40 @@ class _ProductBlock(Flowable):
                 price_bottom,
             )
             if label:
-                self.canv.setFont(FONT_SANS, 7.5)
-                self.canv.setFillColor(MENU_THEME["tertiary"])
-                self.canv.drawRightString(column_right, price_bottom + 13, label)
+                _tracked_text(
+                    self.canv,
+                    label.upper(),
+                    FONT_SANS,
+                    8,
+                    column_right,
+                    price_bottom + 13,
+                    MENU_THEME["tertiary"],
+                    0.8,
+                    align_right=True,
+                )
+        if len(self._name_lines) == 1 and self._price_cells:
+            name_width = pdfmetrics.stringWidth(
+                self._name_lines[0],
+                self.styles["product_name"].fontName,
+                self.styles["product_name"].fontSize,
+            )
+            price_left = self.width - (
+                self.price_column_count * PRICE_COLUMN_WIDTH
+            )
+            leader_start = name_width + 3
+            leader_end = price_left - 3
+            if leader_end - leader_start >= 6:
+                self.canv.saveState()
+                self.canv.setStrokeColor(MENU_THEME["leader"])
+                self.canv.setLineWidth(0.5)
+                self.canv.setDash(0, 3)
+                self.canv.line(
+                    leader_start,
+                    name_bottom + 4,
+                    leader_end,
+                    name_bottom + 4,
+                )
+                self.canv.restoreState()
         if self._description_paragraph:
             self._description_paragraph.drawOn(
                 self.canv,
@@ -734,8 +839,9 @@ class _SectionHeading(Flowable):
         self.title = title.upper()
         self.target_width = width
         self.font_name = serif_bold
-        self.tracking = 1.1
-        self.font_size = 17
+        self.tracking = 1.5
+        self.font_size = 17.5
+        self.continuation = False
         self.lines: list[str] = []
 
     def wrap(self, availWidth: float, _availHeight: float) -> tuple[float, float]:
@@ -746,12 +852,12 @@ class _SectionHeading(Flowable):
             self.font_size,
             self.width - 12,
         )
-        title_height = len(self.lines) * 21
-        self.height = title_height + 11
+        title_height = len(self.lines) * 23
+        self.height = title_height + 12
         return self.width, self.height
 
     def draw(self) -> None:
-        baseline = self.height - 17
+        baseline = self.height - 18
         for line in self.lines:
             _tracked_text(
                 self.canv,
@@ -760,10 +866,14 @@ class _SectionHeading(Flowable):
                 self.font_size,
                 self.width / 2,
                 baseline,
-                MENU_THEME["text"],
+                (
+                    MENU_THEME["tertiary"]
+                    if self.continuation
+                    else MENU_THEME["text"]
+                ),
                 self.tracking,
             )
-            baseline -= 21
+            baseline -= 23
 
         self.canv.setStrokeColor(MENU_THEME["green"])
         self.canv.setLineWidth(1)
@@ -773,6 +883,84 @@ class _SectionHeading(Flowable):
             (self.width + 36) / 2,
             2,
         )
+
+    def as_continuation(self) -> _SectionHeading:
+        heading = _SectionHeading(
+            self.title,
+            self.target_width,
+            self.font_name,
+        )
+        heading.title = f"{self.title} (CONT.)"
+        heading.continuation = True
+        return heading
+
+
+class _CategoryTable(Table):
+    def split(self, availWidth: float, availHeight: float) -> list[Table]:
+        parts = super().split(availWidth, availHeight)
+        if len(parts) <= 1:
+            return parts
+
+        def cell_flowables(cell: object) -> list[object]:
+            if isinstance(cell, (tuple, list)):
+                return [
+                    flowable
+                    for child in cell
+                    for flowable in cell_flowables(child)
+                ]
+            return [cell]
+
+        def product_count(table: Table) -> int:
+            return sum(
+                isinstance(flowable, _ProductBlock)
+                for row in table._cellvalues
+                for cell in row
+                for flowable in cell_flowables(cell)
+            )
+
+        total_products = product_count(self)
+        if total_products >= 7:
+            first_count = product_count(parts[0])
+            if (
+                first_count < 3
+                and availHeight
+                < A4[1] - FIRST_PAGE_TOP_MARGIN - BOTTOM_MARGIN
+            ):
+                return []
+
+            if product_count(parts[-1]) < 3:
+                header_rows = int(self.repeatRows)
+                for row_index in range(
+                    len(parts[0]._rowHeights) - 1,
+                    header_rows - 1,
+                    -1,
+                ):
+                    row_height = parts[0]._rowHeights[row_index]
+                    candidate = super().split(
+                        availWidth,
+                        max(1, availHeight - row_height),
+                    )
+                    if (
+                        len(candidate) > 1
+                        and product_count(candidate[0]) >= 3
+                        and all(product_count(part) >= 3 for part in candidate)
+                    ):
+                        parts = candidate
+                        break
+
+        for part in parts[1:]:
+            heading_cell = part._cellvalues[0][0]
+            heading_flowables = cell_flowables(heading_cell)
+            heading = heading_flowables[0] if heading_flowables else None
+            if isinstance(heading, _SectionHeading):
+                continuation = heading.as_continuation()
+                part._cellvalues[0] = list(part._cellvalues[0])
+                part._cellvalues[0][0] = (
+                    (continuation,)
+                    if isinstance(heading_cell, tuple)
+                    else continuation
+                )
+        return parts
 
 
 class _PromoEntry(Flowable):
@@ -799,6 +987,8 @@ class _PromoEntry(Flowable):
     def _copy(self) -> tuple[str, str, str | None]:
         name = self.offer.nombre.strip()
         description = (self.offer.descripcion or "").strip()
+        display_name = _title_case_if_uppercase(name)
+        display_description = _title_case_if_uppercase(description)
         starts_with_promo = (
             re.match(r"^promo(?:\s|$)", name, re.IGNORECASE) is not None
         )
@@ -806,14 +996,22 @@ class _PromoEntry(Flowable):
             suffix = re.sub(r"^(?:promo\s*)+", "", name, flags=re.IGNORECASE).strip()
             numbered = re.fullmatch(r"\d+", suffix)
             label = f"PROMO {suffix}".upper() if numbered else "PROMO"
-            title = description if description and description.casefold() != name.casefold() else (
-                suffix if numbered is None and suffix else None
+            title = (
+                display_description
+                if description and description.casefold() != name.casefold()
+                else _title_case_if_uppercase(suffix)
+                if numbered is None and suffix
+                else None
             )
             detail = None
         else:
             label = "PROMO"
-            title = name
-            detail = description if description.casefold() != name.casefold() else None
+            title = display_name
+            detail = (
+                display_description
+                if description.casefold() != name.casefold()
+                else None
+            )
         return label, title, detail
 
     def wrap(self, availWidth: float, availHeight: float) -> tuple[float, float]:
@@ -828,7 +1026,9 @@ class _PromoEntry(Flowable):
                 max_lines=2,
             )
             self._title = Paragraph(
-                "<br/>".join(escape(line) for line in title_lines),
+                "<br/>".join(
+                    escape(_title_case_if_uppercase(line)) for line in title_lines
+                ),
                 self.styles["promo_name"],
             )
             _, self._title_height = self._title.wrap(title_width, availHeight)
@@ -845,7 +1045,7 @@ class _PromoEntry(Flowable):
         )
         if self.description:
             self._detail_paragraph = Paragraph(
-                f"&#8226;&nbsp; {escape(self.description)}",
+                f"&#8226;&nbsp; {escape(_title_case_if_uppercase(self.description))}",
                 self.styles["promo_detail"],
             )
             _, self._detail_height = self._detail_paragraph.wrap(
@@ -860,14 +1060,14 @@ class _PromoEntry(Flowable):
         if components:
             for component in components.split(" · "):
                 bullet = Paragraph(
-                    f"&#8226;&nbsp; {escape(component)}",
+                    f"&#8226;&nbsp; {escape(_title_case_if_uppercase(component))}",
                     self.styles["promo_detail"],
                 )
                 _, bullet_height = bullet.wrap(self.width - 8, availHeight)
                 self._component_paragraphs.append((bullet, bullet_height))
 
         self.height = (
-            10
+            11
             + 3
             + max(self._title_height, price_height)
             + (self._detail_height + 2 if self._detail_paragraph else 0)
@@ -880,9 +1080,9 @@ class _PromoEntry(Flowable):
 
     def draw(self) -> None:
         label = self.canv.beginText(0, self.height - 8)
-        label.setFont(FONT_SANS_BOLD, 7.5)
+        label.setFont(FONT_SANS_BOLD, 8)
         label.setFillColor(MENU_THEME["tertiary"])
-        label.setCharSpace(0.7)
+        label.setCharSpace(0.8)
         label.textLine(self.label)
         self.canv.drawText(label)
         y = self.height - 13
@@ -1035,6 +1235,76 @@ def _category_table(
     return rows, [column_width, gutter, column_width], initial_rows
 
 
+def _category_offer_presentations(
+    offers: Sequence[PublicCatalogOffer],
+    category_id: int,
+    width: float,
+    styles: dict[str, ParagraphStyle],
+) -> Table | None:
+    category_offers = [
+        offer
+        for offer in offers
+        if len(offer.items) == 1
+        and offer.items[0].categoria_id == category_id
+        and not offer.items[0].producto_ids
+    ]
+    if not category_offers:
+        return None
+
+    category_offers.sort(
+        key=lambda offer: (
+            Decimal(str(offer.items[0].cantidad)),
+            offer.nombre.casefold(),
+        )
+    )
+    cell_width = width / len(category_offers)
+    labels = []
+    prices = []
+    for offer in category_offers:
+        quantity = Decimal(str(offer.items[0].cantidad))
+        unit_price = (
+            Decimal(str(offer.precio)) / quantity
+        ).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        if quantity == Decimal("6"):
+            label = "Media docena"
+        elif quantity >= Decimal("12") and quantity % Decimal("12") == 0:
+            dozens = quantity / Decimal("12")
+            label = (
+                "Docena"
+                if dozens == Decimal("1")
+                else f"{_format_quantity(dozens)} docenas"
+            )
+        else:
+            label = _format_presentation(quantity)
+        labels.append(Paragraph(escape(label), styles["category_offer_label"]))
+        prices.append(
+            Paragraph(
+                escape(f"{_format_money(unit_price)} c/u"),
+                styles["category_offer_price"],
+            )
+        )
+
+    table = Table(
+        [labels, prices],
+        colWidths=[cell_width] * len(category_offers),
+        hAlign="LEFT",
+    )
+    table.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, 0), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 2),
+                ("TOPPADDING", (0, 1), (-1, 1), 0),
+                ("BOTTOMPADDING", (0, 1), (-1, 1), 5),
+            ]
+        )
+    )
+    return table
+
+
 def _product_table(
     rows: list[list[object]],
     column_widths: list[float],
@@ -1052,6 +1322,69 @@ def _product_table(
             ]
         )
     )
+    return table
+
+
+def _category_section_table(
+    heading: _SectionHeading,
+    category_offer_table: Table | None,
+    pizza_note: Paragraph | None,
+    product_rows: list[list[object]],
+    column_widths: list[float],
+    common_presentations: set[Decimal] | None,
+    h_align: str,
+) -> _CategoryTable:
+    column_count = len(column_widths)
+    rows: list[list[object]] = []
+    span_rows: list[int] = []
+
+    def append_spanning_row(content: Flowable | Table) -> None:
+        row_index = len(rows)
+        rows.append([content, *("" for _ in range(column_count - 1))])
+        if column_count > 1:
+            span_rows.append(row_index)
+
+    append_spanning_row(heading)
+    repeat_rows = 1
+    if category_offer_table is not None:
+        append_spanning_row(category_offer_table)
+        repeat_rows += 1
+
+    if pizza_note is not None:
+        append_spanning_row(pizza_note)
+        append_spanning_row(Spacer(1, 6))
+        repeat_rows += 2
+    elif category_offer_table is not None:
+        append_spanning_row(Spacer(1, 12))
+        repeat_rows += 1
+    else:
+        append_spanning_row(Spacer(1, 12))
+        repeat_rows += 1
+
+    if common_presentations and product_rows:
+        rows.append(product_rows.pop(0))
+        repeat_rows += 1
+    rows.extend(product_rows)
+
+    table = _CategoryTable(
+        rows,
+        colWidths=column_widths,
+        hAlign=h_align,
+        repeatRows=repeat_rows,
+        splitByRow=1,
+    )
+    style_commands: list[tuple] = [
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]
+    style_commands.extend(
+        ("SPAN", (0, row_index), (-1, row_index))
+        for row_index in span_rows
+    )
+    table.setStyle(TableStyle(style_commands))
     return table
 
 
@@ -1097,7 +1430,7 @@ def _promo_rows(
                     ("LEFTPADDING", (0, 0), (-1, -1), 0),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 0),
                     ("TOPPADDING", (0, 0), (-1, -1), 0),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
                 ]
             )
         )
@@ -1122,6 +1455,40 @@ def _page_frame(
         topPadding=0,
         bottomPadding=0,
     )
+
+
+def _categories_for_menu(
+    catalog: PublicCatalogResponse,
+) -> list[PublicCatalogCategory]:
+    categories = list(catalog.categorias)
+    if os.getenv("MENU_PDF_REORDER_TO_FILL", "false").strip().casefold() != "true":
+        return categories
+
+    products_by_category: dict[int, int] = {}
+    for product in catalog.productos:
+        products_by_category[product.categoria_id] = (
+            products_by_category.get(product.categoria_id, 0) + 1
+        )
+    pizza_index = next(
+        (
+            index
+            for index, category in enumerate(categories)
+            if _normalize_category_name(category.nombre) == "pizzas"
+        ),
+        None,
+    )
+    if pizza_index is None:
+        return categories
+
+    fixed_categories = categories[: pizza_index + 1]
+    remaining_categories = categories[pizza_index + 1 :]
+    remaining_categories.sort(
+        key=lambda category: (
+            products_by_category.get(category.id, 0) > 3,
+            products_by_category.get(category.id, 0),
+        )
+    )
+    return fixed_categories + remaining_categories
 
 
 def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
@@ -1176,11 +1543,18 @@ def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
         promo_heading = _SectionHeading("Promociones", content_width, serif_bold)
         promo_rows = _promo_rows(catalog.ofertas, catalog, content_width, styles)
         if promo_rows:
-            initial_promo_rows = promo_rows[:2]
-            story.append(KeepTogether([promo_heading, *initial_promo_rows]))
-            story.extend(promo_rows[len(initial_promo_rows):])
+            story.append(
+                KeepTogether([promo_heading, Spacer(1, 12), *promo_rows])
+            )
+            if catalog.categorias:
+                story.append(Spacer(1, 27))
 
-    for category in catalog.categorias:
+    visible_categories = [
+        category
+        for category in _categories_for_menu(catalog)
+        if any(product.categoria_id == category.id for product in catalog.productos)
+    ]
+    for category_index, category in enumerate(visible_categories):
         category_products = [
             product
             for product in catalog.productos
@@ -1196,7 +1570,7 @@ def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
             content_width,
             serif_bold,
         )
-        rows, column_widths, initial_rows = _category_table(
+        rows, column_widths, _ = _category_table(
             category_products,
             content_width,
             styles,
@@ -1204,37 +1578,49 @@ def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
             common_presentations,
         )
         h_align = "CENTER" if len(category_products) <= 3 else "LEFT"
-        first_rows = _product_table(
-            rows[:initial_rows],
+        category_offer_width = (
+            content_width * 0.7 if len(category_products) <= 3 else content_width
+        )
+        category_offer_table = _category_offer_presentations(
+            catalog.ofertas,
+            category.id,
+            category_offer_width,
+            styles,
+        )
+        pizza_note = (
+            Paragraph(
+                escape(
+                    "Pizzas mitad y mitad: se abona el precio de la variedad más cara."
+                ),
+                styles["pizza_half_and_half_note"],
+            )
+            if _normalize_category_name(category.nombre) == "pizzas"
+            else None
+        )
+        category_table = _category_section_table(
+            category_heading,
+            category_offer_table,
+            pizza_note,
+            rows,
             column_widths,
+            common_presentations,
             h_align,
         )
-        initial_category_content: list[Flowable] = [category_heading]
-        if _normalize_category_name(category.nombre) == "pizzas":
-            initial_category_content.extend(
-                [
-                    Paragraph(
-                        "Pizzas mitad y mitad: se abona el precio de la variedad más cara.",
-                        styles["pizza_half_and_half_note"],
-                    ),
-                    Spacer(1, 6),
-                ]
-            )
-        initial_category_content.append(first_rows)
-        story.append(KeepTogether(initial_category_content))
-        if len(rows) > initial_rows:
-            remaining_rows = _product_table(
-                rows[initial_rows:],
-                column_widths,
-                h_align,
-            )
-            story.append(remaining_rows)
-        story.append(Spacer(1, 10))
+        story.append(KeepTogether([category_table]))
+        if category_index < len(visible_categories) - 1:
+            story.append(Spacer(1, 27))
 
     document.build(story, canvasmaker=_PageCountCanvas)
 
+    page_count = document.page
+    if page_count > 3:
+        logger.warning(
+            "menu_pdf.exceeds_three_pages",
+            page_count=page_count,
+        )
     logger.info(
         "menu_pdf.generated",
+        pages=page_count,
         categories=len(catalog.categorias),
         products=len(catalog.productos),
         offers=len(catalog.ofertas),

@@ -11,9 +11,20 @@ import pytest
 from app.application.menu_pdf_service import (
     MenuCatalogEmptyError,
     MenuPdfService,
+    _CategoryTable,
+    _ProductBlock,
+    _SectionHeading,
+    _category_section_table,
+    _category_table,
+    _categories_for_menu,
+    _title_case_if_uppercase,
     _offer_description,
     _format_money,
     _format_presentation,
+    _category_offer_presentations,
+    _common_presentations,
+    _paragraph_styles,
+    _register_menu_fonts,
     _without_hidden_categories,
 )
 from app.application.public_catalog_service import build_public_catalog
@@ -77,6 +88,57 @@ async def test_generates_pdf_from_sellable_database_products():
 
 
 @pytest.mark.asyncio
+async def test_generates_paginated_menu_with_category_offers_and_spanish_names():
+    category = _category(1, "EMPANADAS")
+    products = [
+        _product(
+            product_id,
+            "ÑANDÚ CON QUESO ÜBER" if product_id == 1 else f"Empanada de prueba {product_id}",
+            1,
+            prices=[
+                SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("1000"))
+            ],
+        )
+        for product_id in range(1, 81)
+    ]
+    offers = [
+        SimpleNamespace(
+            id=offer_id,
+            nombre=name,
+            descripcion=None,
+            precio=price,
+            activo=True,
+            productos=[
+                SimpleNamespace(
+                    cantidad=quantity,
+                    categoria_id=1,
+                    productos=[],
+                )
+            ],
+        )
+        for offer_id, name, quantity, price in (
+            (30, "Media docena", Decimal("6"), Decimal("6000")),
+            (31, "Docena", Decimal("12"), Decimal("11000")),
+            (32, "Dos docenas", Decimal("24"), Decimal("20000")),
+        )
+    ]
+    uow = SimpleNamespace(
+        product_category_repo=SimpleNamespace(
+            list_by_active=AsyncMock(return_value=[category])
+        ),
+        product_repo=SimpleNamespace(list=AsyncMock(return_value=products)),
+        offer_repo=SimpleNamespace(list=AsyncMock(return_value=offers)),
+    )
+
+    pdf = await MenuPdfService().generate(uow)
+    page_count = len(re.findall(rb"/Type\s*/Page\b", pdf))
+
+    assert pdf.startswith(b"%PDF-")
+    assert page_count >= 2
+    assert page_count <= 3
+
+
+@pytest.mark.asyncio
 async def test_menu_pdf_requires_at_least_one_sellable_product():
     uow = SimpleNamespace(
         product_category_repo=SimpleNamespace(
@@ -98,6 +160,240 @@ def test_menu_pdf_formats_prices_and_presentations_for_argentine_spanish():
     assert _format_presentation(Decimal("1")) == "Unidad"
     assert _format_presentation(Decimal("6")) == "Media docena"
     assert _format_presentation(Decimal("12")) == "Docena"
+
+
+def test_category_offer_presentations_include_only_single_category_offers():
+    offers = [
+        SimpleNamespace(
+            nombre="Docena",
+            precio=Decimal("12000"),
+            items=[
+                SimpleNamespace(
+                    cantidad=Decimal("12"),
+                    categoria_id=3,
+                    producto_ids=[],
+                )
+            ],
+        ),
+        SimpleNamespace(
+            nombre="Dos docenas",
+            precio=Decimal("22000"),
+            items=[
+                SimpleNamespace(
+                    cantidad=Decimal("24"),
+                    categoria_id=3,
+                    producto_ids=[],
+                )
+            ],
+        ),
+        SimpleNamespace(
+            nombre="Media docena",
+            precio=Decimal("6500"),
+            items=[
+                SimpleNamespace(
+                    cantidad=Decimal("6"),
+                    categoria_id=3,
+                    producto_ids=[],
+                )
+            ],
+        ),
+        SimpleNamespace(
+            nombre="Promo combinada",
+            precio=Decimal("15000"),
+            items=[
+                SimpleNamespace(
+                    cantidad=Decimal("24"),
+                    categoria_id=3,
+                    producto_ids=[],
+                ),
+                SimpleNamespace(
+                    cantidad=Decimal("1"),
+                    categoria_id=None,
+                    producto_ids=[10],
+                ),
+            ],
+        ),
+        SimpleNamespace(
+            nombre="Otra categoría",
+            precio=Decimal("9000"),
+            items=[
+                SimpleNamespace(
+                    cantidad=Decimal("6"),
+                    categoria_id=4,
+                    producto_ids=[],
+                )
+            ],
+        ),
+    ]
+    table = _category_offer_presentations(
+        offers,
+        category_id=3,
+        width=300,
+        styles=_paragraph_styles("Helvetica-Bold", "Helvetica", "Helvetica-Bold"),
+    )
+
+    assert table is not None
+    assert [cell.text for cell in table._cellvalues[0]] == [
+        "Media docena",
+        "Docena",
+        "2 docenas",
+    ]
+    assert [cell.text for cell in table._cellvalues[1]] == [
+        "$ 1.083 c/u",
+        "$ 1.000 c/u",
+        "$ 917 c/u",
+    ]
+    assert table._argW == [100, 100, 100]
+
+    test_price_offer = SimpleNamespace(
+        nombre="Media docena",
+        precio=Decimal("1000"),
+        items=[
+            SimpleNamespace(
+                cantidad=Decimal("6"),
+                categoria_id=3,
+                producto_ids=[],
+            )
+        ],
+    )
+    rounded_table = _category_offer_presentations(
+        [test_price_offer],
+        category_id=3,
+        width=300,
+        styles=_paragraph_styles("Helvetica-Bold", "Helvetica", "Helvetica-Bold"),
+    )
+    assert rounded_table is not None
+    assert rounded_table._cellvalues[1][0].text == "$ 167 c/u"
+
+
+def test_title_cases_only_all_uppercase_names_and_preserves_acronyms():
+    assert _title_case_if_uppercase(
+        "PIZZA JAMÓN Y MORRONES CON QUESO"
+    ) == "Pizza Jamón y Morrones con Queso"
+    assert _title_case_if_uppercase(
+        "EMPANADAS DE CARNE (VEG) Y BBQ"
+    ) == "Empanadas de Carne (VEG) y BBQ"
+    assert _title_case_if_uppercase(
+        "Pizza Jamón y Morrones"
+    ) == "Pizza Jamón y Morrones"
+    assert _title_case_if_uppercase("PIZZA CON ANANÁ Y ÜN") == (
+        "Pizza con Ananá y ÜN"
+    )
+
+
+def test_menu_fonts_support_spanish_characters():
+    _, _, sans, sans_bold = _register_menu_fonts()
+    from reportlab.pdfbase import pdfmetrics
+
+    sample = "Ñandú, Jamón, Ü, ¿Sí? ¡Sí!"
+    assert pdfmetrics.stringWidth(sample, sans, 10) > 0
+    assert pdfmetrics.stringWidth(sample, sans_bold, 10) > 0
+    for font_name in (sans, sans_bold):
+        face = pdfmetrics.getFont(font_name).face
+        assert all(ord(character) in face.charToGlyph for character in sample)
+
+
+def test_long_product_name_wraps_before_price_columns():
+    _, _, sans, sans_bold = _register_menu_fonts()
+    product = SimpleNamespace(
+        nombre="EMPANADAS DE JAMÓN Y MORRONES CON QUESO AZUL",
+        precios=[
+            SimpleNamespace(cantidad=Decimal("0.5"), precio=Decimal("6500")),
+            SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("12000")),
+        ],
+    )
+    block = _ProductBlock(
+        product,
+        width=260,
+        styles=_paragraph_styles("MenuPlayfair-Bold", sans, sans_bold),
+        category_quantities={Decimal("0.5"), Decimal("1")},
+        common_presentations=None,
+    )
+
+    block.wrap(260, 500)
+
+    assert len(block._name_lines) > 1
+    assert block._name_width + 118 <= block.width
+    assert "Empanadas" in block._name_lines[0]
+
+
+def test_category_split_repeats_continuation_heading_and_keeps_three_items():
+    serif_bold, _, sans, sans_bold = _register_menu_fonts()
+    styles = _paragraph_styles(serif_bold, sans, sans_bold)
+    products = [
+        SimpleNamespace(
+            id=product_id,
+            nombre=f"Empanada de prueba {product_id}",
+            precios=[SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("1000"))],
+        )
+        for product_id in range(1, 21)
+    ]
+    quantities, common = _common_presentations(products)
+    rows, widths, _ = _category_table(
+        products,
+        500,
+        styles,
+        quantities,
+        common,
+    )
+    section = _category_section_table(
+        _SectionHeading("Empanadas", 500, serif_bold),
+        None,
+        None,
+        rows,
+        widths,
+        common,
+        "LEFT",
+    )
+
+    section.wrap(500, 700)
+    parts = section.split(500, 250)
+
+    assert len(parts) > 1
+    assert isinstance(parts[1], _CategoryTable)
+    first_heading = parts[0]._cellvalues[0][0][0]
+    assert isinstance(first_heading, _SectionHeading)
+    assert first_heading.title == "EMPANADAS"
+    assert not first_heading.continuation
+
+    continuation_heading = parts[1]._cellvalues[0][0][0]
+    assert isinstance(continuation_heading, _SectionHeading)
+    assert continuation_heading.title == "EMPANADAS (CONT.)"
+    assert continuation_heading.continuation
+
+    def product_count(table):
+        return sum(
+            isinstance(flowable, _ProductBlock)
+            for row in table._cellvalues
+            for cell in row
+            for flowable in (
+                cell if isinstance(cell, (tuple, list)) else (cell,)
+            )
+        )
+
+    assert product_count(parts[0]) >= 3
+    assert sum(product_count(part) for part in parts) == len(products)
+
+
+def test_category_reorder_is_opt_in_and_keeps_pizzas_before_short_categories(
+    monkeypatch,
+):
+    catalog = SimpleNamespace(
+        categorias=[
+            SimpleNamespace(id=1, nombre="Pizzas"),
+            SimpleNamespace(id=2, nombre="Empanadas"),
+            SimpleNamespace(id=3, nombre="Bebidas"),
+        ],
+        productos=[
+            SimpleNamespace(categoria_id=2) for _ in range(8)
+        ] + [SimpleNamespace(categoria_id=3)],
+    )
+
+    monkeypatch.delenv("MENU_PDF_REORDER_TO_FILL", raising=False)
+    assert [category.id for category in _categories_for_menu(catalog)] == [1, 2, 3]
+
+    monkeypatch.setenv("MENU_PDF_REORDER_TO_FILL", "true")
+    assert [category.id for category in _categories_for_menu(catalog)] == [1, 3, 2]
 
 
 @pytest.mark.asyncio
