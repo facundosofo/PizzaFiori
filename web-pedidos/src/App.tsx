@@ -143,6 +143,7 @@ type ResolvedCartItem =
 const currencyFormatter = new Intl.NumberFormat("es-AR", {
   style: "currency",
   currency: "ARS",
+  minimumFractionDigits: 0,
   maximumFractionDigits: 2,
 });
 
@@ -522,20 +523,20 @@ function PizzaHalfBuilder({
           />
         </div>
         <div className="product-info half-pizza-product-info">
-          <h3>
-            Pizza Mitad y Mitad
-          </h3>
-          <p className="half-pizza-description">
-            Combiná dos sabores
-          </p>
-          <button
-            className="add-to-cart-button half-pizza-entry-button"
-            type="button"
-            onClick={() => setIsConfiguring(true)}
-          >
-            <Plus size={15} aria-hidden="true" />
-            Armar
-          </button>
+          <h3>Pizza Mitad y Mitad</h3>
+          <div className="price-list half-pizza-price-list">
+            <div className="presentation-row">
+              <p className="half-pizza-description">Combiná dos sabores</p>
+              <button
+                className="add-to-cart-button half-pizza-entry-button"
+                type="button"
+                onClick={() => setIsConfiguring(true)}
+              >
+                <Plus size={15} aria-hidden="true" />
+                Armar
+              </button>
+            </div>
+          </div>
         </div>
       </article>
       <dialog
@@ -688,6 +689,9 @@ function CartAndCheckout({
   const [errors, setErrors] = useState<OrderFormErrors>({});
   const [validated, setValidated] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "details" | "confirm">("cart");
+  const [expandedOfferSelections, setExpandedOfferSelections] = useState<Set<string>>(
+    () => new Set(),
+  );
   const whatsappPhone = normalizeWhatsAppPhone(WHATSAPP_PHONE);
   const products = new Map(catalog.productos.map((product) => [product.id, product]));
   const offers = new Map(catalog.ofertas.map((offer) => [offer.id, offer]));
@@ -799,6 +803,11 @@ function CartAndCheckout({
     setValidated(false);
   };
 
+  const clearCart = () => {
+    setCart([]);
+    setValidated(false);
+  };
+
   const updateField = <Field extends keyof OrderForm>(
     field: Field,
     value: OrderForm[Field],
@@ -880,7 +889,7 @@ function CartAndCheckout({
 
   return (
     <section
-      className="order-section checkout-fullscreen"
+      className={`order-section checkout-fullscreen${checkoutStep === "cart" ? " checkout-cart-step" : ""}`}
       id="pedido"
       aria-labelledby="order-title"
     >
@@ -951,7 +960,10 @@ function CartAndCheckout({
         </div>
       ) : (
         <>
-          <nav className="checkout-steps" aria-label="Pasos del pedido">
+          <nav
+            className={`checkout-steps${checkoutStep === "cart" ? " checkout-stepper-cart" : ""}`}
+            aria-label="Pasos del pedido"
+          >
             <div
               className={`checkout-step${checkoutStep === "cart" ? " active" : " complete"}`}
               aria-current={checkoutStep === "cart" ? "step" : undefined}
@@ -979,127 +991,166 @@ function CartAndCheckout({
 
           {checkoutStep === "cart" ? (
             <div className="cart-stage">
-          <div className="cart-card">
-            <div className="cart-card-heading">
-              <h3>Tu carrito</h3>
-            </div>
-            <div className="cart-lines">
-              {resolvedCart.map((item) => (
-                <article
-                  className={`cart-line cart-line-${
-                    item.type === "product" ? "product" : "offer"
-                  }`}
-                  key={item.key}
-                >
-                  {item.type === "product" && (
-                    <img
-                      src={item.product.imagen_url || PLACEHOLDER_IMAGE}
-                      alt=""
-                      onError={(event) => {
-                        event.currentTarget.src = PLACEHOLDER_IMAGE;
-                      }}
-                    />
-                  )}
-                  <div className="cart-line-details">
-                    <h4>
-                      {item.type === "product"
+              <div className="cart-card">
+                <div className="cart-card-heading">
+                  <h3>Tu carrito</h3>
+                  <button
+                    className="clear-cart-button"
+                    type="button"
+                    onClick={clearCart}
+                  >
+                    <Trash2 size={15} aria-hidden="true" />
+                    Vaciar carrito
+                  </button>
+                </div>
+                <ul className="cart-list">
+                  {resolvedCart.map((item) => {
+                    const title =
+                      item.type === "product"
                         ? item.product.nombre
                         : item.type === "halfPizza"
                           ? "Pizza mitad/mitad"
-                          : item.offer.nombre}
-                    </h4>
-                    {item.type === "product" ? (
-                      <p>{formatProductPresentation(item.presentation)}</p>
-                    ) : item.type === "halfPizza" ? (
-                      <p>{item.leftProduct.nombre} / {item.rightProduct.nombre}</p>
-                    ) : (
-                      <ul className="cart-offer-selections">
-                        {item.selections.map((selection, index) => (
-                          <li key={`${selection.productId}-${index}`}>
-                            {formatOfferSelection(selection)}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <strong>{formatCents(item.subtotalCents)}</strong>
-                  </div>
-                  <div className="cart-line-actions">
-                    <div
-                      className="quantity-control"
-                      aria-label={`Cantidad de ${
-                        item.type === "product"
-                          ? item.product.nombre
-                          : item.type === "halfPizza"
-                            ? `pizza mitad/mitad ${item.leftProduct.nombre} y ${item.rightProduct.nombre}`
-                            : item.offer.nombre
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        aria-label={`Quitar una unidad de ${
-                          item.type === "product"
-                            ? item.product.nombre
-                            : item.type === "halfPizza"
-                              ? "pizza mitad/mitad"
-                              : item.offer.nombre
-                        }`}
-                        onClick={() => updateCount(item, -1)}
+                          : item.offer.nombre;
+                    return (
+                      <li
+                        className={`cart-row${item.type === "product" ? " cart-row-product" : ""}`}
+                        key={item.key}
                       >
-                        <Minus size={14} aria-hidden="true" />
-                      </button>
-                      <span aria-live="polite">{item.count}</span>
-                      <button
-                        type="button"
-                        aria-label={`Agregar una unidad de ${
-                          item.type === "product"
-                            ? item.product.nombre
-                            : item.type === "halfPizza"
-                              ? "pizza mitad/mitad"
-                              : item.offer.nombre
-                        }`}
-                        onClick={() => updateCount(item, 1)}
-                      >
-                        <Plus size={14} aria-hidden="true" />
-                      </button>
-                    </div>
-                    <button
-                      className="remove-item"
-                      type="button"
-                      aria-label={`Eliminar ${
-                        item.type === "product"
-                          ? item.product.nombre
-                          : item.type === "halfPizza"
-                            ? "pizza mitad/mitad"
-                            : item.offer.nombre
-                      }, del pedido`}
-                      onClick={() => removeItem(item)}
-                    >
-                      <Trash2 size={15} aria-hidden="true" />
-                    </button>
+                        {item.type === "product" && (
+                          <img
+                            className="cart-row-image"
+                            src={item.product.imagen_url || PLACEHOLDER_IMAGE}
+                            alt=""
+                            onError={(event) => {
+                              event.currentTarget.src = PLACEHOLDER_IMAGE;
+                            }}
+                          />
+                        )}
+                        <div className="cart-row-main">
+                          <h4>{title}</h4>
+                          <strong className="cart-row-price">
+                            {formatCents(item.subtotalCents)}
+                          </strong>
+                          <div className="cart-row-detail">
+                            {item.type === "product" ? (
+                              <p>{formatProductPresentation(item.presentation)}</p>
+                            ) : item.type === "halfPizza" ? (
+                              <p>
+                                {item.leftProduct.nombre.replace(/^Pizza\s+/i, "")} /{" "}
+                                {item.rightProduct.nombre.replace(/^Pizza\s+/i, "")}
+                              </p>
+                            ) : (
+                              <ul
+                                className="cart-offer-selections"
+                                id={`cart-offer-selections-${item.key}`}
+                              >
+                                {item.selections
+                                  .slice(
+                                    0,
+                                    item.selections.length > 4 &&
+                                      !expandedOfferSelections.has(item.key)
+                                      ? 3
+                                      : undefined,
+                                  )
+                                  .map((selection, index) => (
+                                    <li key={`${selection.productId}-${index}`}>
+                                      {formatOfferSelection(selection)}
+                                    </li>
+                                  ))}
+                                {item.selections.length > 4 && (
+                                  <li>
+                                    <button
+                                      className="cart-selections-toggle"
+                                      type="button"
+                                      aria-expanded={expandedOfferSelections.has(item.key)}
+                                      aria-controls={`cart-offer-selections-${item.key}`}
+                                      onClick={() => {
+                                        setExpandedOfferSelections((current) => {
+                                          const next = new Set(current);
+                                          if (next.has(item.key)) {
+                                            next.delete(item.key);
+                                          } else {
+                                            next.add(item.key);
+                                          }
+                                          return next;
+                                        });
+                                      }}
+                                    >
+                                      {expandedOfferSelections.has(item.key)
+                                        ? "Mostrar menos"
+                                        : `+ ${item.selections.length - 3} más`}
+                                    </button>
+                                  </li>
+                                )}
+                              </ul>
+                            )}
+                          </div>
+                          <div
+                            className="cart-qty"
+                            role="group"
+                            aria-label={`Cantidad de ${title}`}
+                          >
+                            <button
+                              type="button"
+                              className={`cart-qty-button${item.count === 1 ? " is-remove" : ""}`}
+                              aria-label={
+                                item.count === 1
+                                  ? `Eliminar ${title} del pedido`
+                                  : `Quitar una unidad de ${title}`
+                              }
+                              onClick={() =>
+                                item.count === 1 ? removeItem(item) : updateCount(item, -1)
+                              }
+                            >
+                              {item.count === 1 ? (
+                                <Trash2 size={16} aria-hidden="true" />
+                              ) : (
+                                <Minus size={16} aria-hidden="true" />
+                              )}
+                            </button>
+                            <span aria-live="polite">{item.count}</span>
+                            <button
+                              type="button"
+                              className="cart-qty-button"
+                              aria-label={`Agregar una unidad de ${title}`}
+                              onClick={() => updateCount(item, 1)}
+                            >
+                              <Plus size={16} aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="form-field cart-food-notes">
+                  <label htmlFor="food-notes">
+                    Observaciones{" "}
+                    <span className="optional-label">Opcional</span>
+                  </label>
+                  <textarea
+                    id="food-notes"
+                    rows={3}
+                    value={order.foodNotes}
+                    onChange={(event) => updateField("foodNotes", event.target.value)}
+                    placeholder="Extras, sustituciones o detalles de preparación"
+                  />
+                </div>
+                <div className="cart-totals">
+                  <div>
+                    <span>Subtotal</span>
+                    <strong>{formatCents(totalCents)}</strong>
                   </div>
-                </article>
-              ))}
-            </div>
-            <div className="form-field cart-food-notes">
-              <label htmlFor="food-notes">
-                Observaciones{" "}
-                <span className="optional-label">Opcional</span>
-              </label>
-              <textarea
-                id="food-notes"
-                rows={3}
-                value={order.foodNotes}
-                onChange={(event) => updateField("foodNotes", event.target.value)}
-                placeholder="Extras, sustituciones o detalles de preparación"
-              />
-            </div>
-            <div className="cart-totals">
-              <div className="estimated-total">
-                <span>Total estimado</span>
-                <strong>{formatCents(totalCents)}</strong>
+                  <div>
+                    <span>Envío</span>
+                    <span>A confirmar</span>
+                  </div>
+                  <div className="estimated-total">
+                    <span>Total estimado</span>
+                    <strong>{formatCents(totalCents)}</strong>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
               <div className="cart-stage-actions">
                 <a
                   className="back-to-menu"
@@ -1112,6 +1163,10 @@ function CartAndCheckout({
                   <ArrowLeft size={16} aria-hidden="true" />
                   Seguir mirando
                 </a>
+                <div className="cart-action-total">
+                  <span>Total estimado</span>
+                  <strong>{formatCents(totalCents)}</strong>
+                </div>
                 <button
                   className="continue-button"
                   type="button"
@@ -1535,24 +1590,6 @@ function OfferCard({
       </div>
       <h3>{offer.nombre}</h3>
       {offer.descripcion && <p className="offer-description">{offer.descripcion}</p>}
-      <div className="offer-footer">
-        <strong className="offer-price">{formatPrice(offer.precio)}</strong>
-        <button
-          className="offer-add-button"
-          type="button"
-          onClick={() => {
-            if (configurableItems.length > 0) {
-              setIsConfiguring(true);
-              return;
-            }
-            const selections = selectionsForCart();
-            if (selections.length > 0) onAddOffer(offer, selections);
-          }}
-        >
-          <Plus size={15} aria-hidden="true" />
-          Agregar promo
-        </button>
-      </div>
       {offer.items.length > 0 && (
         <ul className="offer-items">
           {offer.items.map((item, index) => {
@@ -1581,6 +1618,24 @@ function OfferCard({
           })}
         </ul>
       )}
+      <div className="offer-footer">
+        <strong className="offer-price">{formatPrice(offer.precio)}</strong>
+        <button
+          className="offer-add-button"
+          type="button"
+          onClick={() => {
+            if (configurableItems.length > 0) {
+              setIsConfiguring(true);
+              return;
+            }
+            const selections = selectionsForCart();
+            if (selections.length > 0) onAddOffer(offer, selections);
+          }}
+        >
+          <Plus size={15} aria-hidden="true" />
+          Agregar promo
+        </button>
+      </div>
       {configurableItems.length > 0 && (
         <dialog
           ref={configDialogRef}
