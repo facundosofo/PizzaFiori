@@ -1426,6 +1426,11 @@ function CartAndCheckout({
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    setCart([]);
+                    setValidated(false);
+                    navigateFromCheckout("inicio");
+                  }}
                 >
                   <MessageCircle size={19} aria-hidden="true" />
                   Enviar pedido por WhatsApp
