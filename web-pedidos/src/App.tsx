@@ -14,7 +14,6 @@ import {
   LoaderCircle,
   MapPin,
   MessageCircle,
-  Moon,
   Minus,
   Plus,
   Phone,
@@ -22,7 +21,6 @@ import {
   ShoppingBag,
   Sparkles,
   Store,
-  Sun,
   Trash2,
   Truck,
 } from "lucide-react";
@@ -54,7 +52,6 @@ const HIDDEN_CATEGORY_NAMES = new Set(
     .filter(Boolean),
 );
 const PLACEHOLDER_IMAGE = "/logo.png";
-const THEME_STORAGE_KEY = "pizza-fiori-theme";
 const EMOJI = {
   pizza: String.fromCodePoint(0x1f355),
   cart: String.fromCodePoint(0x1f6d2),
@@ -69,13 +66,6 @@ const EMOJI = {
   pray: String.fromCodePoint(0x1f64f),
   pin: String.fromCodePoint(0x1f4cd),
 } as const;
-type Theme = "light" | "dark";
-
-function getInitialTheme(): Theme {
-  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (savedTheme === "light" || savedTheme === "dark") return savedTheme;
-  return "dark";
-}
 
 const PAYMENT_METHODS = ["Efectivo", "Transferencia"] as const;
 
@@ -1804,7 +1794,6 @@ function LoadingState() {
 }
 
 function App() {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [catalog, setCatalog] = useState<PublicCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1853,14 +1842,13 @@ function App() {
         )?.id;
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.style.colorScheme = theme;
+    document.documentElement.dataset.theme = "dark";
+    document.documentElement.style.colorScheme = "dark";
     document.querySelector('meta[name="theme-color"]')?.setAttribute(
       "content",
-      theme === "dark" ? "#0d0d0d" : "#fffaf1",
+      "#0d0d0d",
     );
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -1996,18 +1984,17 @@ function App() {
           </span>
         </a>
         <div className="header-actions">
+          {/* Selector de tema deshabilitado temporalmente: la web queda solo en modo oscuro.
           <button
             className="theme-toggle"
             type="button"
-            aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
-            aria-pressed={theme === "dark"}
-            title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
-            onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+            aria-label="Activar modo claro"
+            title="Modo claro"
+            onClick={() => setTheme("light")}
           >
-            {theme === "dark"
-              ? <Sun size={18} aria-hidden="true" />
-              : <Moon size={18} aria-hidden="true" />}
+            <Sun size={18} aria-hidden="true" />
           </button>
+          */}
           <button className="header-cart" type="button" onClick={goToCart}>
             <ShoppingBag size={17} aria-hidden="true" />
             Pedido <span>{cartItemCount}</span>
