@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape
 
 import structlog
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
@@ -55,7 +55,7 @@ MENU_THEME = {
     "text": colors.HexColor("#F5F5F5"),
     "muted": colors.HexColor("#B6BCC6"),
     "tertiary": colors.HexColor("#9CA3AF"),
-    "leader": colors.HexColor("#3A3A3A"),
+    "leader": colors.HexColor("#777B82"),
     "green": colors.HexColor("#22C55E"),
     "red": colors.HexColor("#EF4444"),
     "divider": colors.HexColor("#2A2A2A"),
@@ -68,6 +68,10 @@ PROMO_GUTTER = 1.4 * cm
 PRODUCT_GUTTER = 1.6 * cm
 PRICE_COLUMN_WIDTH = 59
 PROMO_PRICE_COLUMN_WIDTH = 74
+LEADER_DOT_RADIUS = 1
+LEADER_DOT_SPACING = 3.2
+MIN_LEADER_DOT_COUNT = 3
+LEADER_TEXT_GAP = 8
 FONT_SERIF_BOLD = "Helvetica-Bold"
 FONT_SERIF_ITALIC_BOLD = "Helvetica-BoldOblique"
 FONT_SANS = "Helvetica"
@@ -407,6 +411,7 @@ def _tracked_text(
     tracking: float,
     align_right: bool = False,
 ) -> None:
+    canvas.saveState()
     text_width = pdfmetrics.stringWidth(text, font_name, font_size)
     total_width = text_width + tracking * max(0, len(text) - 1)
     origin_x = center_x - total_width if align_right else center_x - total_width / 2
@@ -416,6 +421,44 @@ def _tracked_text(
     text_object.setCharSpace(tracking)
     text_object.textLine(text)
     canvas.drawText(text_object)
+    canvas.restoreState()
+
+
+def _draw_leader_dots(
+    canvas: Canvas,
+    start_x: float,
+    end_x: float,
+    baseline: float,
+) -> None:
+    first_dot_x = start_x + LEADER_TEXT_GAP + LEADER_DOT_RADIUS
+    last_dot_x = end_x - LEADER_TEXT_GAP - LEADER_DOT_RADIUS
+    if (
+        last_dot_x - first_dot_x
+        < (MIN_LEADER_DOT_COUNT - 1) * LEADER_DOT_SPACING
+    ):
+        return
+
+    canvas.saveState()
+    canvas.setFillColor(MENU_THEME["leader"])
+    dot_x = last_dot_x
+    while dot_x >= first_dot_x:
+        canvas.circle(
+            dot_x,
+            baseline + LEADER_DOT_RADIUS,
+            LEADER_DOT_RADIUS,
+            stroke=0,
+            fill=1,
+        )
+        dot_x -= LEADER_DOT_SPACING
+    canvas.restoreState()
+
+
+def _paragraph_text_width(paragraph: Paragraph) -> float:
+    return pdfmetrics.stringWidth(
+        paragraph.getPlainText(),
+        paragraph.style.fontName,
+        paragraph.style.fontSize,
+    )
 
 
 def _draw_heart(canvas: Canvas, center_x: float, center_y: float) -> None:
@@ -459,7 +502,7 @@ def _page_chrome(canvas: Canvas, document: BaseDocTemplate) -> None:
         brand_size = 32
         brand_y = page_height - 2.25 * cm
         pizza_width = pdfmetrics.stringWidth("PIZZA", serif_italic_bold, brand_size)
-        space_width = pdfmetrics.stringWidth(" ", serif_italic_bold, brand_size) + 12
+        space_width = pdfmetrics.stringWidth(" ", serif_italic_bold, brand_size) + 4
         fiori_width = pdfmetrics.stringWidth("FIORI", serif_italic_bold, brand_size)
         brand_x = center_x - (pizza_width + space_width + fiori_width) / 2
         canvas.setFont(serif_italic_bold, brand_size)
@@ -556,7 +599,7 @@ def _paragraph_styles(
             fontSize=9,
             leading=12.15,
             textColor=MENU_THEME["tertiary"],
-            alignment=TA_CENTER,
+            alignment=TA_RIGHT,
         ),
         "category_offer_price": ParagraphStyle(
             "MenuCategoryOfferPrice",
@@ -564,7 +607,7 @@ def _paragraph_styles(
             fontSize=10,
             leading=13.5,
             textColor=MENU_THEME["text"],
-            alignment=TA_CENTER,
+            alignment=TA_RIGHT,
         ),
         "pizza_half_and_half_note": ParagraphStyle(
             "MenuPizzaHalfAndHalfNote",
@@ -572,7 +615,7 @@ def _paragraph_styles(
             fontSize=9,
             leading=12.15,
             textColor=MENU_THEME["muted"],
-            alignment=TA_CENTER,
+            alignment=TA_LEFT,
         ),
         "promo_label": ParagraphStyle(
             "MenuPromoLabel",
@@ -672,7 +715,7 @@ class _ProductBlock(Flowable):
         self.category_quantities = category_quantities
         self.common_presentations = common_presentations
         self.price_column_count = max(1, len(category_quantities))
-        self.spaceAfter = 9
+        self.spaceAfter = 6
         self._name_paragraph: Paragraph | None = None
         self._description_paragraph: Paragraph | None = None
         self._name_width = width
@@ -761,9 +804,7 @@ class _ProductBlock(Flowable):
         description_gap = 2 if self._description_paragraph else 0
         description_block_height = description_gap + self._description_height
         name_bottom = self.spaceAfter + description_block_height
-        price_bottom = name_bottom + max(
-            0, self._name_height - self.styles["product_name"].leading
-        )
+        price_bottom = name_bottom
         self._name_paragraph.drawOn(self.canv, 0, name_bottom)
         for column_index, price, label in self._price_cells:
             column_right = self.width - (
@@ -786,29 +827,28 @@ class _ProductBlock(Flowable):
                     0.8,
                     align_right=True,
                 )
-        if len(self._name_lines) == 1 and self._price_cells:
+        if self._name_lines and self._price_cells:
             name_width = pdfmetrics.stringWidth(
-                self._name_lines[0],
+                self._name_lines[-1],
                 self.styles["product_name"].fontName,
                 self.styles["product_name"].fontSize,
             )
-            price_left = self.width - (
-                self.price_column_count * PRICE_COLUMN_WIDTH
+            first_price_column = self._price_cells[0][0]
+            column_right = self.width - (
+                self.price_column_count - first_price_column - 1
+            ) * PRICE_COLUMN_WIDTH
+            first_price = self._price_cells[0][1]
+            price_text_left = column_right - _paragraph_text_width(first_price)
+            _draw_leader_dots(
+                self.canv,
+                name_width,
+                price_text_left,
+                name_bottom
+                + (
+                    self.styles["product_name"].leading
+                    - self.styles["product_name"].fontSize
+                ),
             )
-            leader_start = name_width + 3
-            leader_end = price_left - 3
-            if leader_end - leader_start >= 6:
-                self.canv.saveState()
-                self.canv.setStrokeColor(MENU_THEME["leader"])
-                self.canv.setLineWidth(0.5)
-                self.canv.setDash(0, 3)
-                self.canv.line(
-                    leader_start,
-                    name_bottom + 4,
-                    leader_end,
-                    name_bottom + 4,
-                )
-                self.canv.restoreState()
         if self._description_paragraph:
             self._description_paragraph.drawOn(
                 self.canv,
@@ -848,12 +888,17 @@ class _SectionHeading(Flowable):
     def draw(self) -> None:
         baseline = self.height - 18
         for line in self.lines:
+            line_width = pdfmetrics.stringWidth(
+                line,
+                self.font_name,
+                self.font_size,
+            ) + self.tracking * max(0, len(line) - 1)
             _tracked_text(
                 self.canv,
                 line,
                 self.font_name,
                 self.font_size,
-                self.width / 2,
+                line_width / 2,
                 baseline,
                 (
                     MENU_THEME["tertiary"]
@@ -867,9 +912,9 @@ class _SectionHeading(Flowable):
         self.canv.setStrokeColor(MENU_THEME["green"])
         self.canv.setLineWidth(1)
         self.canv.line(
-            (self.width - 36) / 2,
+            0,
             2,
-            (self.width + 36) / 2,
+            self.width,
             2,
         )
 
@@ -971,6 +1016,7 @@ class _PromoEntry(Flowable):
         self._detail_paragraph: Paragraph | None = None
         self._detail_height = 0
         self._price: Paragraph | None = None
+        self._title_lines: list[str] = []
         self.label, self.title, self.description = self._copy()
 
     def _copy(self) -> tuple[str, str, str | None]:
@@ -1007,7 +1053,7 @@ class _PromoEntry(Flowable):
         self.width = min(self.target_width, availWidth)
         title_width = max(40, self.width - PROMO_PRICE_COLUMN_WIDTH - 8)
         if self.title:
-            title_lines = _limited_lines(
+            self._title_lines = _limited_lines(
                 self.title,
                 self.styles["promo_name"].fontName,
                 self.styles["promo_name"].fontSize,
@@ -1016,12 +1062,14 @@ class _PromoEntry(Flowable):
             )
             self._title = Paragraph(
                 "<br/>".join(
-                    escape(_title_case_if_uppercase(line)) for line in title_lines
+                    escape(_title_case_if_uppercase(line))
+                    for line in self._title_lines
                 ),
                 self.styles["promo_name"],
             )
             _, self._title_height = self._title.wrap(title_width, availHeight)
         else:
+            self._title_lines = []
             self._title = None
             self._title_height = 0
         self._price = Paragraph(
@@ -1068,20 +1116,44 @@ class _PromoEntry(Flowable):
         return []
 
     def draw(self) -> None:
+        self.canv.saveState()
         label = self.canv.beginText(0, self.height - 8)
         label.setFont(FONT_SANS_BOLD, 8)
         label.setFillColor(MENU_THEME["tertiary"])
         label.setCharSpace(0.8)
         label.textLine(self.label)
         self.canv.drawText(label)
+        self.canv.restoreState()
         y = self.height - 13
         if self._title:
-            self._title.drawOn(self.canv, 0, y - self._title_height)
-        self._price.drawOn(
-            self.canv,
-            self.width - PROMO_PRICE_COLUMN_WIDTH,
-            y - 16,
-        )
+            title_baseline = y - self._title_height
+            self._title.drawOn(self.canv, 0, title_baseline)
+            title_width = pdfmetrics.stringWidth(
+                _title_case_if_uppercase(self._title_lines[-1]),
+                self.styles["promo_name"].fontName,
+                self.styles["promo_name"].fontSize,
+            )
+            _draw_leader_dots(
+                self.canv,
+                title_width,
+                self.width - _paragraph_text_width(self._price),
+                title_baseline
+                + (
+                    self.styles["promo_name"].leading
+                    - self.styles["promo_name"].fontSize
+                ),
+            )
+            self._price.drawOn(
+                self.canv,
+                self.width - PROMO_PRICE_COLUMN_WIDTH,
+                title_baseline,
+            )
+        else:
+            self._price.drawOn(
+                self.canv,
+                self.width - PROMO_PRICE_COLUMN_WIDTH,
+                y - 16,
+            )
         y -= max(self._title_height, 17) + 2
         if self._detail_paragraph:
             y -= self._detail_height
@@ -1153,7 +1225,7 @@ def _category_table(
     common_presentations: set[Decimal] | None,
 ) -> tuple[list[list[object]], list[float], int]:
     if len(products) <= 3:
-        column_width = content_width * 0.7
+        column_width = content_width
         data: list[list[object]] = []
         if common_presentations:
             data.append(
@@ -1229,6 +1301,7 @@ def _category_offer_presentations(
     category_id: int,
     width: float,
     styles: dict[str, ParagraphStyle],
+    center_columns: bool = False,
 ) -> Table | None:
     category_offers = [
         offer
@@ -1265,11 +1338,24 @@ def _category_offer_presentations(
             )
         else:
             label = _format_presentation(quantity)
-        labels.append(Paragraph(escape(label), styles["category_offer_label"]))
+        label_style = styles["category_offer_label"]
+        price_style = styles["category_offer_price"]
+        if center_columns:
+            label_style = ParagraphStyle(
+                "CenteredMenuCategoryOfferLabel",
+                parent=label_style,
+                alignment=TA_CENTER,
+            )
+            price_style = ParagraphStyle(
+                "CenteredMenuCategoryOfferPrice",
+                parent=price_style,
+                alignment=TA_CENTER,
+            )
+        labels.append(Paragraph(escape(label), label_style))
         prices.append(
             Paragraph(
                 escape(f"{_format_money(unit_price)} c/u"),
-                styles["category_offer_price"],
+                price_style,
             )
         )
 
@@ -1281,7 +1367,12 @@ def _category_offer_presentations(
     table.setStyle(
         TableStyle(
             [
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                (
+                    "ALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "CENTER" if center_columns else "RIGHT",
+                ),
                 ("LEFTPADDING", (0, 0), (-1, -1), 2),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 2),
                 ("TOPPADDING", (0, 0), (-1, 0), 0),
@@ -1336,8 +1427,9 @@ def _category_section_table(
     append_spanning_row(heading)
     repeat_rows = 1
     if category_offer_table is not None:
+        append_spanning_row(Spacer(1, 5))
         append_spanning_row(category_offer_table)
-        repeat_rows += 1
+        repeat_rows += 2
 
     if pizza_note is not None:
         append_spanning_row(pizza_note)
@@ -1352,7 +1444,8 @@ def _category_section_table(
 
     if common_presentations and product_rows:
         rows.append(product_rows.pop(0))
-        repeat_rows += 1
+        append_spanning_row(Spacer(1, 5))
+        repeat_rows += 2
     rows.extend(product_rows)
 
     table = _CategoryTable(
@@ -1566,15 +1659,16 @@ def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
             category_quantities,
             common_presentations,
         )
-        h_align = "CENTER" if len(category_products) <= 3 else "LEFT"
-        category_offer_width = (
-            content_width * 0.7 if len(category_products) <= 3 else content_width
-        )
+        h_align = "LEFT"
+        category_offer_width = content_width
         category_offer_table = _category_offer_presentations(
             catalog.ofertas,
             category.id,
             category_offer_width,
             styles,
+            center_columns=(
+                _normalize_category_name(category.nombre) == "empanadas"
+            ),
         )
         pizza_note = (
             Paragraph(
@@ -1597,7 +1691,7 @@ def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
         )
         story.append(KeepTogether([category_table]))
         if category_index < len(visible_categories) - 1:
-            story.append(Spacer(1, 27))
+            story.append(Spacer(1, 15))
 
     document.build(story, canvasmaker=_PageCountCanvas)
 
