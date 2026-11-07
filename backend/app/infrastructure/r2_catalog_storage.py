@@ -2,7 +2,7 @@ import logging
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Sequence, Tuple
+from typing import Any, Sequence, Tuple
 from urllib.parse import urlparse
 
 from app.infrastructure.config.settings import Settings, settings
@@ -69,15 +69,7 @@ class R2CatalogStorage:
             )
         self._public_base_url()
 
-    def publish(
-        self,
-        catalog_json: bytes,
-        catalog_key: str,
-        current_pointer_json: bytes,
-        images: Sequence[Tuple[Path, str, str]],
-    ) -> None:
-        self.validate_configuration()
-
+    def _create_client(self) -> Tuple[Any, Tuple[type[Exception], ...]]:
         try:
             import boto3
             from botocore.config import Config
@@ -100,7 +92,25 @@ class R2CatalogStorage:
                 region_name="auto",
                 config=Config(signature_version="s3v4"),
             )
+        except (BotoCoreError, ClientError, S3UploadFailedError) as exc:
+            logger.exception("No se pudo conectar con Cloudflare R2.")
+            raise CatalogStorageError(
+                "No se pudo conectar con Cloudflare R2."
+            ) from exc
+        return client, (BotoCoreError, ClientError, S3UploadFailedError)
 
+    def publish(
+        self,
+        catalog_json: bytes,
+        catalog_key: str,
+        current_pointer_json: bytes,
+        images: Sequence[Tuple[Path, str, str]],
+        menu_pdf: bytes,
+    ) -> None:
+        self.validate_configuration()
+        client, storage_errors = self._create_client()
+
+        try:
             if images:
                 worker_count = min(MAX_PARALLEL_IMAGE_UPLOADS, len(images))
                 with ThreadPoolExecutor(max_workers=worker_count) as executor:
@@ -134,15 +144,43 @@ class R2CatalogStorage:
 
             client.put_object(
                 Bucket=self.config.r2_bucket_name,
+                Key="menu-pizza-fiori.pdf",
+                Body=menu_pdf,
+                ContentType="application/pdf",
+                CacheControl="no-cache, max-age=0, must-revalidate",
+                ContentDisposition='inline; filename="menu-pizza-fiori.pdf"',
+            )
+
+            client.put_object(
+                Bucket=self.config.r2_bucket_name,
                 Key="catalogo-actual.json",
                 Body=current_pointer_json,
                 ContentType="application/json; charset=utf-8",
                 CacheControl="no-cache, max-age=0, must-revalidate",
             )
-        except (BotoCoreError, ClientError, S3UploadFailedError) as exc:
+        except storage_errors as exc:
             logger.exception("Falló la publicación del catálogo en R2.")
             raise CatalogStorageError(
                 "No se pudo publicar el catálogo en Cloudflare R2."
+            ) from exc
+
+    def publish_menu_pdf(self, menu_pdf: bytes) -> None:
+        self.validate_configuration()
+        client, storage_errors = self._create_client()
+
+        try:
+            client.put_object(
+                Bucket=self.config.r2_bucket_name,
+                Key="menu-pizza-fiori.pdf",
+                Body=menu_pdf,
+                ContentType="application/pdf",
+                CacheControl="no-cache, max-age=0, must-revalidate",
+                ContentDisposition='inline; filename="menu-pizza-fiori.pdf"',
+            )
+        except storage_errors as exc:
+            logger.exception("Falló la publicación del PDF del menú en R2.")
+            raise CatalogStorageError(
+                "No se pudo publicar el PDF del menú en Cloudflare R2."
             ) from exc
 
 

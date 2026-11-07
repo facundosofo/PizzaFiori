@@ -60,6 +60,7 @@ class PublicCatalogPublishResponse(BaseModel):
     publicado_en: datetime
     catalogo_version: str
     catalogo_url: str
+    menu_pdf_url: str
     categorias: int
     productos: int
     ofertas: int
@@ -68,3 +69,4 @@ class PublicCatalogPublishResponse(BaseModel):
 
 class PublicCatalogPublishStatus(BaseModel):
     publicado_en: Optional[datetime] = None
+    menu_pdf_url: Optional[str] = None

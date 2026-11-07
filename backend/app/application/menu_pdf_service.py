@@ -1729,4 +1729,11 @@ class MenuPdfService:
             raise MenuCatalogEmptyError(
                 "No hay productos activos con precios para generar el menú."
             )
+        return await self.generate_from_catalog(catalog)
+
+    async def generate_from_catalog(self, catalog: PublicCatalogResponse) -> bytes:
+        if not catalog.productos:
+            raise MenuCatalogEmptyError(
+                "No hay productos activos con precios para generar el menú."
+            )
         return await asyncio.to_thread(_render_menu_pdf, catalog)

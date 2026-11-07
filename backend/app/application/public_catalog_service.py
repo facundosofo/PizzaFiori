@@ -33,6 +33,8 @@ logger = logging.getLogger(__name__)
 CATALOG_PUBLISHED_AT_KEY = "public_catalog_published_at"
 CATALOG_CONTENT_HASH_KEY = "public_catalog_content_hash"
 CATALOG_VERSION_KEY = "public_catalog_version"
+CATALOG_PDF_URL_KEY = "public_catalog_pdf_url"
+CATALOG_PDF_OBJECT_KEY = "menu-pizza-fiori.pdf"
 CATALOG_IMAGE_KEY_PREFIX = "public_catalog_image_"
 RECARGO_KEY = "recargo_transferencia"
 DEFAULT_RECARGO_PERCENTAGE = Decimal("10")
@@ -188,6 +190,7 @@ class PublicCatalogService:
         published_at_config = await uow.app_config_repo.get_by_key(
             CATALOG_PUBLISHED_AT_KEY
         )
+        pdf_url_config = await uow.app_config_repo.get_by_key(CATALOG_PDF_URL_KEY)
         content_hash_config = await uow.app_config_repo.get_by_key(
             CATALOG_CONTENT_HASH_KEY
         )
@@ -211,6 +214,10 @@ class PublicCatalogService:
             monto_minimo_delivery,
         )
         content_hash = self._catalog_content_hash(catalog)
+        from app.application.menu_pdf_service import MenuPdfService
+
+        menu_pdf = await MenuPdfService().generate_from_catalog(catalog)
+        menu_pdf_url = self.storage.object_url(CATALOG_PDF_OBJECT_KEY)
         previously_published_at = decode_publish_timestamp(
             published_at_config.value if published_at_config else None
         )
@@ -221,12 +228,17 @@ class PublicCatalogService:
             and version_config.value
             and previously_published_at
         ):
+            await asyncio.to_thread(self.storage.publish_menu_pdf, menu_pdf)
+            if pdf_url_config is None or pdf_url_config.value != menu_pdf_url:
+                await uow.app_config_repo.set_value(CATALOG_PDF_URL_KEY, menu_pdf_url)
+                await uow.commit()
             return PublicCatalogPublishResponse(
                 publicado_en=previously_published_at,
                 catalogo_version=version_config.value,
                 catalogo_url=self.storage.object_url(
                     f"catalogo/{version_config.value}.json"
                 ),
+                menu_pdf_url=menu_pdf_url,
                 categorias=len(catalog.categorias),
                 productos=len(catalog.productos),
                 ofertas=len(catalog.ofertas),
@@ -255,8 +267,10 @@ class PublicCatalogService:
             catalog_key,
             pointer_json,
             images_to_upload,
+            menu_pdf,
         )
 
+        await uow.app_config_repo.set_value(CATALOG_PDF_URL_KEY, menu_pdf_url)
         for _, object_key, _ in images_to_upload:
             await uow.app_config_repo.set_value(
                 self._image_config_key(object_key),
@@ -274,6 +288,7 @@ class PublicCatalogService:
             publicado_en=published_at,
             catalogo_version=catalog_version,
             catalogo_url=catalog_url,
+            menu_pdf_url=menu_pdf_url,
             categorias=len(catalog.categorias),
             productos=len(catalog.productos),
             ofertas=len(catalog.ofertas),

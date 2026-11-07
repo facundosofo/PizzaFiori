@@ -172,7 +172,9 @@ def test_resolve_image_path_rejects_files_outside_uploads(tmp_path: Path):
         service._resolve_image_path(str(tmp_path / "private.jpg"))
 
 
-def test_r2_storage_uploads_images_before_public_catalog(tmp_path: Path, monkeypatch):
+def test_r2_storage_uploads_images_and_pdf_before_public_catalog(
+    tmp_path: Path, monkeypatch
+):
     config = SimpleNamespace(
         r2_enabled=True,
         r2_account_id="account",
@@ -186,9 +188,10 @@ def test_r2_storage_uploads_images_before_public_catalog(tmp_path: Path, monkeyp
     upload_order = []
     client = Mock()
     client.upload_file.side_effect = lambda *args, **kwargs: upload_order.append("image")
-    client.put_object.side_effect = lambda **kwargs: upload_order.append(
-        "pointer" if kwargs["Key"] == "catalogo-actual.json" else "catalog"
-    )
+    client.put_object.side_effect = lambda **kwargs: upload_order.append({
+        "catalogo-actual.json": "pointer",
+        "menu-pizza-fiori.pdf": "pdf",
+    }.get(kwargs["Key"], "catalog"))
     monkeypatch.setattr("boto3.client", lambda *args, **kwargs: client)
 
     storage = R2CatalogStorage(config)
@@ -197,13 +200,23 @@ def test_r2_storage_uploads_images_before_public_catalog(tmp_path: Path, monkeyp
         "catalogo/hash.json",
         b'{"catalogo_version":"hash"}',
         [(image, "catalogo/imagenes/hash.jpg", "image/jpeg")],
+        b"%PDF",
     )
 
-    assert upload_order == ["image", "catalog", "pointer"]
-    catalog_upload, pointer_upload = client.put_object.call_args_list
+    assert upload_order == ["image", "catalog", "pdf", "pointer"]
+    catalog_upload, pdf_upload, pointer_upload = client.put_object.call_args_list
     assert catalog_upload.kwargs["Key"] == "catalogo/hash.json"
     assert catalog_upload.kwargs["CacheControl"] == (
         "public, max-age=15552000, immutable"
+    )
+    assert pdf_upload.kwargs["Key"] == "menu-pizza-fiori.pdf"
+    assert pdf_upload.kwargs["Body"] == b"%PDF"
+    assert pdf_upload.kwargs["ContentType"] == "application/pdf"
+    assert pdf_upload.kwargs["CacheControl"] == (
+        "no-cache, max-age=0, must-revalidate"
+    )
+    assert pdf_upload.kwargs["ContentDisposition"] == (
+        'inline; filename="menu-pizza-fiori.pdf"'
     )
     assert pointer_upload.kwargs["Key"] == "catalogo-actual.json"
     assert pointer_upload.kwargs["CacheControl"] == (
@@ -240,13 +253,19 @@ def test_r2_storage_uploads_images_concurrently_before_catalog(tmp_path: Path, m
         "catalogo/hash.json",
         b'{"catalogo_version":"hash"}',
         images,
+        b"%PDF",
     )
 
     assert set(uploaded) == {image[1] for image in images}
-    assert client.put_object.call_count == 2
+    assert client.put_object.call_count == 3
 
 
-def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
+def test_publish_points_to_content_hashed_catalog(tmp_path: Path, monkeypatch):
+    from app.application.menu_pdf_service import MenuPdfService
+
+    generate_pdf = AsyncMock(return_value=b"%PDF")
+    monkeypatch.setattr(MenuPdfService, "generate_from_catalog", generate_pdf)
+
     category = SimpleNamespace(id=1, nombre="Pizzas", activo=True)
     product = SimpleNamespace(
         id=10,
@@ -285,7 +304,9 @@ def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
         PublicCatalogService(storage=storage, uploads_root=tmp_path).publish(unit_of_work)
     )
 
-    catalog_json, catalog_key, pointer_json, images = storage.publish.call_args.args
+    catalog_json, catalog_key, pointer_json, images, menu_pdf = (
+        storage.publish.call_args.args
+    )
     published_catalog = json.loads(catalog_json)
     expected_hash = hashlib.sha256(catalog_json).hexdigest()
     pointer = json.loads(pointer_json)
@@ -297,9 +318,12 @@ def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
     assert published_catalog["monto_minimo_delivery"] == "13000"
     assert result.catalogo_version == expected_hash
     assert result.catalogo_url == pointer["catalogo_url"]
+    assert result.menu_pdf_url == "https://cdn.example.test/menu-pizza-fiori.pdf"
     assert result.actualizado is True
     assert images == []
-    assert app_config_repo.set_value.await_count == 3
+    assert menu_pdf == b"%PDF"
+    assert generate_pdf.await_count == 1
+    assert app_config_repo.set_value.await_count == 4
     unit_of_work.commit.assert_awaited_once()
 
     first_published_at = result.publicado_en
@@ -310,11 +334,23 @@ def test_publish_points_to_content_hashed_catalog(tmp_path: Path):
     assert unchanged_result.actualizado is False
     assert unchanged_result.publicado_en == first_published_at
     assert unchanged_result.catalogo_version == result.catalogo_version
+    assert unchanged_result.menu_pdf_url == result.menu_pdf_url
     assert storage.publish.call_count == 1
+    storage.publish_menu_pdf.assert_called_once_with(b"%PDF")
+    assert generate_pdf.await_count == 2
     unit_of_work.commit.assert_awaited_once()
 
 
-def test_publish_skips_previously_uploaded_content_hashed_images(tmp_path: Path):
+def test_publish_skips_previously_uploaded_content_hashed_images(
+    tmp_path: Path, monkeypatch
+):
+    from app.application.menu_pdf_service import MenuPdfService
+
+    monkeypatch.setattr(
+        MenuPdfService,
+        "generate_from_catalog",
+        AsyncMock(return_value=b"%PDF"),
+    )
     uploads = tmp_path / "uploads"
     uploads.mkdir()
     image = uploads / "pizza.jpg"
