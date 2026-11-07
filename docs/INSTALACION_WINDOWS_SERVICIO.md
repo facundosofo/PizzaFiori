@@ -338,10 +338,20 @@ JWT_SECRET=reemplazar_con_un_secreto_aleatorio_de_64_caracteres
 # CORS
 CORS_ORIGINS=https://pizzafiori.com.ar
 
+# Cloudflare R2 (requerido para publicar el catálogo de pedidos)
+R2_ENABLED=true
+R2_ACCOUNT_ID=identificador_de_cuenta_cloudflare
+R2_ACCESS_KEY_ID=clave_de_acceso_del_bucket
+R2_SECRET_ACCESS_KEY=secreto_de_acceso_del_bucket
+R2_BUCKET_NAME=pizzafiori-catalogo
+R2_PUBLIC_BASE_URL=https://catalogo.ejemplo.com
+
 # Certificados SSL
 SSL_KEY_FILE=./certs/pizzafiori.com.ar+2-key.pem
 SSL_CERT_FILE=./certs/pizzafiori.com.ar+2.pem
 ```
+
+> Crear una credencial de R2 limitada al bucket del catálogo y guardarla únicamente en este `.env` del backend local. No incluir credenciales reales en el repositorio, en el frontend ni en el paquete entregable. `R2_PUBLIC_BASE_URL` debe ser el dominio HTTPS público configurado para servir los objetos del bucket. Después de cambiar el `.env`, reiniciar el servicio PizzaFiori.
 
 ### Generar un JWT_SECRET seguro
 

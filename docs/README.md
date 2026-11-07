@@ -18,6 +18,9 @@ Bienvenido a la documentación completa del proyecto **PizzaFiori**, una aplicac
 - **[Documentación de API](API.md)**  
   Referencia completa de todos los endpoints disponibles, parámetros, respuestas y ejemplos de uso.
 
+- **[Plan de la web pública de pedidos](PLAN_WEB_PEDIDOS.md)**
+  Arquitectura, fases y criterios de implementación del catálogo público y pedidos por WhatsApp.
+
 - **[Guía para Crear Endpoints](GUIA_CREAR_ENDPOINT.md)**  
   Guía detallada paso a paso para agregar nuevos endpoints siguiendo la arquitectura del proyecto.
 

@@ -35,6 +35,8 @@ extra_datas, extra_bins, extra_hidden = _collect(
     'pydantic_settings',
     'alembic',
     'matplotlib',
+    'boto3',
+    'botocore',
 )
 
 a = Analysis(
@@ -44,6 +46,8 @@ a = Analysis(
     datas=extra_datas + [
         ('alembic.ini', '.'),
         ('alembic', 'alembic'),
+        ('app/assets/menu', 'app/assets/menu'),
+        ('app/assets/menu-fonts', 'app/assets/menu-fonts'),
     ],
     hiddenimports=extra_hidden + [
         # SQLAlchemy async + psycopg3 dialect

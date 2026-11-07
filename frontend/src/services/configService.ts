@@ -1,8 +1,68 @@
+import axios from "axios";
 import api from "./http";
 
 export interface RecargoConfig {
   porcentaje_recargo: number;
 }
+
+export interface DeliveryMinimumConfig {
+  monto_minimo_delivery: number;
+}
+
+export interface CatalogPublishStatus {
+  publicado_en: string | null;
+}
+
+export interface CatalogPublishResult {
+  publicado_en: string;
+  catalogo_version: string;
+  catalogo_url: string;
+  categorias: number;
+  productos: number;
+  ofertas: number;
+  actualizado: boolean;
+}
+
+export const getCatalogPublishStatus = async (): Promise<CatalogPublishStatus> => {
+  const response = await api.get<CatalogPublishStatus>("/config/catalog/status");
+  return response.data;
+};
+
+export const publishCatalog = async (): Promise<CatalogPublishResult> => {
+  const response = await api.post<CatalogPublishResult>("/config/catalog/publish");
+  return response.data;
+};
+
+export const downloadMenuPdf = async (): Promise<Blob> => {
+  try {
+    const response = await api.get<Blob>("/config/menu/pdf", {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+      const body = await error.response.data.text();
+      if (body) {
+        try {
+          const payload: unknown = JSON.parse(body);
+          if (
+            typeof payload === "object" &&
+            payload !== null &&
+            "detail" in payload &&
+            typeof payload.detail === "string"
+          ) {
+            throw new Error(payload.detail);
+          }
+        } catch (parseError) {
+          if (parseError instanceof Error && parseError.name !== "SyntaxError") {
+            throw parseError;
+          }
+        }
+      }
+    }
+    throw error;
+  }
+};
 
 /**
  * Get current surcharge percentage configuration
@@ -30,4 +90,18 @@ export const updateRecargoConfig = async (porcentaje_recargo: number): Promise<R
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     throw new Error(errorMessage);
   }
+};
+
+export const getDeliveryMinimumConfig = async (): Promise<DeliveryMinimumConfig> => {
+  const response = await api.get<DeliveryMinimumConfig>("/config/delivery-minimum");
+  return response.data;
+};
+
+export const updateDeliveryMinimumConfig = async (
+  monto_minimo_delivery: number,
+): Promise<DeliveryMinimumConfig> => {
+  const response = await api.put<DeliveryMinimumConfig>("/config/delivery-minimum", {
+    monto_minimo_delivery,
+  });
+  return response.data;
 };

@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
-import { getRecargoConfig, updateRecargoConfig } from "../services/configService";
+import {
+  getCatalogPublishStatus,
+  getDeliveryMinimumConfig,
+  getRecargoConfig,
+  downloadMenuPdf,
+  publishCatalog,
+  updateDeliveryMinimumConfig,
+  updateRecargoConfig,
+  type CatalogPublishResult,
+} from "../services/configService";
 import ErrorAlert from "../components/shared/ErrorAlert";
 import * as Icons from "../components/shared/Icons";
 import "../styles/shared/page-header.css";
@@ -12,7 +21,7 @@ const CONFIG_FIELDS = [
     key: "recargo_transferencia",
     label: "Recargo por transferencia/débito",
     description:
-      "Porcentaje que se aplica a las ventas pagadas por transferencia o débito.",
+      "Porcentaje que se aplica a las ventas pagadas por transferencia o débito. Después de cambiarlo, publicá nuevamente el catálogo para actualizar la web de pedidos.",
     suffix: "%",
   },
 ];
@@ -31,16 +40,36 @@ export default function ConfigPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [catalogPublishedAt, setCatalogPublishedAt] = useState<string | null>(null);
+  const [catalogPublishing, setCatalogPublishing] = useState(false);
+  const [catalogResult, setCatalogResult] = useState<CatalogPublishResult | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [menuPdfDownloading, setMenuPdfDownloading] = useState(false);
+  const [menuPdfDownloaded, setMenuPdfDownloaded] = useState(false);
+  const [menuPdfError, setMenuPdfError] = useState<string | null>(null);
+  const [deliveryMinimum, setDeliveryMinimum] = useState("13000");
+  const [originalDeliveryMinimum, setOriginalDeliveryMinimum] = useState("13000");
+  const [deliverySaving, setDeliverySaving] = useState(false);
+  const [deliverySuccess, setDeliverySuccess] = useState(false);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadConfig = async () => {
       try {
         setLoading(true);
         setError(null);
-        const config = await getRecargoConfig();
+        const [config, deliveryConfig, catalogStatus] = await Promise.all([
+          getRecargoConfig(),
+          getDeliveryMinimumConfig(),
+          getCatalogPublishStatus(),
+        ]);
         const value = String(config.porcentaje_recargo ?? "10");
         setConfigValues({ recargo_transferencia: value });
         setOriginalValues({ recargo_transferencia: value });
+        const minimum = String(deliveryConfig.monto_minimo_delivery);
+        setDeliveryMinimum(minimum);
+        setOriginalDeliveryMinimum(minimum);
+        setCatalogPublishedAt(catalogStatus.publicado_en);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido";
         setError(errorMessage);
@@ -100,6 +129,76 @@ export default function ConfigPage() {
     }
   };
 
+  const handlePublishCatalog = async () => {
+    try {
+      setCatalogError(null);
+      setCatalogResult(null);
+      setCatalogPublishing(true);
+      const result = await publishCatalog();
+      setCatalogPublishedAt(result.publicado_en);
+      setCatalogResult(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al publicar el catálogo";
+      setCatalogError(errorMessage);
+    } finally {
+      setCatalogPublishing(false);
+    }
+  };
+
+  const handleDownloadMenuPdf = async () => {
+    try {
+      setMenuPdfError(null);
+      setMenuPdfDownloaded(false);
+      setMenuPdfDownloading(true);
+      const pdf = await downloadMenuPdf();
+      const url = window.URL.createObjectURL(pdf);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "menu-pizza-fiori.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      setMenuPdfDownloaded(true);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al generar el PDF del menú";
+      setMenuPdfError(errorMessage);
+    } finally {
+      setMenuPdfDownloading(false);
+    }
+  };
+
+  const handleSaveDeliveryMinimum = async () => {
+    const rawMinimum = deliveryMinimum.trim();
+    const minimum = Number(rawMinimum);
+    if (
+      !/^\d+(\.\d{1,2})?$/.test(rawMinimum) ||
+      !Number.isFinite(minimum) ||
+      minimum < 0 ||
+      minimum > 9999999999.99
+    ) {
+      setDeliveryError("Ingresá un monto válido entre $0 y $9.999.999.999,99, con hasta dos decimales.");
+      return;
+    }
+
+    try {
+      setDeliveryError(null);
+      setDeliverySaving(true);
+      const result = await updateDeliveryMinimumConfig(minimum);
+      const normalized = String(result.monto_minimo_delivery);
+      setDeliveryMinimum(normalized);
+      setOriginalDeliveryMinimum(normalized);
+      setDeliverySuccess(true);
+      window.setTimeout(() => setDeliverySuccess(false), 2000);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al guardar";
+      setDeliveryError(errorMessage);
+    } finally {
+      setDeliverySaving(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="config-page">
@@ -148,7 +247,7 @@ export default function ConfigPage() {
             <div className="config-card-header">
               <div className="config-card-title-group">
                 <div className="config-card-icon">
-                  <Icons.CogIcon size={24} />
+                  <Icons.PesoIcon size={24} />
                 </div>
                 <div>
                   <h2 className="config-card-title">Ajustes del negocio</h2>
@@ -238,8 +337,235 @@ export default function ConfigPage() {
             </div>
           </div>
         </motion.div>
+
+        <motion.div
+          className="config-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.08 }}
+        >
+          <div className="config-card">
+            <div className="config-card-header">
+              <div className="config-card-title-group">
+                <div className="config-card-icon">
+                  <Icons.CogIcon size={24} />
+                </div>
+                <div>
+                  <h2 className="config-card-title">Delivery gratis</h2>
+                  <p className="config-card-description">
+                    El delivery se habilita cuando el subtotal del pedido alcanza este mínimo.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="config-card-body">
+              {deliveryError && (
+                <ErrorAlert
+                  message={deliveryError}
+                  onClose={() => setDeliveryError(null)}
+                />
+              )}
+              {loading ? (
+                <div className="config-loading">
+                  <p>Cargando configuración...</p>
+                </div>
+              ) : (
+                <div className="config-form">
+                  <div className="form-group">
+                    <div>
+                      <label className="form-label" htmlFor="monto_minimo_delivery">
+                        Monto mínimo del pedido
+                      </label>
+                      <p className="form-help">
+                        Se calcula sobre productos y promociones, antes del recargo por transferencia.
+                        Guardá el cambio y publicá el catálogo para actualizar
+                        la web de pedidos. Usá $0 para habilitar delivery sin mínimo.
+                      </p>
+                    </div>
+                    <div className="input-group">
+                      <input
+                        id="monto_minimo_delivery"
+                        type="number"
+                        min="0"
+                        max="9999999999.99"
+                        step="0.01"
+                        value={deliveryMinimum}
+                        onChange={(event) => setDeliveryMinimum(event.target.value)}
+                        disabled={deliverySaving}
+                        className="form-input"
+                      />
+                      <span className="input-addon">$</span>
+                    </div>
+                  </div>
+                  <div className="form-actions">
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      onClick={() => {
+                        setDeliveryMinimum(originalDeliveryMinimum);
+                        setDeliveryError(null);
+                      }}
+                      disabled={deliverySaving || deliveryMinimum === originalDeliveryMinimum}
+                    >
+                      <Icons.UndoIcon size={16} /> Revertir
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      onClick={handleSaveDeliveryMinimum}
+                      disabled={
+                        deliverySaving ||
+                        deliveryMinimum === originalDeliveryMinimum ||
+                        deliveryMinimum.trim() === ""
+                      }
+                    >
+                      {deliverySaving ? (
+                        <>
+                          <Icons.SpinnerIcon size={16} /> Guardando...
+                        </>
+                      ) : (
+                        <>
+                          <Icons.SaveIcon size={16} /> Guardar mínimo
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {deliverySuccess && (
+                    <motion.div
+                      className="success-message"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                    >
+                      <Icons.CheckIcon size={18} />
+                      Monto mínimo guardado. Publicá el catálogo para reflejarlo en pedidos.
+                    </motion.div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="config-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <div className="config-card">
+            <div className="config-card-header">
+              <div className="config-card-title-group">
+                <div className="config-card-icon">
+                  <Icons.PizzaIcon size={24} color="currentColor" />
+                </div>
+                <div>
+                  <h2 className="config-card-title">Menú Digital</h2>
+                  <p className="config-card-description">
+                    Genera el menu digital como un PDF con los productos, precios y promociones activos de la base de datos.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="config-card-body">
+              {menuPdfError && (
+                <ErrorAlert
+                  message={menuPdfError}
+                  onClose={() => setMenuPdfError(null)}
+                />
+              )}
+              <div className="form-actions">
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={handleDownloadMenuPdf}
+                  disabled={menuPdfDownloading}
+                >
+                  {menuPdfDownloading ? (
+                    <>
+                      <Icons.SpinnerIcon size={16} /> Generando PDF...
+                    </>
+                  ) : (
+                    "Generar y descargar menú PDF"
+                  )}
+                </button>
+              </div>
+              {menuPdfDownloaded && (
+                <div className="success-message" role="status">
+                  <Icons.CheckIcon size={18} />
+                  Menú descargado, listo para compartir con los clientes.
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="config-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.16 }}
+        >
+          <div className="config-card">
+            <div className="config-card-header">
+              <div className="config-card-title-group">
+                <div className="config-card-icon">
+                  <Icons.SaveIcon size={24} />
+                </div>
+                <div>
+                  <h2 className="config-card-title">Catálogo para pedidos</h2>
+                  <p className="config-card-description">
+                    Publica productos, precios, imágenes, recargo por transferencia y el mínimo de delivery para la web de pedidos.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="config-card-body">
+              <div className="catalog-publish-panel">
+                <p className="catalog-published-at">
+                  Última publicación:{" "}
+                  <strong>
+                    {catalogPublishedAt
+                      ? new Date(catalogPublishedAt).toLocaleString()
+                      : "Todavía no se publicó"}
+                  </strong>
+                </p>
+                {catalogError && (
+                  <ErrorAlert
+                    message={catalogError}
+                    onClose={() => setCatalogError(null)}
+                  />
+                )}
+                <div className="form-actions">
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={handlePublishCatalog}
+                    disabled={catalogPublishing || loading}
+                  >
+                    {catalogPublishing ? (
+                      <>
+                        <Icons.SpinnerIcon size={16} /> Publicando...
+                      </>
+                    ) : (
+                      "Publicar catálogo"
+                    )}
+                  </button>
+                </div>
+                {catalogResult && (
+                  <div className="success-message" role="status">
+                    <Icons.CheckIcon size={18} />
+                    {catalogResult.actualizado
+                      ? "Catálogo actualizado"
+                      : "El catálogo ya estaba actualizado"}
+                    : {catalogResult.productos} productos, {catalogResult.categorias}{" "}
+                    categorías y {catalogResult.ofertas} ofertas.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
 }
-

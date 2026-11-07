@@ -7,6 +7,7 @@ Esta guía te ayudará a configurar y ejecutar el proyecto PizzaFiori en tu ento
 ### Software Necesario
 
 - **Python 3.9+** (recomendado 3.11 o superior)
+- **Microsoft C++ Build Tools en Windows** (carga de trabajo "Desarrollo para el escritorio con C++"; necesario para compilar `pyodbc` con Python 3.15)
 - **Node.js 18+** y npm (o yarn)
 - **PostgreSQL 16+**
 - **mkcert** (para certificados SSL de desarrollo)

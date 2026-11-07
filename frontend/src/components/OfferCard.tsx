@@ -8,6 +8,7 @@ import ConfirmDialog from "./shared/ConfirmDialog";
 import ErrorAlert from "./shared/ErrorAlert";
 import { deactivateOffer } from "../services/ofertasService";
 import { formatCurrency } from "../utils/formatters";
+import { getCategoryOfferDescriptionParts } from "../utils/offerFormatters";
 import "../styles/offer-card.css";
 
 interface OfferCardProps {
@@ -22,18 +23,20 @@ interface OfferCardProps {
 
 const getItemDetail = (
   item: OfferItem
-): { cantidad: number; detalle: string } => {
+): { cantidad: number; detalle: string; esCategoria: boolean } => {
   let detalle = "Producto";
+  let esCategoria = false;
 
-  if (item.productos && item.productos.length > 1) {
-    detalle = item.productos.map((p) => p.nombre).join(", ");
-  } else if (item.categoria_id) {
+  if (item.categoria_id !== null && item.categoria_id !== undefined) {
     detalle = item.categoria_nombre || "Categoría";
+    esCategoria = true;
+  } else if (item.productos && item.productos.length > 1) {
+    detalle = item.productos.map((p) => p.nombre).join(", ");
   } else if (item.productos && item.productos.length === 1) {
     detalle = item.productos[0].nombre;
   }
 
-  return { cantidad: Number(item.cantidad), detalle };
+  return { cantidad: Number(item.cantidad), detalle, esCategoria };
 };
 
 const formatOfferItemCantidad = (cantidad: number): string => {
@@ -144,11 +147,23 @@ const OfferCard = ({
               <span className="offer-items-label">Incluye:</span>
               <ul className="offer-items-list">
                 {oferta.productos.map((item) => {
-                  const { cantidad, detalle } = getItemDetail(item);
+                  const { cantidad, detalle, esCategoria } = getItemDetail(item);
+                  const categoryDescription = esCategoria
+                    ? getCategoryOfferDescriptionParts(cantidad, detalle)
+                    : null;
                   return (
                     <li key={item.id} className="offer-item">
-                      <span className="offer-qty">{formatOfferItemCantidad(cantidad)}x</span>
-                      <span className="offer-item-detail">{detalle}</span>
+                      {categoryDescription ? (
+                        <span className="offer-item-detail">
+                          <strong>{categoryDescription.quantityLabel}</strong>
+                          {categoryDescription.description}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="offer-qty">{formatOfferItemCantidad(cantidad)}x</span>
+                          <span className="offer-item-detail">{detalle}</span>
+                        </>
+                      )}
                     </li>
                   );
                 })}

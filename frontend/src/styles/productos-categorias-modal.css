@@ -132,6 +132,13 @@
   width: 120px;
 }
 
+.prod-cat-table th:first-child,
+.prod-cat-table td:first-child {
+  width: 36px;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
 .prod-cat-table tbody tr {
   border-bottom: 1px solid var(--color-border);
   transition: background 0.15s ease;
@@ -153,6 +160,45 @@
 
 .prod-cat-nombre {
   font-weight: 500;
+}
+
+.prod-cat-table tbody tr[draggable="true"] {
+  cursor: grab;
+}
+
+.prod-cat-table tbody tr[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.prod-cat-row-dragging {
+  opacity: 0.45;
+}
+
+.prod-cat-drag-cell {
+  color: var(--color-text-muted) !important;
+}
+
+.prod-cat-drag-handle {
+  display: inline-flex;
+  cursor: grab;
+  vertical-align: middle;
+}
+
+.prod-cat-order-error {
+  margin: 0;
+  color: #f87171;
+}
+
+.prod-cat-order-hint {
+  margin: -0.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.prod-cat-order-saving {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
 }
 
 .prod-cat-action-buttons {

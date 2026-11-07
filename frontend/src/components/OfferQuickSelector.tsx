@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import type { Offer, OfferItem } from "../types/offer";
 import { formatCurrency } from "../utils/formatters";
+import { getCategoryOfferDescriptionParts } from "../utils/offerFormatters";
 import "../styles/offer-quick-selector.css";
 import * as Icons from "./shared/Icons";
 
@@ -40,18 +41,20 @@ const getOfferType = (offer: Offer): "fixed" | "category" | "options" => {
 
 const getItemDetail = (
   item: OfferItem
-): { cantidad: number; detalle: string } => {
+): { cantidad: number; detalle: string; esCategoria: boolean } => {
   let detalle = "Producto";
+  let esCategoria = false;
 
-  if (item.productos && item.productos.length > 1) {
-    detalle = item.productos.map((p) => p.nombre).join(", ");
-  } else if (item.categoria_id) {
+  if (item.categoria_id !== null && item.categoria_id !== undefined) {
     detalle = item.categoria_nombre || "Categoría";
+    esCategoria = true;
+  } else if (item.productos && item.productos.length > 1) {
+    detalle = item.productos.map((p) => p.nombre).join(", ");
   } else if (item.productos && item.productos.length === 1) {
     detalle = item.productos[0].nombre;
   }
 
-  return { cantidad: item.cantidad, detalle };
+  return { cantidad: item.cantidad, detalle, esCategoria };
 };
 
 /* -------------------- Component -------------------- */
@@ -148,11 +151,23 @@ export const OfferQuickSelector: React.FC<OfferQuickSelectorProps> = ({
                     <span className="offer-items-label">Incluye:</span>
                     <ul className="offer-items-list">
                       {offer.productos.map((item) => {
-                        const { cantidad, detalle } = getItemDetail(item);
+                        const { cantidad, detalle, esCategoria } = getItemDetail(item);
+                        const categoryDescription = esCategoria
+                          ? getCategoryOfferDescriptionParts(cantidad, detalle)
+                          : null;
                         return (
                           <li key={item.id} className="offer-item">
-                            <span className="offer-qty">{cantidad}x</span>
-                            <span className="offer-item-detail">{detalle}</span>
+                            {categoryDescription ? (
+                              <span className="offer-item-detail">
+                                <strong>{categoryDescription.quantityLabel}</strong>
+                                {categoryDescription.description}
+                              </span>
+                            ) : (
+                              <>
+                                <span className="offer-qty">{cantidad}x</span>
+                                <span className="offer-item-detail">{detalle}</span>
+                              </>
+                            )}
                           </li>
                         );
                       })}

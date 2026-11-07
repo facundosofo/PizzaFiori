@@ -9,6 +9,10 @@ export interface UpdateProductoCategoriaRequest {
   nombre?: string;
 }
 
+export interface ReorderProductoCategoriasRequest {
+  categoria_ids: number[];
+}
+
 export const getProductosCategorias = async (activo?: boolean): Promise<ProductoCategoria[]> => {
   try {
     const params = activo !== undefined ? { activo } : {};
@@ -54,6 +58,17 @@ export const updateProductoCategoria = async (id: number, data: UpdateProductoCa
 export const deactivateProductoCategoria = async (id: number): Promise<void> => {
   try {
     await api.patch(`/productos-categorias/${id}/desactivar`);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+    throw new Error(errorMessage);
+  }
+};
+
+export const reorderProductoCategorias = async (
+  data: ReorderProductoCategoriasRequest,
+): Promise<void> => {
+  try {
+    await api.put("/productos-categorias/orden", data);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
     throw new Error(errorMessage);

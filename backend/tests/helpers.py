@@ -32,6 +32,7 @@ def build_category_model(
     category = MagicMock()
     category.id = id
     category.nombre = nombre
+    category.orden = 0
     category.descripcion = descripcion
     category.stock_por_producto = False
     return category

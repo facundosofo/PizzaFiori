@@ -22,9 +22,8 @@ def get_current_user(
         )
     return request.state.current_user
 
-def require_admin(request: Request) -> dict:
+def require_admin(user: dict = Depends(get_current_user)) -> dict:
     """Dependency to require admin role (ADMIN)."""
-    user = get_current_user(request)
     admin_roles = {"ADMIN"}
     if user.get("role") not in admin_roles:
         raise HTTPException(

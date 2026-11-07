@@ -17,9 +17,15 @@ class SqlAlchemyProductCategoryRepository(
     def __init__(self, session: AsyncSession):
         super().__init__(session)
 
+    async def list(self) -> List[ProductCategory]:
+        result = await self.session.execute(
+            select(self.model).order_by(self.model.orden, self.model.id)
+        )
+        return result.scalars().all()
+
     async def list_by_active(self, activo: Optional[bool] = None) -> List[ProductCategory]:
         """Lista categorías de productos con filtro opcional por estado activo."""
-        query = select(self.model)
+        query = select(self.model).order_by(self.model.orden, self.model.id)
         if activo is not None:
             query = query.where(self.model.activo == activo)
         result = await self.session.execute(query)

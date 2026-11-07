@@ -282,6 +282,22 @@
   gap: 8px;
 }
 
+.catalog-publish-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.catalog-published-at {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.catalog-published-at strong {
+  color: var(--color-text);
+}
+
 /* Info Section */
 .config-info-section {
   margin-top: 32px;

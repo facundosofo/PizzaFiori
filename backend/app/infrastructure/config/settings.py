@@ -94,6 +94,14 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = Field(default="https://localhost:5173", alias="CORS_ORIGINS")
 
+    # Cloudflare R2 — solo se utilizan desde el backend local.
+    r2_enabled: bool = Field(default=False, alias="R2_ENABLED")
+    r2_account_id: Optional[str] = Field(default=None, alias="R2_ACCOUNT_ID")
+    r2_access_key_id: Optional[str] = Field(default=None, alias="R2_ACCESS_KEY_ID")
+    r2_secret_access_key: Optional[str] = Field(default=None, alias="R2_SECRET_ACCESS_KEY")
+    r2_bucket_name: Optional[str] = Field(default=None, alias="R2_BUCKET_NAME")
+    r2_public_base_url: Optional[str] = Field(default=None, alias="R2_PUBLIC_BASE_URL")
+
     # SSL/TLS Configuration
     ssl_key_file: Optional[str] = Field(default=None, alias="SSL_KEY_FILE")
     ssl_cert_file: Optional[str] = Field(default=None, alias="SSL_CERT_FILE")

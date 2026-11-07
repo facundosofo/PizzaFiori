@@ -9,6 +9,7 @@ class ProductCategory(Base):
 
     id = Column(Integer, primary_key=True)
     nombre = Column(String(50), unique=True, index=True, nullable=False)
+    orden = Column(Integer, nullable=False, default=0)
     activo = Column(Boolean, nullable=False, default=True)
     stock_visible = Column(Boolean, nullable=False, default=True)
     stock_por_producto = Column(Boolean, nullable=False, default=False)
