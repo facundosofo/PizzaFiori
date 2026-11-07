@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { Copy, ExternalLink } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   getCatalogPublishStatus,
@@ -41,9 +42,11 @@ export default function ConfigPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [catalogPublishedAt, setCatalogPublishedAt] = useState<string | null>(null);
+  const [catalogPdfUrl, setCatalogPdfUrl] = useState<string | null>(null);
   const [catalogPublishing, setCatalogPublishing] = useState(false);
   const [catalogResult, setCatalogResult] = useState<CatalogPublishResult | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogPdfCopyStatus, setCatalogPdfCopyStatus] = useState("");
   const [menuPdfDownloading, setMenuPdfDownloading] = useState(false);
   const [menuPdfDownloaded, setMenuPdfDownloaded] = useState(false);
   const [menuPdfError, setMenuPdfError] = useState<string | null>(null);
@@ -70,6 +73,7 @@ export default function ConfigPage() {
         setDeliveryMinimum(minimum);
         setOriginalDeliveryMinimum(minimum);
         setCatalogPublishedAt(catalogStatus.publicado_en);
+        setCatalogPdfUrl(catalogStatus.menu_pdf_url);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Error desconocido";
         setError(errorMessage);
@@ -136,12 +140,25 @@ export default function ConfigPage() {
       setCatalogPublishing(true);
       const result = await publishCatalog();
       setCatalogPublishedAt(result.publicado_en);
+      setCatalogPdfUrl(result.menu_pdf_url);
       setCatalogResult(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Error al publicar el catálogo";
       setCatalogError(errorMessage);
     } finally {
       setCatalogPublishing(false);
+    }
+  };
+
+  const handleCopyCatalogPdfUrl = async () => {
+    if (!catalogPdfUrl) return;
+    try {
+      await window.navigator.clipboard.writeText(catalogPdfUrl);
+      setCatalogPdfCopyStatus("Enlace copiado.");
+    } catch {
+      setCatalogPdfCopyStatus(
+        "No se pudo copiar automáticamente. Seleccioná y copiá el enlace.",
+      );
     }
   };
 
@@ -559,6 +576,33 @@ export default function ConfigPage() {
                       : "El catálogo ya estaba actualizado"}
                     : {catalogResult.productos} productos, {catalogResult.categorias}{" "}
                     categorías y {catalogResult.ofertas} ofertas.
+                  </div>
+                )}
+                {catalogPdfUrl && (
+                  <div className="catalog-public-pdf">
+                    <p>PDF público para compartir en Instagram:</p>
+                    <a
+                      className="catalog-public-pdf-link"
+                      href={catalogPdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {catalogPdfUrl}
+                      <ExternalLink size={16} aria-hidden="true" />
+                    </a>
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      onClick={handleCopyCatalogPdfUrl}
+                    >
+                      <Copy size={16} aria-hidden="true" />
+                      Copiar enlace
+                    </button>
+                    {catalogPdfCopyStatus && (
+                      <p className="form-help" role="status">
+                        {catalogPdfCopyStatus}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

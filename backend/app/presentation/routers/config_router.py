@@ -11,6 +11,7 @@ from app.presentation.schemas.config_schemas import (
     RecargoConfigUpdateRequest,
 )
 from app.application.public_catalog_service import (
+    CATALOG_PDF_URL_KEY,
     CATALOG_PUBLISHED_AT_KEY,
     DEFAULT_DELIVERY_MINIMUM,
     DEFAULT_RECARGO_PERCENTAGE,
@@ -144,8 +145,10 @@ async def get_catalog_publish_status(
     uow=Depends(get_uow),
 ):
     config = await uow.app_config_repo.get_by_key(CATALOG_PUBLISHED_AT_KEY)
+    pdf_url = await uow.app_config_repo.get_by_key(CATALOG_PDF_URL_KEY)
     return PublicCatalogPublishStatus(
-        publicado_en=decode_publish_timestamp(config.value if config else None)
+        publicado_en=decode_publish_timestamp(config.value if config else None),
+        menu_pdf_url=pdf_url.value if pdf_url else None,
     )
 
 
@@ -154,7 +157,7 @@ async def get_catalog_publish_status(
     response_model=PublicCatalogPublishResponse,
     summary="Publicar el catálogo público en Cloudflare R2",
     responses={
-        409: {"description": "Falta una imagen local o no se puede publicar"},
+        409: {"description": "Falta una imagen o no hay productos para generar el menú"},
         502: {"description": "Error al publicar los objetos en R2"},
         503: {"description": "R2 no está configurado"},
     },
@@ -165,6 +168,11 @@ async def publish_public_catalog(
 ):
     try:
         return await PublicCatalogService().publish(uow)
+    except MenuCatalogEmptyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     except CatalogStorageConfigurationError as exc:
         catalog_logger.error("Configuración de publicación del catálogo incompleta", error=str(exc))
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc

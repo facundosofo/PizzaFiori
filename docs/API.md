@@ -48,11 +48,12 @@ GET /config/catalog/status
 
 ```json
 {
-  "publicado_en": "2026-10-20T20:00:00Z"
+  "publicado_en": "2026-10-20T20:00:00Z",
+  "menu_pdf_url": "https://catalogo.ejemplo.com/menu-pizza-fiori.pdf"
 }
 ```
 
-`publicado_en` es `null` si todavía no se publicó el catálogo.
+`publicado_en` y `menu_pdf_url` son `null` si todavía no se publicó el catálogo.
 
 #### Publicar el catálogo
 
@@ -60,7 +61,7 @@ GET /config/catalog/status
 POST /config/catalog/publish
 ```
 
-La aplicación interna permite ejecutar esta acción desde **Configuración → Catálogo para pedidos**. Las imágenes locales se copian primero a R2 y `catalogo-actual.json` se actualiza al final.
+La aplicación interna permite ejecutar esta acción desde **Configuración → Catálogo para pedidos**. El backend genera el JSON y el PDF con los mismos datos, sube las imágenes, el catálogo versionado y `menu-pizza-fiori.pdf` a R2, y actualiza `catalogo-actual.json` al final. El PDF queda disponible públicamente en `{R2_PUBLIC_BASE_URL}/menu-pizza-fiori.pdf`; la URL se devuelve en `menu_pdf_url` y también queda disponible en `GET /config/catalog/status` para copiarla y compartirla.
 
 **Respuesta exitosa (200):**
 
@@ -69,6 +70,7 @@ La aplicación interna permite ejecutar esta acción desde **Configuración → 
   "publicado_en": "2026-10-20T20:00:00Z",
   "catalogo_version": "sha256-del-catalogo",
   "catalogo_url": "https://catalogo.ejemplo.com/catalogo/sha256-del-catalogo.json",
+  "menu_pdf_url": "https://catalogo.ejemplo.com/menu-pizza-fiori.pdf",
   "categorias": 3,
   "productos": 18,
   "ofertas": 2,
@@ -76,9 +78,9 @@ La aplicación interna permite ejecutar esta acción desde **Configuración → 
 }
 ```
 
-**Errores:** `401` si no hay sesión válida, `403` si el usuario no es administrador, `409` si falta una imagen local, `502` si falla la carga a R2 y `503` si falta configurar R2 en el backend.
+**Errores:** `401` si no hay sesión válida, `403` si el usuario no es administrador, `409` si falta una imagen local o no hay productos para generar el PDF, `502` si falla la carga a R2 y `503` si falta configurar R2 en el backend.
 
-`actualizado` es `false` cuando el catálogo publicado ya coincide con los datos actuales; en ese caso no se vuelven a subir objetos ni se cambia la fecha de publicación. Cuando hay cambios, las imágenes nuevas se cargan en paralelo (hasta cuatro a la vez), luego se publica el catálogo inmutable a `{R2_PUBLIC_BASE_URL}/catalogo/{hash}.json` y, al final, se actualiza `{R2_PUBLIC_BASE_URL}/catalogo-actual.json`. Las claves de imagen basadas en su contenido permiten no volver a cargar imágenes ya registradas como publicadas. La web pública consulta ese pequeño índice para obtener la URL versionada. El índice exige revalidación; el catálogo y las imágenes se pueden cachear por 180 días. Si se configura una regla de caché en Cloudflare, debe excluirse `catalogo-actual.json` de caché y permitir caché larga para las rutas versionadas. Solo el catálogo versionado contiene los DTOs públicos (`version`, `publicado_en`, `porcentaje_recargo_transferencia`, `monto_minimo_delivery`, `categorias`, `productos` y `ofertas`). El recargo se lee de `recargo_transferencia` y el mínimo de delivery de `monto_minimo_delivery` en la configuración administrativa al publicar; después de modificar cualquiera de esos valores, se debe volver a publicar el catálogo para que la web lo refleje. Las credenciales de escritura se configuran únicamente en el `.env` del backend local.
+`actualizado` es `false` cuando el catálogo publicado ya coincide con los datos actuales; en ese caso no se vuelve a subir el JSON versionado ni se cambia la fecha de publicación, pero el PDF estable se regenera y actualiza igualmente. Cuando hay cambios, las imágenes nuevas se cargan en paralelo (hasta cuatro a la vez), luego se publican el catálogo inmutable a `{R2_PUBLIC_BASE_URL}/catalogo/{hash}.json` y el PDF público, y al final se actualiza `{R2_PUBLIC_BASE_URL}/catalogo-actual.json`. El PDF se sirve inline con revalidación para que la URL estable refleje publicaciones nuevas; si se configura una regla de caché en Cloudflare, también debe excluirse `menu-pizza-fiori.pdf` de caché. Las claves de imagen basadas en su contenido permiten no volver a cargar imágenes ya registradas como publicadas. La web pública consulta ese pequeño índice para obtener la URL versionada. El índice exige revalidación; el catálogo y las imágenes se pueden cachear por 180 días. Si se configura una regla de caché en Cloudflare, debe excluirse `catalogo-actual.json` de caché y permitir caché larga para las rutas versionadas. Solo el catálogo versionado contiene los DTOs públicos (`version`, `publicado_en`, `porcentaje_recargo_transferencia`, `monto_minimo_delivery`, `categorias`, `productos` y `ofertas`). El recargo se lee de `recargo_transferencia` y el mínimo de delivery de `monto_minimo_delivery` en la configuración administrativa al publicar; después de modificar cualquiera de esos valores, se debe volver a publicar el catálogo para que la web lo refleje. Las credenciales de escritura se configuran únicamente en el `.env` del backend local.
 
 #### Descargar el menú para compartir
 

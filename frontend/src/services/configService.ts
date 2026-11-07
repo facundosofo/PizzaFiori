@@ -11,12 +11,14 @@ export interface DeliveryMinimumConfig {
 
 export interface CatalogPublishStatus {
   publicado_en: string | null;
+  menu_pdf_url: string | null;
 }
 
 export interface CatalogPublishResult {
   publicado_en: string;
   catalogo_version: string;
   catalogo_url: string;
+  menu_pdf_url: string;
   categorias: number;
   productos: number;
   ofertas: number;
