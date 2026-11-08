@@ -17,6 +17,7 @@ from app.application.menu_pdf_service import (
     MenuPdfService,
     _CategoryTable,
     _PromoEntry,
+    _PresentationHeader,
     _ProductBlock,
     _SectionHeading,
     _category_section_table,
@@ -815,6 +816,70 @@ def test_common_presentation_header_has_space_before_first_product_row():
     header_gap = section._cellvalues[3][0]
     assert isinstance(header_gap, Spacer)
     assert header_gap.height == 5
+
+
+def test_mixed_portion_and_unit_products_share_category_headers(monkeypatch):
+    serif_bold, _, sans, sans_bold = _register_menu_fonts()
+    styles = _paragraph_styles(serif_bold, sans, sans_bold)
+    products = [
+        _product(
+            1,
+            "Faina con porción",
+            1,
+            prices=[
+                SimpleNamespace(cantidad=Decimal("0.5"), precio=Decimal("500")),
+                SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("1000")),
+            ],
+        ),
+        *[
+            _product(
+                product_id,
+                f"Faina {product_id}",
+                1,
+                prices=[
+                    SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("1000"))
+                ],
+            )
+            for product_id in range(2, 5)
+        ],
+    ]
+
+    quantities, presentations = _common_presentations(products)
+    rows, _, _ = _category_table(
+        products,
+        500,
+        styles,
+        quantities,
+        presentations,
+    )
+
+    assert presentations == {Decimal("0.5"), Decimal("1")}
+    assert isinstance(rows[0][0], _PresentationHeader)
+    assert isinstance(rows[0][2], _PresentationHeader)
+    assert rows[0][0].presentations == [Decimal("0.5"), Decimal("1")]
+    assert rows[0][2].presentations == [Decimal("0.5"), Decimal("1")]
+
+    header_labels = []
+    header = rows[0][0]
+    header.canv = SimpleNamespace(setFillColor=Mock())
+    header.wrap(header.target_width, 500)
+    monkeypatch.setattr(
+        menu_pdf_service,
+        "_tracked_text",
+        lambda _canvas, text, *_args, **_kwargs: header_labels.append(text),
+    )
+    header.draw()
+    assert header_labels == ["PORCIÓN", "UNIDAD"]
+
+    product_blocks = [
+        cell
+        for row in rows[1:]
+        for cell in (row[0], row[2])
+        if isinstance(cell, _ProductBlock)
+    ]
+    for block in product_blocks:
+        block.wrap(block.target_width, 500)
+        assert all(label is None for _, _, label in block._price_cells)
 
 
 def test_leader_dots_respect_minimum_clearance():

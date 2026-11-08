@@ -682,13 +682,21 @@ class _PresentationHeader(Flowable):
 
     def draw(self) -> None:
         self.canv.setFillColor(MENU_THEME["tertiary"])
+        portion_quantities = {
+            quantity
+            for quantity in self.presentations
+            if quantity < Decimal("1")
+        }
         for index, quantity in enumerate(self.presentations):
             column_right = self.width - (
                 len(self.presentations) - index - 1
             ) * PRICE_COLUMN_WIDTH
             _tracked_text(
                 self.canv,
-                _format_presentation(quantity).upper(),
+                _format_product_presentation(
+                    quantity,
+                    portion_quantities,
+                ).upper(),
                 FONT_SANS_BOLD,
                 8,
                 column_right,
@@ -1211,9 +1219,18 @@ def _common_presentations(
         for product in products
     ]
     category_quantities = set().union(*sets) if sets else set()
-    common = sets[0] if sets and len(sets[0]) == 2 and all(
+    has_portion_and_unit = (
+        any(quantity < Decimal("1") for quantity in category_quantities)
+        and Decimal("1") in category_quantities
+    )
+    if has_portion_and_unit:
+        common = category_quantities
+    elif sets and len(sets[0]) == 2 and all(
         presentation_set == sets[0] for presentation_set in sets
-    ) else None
+    ):
+        common = sets[0]
+    else:
+        common = None
     return category_quantities, common
 
 
