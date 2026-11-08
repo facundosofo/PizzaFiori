@@ -1495,7 +1495,7 @@ def _promo_rows(
 ) -> list[Table]:
     gutter = PROMO_GUTTER
     entry_width = (width - gutter) / 2
-    ordered_offers = sorted(offers, key=lambda offer: offer.nombre.casefold())
+    ordered_offers = list(offers)
     rows = []
     for index in range(0, len(ordered_offers), 2):
         left = _PromoEntry(

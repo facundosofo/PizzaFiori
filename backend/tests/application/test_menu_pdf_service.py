@@ -32,6 +32,7 @@ from app.application.menu_pdf_service import (
     _draw_leader_dots,
     _paragraph_styles,
     _register_menu_fonts,
+    _promo_rows,
     _without_hidden_categories,
 )
 from app.application.public_catalog_service import build_public_catalog
@@ -49,6 +50,52 @@ def _product(product_id: int, name: str, category_id: int, active: bool = True, 
         activo=active,
         precios=prices or [],
     )
+
+
+def test_menu_pdf_keeps_persisted_offer_order():
+    category = _category(1, "Pizzas")
+    product = _product(
+        10,
+        "Muzzarella",
+        1,
+        prices=[SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("12000"))],
+    )
+    offers = [
+        SimpleNamespace(
+            id=offer_id,
+            nombre=name,
+            descripcion=None,
+            precio=Decimal("10000"),
+            activo=True,
+            productos=[
+                SimpleNamespace(
+                    cantidad=Decimal("1"),
+                    categoria_id=1,
+                    productos=[],
+                )
+            ],
+        )
+        for offer_id, name in ((20, "Promo Z"), (21, "Promo A"), (22, "Promo M"))
+    ]
+    catalog = build_public_catalog(
+        [category],
+        [product],
+        offers,
+        image_urls={},
+        published_at=datetime.now(timezone.utc),
+    )
+    serif_bold, _, sans, sans_bold = _register_menu_fonts()
+    styles = _paragraph_styles(serif_bold, sans, sans_bold)
+
+    rows = _promo_rows(catalog.ofertas, catalog, 500, styles)
+    rendered_names = [
+        cell.offer.nombre
+        for row in rows
+        for cell in (row._cellvalues[0][0], row._cellvalues[0][2])
+        if isinstance(cell, _PromoEntry)
+    ]
+
+    assert rendered_names == ["Promo Z", "Promo A", "Promo M"]
 
 
 @pytest.mark.asyncio
