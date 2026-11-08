@@ -1,0 +1,296 @@
+.scope :global(.product-add-button) {
+  min-height: 42px;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid var(--palette-d8dfd0);
+  border-radius: 4px;
+  background: var(--palette-f5f7f1);
+  color: var(--color-heading);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
+.scope :global(.product-add-button:hover),
+.scope :global(.product-add-button:focus-visible) {
+  border-color: var(--color-green);
+  background: var(--color-green);
+  color: var(--color-white);
+}
+.scope:global(.product-card) {
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid var(--palette-ebe5da);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: 0 8px 22px var(--palette-30372a09);
+  transition: transform .18s ease,box-shadow .18s ease;
+  animation: card-enter .42s both;
+}
+.scope:global(.product-card:nth-child(2)) {
+  animation-delay: 45ms;
+}
+.scope:global(.product-card:nth-child(3)) {
+  animation-delay: 90ms;
+}
+.scope:global(.product-card:nth-child(4)) {
+  animation-delay: 135ms;
+}
+.scope:global(.product-card:nth-child(5)) {
+  animation-delay: .18s;
+}
+.scope:global(.product-card:nth-child(6)) {
+  animation-delay: 225ms;
+}
+.scope:global(.product-card:hover) {
+  box-shadow: 0 13px 30px var(--palette-30372a1a);
+  transform: translateY(-3px);
+}
+.scope :global(.product-image-wrap) {
+  position: relative;
+  aspect-ratio: 1.62;
+  overflow: hidden;
+  background: var(--palette-f4eddf);
+}
+.scope :global(.product-image) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .3s ease;
+}
+.scope:global(.product-card:hover) :global(.product-image) {
+  transform: scale(1.035);
+}
+.scope :global(.image-note) {
+  position: absolute;
+  right: 11px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid var(--palette-rgb-255-255-255-ap65);
+  border-radius: 99px;
+  background: var(--palette-fffdf8e6);
+  color: var(--color-heading);
+  font-size: 10px;
+  font-weight: 600;
+}
+.scope :global(.product-info) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  container: product-info / inline-size;
+  padding: 16px 17px 14px;
+}
+.scope :global(.product-info h3) {
+  margin: 0 0 8px;
+  color: var(--palette-343a31);
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.scope :global(.price-list) {
+  display: grid;
+  margin-top: auto;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--palette-efebe3);
+}
+.scope :global(.presentation-row) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+.scope :global(.presentation-price) {
+  display: grid;
+  gap: 3px;
+  color: var(--palette-77766e);
+  font-size: 11px;
+}
+.scope :global(.presentation-price strong) {
+  color: var(--color-heading);
+  font-size: 12px;
+  font-weight: 700;
+}
+.scope :global(.presentation-quantity) {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  min-width: 102px;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-heading);
+}
+.scope :global(.presentation-quantity button) {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: var(--color-transparent);
+  color: inherit;
+  cursor: pointer;
+}
+.scope :global(.presentation-quantity button:hover),
+.scope :global(.presentation-quantity button:focus-visible) {
+  background: var(--palette-edf0e8);
+}
+.scope :global(.presentation-quantity span) {
+  min-width: 13px;
+  color: var(--palette-343a31);
+  font-size: 12px;
+  text-align: center;
+}
+@media (max-width:780px) {
+  .scope :global(.product-info) {
+    padding: 13px;
+}
+}
+@media (max-width:560px) {
+  .scope :global(.product-image-wrap) {
+    aspect-ratio: 1.2;
+}
+  .scope :global(.product-info) {
+    padding: 11px 10px;
+}
+  .scope :global(.product-info h3) {
+    margin-bottom: 7px;
+    font-size: 16px;
+    line-height: 1.3;
+}
+  .scope :global(.presentation-row) {
+    align-items: center;
+    gap: 6px;
+}
+  .scope :global(.presentation-price) {
+    min-width: 0;
+    flex: 1;
+    gap: 2px;
+    font-size: 10px;
+}
+  .scope :global(.presentation-price strong) {
+    font-size: 12px;
+}
+  .scope :global(.product-add-button),
+.scope :global(.presentation-quantity) {
+    min-height: 40px;
+}
+  .scope :global(.product-add-button) {
+    gap: 3px;
+    padding-inline: 7px;
+    font-size: 10px;
+}
+  .scope :global(.presentation-quantity) {
+    min-width: 88px;
+    gap: 0;
+}
+  .scope :global(.presentation-quantity button) {
+    width: 30px;
+    height: 36px;
+}
+  .scope :global(.image-note) {
+    right: 6px;
+    bottom: 6px;
+    padding: 5px 7px;
+    font-size: 10px;
+}
+}
+@container product-info (max-width: 220px) {
+  .scope :global(.presentation-row) {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 4px;
+}
+  .scope :global(.presentation-price) {
+    min-width: 0;
+    grid-template-columns: 1fr;
+    gap: 2px;
+}
+  .scope :global(.presentation-quantity) {
+    width: 68px;
+    min-width: 0;
+    flex: 0 0 68px;
+    gap: 0;
+    padding-inline: 0;
+}
+  .scope :global(.presentation-quantity button) {
+    width: 24px;
+    height: 32px;
+    flex: 0 0 24px;
+}
+  .scope :global(.presentation-quantity span) {
+    min-width: 12px;
+}
+  .scope :global(.product-add-button) {
+    width: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    gap: 0;
+    overflow: hidden;
+    padding: 0;
+    font-size: 0;
+}
+  .scope :global(.product-add-button svg) {
+    width: 12px;
+    height: 12px;
+}
+}
+:global([data-theme=dark]) .scope:global(.product-card) {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 8px 22px var(--palette-0000002e);
+}
+:global([data-theme=dark]) .scope:global(.product-card:hover) {
+  box-shadow: 0 13px 30px var(--palette-00000059);
+}
+:global([data-theme=dark]) .scope :global(.product-image-wrap) {
+  background: var(--palette-34382e);
+}
+:global([data-theme=dark]) .scope :global(.image-note) {
+  border-color: var(--palette-2a3026cc);
+  background: var(--palette-222820f0);
+  color: var(--palette-e4eadf);
+}
+:global([data-theme=dark]) .scope :global(.product-info h3) {
+  color: var(--palette-e5e9df);
+}
+:global([data-theme=dark]) .scope :global(.price-list) {
+  border-color: var(--palette-3a4337);
+}
+:global([data-theme=dark]) .scope :global(.presentation-price) {
+  color: var(--palette-b1b7a9);
+}
+:global([data-theme=dark]) .scope :global(.presentation-quantity) {
+  border-color: var(--palette-4a5745);
+  background: var(--palette-293228);
+  color: var(--palette-e1eadb);
+}
+:global([data-theme=dark]) .scope :global(.presentation-quantity span) {
+  color: var(--palette-e5e9df);
+}
+:global([data-theme=dark]) .scope :global(.presentation-quantity button:hover),
+:global([data-theme=dark]) .scope :global(.presentation-quantity button:focus-visible) {
+  background: var(--palette-374634);
+  color: var(--color-white);
+}
+:global([data-theme=dark]) .scope :global(.product-add-button) {
+  border-color: var(--palette-4a5745);
+  background: var(--palette-293228);
+  color: var(--palette-e1eadb);
+}
+:global([data-theme=dark]) .scope :global(.product-add-button:hover),
+:global([data-theme=dark]) .scope :global(.product-add-button:focus-visible) {
+  border-color: var(--palette-82997a);
+  background: var(--palette-374634);
+  color: var(--color-white);
+}

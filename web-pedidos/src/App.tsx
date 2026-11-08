@@ -30,6 +30,13 @@ import {
   type CatalogProduct,
   type PublicCatalog,
 } from "./catalog";
+import appStyles from "./AppShell.module.css";
+import checkoutStyles from "./Checkout.module.css";
+import menuStyles from "./Menu.module.css";
+import offerStyles from "./Offer.module.css";
+import pizzaStyles from "./PizzaHalf.module.css";
+import productStyles from "./Product.module.css";
+import stateStyles from "./States.module.css";
 
 const POINTER_URL = import.meta.env.VITE_CATALOG_POINTER_URL ?? "";
 const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE ?? "";
@@ -397,7 +404,7 @@ const sortedPrices = [...product.precios].sort(
   );
 
   return (
-    <article className="product-card">
+    <article className={`product-card ${productStyles.scope}`}>
       <div className="product-image-wrap">
         <img
           className="product-image"
@@ -455,7 +462,7 @@ const sortedPrices = [...product.precios].sort(
                   </div>
                 ) : (
                   <button
-                    className="add-to-cart-button"
+                    className="action-button product-add-button"
                     type="button"
                     onClick={() => onAdjust(product, price.cantidad, 1)}
                     title="Agregar al pedido"
@@ -519,7 +526,9 @@ function PizzaHalfBuilder({
 
   return (
     <>
-      <article className="product-card half-pizza-product-card">
+      <article
+        className={`product-card half-pizza-product-card ${productStyles.scope} ${pizzaStyles.productScope}`}
+      >
         <div className="product-image-wrap">
           <img
             className="product-image"
@@ -537,7 +546,7 @@ function PizzaHalfBuilder({
             <div className="presentation-row">
               <p className="half-pizza-description">Combiná dos sabores</p>
               <button
-                className="add-to-cart-button half-pizza-entry-button"
+                className="action-button half-pizza-entry-button"
                 type="button"
                 onClick={() => setIsConfiguring(true)}
               >
@@ -550,7 +559,7 @@ function PizzaHalfBuilder({
       </article>
       <dialog
         ref={dialogRef}
-        className="half-pizza-dialog"
+        className={`half-pizza-dialog ${pizzaStyles.dialogScope}`}
         aria-labelledby="half-pizza-title"
         onClose={() => {
           if (isConfiguring) setIsConfiguring(false);
@@ -660,7 +669,7 @@ function PizzaHalfBuilder({
             {selectedPrice === null ? "Elegí los dos sabores" : formatCents(selectedPrice)}
           </strong>
           <button
-            className="offer-add-button"
+            className="action-button half-pizza-confirm-button"
             type="button"
             disabled={!firstProduct || !secondProduct}
             onClick={() => {
@@ -898,7 +907,7 @@ function CartAndCheckout({
 
   return (
     <section
-      className={`order-section checkout-fullscreen${checkoutStep === "cart" ? " checkout-cart-step" : ""}`}
+      className={`order-section checkout-fullscreen ${checkoutStyles.scope}${checkoutStep === "cart" ? " checkout-cart-step" : ""}`}
       id="pedido"
       aria-labelledby="order-title"
     >
@@ -1597,14 +1606,17 @@ function OfferCard({
   };
 
   return (
-    <article className="offer-card">
-      <div className="offer-label">
-        <Flame className="promo-flame" size={14} aria-hidden="true" />
-        PROMO PARA COMPARTIR
-      </div>
+    <article className={`offer-card ${offerStyles.scope}`}>
+      <Flame
+        className="offer-corner-flame"
+        size={32}
+        aria-hidden="true"
+      />
       <h3>{offer.nombre}</h3>
       {offer.items.length > 0 && (
-        <ul className="offer-items">
+        <ul
+          className={`offer-items${offer.items.length > 3 ? " offer-items--many" : ""}`}
+        >
           {offer.items.map((item, index) => {
             const type = getOfferItemType(item);
             const categoryDescription = type === "category"
@@ -1647,7 +1659,7 @@ function OfferCard({
       <div className="offer-footer">
         <strong className="offer-price">{formatPrice(offer.precio)}</strong>
         <button
-          className="offer-add-button"
+          className="action-button offer-card-add-button"
           type="button"
           onClick={() => {
             if (configurableItems.length > 0) {
@@ -1772,14 +1784,14 @@ function OfferCard({
             <strong>{formatPrice(offer.precio)}</strong>
             <div className="offer-config-actions">
               <button
-                className="offer-cancel-button"
+                className="action-button offer-config-cancel-button"
                 type="button"
                 onClick={() => setIsConfiguring(false)}
               >
                 Cancelar
               </button>
               <button
-                className="offer-add-button"
+                className="action-button offer-config-confirm-button"
                 type="button"
                 disabled={!hasRequiredSelections}
                 onClick={confirmOffer}
@@ -1797,7 +1809,11 @@ function OfferCard({
 
 function LoadingState() {
   return (
-    <section className="menu-section" aria-label="Cargando menú" aria-busy="true">
+    <section
+      className={`menu-section ${menuStyles.scope} ${stateStyles.loadingScope}`}
+      aria-label="Cargando menú"
+      aria-busy="true"
+    >
       <div className="section-heading">
         <div className="skeleton skeleton-title" />
         <div className="skeleton skeleton-caption" />
@@ -2002,7 +2018,9 @@ function App() {
   };
 
   return (
-    <div className={cartItemCount > 0 ? "site-shell has-cart" : "site-shell"}>
+    <div
+      className={`site-shell ${appStyles.scope}${cartItemCount > 0 ? " has-cart" : ""}`}
+    >
       <header className="site-header">
         <a className="brand" href="#inicio" aria-label="PIZZA FIORI, inicio">
           <img className="brand-logo" src="/logo.png" alt="" />
@@ -2056,7 +2074,7 @@ function App() {
           </div>
         </section>
 
-        <section className="menu-section" id="menu">
+        <section className={`menu-section ${menuStyles.scope}`} id="menu">
           <div className="section-heading">
             <div>
               <h2>Menú</h2>
@@ -2072,7 +2090,10 @@ function App() {
           {isLoading && <LoadingState />}
 
           {!isLoading && error && (
-            <div className="state-panel error-panel" role="alert">
+            <div
+              className={`state-panel error-panel ${stateStyles.panelScope}`}
+              role="alert"
+            >
               <span className="state-icon">
                 <AlertCircle size={24} aria-hidden="true" />
               </span>
@@ -2090,7 +2111,7 @@ function App() {
           )}
 
           {!isLoading && !error && !hasProducts && (
-            <div className="state-panel">
+            <div className={`state-panel ${stateStyles.panelScope}`}>
               <span className="state-icon">
                 <Leaf size={24} aria-hidden="true" />
               </span>
@@ -2104,7 +2125,7 @@ function App() {
               <nav className="category-nav" aria-label="Categorías del menú">
                 {catalog.ofertas.length > 0 && (
                   <a className="promos-nav-link" href="#promos">
-                    <Flame className="promo-flame" size={16} aria-hidden="true" />
+                    <Flame className="promos-nav-flame" size={16} aria-hidden="true" />
                     Promos
                   </a>
                 )}
