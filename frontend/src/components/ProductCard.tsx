@@ -177,7 +177,9 @@ const ProductCard = ({
               SKU: {producto.sku}
             </div>
           )}
-          <h3 className="product-card-title">{producto.nombre.toUpperCase()}</h3>
+          <h3 className="product-card-title">
+            <span className="product-card-title-text">{producto.nombre.toUpperCase()}</span>
+          </h3>
 
           <div className="product-card-prices">
             {producto.precios && producto.precios.length > 0 ? (
