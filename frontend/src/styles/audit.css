@@ -51,7 +51,7 @@
 
 .audit-table-header {
   display: grid;
-  grid-template-columns: 16% 14% 14% 10% 1fr 60px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.2fr) 48px;
   gap: 10px;
   padding: 18px 20px;
   background: var(--gradient-card);
@@ -65,7 +65,7 @@
 
 .audit-table-row {
   display: grid;
-  grid-template-columns: 16% 14% 14% 10% 1fr 60px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.2fr) 48px;
   gap: 10px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--color-border);
@@ -90,11 +90,13 @@
 .audit-col-id,
 .audit-col-action,
 .audit-col-changes {
+  min-width: 0;
   color: var(--color-text);
   font-size: 0.95rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-wrap: anywhere;
 }
 
 .audit-col-changes {
@@ -106,13 +108,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 140px;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .audit-action-badge.create {
@@ -317,7 +322,7 @@
 @media (max-width: 1200px) {
   .audit-table-header,
   .audit-table-row {
-    grid-template-columns: 16% 14% 12% 8% 10% 1fr 50px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.85fr) minmax(0, 110px) minmax(0, 1.1fr) 44px;
   }
 }
 
