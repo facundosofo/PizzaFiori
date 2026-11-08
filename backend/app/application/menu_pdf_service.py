@@ -324,7 +324,7 @@ def _offer_description(offer: PublicCatalogOffer, catalog: PublicCatalogResponse
             if product_id in products
         ]
         if len(names) > 1:
-            entries.append(f"Elegí {_format_quantity(amount)}: {' / '.join(names)}")
+            entries.append(f"Elegí entre {' o '.join(names)}")
         elif names and amount in (
             Decimal("0.125"),
             Decimal("0.25"),
@@ -1021,41 +1021,10 @@ class _PromoEntry(Flowable):
         self._component_paragraphs: list[tuple[Paragraph, float]] = []
         self._title: Paragraph | None = None
         self._title_height = 0
-        self._detail_paragraph: Paragraph | None = None
-        self._detail_height = 0
         self._price: Paragraph | None = None
         self._title_lines: list[str] = []
-        self.label, self.title, self.description = self._copy()
-
-    def _copy(self) -> tuple[str, str, str | None]:
-        name = self.offer.nombre.strip()
-        description = (self.offer.descripcion or "").strip()
-        display_name = _title_case_if_uppercase(name)
-        display_description = _title_case_if_uppercase(description)
-        starts_with_promo = (
-            re.match(r"^promo(?:\s|$)", name, re.IGNORECASE) is not None
-        )
-        if starts_with_promo:
-            suffix = re.sub(r"^(?:promo\s*)+", "", name, flags=re.IGNORECASE).strip()
-            numbered = re.fullmatch(r"\d+", suffix)
-            label = f"PROMO {suffix}".upper() if numbered else "PROMO"
-            title = (
-                display_description
-                if description and description.casefold() != name.casefold()
-                else _title_case_if_uppercase(suffix)
-                if numbered is None and suffix
-                else None
-            )
-            detail = None
-        else:
-            label = "PROMO"
-            title = display_name
-            detail = (
-                display_description
-                if description.casefold() != name.casefold()
-                else None
-            )
-        return label, title, detail
+        self.label = "PROMO"
+        self.title = self.offer.nombre.strip()
 
     def wrap(self, availWidth: float, availHeight: float) -> tuple[float, float]:
         self.width = min(self.target_width, availWidth)
@@ -1066,11 +1035,11 @@ class _PromoEntry(Flowable):
                 self.styles["promo_name"].fontName,
                 self.styles["promo_name"].fontSize,
                 title_width,
-                max_lines=2,
+                max_lines=max(2, len(self.title) + 1),
             )
             self._title = Paragraph(
                 "<br/>".join(
-                    escape(_title_case_if_uppercase(line))
+                    escape(line)
                     for line in self._title_lines
                 ),
                 self.styles["promo_name"],
@@ -1088,18 +1057,6 @@ class _PromoEntry(Flowable):
             PROMO_PRICE_COLUMN_WIDTH,
             availHeight,
         )
-        if self.description:
-            self._detail_paragraph = Paragraph(
-                f"&#8226;&nbsp; {escape(_title_case_if_uppercase(self.description))}",
-                self.styles["promo_detail"],
-            )
-            _, self._detail_height = self._detail_paragraph.wrap(
-                self.width - 8,
-                availHeight,
-            )
-        else:
-            self._detail_paragraph = None
-            self._detail_height = 0
         components = _offer_description(self.offer, self.catalog)
         self._component_paragraphs = []
         if components:
@@ -1115,7 +1072,6 @@ class _PromoEntry(Flowable):
             11
             + 3
             + max(self._title_height, price_height)
-            + (self._detail_height + 2 if self._detail_paragraph else 0)
             + sum(height + 1 for _, height in self._component_paragraphs)
         )
         return self.width, self.height
@@ -1137,7 +1093,7 @@ class _PromoEntry(Flowable):
             title_baseline = y - self._title_height
             self._title.drawOn(self.canv, 0, title_baseline)
             title_width = pdfmetrics.stringWidth(
-                _title_case_if_uppercase(self._title_lines[-1]),
+                self._title_lines[-1],
                 self.styles["promo_name"].fontName,
                 self.styles["promo_name"].fontSize,
             )
@@ -1163,10 +1119,6 @@ class _PromoEntry(Flowable):
                 y - 16,
             )
         y -= max(self._title_height, 17) + 2
-        if self._detail_paragraph:
-            y -= self._detail_height
-            self._detail_paragraph.drawOn(self.canv, 0, y)
-            y -= 2
         for paragraph, height in self._component_paragraphs:
             y -= height
             paragraph.drawOn(self.canv, 0, y)

@@ -226,21 +226,32 @@ function formatOfferQuantity(quantity: number): string {
   return formatQuantity(String(quantity));
 }
 
-function formatCategoryOfferDescription(quantity: number, categoryName: string): string {
+function formatCategoryOfferDescription(
+  quantity: number,
+  categoryName: string,
+): { quantity: string; unit: string; categoryName: string } {
   let quantityLabel: string;
+  let unit = "";
   if ([0.125, 0.25, 0.5].some((portion) => Math.abs(quantity - portion) < 1e-9)) {
-    quantityLabel = "1 porción";
+    quantityLabel = "1";
+    unit = "porción";
   } else if (Math.abs(quantity - 6) < 1e-9) {
-    quantityLabel = "1/2 docena";
+    quantityLabel = "1/2";
+    unit = "Docena";
   } else if (quantity >= 12 && quantity % 12 === 0) {
     const dozens = quantity / 12;
-    quantityLabel = `${formatQuantity(String(dozens))} docena${dozens === 1 ? "" : "s"}`;
+    quantityLabel = formatQuantity(String(dozens));
+    unit = dozens === 1 ? "Docena" : "Docenas";
   } else {
     quantityLabel = new Intl.NumberFormat("es-AR", {
       maximumFractionDigits: 6,
     }).format(quantity);
   }
-  return `${quantityLabel} de ${categoryName.toLocaleLowerCase("es-AR")} a elección`;
+  return {
+    quantity: quantityLabel,
+    unit,
+    categoryName: categoryName.toLocaleLowerCase("es-AR"),
+  };
 }
 
 function formatOfferSelection(selection: SelectedOfferProduct): string {
@@ -1584,21 +1595,23 @@ function OfferCard({
         PROMO PARA COMPARTIR
       </div>
       <h3>{offer.nombre}</h3>
-      {offer.descripcion && <p className="offer-description">{offer.descripcion}</p>}
       {offer.items.length > 0 && (
         <ul className="offer-items">
           {offer.items.map((item, index) => {
             const type = getOfferItemType(item);
-            const itemDescription = type === "category"
+            const categoryDescription = type === "category"
               ? formatCategoryOfferDescription(
                   Number(item.cantidad),
                   categoryNames.get(item.categoria_id ?? -1) ?? "la categoría",
                 )
+              : null;
+            const itemDescription = type === "category"
+              ? null
               : type === "options"
-                ? `elegí entre ${item.producto_ids
+                ? `Elegí entre ${item.producto_ids
                     .map((productId) => productNames.get(productId))
                     .filter((name): name is string => Boolean(name))
-                    .join(" / ")}`
+                    .join(" o ")}`
                 : productNames.get(item.producto_ids[0]) ?? "Producto";
             return (
               <li key={`${offer.id}-${index}`}>
@@ -1607,7 +1620,17 @@ function OfferCard({
                     <span>{formatOfferQuantity(Number(item.cantidad))} ×</span>{" "}
                   </>
                 )}
-                {itemDescription}
+                {categoryDescription ? (
+                  <>
+                    <span>{categoryDescription.quantity}</span>
+                    {categoryDescription.unit && ` ${categoryDescription.unit}`}
+                    {" de "}
+                    {categoryDescription.categoryName}
+                    {" a elección"}
+                  </>
+                ) : (
+                  itemDescription
+                )}
               </li>
             );
           })}
@@ -1659,9 +1682,6 @@ function OfferCard({
               <h2 id={`offer-dialog-title-${offer.id}`}>{offer.nombre}</h2>
             </div>
           </div>
-          {offer.descripcion && (
-            <p className="offer-dialog-description">{offer.descripcion}</p>
-          )}
           <div className="offer-config">
             {configurableItems.map(({ item, index, type }) => {
               if (type === "category") {

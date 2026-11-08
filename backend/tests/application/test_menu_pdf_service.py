@@ -981,7 +981,7 @@ def test_promo_leader_dots_and_price_align_with_last_title_line():
     serif_bold, _, sans, sans_bold = _register_menu_fonts()
     offer = SimpleNamespace(
         nombre="SUPER PICADA PARA COMPARTIR CON TODOS",
-        descripcion=None,
+        descripcion="Esta descripcion no debe aparecer en el PDF",
         precio=Decimal("25000"),
         items=[],
     )
@@ -992,6 +992,8 @@ def test_promo_leader_dots_and_price_align_with_last_title_line():
         styles=_paragraph_styles(serif_bold, sans, sans_bold),
     )
     entry.wrap(220, 500)
+    assert entry.title == offer.nombre
+    assert " ".join(entry._title_lines) == offer.nombre
     assert len(entry._title_lines) > 1
 
     class RecordingCanvas:
@@ -1275,7 +1277,7 @@ async def test_generates_pdf_with_variable_presentations_and_natural_promo_detai
     assert pdf.startswith(b"%PDF-")
     assert b"%%EOF" in pdf[-100:]
     assert descriptions["Pizza a elección"] == (
-        "Elegí 1: Napolitana / Calabresa"
+        "Elegí entre Napolitana o Calabresa"
     )
     assert descriptions["Promo faina"] == "1 porción de Faina"
     assert descriptions["Docenas de empanadas"] == (
