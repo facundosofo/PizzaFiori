@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,6 +18,11 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
 
     def __init__(self, session: AsyncSession):
         super().__init__(session)
+
+    async def add(self, offer: Offer) -> Offer:
+        last_order = await self.session.scalar(select(func.max(Offer.orden)))
+        offer.orden = (last_order if last_order is not None else -1) + 1
+        return await super().add(offer)
 
     async def get_by_id(self, offer_id: int) -> Optional[Offer]:
         query = (
@@ -43,7 +48,7 @@ class SqlAlchemyOfferRepository(BaseRepository[Offer], AbstractOfferRepository):
         if active is not None:
             query = query.where(Offer.activo == active)
 
-        query = query.order_by(Offer.fecha_creacion.asc())
+        query = query.order_by(Offer.orden.asc(), Offer.id.asc())
 
         result = await self.session.execute(query)
         return result.scalars().all()

@@ -9,6 +9,7 @@ export interface Offer {
   descripcion?: string | null;
   precio: number;
   activo: boolean;
+  orden: number;
   fecha_creacion: string;
   fecha_actualizacion: string;
   productos?: OfferItem[];

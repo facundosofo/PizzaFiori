@@ -70,3 +70,12 @@ export const deactivateOffer = async (id: number): Promise<void> => {
     throw new Error(errorMessage);
   }
 };
+
+export const reorderOfertas = async (oferta_ids: number[]): Promise<void> => {
+  try {
+    await api.put("/ofertas/orden", { oferta_ids });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+    throw new Error(errorMessage);
+  }
+};

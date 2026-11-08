@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { ArrowDownWideNarrow, GripVertical } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { formatLocalISO } from "../utils/formatters";
-import { getOfertas } from "../services/ofertasService";
+import { getOfertas, reorderOfertas } from "../services/ofertasService";
 import { getProductos } from "../services/productsService";
 import { getProductosCategorias } from "../services/productosCategoriasService";
 import OfferCard from "../components/OfferCard";
@@ -25,6 +26,10 @@ const OffersPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOferta, setSelectedOferta] = useState<Offer | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
+  const [draggedOfferId, setDraggedOfferId] = useState<number | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -68,6 +73,7 @@ const OffersPage = () => {
       descripcion: null,
       precio: 0,
       activo: true,
+      orden: ofertas.length,
       fecha_creacion: formatLocalISO(new Date()),
       fecha_actualizacion: formatLocalISO(new Date()),
       productos: [],
@@ -83,6 +89,41 @@ const OffersPage = () => {
 
   const handleOfferDelete = (ofertaId: number) => {
     setOfertas((prevOfertas) => prevOfertas.filter((o) => o.id !== ofertaId));
+  };
+
+  const handleOfferDrop = async (targetOfferId: number) => {
+    if (
+      draggedOfferId === null
+      || draggedOfferId === targetOfferId
+      || isSavingOrder
+    ) {
+      return;
+    }
+
+    const previousOrder = ofertas;
+    const nextOrder = [...previousOrder];
+    const sourceIndex = nextOrder.findIndex((offer) => offer.id === draggedOfferId);
+    const targetIndex = nextOrder.findIndex((offer) => offer.id === targetOfferId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    const [movedOffer] = nextOrder.splice(sourceIndex, 1);
+    nextOrder.splice(targetIndex, 0, movedOffer);
+    const reorderedOffers = nextOrder.map((offer, orden) => ({ ...offer, orden }));
+    setOfertas(reorderedOffers);
+    setDraggedOfferId(null);
+    setOrderError(null);
+    setIsSavingOrder(true);
+
+    try {
+      await reorderOfertas(reorderedOffers.map((offer) => offer.id));
+    } catch (err) {
+      setOfertas(previousOrder);
+      setOrderError(
+        err instanceof Error ? err.message : "No se pudo guardar el orden.",
+      );
+    } finally {
+      setIsSavingOrder(false);
+    }
   };
 
   const handleEdit = (oferta: Offer) => {
@@ -130,17 +171,42 @@ const OffersPage = () => {
     <div className="offers-container">
       <div className="page-header">
         <h1 className="page-title">Ofertas</h1>
-        <motion.button
-          className="btn-create-offer"
-          onClick={handleCreateClick}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Icons.PlusIcon size={16} /> Nueva Oferta
-        </motion.button>
+        <div className="offers-page-actions">
+          <motion.button
+            className="btn-create-offer"
+            onClick={handleCreateClick}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Icons.PlusIcon size={16} /> Nueva Oferta
+          </motion.button>
+          <button
+            className={`btn-order-offers${isReordering ? " is-active" : ""}`}
+            onClick={() => {
+              setIsReordering((current) => !current);
+              setOrderError(null);
+            }}
+            disabled={loading || ofertas.length < 2 || isSavingOrder}
+            title="Ordenar"
+            aria-label="Ordenar ofertas"
+            aria-pressed={isReordering}
+          >
+            <ArrowDownWideNarrow size={20} />
+          </button>
+        </div>
       </div>
 
       <ErrorAlert message={error} onClose={() => setError(null)} />
+      {isReordering && (
+        <p className="offers-order-hint" role="status">
+          <GripVertical size={16} />
+          Arrastrá las ofertas para cambiar su orden.
+          {isSavingOrder && <span> Guardando...</span>}
+        </p>
+      )}
+      {orderError && (
+        <p className="offers-order-error" role="alert">{orderError}</p>
+      )}
 
       {/* Modal de creación/edición */}
       <OfferModal
@@ -173,14 +239,37 @@ const OffersPage = () => {
       ) : (
         <div className="offers-grid">
           {ofertas.map((oferta) => (
-            <OfferCard
+            <div
               key={oferta.id}
-              oferta={oferta}
-              productos={productos}
-              onEdit={handleEdit}
-              onOfferUpdate={handleOfferUpdate}
-              onOfferDelete={handleOfferDelete}
-            />
+              className={`offer-sortable-item${draggedOfferId === oferta.id ? " is-dragging" : ""}`}
+              draggable={isReordering && !isSavingOrder}
+              onDragStart={(event) => {
+                if (!isReordering || isSavingOrder) {
+                  event.preventDefault();
+                  return;
+                }
+                setDraggedOfferId(oferta.id);
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", String(oferta.id));
+              }}
+              onDragOver={(event) => {
+                if (isReordering) event.preventDefault();
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                void handleOfferDrop(oferta.id);
+              }}
+              onDragEnd={() => setDraggedOfferId(null)}
+            >
+              <OfferCard
+                oferta={oferta}
+                productos={productos}
+                onEdit={handleEdit}
+                onOfferUpdate={handleOfferUpdate}
+                onOfferDelete={handleOfferDelete}
+                isReordering={isReordering}
+              />
+            </div>
           ))}
         </div>
       )}

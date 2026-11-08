@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { GripVertical } from "lucide-react";
 import type { Offer, OfferItem } from "../types/offer";
 import type { Product } from "../types/product";
 import * as Icons from "./shared/Icons";
@@ -17,6 +18,7 @@ interface OfferCardProps {
   onEdit?: (oferta: Offer) => void;
   onOfferUpdate?: (oferta: Offer) => void;
   onOfferDelete?: (ofertaId: number) => void;
+  isReordering?: boolean;
 }
 
 /* -------------------- Helpers -------------------- */
@@ -52,6 +54,7 @@ const OfferCard = ({
   oferta,
   onEdit,
   onOfferDelete,
+  isReordering = false,
 }: OfferCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -87,16 +90,23 @@ const OfferCard = ({
   return (
     <>
       <motion.div
-        className="offer-card"
+        className={`offer-card${isReordering ? " offer-card-reordering" : ""}`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        whileHover={{ scale: 1.02, y: -4 }}
+        whileHover={isReordering ? undefined : { scale: 1.02, y: -4 }}
       >
         {/* Cuerpo */}
         <div className="offer-card-body">
           <div className="offer-card-header">
             <h3 className="offer-card-title">{oferta.nombre}</h3>
+            {isReordering && (
+              <GripVertical
+                className="offer-drag-handle"
+                size={20}
+                aria-hidden="true"
+              />
+            )}
           </div>
 
           <div className="offer-description-container">
@@ -180,7 +190,7 @@ const OfferCard = ({
             {formatCurrency(oferta.precio)}
           </div>
 
-          <div className="offer-action-buttons">
+          {!isReordering && <div className="offer-action-buttons">
             <button
               className="offer-action-btn offer-action-edit"
               onClick={handleEdit}
@@ -196,7 +206,7 @@ const OfferCard = ({
             >
               <Icons.TrashIcon />
             </button>
-          </div>
+          </div>}
         </div>
       </motion.div>
 

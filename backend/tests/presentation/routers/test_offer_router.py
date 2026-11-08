@@ -163,6 +163,36 @@ async def test_get_offers_vacia_retorna_lista_vacia(async_client: AsyncClient, m
 
 
 @pytest.mark.asyncio
+async def test_reorder_offers_persists_order(async_client: AsyncClient, mock_offer_service):
+    response = await async_client.put(
+        "/ofertas/orden",
+        json={"oferta_ids": [3, 1, 2]},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"actualizado": True}
+    mock_offer_service.reorder.assert_awaited_once_with([3, 1, 2])
+
+
+@pytest.mark.asyncio
+async def test_reorder_offers_returns_service_validation_error(
+    async_client: AsyncClient,
+    mock_offer_service,
+):
+    mock_offer_service.reorder.return_value.error = (
+        "El orden debe incluir exactamente todas las ofertas activas."
+    )
+    mock_offer_service.reorder.return_value.status_code = 400
+
+    response = await async_client.put(
+        "/ofertas/orden",
+        json={"oferta_ids": [3, 1]},
+    )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_get_offer_por_id_existente(async_client: AsyncClient, mock_offer_service):
     """Obtener oferta por ID válido retorna 200"""
     from tests.helpers import build_offer_model

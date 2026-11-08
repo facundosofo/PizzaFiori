@@ -13,6 +13,7 @@ class Offer(Base):
     descripcion = Column(String(255), nullable=True)
     precio = Column(Numeric(10, 2), nullable=False)
     activo = Column(Boolean, nullable=False, default=True)
+    orden = Column(Integer, nullable=False, default=0, server_default="0")
     fecha_creacion = Column(DateTime, default=datetime.now)
     fecha_actualizacion = Column(DateTime, default=datetime.now)
 

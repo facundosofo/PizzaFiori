@@ -146,6 +146,10 @@ class OfferUpdateRequest(BaseModel):
         return self
 
 
+class OfferOrderRequest(BaseModel):
+    oferta_ids: List[int] = Field(..., min_length=1)
+
+
 # ======================================================
 # Response Models
 # ======================================================
@@ -156,6 +160,7 @@ class OfferResponse(BaseModel):
     descripcion: Optional[str]
     precio: Decimal
     activo: bool
+    orden: int
     fecha_creacion: datetime
     fecha_actualizacion: datetime
     productos: List[OfferItemResponse]

@@ -174,6 +174,39 @@ class OfferService:
             )
             return []
 
+    async def reorder(self, oferta_ids: List[int]) -> ServiceResult:
+        try:
+            async with self.uow as uow:
+                offers = await uow.offer_repo.list(active=True)
+                active_ids = {offer.id for offer in offers}
+                if (
+                    len(oferta_ids) != len(set(oferta_ids))
+                    or set(oferta_ids) != active_ids
+                ):
+                    return ServiceResult(
+                        error="El orden debe incluir exactamente todas las ofertas activas.",
+                        status_code=400,
+                    )
+
+                offers_by_id = {offer.id: offer for offer in offers}
+                updated_at = datetime.now()
+                for order, offer_id in enumerate(oferta_ids):
+                    offer = offers_by_id[offer_id]
+                    offer.orden = order
+                    offer.fecha_actualizacion = updated_at
+
+                await uow.commit()
+
+            self.cache_service.invalidate("oferta_*")
+            return ServiceResult()
+        except Exception as e:
+            self.logger.error(
+                "Error al reordenar ofertas",
+                error=str(e),
+                exc_info=True,
+            )
+            return ServiceResult(error=str(e), status_code=400)
+
     async def update(
         self, 
         offer_id: int, 

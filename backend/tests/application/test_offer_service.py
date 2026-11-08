@@ -304,6 +304,55 @@ async def test_get_all_offers_error(mock_uow, mock_cache_service, mock_logger):
     mock_logger.error.assert_called_once()
 
 
+@pytest.mark.asyncio
+async def test_reorder_offers_updates_order_and_invalidates_cache(
+    mock_uow,
+    mock_cache_service,
+    mock_logger,
+):
+    service = OfferService(
+        uow=mock_uow,
+        cache_service=mock_cache_service,
+        logger=mock_logger,
+    )
+    offers = [
+        build_offer_model(1, "Primera"),
+        build_offer_model(2, "Segunda"),
+        build_offer_model(3, "Tercera"),
+    ]
+    mock_uow.offer_repo.list.return_value = offers
+
+    result = await service.reorder([3, 1, 2])
+
+    assert result.error is None
+    assert [offer.orden for offer in offers] == [1, 2, 0]
+    mock_uow.offer_repo.list.assert_awaited_once_with(active=True)
+    mock_uow.commit.assert_awaited_once()
+    mock_cache_service.invalidate.assert_called_once_with("oferta_*")
+
+
+@pytest.mark.asyncio
+async def test_reorder_offers_rejects_missing_or_duplicate_ids(
+    mock_uow,
+    mock_cache_service,
+    mock_logger,
+):
+    service = OfferService(
+        uow=mock_uow,
+        cache_service=mock_cache_service,
+        logger=mock_logger,
+    )
+    offers = [build_offer_model(1), build_offer_model(2)]
+    mock_uow.offer_repo.list.return_value = offers
+
+    result = await service.reorder([1, 1])
+
+    assert result.status_code == 400
+    assert "todas las ofertas activas" in result.error
+    mock_uow.commit.assert_not_awaited()
+    mock_cache_service.invalidate.assert_not_called()
+
+
 # ==================== Update Tests ====================
 
 @pytest.mark.asyncio
@@ -686,4 +735,3 @@ async def test_delete_offer_exception(mock_uow, mock_cache_service, mock_logger,
     result = await service.delete(1)
 
     assert result.status_code == 400
-

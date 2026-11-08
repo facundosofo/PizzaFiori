@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, status, Path, Query, Request
 from dependency_injector.wiring import inject, Provide
 from typing import List, Optional
 
@@ -7,6 +7,7 @@ from app.infrastructure.cache.cache_service import CacheService
 from app.containers import Container
 from app.presentation.schemas.offer_schemas import (
     OfferCreateRequest,
+    OfferOrderRequest,
     OfferUpdateRequest,
     OfferResponse,
 )
@@ -120,6 +121,25 @@ async def get_offer(
     cache_service.set(cache_key, response_data)
     
     return response_data
+
+
+@router.put(
+    "/orden",
+    summary="Reordenar ofertas",
+    description="Guarda el orden de todas las ofertas activas.",
+    responses={400: {"description": "El orden enviado no coincide con las ofertas activas"}},
+)
+@inject
+async def reorder_offers(
+    request: Request,
+    order: OfferOrderRequest = Body(...),
+    admin_user: dict = Depends(require_admin),
+    service: OfferService = Depends(Provide[Container.offer_service]),
+):
+    result = await service.reorder(order.oferta_ids)
+    if result.error:
+        raise HTTPException(status_code=result.status_code, detail=result.error)
+    return {"actualizado": True}
 
 
 @router.put(

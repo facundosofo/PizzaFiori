@@ -304,6 +304,7 @@ def mock_offer_service():
     service.get_all = AsyncMock(return_value=[])
     service.get_by_id = AsyncMock(return_value=result)
     service.update = AsyncMock(return_value=result)
+    service.reorder = AsyncMock(return_value=result)
     
     return service
 

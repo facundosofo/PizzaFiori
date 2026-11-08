@@ -168,6 +168,7 @@ def build_offer_data(
         "descripcion": descripcion,
         "precio": precio,
         "activo": activo,
+        "orden": 0,
         "fecha_creacion": datetime.now(),
         "fecha_actualizacion": datetime.now(),
         "productos": productos
@@ -189,6 +190,7 @@ def build_offer_model(
     offer.descripcion = descripcion
     offer.precio = Decimal(str(precio))
     offer.activo = activo
+    offer.orden = 0
     offer.fecha_creacion = datetime.now()
     offer.fecha_actualizacion = datetime.now()
     
