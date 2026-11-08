@@ -79,6 +79,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         id: producto?.id || 0,
         nombre: nombre.trim(),
         categoria_id: parseInt(categoria),
+        orden: producto?.orden ?? 0,
         imagen: producto?.imagen,
         activo: producto?.activo ?? true,
         fecha_creacion: producto?.fecha_creacion || formatLocalISO(new Date()),

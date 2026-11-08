@@ -37,6 +37,10 @@ class AbstractProductRepository(ABC):
         ...
 
     @abstractmethod
+    async def next_order(self, categoria_id: Optional[int]) -> int:
+        ...
+
+    @abstractmethod
     async def refresh(
         self,
         product: Product,

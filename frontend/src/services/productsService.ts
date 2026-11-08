@@ -84,6 +84,18 @@ export const deactivateProducto = async (id: number): Promise<void> => {
   }
 };
 
+export const reorderProductos = async (
+  categoria_id: number,
+  producto_ids: number[],
+): Promise<void> => {
+  try {
+    await api.put("/productos/orden", { categoria_id, producto_ids });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+    throw new Error(errorMessage);
+  }
+};
+
 export const actualizarPreciosMasivos = async (
   data: BulkPriceUpdateRequest
 ): Promise<BulkPriceUpdateResponse> => {

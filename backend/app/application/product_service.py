@@ -7,7 +7,11 @@ import structlog
 from app.domain.models.product import Product
 from app.domain.models.product_price import ProductPrice
 from app.domain.unit_of_work import AbstractUnitOfWork
-from app.presentation.schemas.product_schemas import ProductoCreateRequest, ProductoResponse, ProductoUpdateRequest
+from app.presentation.schemas.product_schemas import (
+    ProductoCreateRequest,
+    ProductoResponse,
+    ProductoUpdateRequest,
+)
 from app.infrastructure.file_service import FileService
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.sku_generator import generar_sku_producto
@@ -145,6 +149,52 @@ class ProductService:
             return ServiceResult(value=ProductoResponse.model_validate(producto))
 
 
+    async def reorder(
+        self,
+        categoria_id: int,
+        producto_ids: List[int],
+    ) -> ServiceResult:
+        try:
+            async with self.uow as uow:
+                categoria = await uow.product_category_repo.get_by_id(categoria_id)
+                if not categoria:
+                    return ServiceResult(error="Categoría no encontrada", status_code=404)
+
+                productos = await uow.product_repo.list(
+                    categoria_id=categoria_id,
+                    active=True,
+                )
+                active_ids = {producto.id for producto in productos}
+                if (
+                    len(producto_ids) != len(set(producto_ids))
+                    or set(producto_ids) != active_ids
+                ):
+                    return ServiceResult(
+                        error="El orden debe incluir exactamente todos los productos activos de la categoría.",
+                        status_code=400,
+                    )
+
+                productos_por_id = {producto.id: producto for producto in productos}
+                updated_at = datetime.now()
+                for orden, producto_id in enumerate(producto_ids):
+                    producto = productos_por_id[producto_id]
+                    producto.orden = orden
+                    producto.fecha_actualizacion = updated_at
+
+                await uow.commit()
+
+            self.cache_service.invalidate("producto_*")
+            return ServiceResult()
+        except Exception as e:
+            self.logger.error(
+                "Error al reordenar productos",
+                categoria_id=categoria_id,
+                error=str(e),
+                exc_info=True,
+            )
+            return ServiceResult(error=str(e), status_code=400)
+
+
     async def update(
         self,
         producto_id: int,
@@ -186,6 +236,15 @@ class ProductService:
 
                 ruta_imagen_vieja = producto.imagen
                 sku_producto = producto.sku
+
+                if (
+                    producto_update is not None
+                    and producto_update.categoria_id is not None
+                    and producto_update.categoria_id != producto.categoria_id
+                ):
+                    producto.orden = await uow.product_repo.next_order(
+                        producto_update.categoria_id
+                    )
 
                 if image:
                     ruta_imagen_nueva = await self.file_service.save_file(image, filename_base=sku_producto)

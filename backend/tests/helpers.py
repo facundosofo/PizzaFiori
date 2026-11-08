@@ -77,6 +77,7 @@ def build_product_data(
         "sku": sku,
         "nombre": nombre,
         "categoria_id": categoria_id,
+        "orden": id - 1,
         "imagen": imagen,
         "activo": activo,
         "fecha_creacion": datetime.now(),
@@ -100,6 +101,7 @@ def build_product_model(
     product.sku = sku
     product.nombre = nombre
     product.categoria_id = categoria_id
+    product.orden = id - 1
     product.imagen = imagen
     product.activo = activo
     product.fecha_creacion = datetime.now()

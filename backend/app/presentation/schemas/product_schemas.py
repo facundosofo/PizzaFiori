@@ -99,11 +99,17 @@ class ProductoResponse(BaseModel):
     sku: str
     nombre: str
     categoria_id: int
+    orden: int = 0
     precios: List[ProductoPrecioResponse]
     imagen: Optional[str] = None
     activo: bool
     fecha_creacion: datetime
     ofertas_desactivadas: Optional[List[int]] = None  # IDs de ofertas desactivadas al desactivar producto
+
+
+class ProductoOrderRequest(BaseModel):
+    categoria_id: int = Field(..., gt=0)
+    producto_ids: List[int] = Field(..., min_length=1)
 
 
 # ======================================================

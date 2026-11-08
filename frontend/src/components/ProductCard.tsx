@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import type { DragEvent as ReactDragEvent } from "react";
+import { GripVertical } from "lucide-react";
 import type { Product } from "../types/product";
 import type { ProductoCategoria } from "../types/product_category";
 import type { Offer } from "../types/offer";
@@ -20,6 +22,12 @@ interface ProductCardProps {
   onProductUpdate?: (producto: Product) => void;
   onProductDelete?: (productoId: number) => void;
   categorias?: ProductoCategoria[];
+  isReordering?: boolean;
+  isDragging?: boolean;
+  onProductDragStart?: (event: ReactDragEvent<HTMLDivElement>, productoId: number) => void;
+  onProductDragOver?: (event: ReactDragEvent<HTMLDivElement>, productoId: number) => void;
+  onProductDrop?: (event: ReactDragEvent<HTMLDivElement>, productoId: number) => void;
+  onProductDragEnd?: () => void;
 }
 
 const ProductCard = ({
@@ -27,6 +35,12 @@ const ProductCard = ({
   onProductUpdate,
   onProductDelete,
   categorias = [],
+  isReordering = false,
+  isDragging = false,
+  onProductDragStart,
+  onProductDragOver,
+  onProductDrop,
+  onProductDragEnd,
 }: ProductCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -102,15 +116,28 @@ const ProductCard = ({
 
   return (
     <>
-      <motion.div
-        className="product-card"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        whileHover={{ scale: 1.05, y: -5 }}
-        whileTap={{ scale: 0.97 }}
-        onClick={handleOpenModal}
+      <div
+        className="product-card-drag-wrapper"
+        draggable={isReordering}
+        onDragStart={(event) => onProductDragStart?.(event, producto.id)}
+        onDragOver={(event) => onProductDragOver?.(event, producto.id)}
+        onDrop={(event) => onProductDrop?.(event, producto.id)}
+        onDragEnd={onProductDragEnd}
       >
+        <motion.div
+          className={`product-card${isReordering ? " is-reordering" : ""}${isDragging ? " is-dragging" : ""}`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          whileHover={isReordering ? undefined : { scale: 1.05, y: -5 }}
+          whileTap={isReordering ? undefined : { scale: 0.97 }}
+          onClick={isReordering ? undefined : handleOpenModal}
+        >
+          {isReordering && (
+            <div className="product-order-grip" aria-hidden="true">
+              <GripVertical size={20} />
+            </div>
+          )}
         <button
           className="product-card-deactivate"
           onClick={(e) => {
@@ -164,7 +191,8 @@ const ProductCard = ({
             Editar
           </button>
         </div>
-      </motion.div>
+        </motion.div>
+      </div>
 
       <ProductModal
         producto={producto}

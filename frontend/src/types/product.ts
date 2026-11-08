@@ -7,6 +7,7 @@ export interface Product {
   id: number;
   nombre: string;
   categoria_id?: number | null;
+  orden: number;
   imagen?: string | null;
   activo: boolean;
   fecha_creacion: string;

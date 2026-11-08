@@ -52,6 +52,7 @@ def mock_product_repo():
     repo.add = AsyncMock(return_value=None)
     repo.get_all = AsyncMock(return_value=[])
     repo.get_by_id = AsyncMock(return_value=None)
+    repo.next_order = AsyncMock(return_value=0)
     repo.update = AsyncMock(return_value=None)
     repo.delete = AsyncMock(return_value=None)
     repo.delete_product_prices = AsyncMock(return_value=None)
@@ -285,6 +286,7 @@ def mock_product_service():
     service.get_by_id = AsyncMock(return_value=result)
     service.update = AsyncMock(return_value=result)
     service.bulk_update_prices = AsyncMock(return_value=result)
+    service.reorder = AsyncMock(return_value=result)
     
     return service
 

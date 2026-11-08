@@ -135,6 +135,39 @@ async def test_get_productos_filtrado_por_activo(async_client: AsyncClient, mock
 
 
 @pytest.mark.asyncio
+async def test_reorder_productos_persists_category_order(
+    async_client: AsyncClient,
+    mock_product_service,
+):
+    response = await async_client.put(
+        "/productos/orden",
+        json={"categoria_id": 1, "producto_ids": [3, 1, 2]},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"actualizado": True}
+    mock_product_service.reorder.assert_awaited_once_with(1, [3, 1, 2])
+
+
+@pytest.mark.asyncio
+async def test_reorder_productos_returns_service_validation_error(
+    async_client: AsyncClient,
+    mock_product_service,
+):
+    mock_product_service.reorder.return_value.error = (
+        "El orden debe incluir exactamente todos los productos activos de la categoría."
+    )
+    mock_product_service.reorder.return_value.status_code = 400
+
+    response = await async_client.put(
+        "/productos/orden",
+        json={"categoria_id": 1, "producto_ids": [3, 1]},
+    )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_get_producto_por_id_existente(async_client: AsyncClient, mock_product_service):
     """Obtener producto por ID válido retorna 200"""
     from tests.helpers import build_product_model

@@ -9,6 +9,7 @@ from app.infrastructure.cache.cache_service import CacheService
 from app.containers import Container
 from app.presentation.schemas.product_schemas import (
     ProductoCreateRequest,
+    ProductoOrderRequest,
     ProductoUpdateRequest,
     ProductoResponse,
     ActualizarPreciosMasivosRequest,
@@ -136,6 +137,25 @@ async def get_productos(
     cache_service.set(cache_key, response_data)
     
     return response_data
+
+
+@router.put(
+    "/orden",
+    summary="Reordenar productos de una categoría",
+    description="Guarda el orden de todos los productos activos de una categoría.",
+    responses={400: {"description": "El orden enviado no coincide con los productos activos de la categoría"}},
+)
+@inject
+async def reorder_productos(
+    request: Request,
+    order: ProductoOrderRequest,
+    admin_user: dict = Depends(require_admin),
+    service: ProductService = Depends(Provide[Container.product_service]),
+):
+    result = await service.reorder(order.categoria_id, order.producto_ids)
+    if result.error:
+        raise HTTPException(status_code=result.status_code, detail=result.error)
+    return {"actualizado": True}
 
 
 

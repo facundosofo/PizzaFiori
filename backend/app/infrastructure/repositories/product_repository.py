@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, joinedload
 
@@ -19,6 +19,19 @@ class SqlAlchemyProductRepository(
 
     def __init__(self, session: AsyncSession):
         super().__init__(session)
+
+    async def next_order(self, categoria_id: Optional[int]) -> int:
+        query = select(func.max(Product.orden))
+        if categoria_id is None:
+            query = query.where(Product.categoria_id.is_(None))
+        else:
+            query = query.where(Product.categoria_id == categoria_id)
+        last_order = await self.session.scalar(query)
+        return (last_order if last_order is not None else -1) + 1
+
+    async def add(self, product: Product) -> Product:
+        product.orden = await self.next_order(product.categoria_id)
+        return await super().add(product)
 
     async def get_by_id(self, producto_id: int) -> Optional[Product]:
         query = (
@@ -43,7 +56,7 @@ class SqlAlchemyProductRepository(
                 selectinload(Product.precios),
                 joinedload(Product.categoria)
             )
-            .order_by(Product.id.asc())
+            .order_by(Product.categoria_id.asc(), Product.orden.asc(), Product.id.asc())
         )
 
         conditions = []

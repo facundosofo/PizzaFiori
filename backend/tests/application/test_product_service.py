@@ -462,6 +462,35 @@ async def test_update_product_not_found(mock_uow, mock_file_service, mock_cache_
 
 
 @pytest.mark.asyncio
+async def test_update_product_moved_category_is_appended_to_new_category(
+    mock_uow,
+    mock_file_service,
+    mock_cache_service,
+    mock_logger,
+    sample_product,
+):
+    service = ProductService(
+        uow=mock_uow,
+        file_service=mock_file_service,
+        cache_service=mock_cache_service,
+        logger=mock_logger,
+    )
+    sample_product.categoria_id = 1
+    mock_uow.product_repo.get_by_id.return_value = sample_product
+    mock_uow.product_repo.next_order.return_value = 4
+
+    result = await service.update(
+        sample_product.id,
+        producto_update=ProductoUpdateRequest(categoria_id=2),
+    )
+
+    assert result.error is None
+    assert sample_product.categoria_id == 2
+    assert sample_product.orden == 4
+    mock_uow.product_repo.next_order.assert_awaited_once_with(2)
+
+
+@pytest.mark.asyncio
 async def test_update_product_error_rollback_image(mock_uow, mock_file_service, mock_cache_service, mock_logger, sample_product):
     """Test that new image is deleted on update error."""
     # Arrange
@@ -481,3 +510,93 @@ async def test_update_product_error_rollback_image(mock_uow, mock_file_service, 
     # Verify new image (SKU-named) was deleted on error
     assert mock_file_service.delete_file.call_count == 1
     mock_file_service.delete_file.assert_called_with("uploads/productos/EMP-TEST-00001.jpg")
+
+
+@pytest.mark.asyncio
+async def test_reorder_products_persists_order_within_category(
+    mock_uow,
+    mock_file_service,
+    mock_cache_service,
+    mock_logger,
+):
+    service = ProductService(
+        uow=mock_uow,
+        file_service=mock_file_service,
+        cache_service=mock_cache_service,
+        logger=mock_logger,
+    )
+    products = [
+        build_product_model(id=1, categoria_id=2),
+        build_product_model(id=2, categoria_id=2),
+        build_product_model(id=3, categoria_id=2),
+    ]
+    mock_uow.product_category_repo.get_by_id = AsyncMock(
+        return_value=build_category_model(id=2)
+    )
+    mock_uow.product_repo.list = AsyncMock(return_value=products)
+
+    result = await service.reorder(categoria_id=2, producto_ids=[3, 1, 2])
+
+    assert result.error is None
+    assert [product.orden for product in products] == [1, 2, 0]
+    mock_uow.product_repo.list.assert_awaited_once_with(
+        categoria_id=2,
+        active=True,
+    )
+    mock_uow.commit.assert_awaited_once()
+    mock_cache_service.invalidate.assert_called_once_with("producto_*")
+
+
+@pytest.mark.asyncio
+async def test_reorder_products_rejects_ids_not_matching_category(
+    mock_uow,
+    mock_file_service,
+    mock_cache_service,
+    mock_logger,
+):
+    service = ProductService(
+        uow=mock_uow,
+        file_service=mock_file_service,
+        cache_service=mock_cache_service,
+        logger=mock_logger,
+    )
+    mock_uow.product_category_repo.get_by_id = AsyncMock(
+        return_value=build_category_model(id=2)
+    )
+    mock_uow.product_repo.list = AsyncMock(
+        return_value=[
+            build_product_model(id=1, categoria_id=2),
+            build_product_model(id=2, categoria_id=2),
+        ]
+    )
+
+    result = await service.reorder(categoria_id=2, producto_ids=[1, 1])
+
+    assert result.status_code == 400
+    assert result.error == (
+        "El orden debe incluir exactamente todos los productos activos de la categoría."
+    )
+    mock_uow.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_reorder_products_returns_not_found_for_missing_category(
+    mock_uow,
+    mock_file_service,
+    mock_cache_service,
+    mock_logger,
+):
+    service = ProductService(
+        uow=mock_uow,
+        file_service=mock_file_service,
+        cache_service=mock_cache_service,
+        logger=mock_logger,
+    )
+    mock_uow.product_category_repo.get_by_id = AsyncMock(return_value=None)
+
+    result = await service.reorder(categoria_id=99, producto_ids=[1])
+
+    assert result.status_code == 404
+    assert result.error == "Categoría no encontrada"
+    mock_uow.product_repo.list.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()

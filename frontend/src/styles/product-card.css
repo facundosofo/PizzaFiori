@@ -100,6 +100,48 @@
   margin-bottom: 24px;
 }
 
+.categoria-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.categoria-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--gradient-card);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.categoria-order:hover:not(:disabled),
+.categoria-order.is-active {
+  border-color: var(--color-accent);
+  background: var(--gradient-card-hover);
+  color: var(--color-accent);
+}
+
+.categoria-order:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.product-order-hint {
+  align-self: center;
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
 /* Título de la categoría */
 .categoria-title {
   font-size: 1.9rem;
@@ -167,6 +209,38 @@
   scrollbar-color: var(--color-border-strong) var(--color-hover);
 }
 
+.product-card.is-reordering {
+  cursor: grab;
+  user-select: none;
+}
+
+.product-card.is-reordering:active {
+  cursor: grabbing;
+}
+
+.product-card.is-reordering.is-dragging {
+  opacity: 0.45;
+}
+
+.product-order-grip {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  color: var(--color-text);
+  background: var(--color-hover);
+  border-radius: 6px;
+  padding: 3px;
+  pointer-events: none;
+}
+
+.product-card.is-reordering .product-card-deactivate,
+.product-card.is-reordering .product-card-btn {
+  visibility: hidden;
+}
+
 /* Altura de la scrollbar en Chrome */
 .product-scroll-horizontal::-webkit-scrollbar {
   height: 10px;
@@ -192,6 +266,10 @@
 }
 
 /* ===== PRODUCT CARD ===== */
+
+.product-card-drag-wrapper {
+  flex: 0 0 240px;
+}
 
 /* Tarjeta individual de producto */
 .product-card {
@@ -410,6 +488,10 @@
   /* Tamaño de card optimizado para móvil */
   .product-card {
     flex: 0 0 200px;
+  }
+
+  .product-card-drag-wrapper {
+    flex-basis: 200px;
   }
 
   /* Altura reducida de imagen en móviles */

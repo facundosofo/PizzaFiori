@@ -16,6 +16,7 @@ class Product(Base):
     sku = Column(String(50), unique=True, nullable=False, index=True)
     nombre = Column(String(50), nullable=False)
     categoria_id = Column(Integer, ForeignKey("productos_categorias.id"), nullable=True)
+    orden = Column(Integer, nullable=False, default=0, server_default="0")
     imagen = Column(String(255), nullable=True)
     activo = Column(Boolean, nullable=False, default=True)
     fecha_creacion = Column(DateTime, default=datetime.now)
