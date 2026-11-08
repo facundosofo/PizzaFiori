@@ -384,8 +384,16 @@ function ProductCard({
     setShowPlaceholder(!product.imagen_url);
   }, [product.imagen_url]);
 
-  const sortedPrices = [...product.precios].sort(
-    (first, second) => Number(first.cantidad) - Number(second.cantidad),
+const sortedPrices = [...product.precios].sort(
+    (first, second) => {
+      const firstQuantity = Number(first.cantidad);
+      const secondQuantity = Number(second.cantidad);
+      const firstIsUnit = Math.abs(firstQuantity - 1) < 1e-9;
+      const secondIsUnit = Math.abs(secondQuantity - 1) < 1e-9;
+
+      if (firstIsUnit !== secondIsUnit) return firstIsUnit ? -1 : 1;
+      return firstQuantity - secondQuantity;
+    },
   );
 
   return (
