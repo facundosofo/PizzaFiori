@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { GripVertical } from "lucide-react";
 import type { Offer, OfferItem } from "../types/offer";
 import type { Product } from "../types/product";
@@ -19,6 +20,12 @@ interface OfferCardProps {
   onOfferUpdate?: (oferta: Offer) => void;
   onOfferDelete?: (ofertaId: number) => void;
   isReordering?: boolean;
+  isDragSource?: boolean;
+  onOfferPointerDown?: (
+    event: ReactPointerEvent<HTMLSpanElement>,
+    oferta: Offer,
+    card: HTMLDivElement,
+  ) => void;
 }
 
 /* -------------------- Helpers -------------------- */
@@ -55,6 +62,8 @@ const OfferCard = ({
   onEdit,
   onOfferDelete,
   isReordering = false,
+  isDragSource = false,
+  onOfferPointerDown,
 }: OfferCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -90,10 +99,11 @@ const OfferCard = ({
   return (
     <>
       <motion.div
-        className={`offer-card${isReordering ? " offer-card-reordering" : ""}`}
+        className={`offer-card${isReordering ? " offer-card-reordering" : ""}${isDragSource ? " offer-card-drag-source" : ""}`}
+        layout={isReordering ? "position" : true}
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        animate={{ opacity: isDragSource ? 0.32 : 1, y: 0 }}
+        transition={{ layout: { type: "spring", stiffness: 420, damping: 34 }, opacity: { duration: 0.4 }, y: { duration: 0.4 } }}
         whileHover={isReordering ? undefined : { scale: 1.02, y: -4 }}
       >
         {/* Cuerpo */}
@@ -101,11 +111,19 @@ const OfferCard = ({
           <div className="offer-card-header">
             <h3 className="offer-card-title">{oferta.nombre}</h3>
             {isReordering && (
-              <GripVertical
+              <span
                 className="offer-drag-handle"
-                size={20}
-                aria-hidden="true"
-              />
+                title={`Mover ${oferta.nombre}`}
+                aria-label={`Mover ${oferta.nombre}`}
+                onPointerDown={(event) => {
+                  const card = event.currentTarget.closest(".offer-card");
+                  if (card instanceof HTMLDivElement) {
+                    onOfferPointerDown?.(event, oferta, card);
+                  }
+                }}
+              >
+                <GripVertical size={20} />
+              </span>
             )}
           </div>
 

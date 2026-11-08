@@ -24,6 +24,14 @@
 
 .offer-card-reordering {
   cursor: grab;
+  border-color: var(--color-accent);
+  user-select: none;
+}
+
+.offer-card.offer-card-drag-source {
+  opacity: 0.32;
+  outline: 2px dashed var(--color-accent);
+  outline-offset: -2px;
 }
 
 .offer-card-reordering:active {
@@ -31,8 +39,16 @@
 }
 
 .offer-drag-handle {
+  display: inline-flex;
   flex: 0 0 auto;
   color: var(--color-text-muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.offer-drag-handle:active {
+  cursor: grabbing;
 }
 
 /* Acciones - Abajo con precio y botones */

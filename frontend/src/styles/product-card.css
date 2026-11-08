@@ -218,8 +218,14 @@
   cursor: grabbing;
 }
 
-.product-card.is-reordering.is-dragging {
-  opacity: 0.45;
+.product-card.is-drag-source {
+  opacity: 0.32;
+  outline: 2px dashed var(--color-accent);
+  outline-offset: -2px;
+}
+
+.product-card-drag-wrapper.is-reordering {
+  will-change: transform;
 }
 
 .product-order-grip {
@@ -233,7 +239,37 @@
   background: var(--color-hover);
   border-radius: 6px;
   padding: 3px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.product-order-grip:active {
+  cursor: grabbing;
+}
+
+.product-drag-overlay {
+  position: fixed;
+  z-index: 2002;
   pointer-events: none;
+  will-change: transform, left, top;
+  user-select: none;
+}
+
+.product-card-drag-overlay-card {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  flex: none;
+  border: 2px solid var(--color-accent);
+  box-shadow: none;
+  cursor: grabbing;
+  transform: none !important;
+  transition: none;
+}
+
+.product-card-drag-overlay-card:hover {
+  box-shadow: none;
 }
 
 .product-card.is-reordering .product-card-deactivate,

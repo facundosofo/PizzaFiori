@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import type { DragEvent as ReactDragEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { ArrowDownWideNarrow } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { formatLocalISO } from "../utils/formatters";
@@ -17,6 +18,14 @@ import type { ProductoCategoria } from "../types/product_category";
 import "../styles/product-card.css";
 
 const ProductosPage = () => {
+  type ProductDragOverlay = {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    clone: HTMLDivElement;
+  };
+
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [productos, setProductos] = useState<Product[]>([]);
@@ -30,8 +39,49 @@ const ProductosPage = () => {
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
   const [orderingCategoryId, setOrderingCategoryId] = useState<number | null>(null);
   const [draggedProductId, setDraggedProductId] = useState<number | null>(null);
+  const [productDragOverlay, setProductDragOverlay] = useState<ProductDragOverlay | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const productOrderBeforeDrag = useRef<Product[] | null>(null);
+  const productOrderPreview = useRef<Product[]>([]);
+  const draggedProductIdRef = useRef<number | null>(null);
+  const productDragOverlayRef = useRef<HTMLDivElement | null>(null);
+  const productDragScrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const productDragPointerRef = useRef({ x: 0, y: 0 });
+  const productDragStartPointerRef = useRef({ x: 0, y: 0 });
+  const productDragGrabOffsetXRef = useRef(0);
+  const productDragInsertionPointsRef = useRef<Map<number, number>>(new Map());
+  const productDragSlotPositionsRef = useRef<Array<{ left: number; top: number }>>([]);
+  const productDragPointerIdRef = useRef<number | null>(null);
+  const productDragFrameRef = useRef<number | null>(null);
+  const productDragListenersRef = useRef<{
+    onMove: (event: PointerEvent) => void;
+    onUp: (event: PointerEvent) => void;
+    onCancel: (event: PointerEvent) => void;
+  } | null>(null);
+  const productDragScrollBehaviorRef = useRef("");
+
+  useLayoutEffect(() => {
+    if (!productDragOverlay || !productDragOverlayRef.current) return;
+    productDragOverlayRef.current.replaceChildren(productDragOverlay.clone);
+    return () => productDragOverlay.clone.remove();
+  }, [productDragOverlay]);
+
+  useEffect(() => () => {
+    const listeners = productDragListenersRef.current;
+    if (listeners) {
+      window.removeEventListener("pointermove", listeners.onMove);
+      window.removeEventListener("pointerup", listeners.onUp);
+      window.removeEventListener("pointercancel", listeners.onCancel);
+    }
+    if (productDragFrameRef.current !== null) {
+      cancelAnimationFrame(productDragFrameRef.current);
+    }
+    const scrollContainer = productDragScrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.style.scrollBehavior = productDragScrollBehaviorRef.current;
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -132,65 +182,212 @@ const ProductosPage = () => {
     });
   };
 
-  const handleProductDragStart = (
-    event: ReactDragEvent<HTMLDivElement>,
-    productoId: number,
-  ) => {
-    if (orderingCategoryId === null || isSavingOrder) {
-      event.preventDefault();
-      return;
-    }
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", String(productoId));
-    setDraggedProductId(productoId);
-  };
-
-  const handleProductDragOver = (event: ReactDragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  };
-
-  const handleProductDrop = async (
-    event: ReactDragEvent<HTMLDivElement>,
-    targetProductId: number,
-  ) => {
-    event.preventDefault();
-    if (orderingCategoryId === null || draggedProductId === null || isSavingOrder) return;
-
-    const categoryId = orderingCategoryId;
-    const previousProducts = productos;
-    const categoryProducts = productos
-      .filter((producto) => producto.categoria_id === categoryId)
-      .sort((a, b) => a.orden - b.orden || a.id - b.id);
-    const sourceIndex = categoryProducts.findIndex(
-      (producto) => producto.id === draggedProductId,
-    );
-    const targetIndex = categoryProducts.findIndex(
-      (producto) => producto.id === targetProductId,
-    );
-    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
-      setDraggedProductId(null);
-      return;
-    }
-
-    const [movedProduct] = categoryProducts.splice(sourceIndex, 1);
-    categoryProducts.splice(targetIndex, 0, movedProduct);
+  const applyCategoryProductOrder = (baseProducts: Product[], orderedCategoryProducts: Product[]) => {
     const orderById = new Map(
-      categoryProducts.map((producto, orden) => [producto.id, orden]),
+      orderedCategoryProducts.map((producto, orden) => [producto.id, orden]),
     );
-    const reorderedProducts = previousProducts.map((producto) => {
+    return baseProducts.map((producto) => {
       const orden = orderById.get(producto.id);
       return orden === undefined ? producto : { ...producto, orden };
     });
+  };
 
-    setProductos(reorderedProducts);
+  const previewProductPosition = (pointerX: number) => {
+    const sourceProductId = draggedProductIdRef.current;
+    const initialOrder = productOrderPreview.current;
+    const scrollContainer = productDragScrollContainerRef.current;
+    if (sourceProductId === null || initialOrder.length === 0 || !scrollContainer) return;
+
+    const draggedProduct = initialOrder.find((producto) => producto.id === sourceProductId);
+    if (!draggedProduct) return;
+    const remainingProducts = initialOrder.filter((producto) => producto.id !== sourceProductId);
+    const containerBounds = scrollContainer.getBoundingClientRect();
+    const pointerContentX =
+      pointerX +
+      productDragGrabOffsetXRef.current -
+      containerBounds.left +
+      scrollContainer.scrollLeft;
+    const insertionIndex = remainingProducts.findIndex((producto) => {
+      const center = productDragInsertionPointsRef.current.get(producto.id);
+      return center !== undefined && pointerContentX < center;
+    });
+    const targetIndex = insertionIndex === -1 ? remainingProducts.length : insertionIndex;
+    const nextOrder = [...remainingProducts];
+    nextOrder.splice(targetIndex, 0, draggedProduct);
+
+    if (nextOrder.some((producto, index) => producto.id !== initialOrder[index]?.id)) {
+      productOrderPreview.current = nextOrder;
+      const previousProducts = productOrderBeforeDrag.current;
+      if (previousProducts) {
+        setProductos(applyCategoryProductOrder(previousProducts, nextOrder));
+      }
+    }
+  };
+
+  const updateProductDragPreview = (x: number, y: number) => {
+    const overlay = productDragOverlayRef.current;
+    if (overlay) {
+      const { x: startX, y: startY } = productDragStartPointerRef.current;
+      overlay.style.transform = `translate3d(${x - startX}px, ${y - startY}px, 0)`;
+    }
+    previewProductPosition(x);
+  };
+
+  const scheduleProductDragFrame = () => {
+    if (productDragFrameRef.current !== null) return;
+    productDragFrameRef.current = requestAnimationFrame(() => {
+      productDragFrameRef.current = null;
+      const { x, y } = productDragPointerRef.current;
+      updateProductDragPreview(x, y);
+
+      const scrollContainer = productDragScrollContainerRef.current;
+      if (!scrollContainer) return;
+      const bounds = scrollContainer.getBoundingClientRect();
+      const edgeSize = 56;
+      const maxScrollLeft = scrollContainer.scrollWidth - scrollContainer.clientWidth;
+      let scrollDelta = 0;
+
+      if (
+        y >= bounds.top - edgeSize &&
+        y <= bounds.bottom + edgeSize &&
+        x >= bounds.left - edgeSize &&
+        x < bounds.left + edgeSize &&
+        scrollContainer.scrollLeft > 0
+      ) {
+        const strength = Math.min(1, (bounds.left + edgeSize - x) / edgeSize);
+        scrollDelta = -Math.max(1, Math.ceil(strength * 8));
+      } else if (
+        y >= bounds.top - edgeSize &&
+        y <= bounds.bottom + edgeSize &&
+        x > bounds.right - edgeSize &&
+        x <= bounds.right + edgeSize &&
+        scrollContainer.scrollLeft < maxScrollLeft
+      ) {
+        const strength = Math.min(1, (x - (bounds.right - edgeSize)) / edgeSize);
+        scrollDelta = Math.max(1, Math.ceil(strength * 8));
+      }
+
+      if (scrollDelta !== 0) {
+        scrollContainer.scrollLeft = Math.max(
+          0,
+          Math.min(maxScrollLeft, scrollContainer.scrollLeft + scrollDelta),
+        );
+        updateProductDragPreview(x, y);
+        scheduleProductDragFrame();
+      }
+    });
+  };
+
+  const handleProductPointerMove = (event: PointerEvent) => {
+    if (
+      event.pointerId !== productDragPointerIdRef.current ||
+      !productDragOverlayRef.current ||
+      draggedProductIdRef.current === null
+    ) return;
+    productDragPointerRef.current = { x: event.clientX, y: event.clientY };
+    scheduleProductDragFrame();
+  };
+
+  const removeProductDragListeners = () => {
+    const listeners = productDragListenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("pointermove", listeners.onMove);
+    window.removeEventListener("pointerup", listeners.onUp);
+    window.removeEventListener("pointercancel", listeners.onCancel);
+    productDragListenersRef.current = null;
+  };
+
+  const stopProductDragFrame = () => {
+    if (productDragFrameRef.current === null) return;
+    cancelAnimationFrame(productDragFrameRef.current);
+    productDragFrameRef.current = null;
+  };
+
+  const finishProductDrag = () => {
+    const scrollContainer = productDragScrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.style.scrollBehavior = productDragScrollBehaviorRef.current;
+    }
+    draggedProductIdRef.current = null;
+    productDragPointerIdRef.current = null;
     setDraggedProductId(null);
+    setProductDragOverlay(null);
+    productDragInsertionPointsRef.current.clear();
+    productDragSlotPositionsRef.current = [];
+    productOrderBeforeDrag.current = null;
+    productOrderPreview.current = [];
+  };
+
+  const handleProductPointerCancel = (event: PointerEvent) => {
+    if (event.pointerId !== productDragPointerIdRef.current) return;
+    removeProductDragListeners();
+    stopProductDragFrame();
+    const previousProducts = productOrderBeforeDrag.current;
+    if (previousProducts) setProductos(previousProducts);
+    finishProductDrag();
+  };
+
+  const settleProductDragOverlay = (productId: number, nextOrder: Product[]) =>
+    new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const overlay = productDragOverlayRef.current;
+          const scrollContainer = productDragScrollContainerRef.current;
+          const targetIndex = nextOrder.findIndex((producto) => producto.id === productId);
+          const slot = productDragSlotPositionsRef.current[targetIndex];
+          if (!overlay || !scrollContainer || !slot) {
+            resolve();
+            return;
+          }
+
+          const currentRect = overlay.getBoundingClientRect();
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const targetLeft = containerRect.left + slot.left - scrollContainer.scrollLeft;
+          const targetTop = containerRect.top + slot.top;
+          overlay.style.transition = "none";
+          overlay.style.left = `${currentRect.left}px`;
+          overlay.style.top = `${currentRect.top}px`;
+          overlay.style.transform = "none";
+          void overlay.offsetWidth;
+          overlay.style.transition = "left 180ms ease-out, top 180ms ease-out";
+          overlay.style.left = `${targetLeft}px`;
+          overlay.style.top = `${targetTop}px`;
+          window.setTimeout(resolve, 200);
+        });
+      });
+    });
+
+  const handleProductPointerUp = async (event: PointerEvent) => {
+    if (event.pointerId !== productDragPointerIdRef.current) return;
+    removeProductDragListeners();
+    stopProductDragFrame();
+    updateProductDragPreview(event.clientX, event.clientY);
+
+    const previousProducts = productOrderBeforeDrag.current;
+    const categoryId = orderingCategoryId;
+    const draggedProductId = draggedProductIdRef.current;
+    const nextOrder = [...productOrderPreview.current];
+    if (!previousProducts || categoryId === null || draggedProductId === null) {
+      finishProductDrag();
+      return;
+    }
+
+    const previousCategoryOrder = previousProducts
+      .filter((producto) => producto.categoria_id === categoryId)
+      .sort((a, b) => a.orden - b.orden || a.id - b.id);
+    const hasOrderChanged = nextOrder.some(
+      (producto, index) => producto.id !== previousCategoryOrder[index]?.id,
+    );
+    await settleProductDragOverlay(draggedProductId, nextOrder);
+    finishProductDrag();
+    if (!hasOrderChanged) return;
+
     setOrderError(null);
     setIsSavingOrder(true);
     try {
       await reorderProductos(
         categoryId,
-        categoryProducts.map((producto) => producto.id),
+        nextOrder.map((producto) => producto.id),
       );
     } catch (err) {
       setProductos(previousProducts);
@@ -200,6 +397,84 @@ const ProductosPage = () => {
     } finally {
       setIsSavingOrder(false);
     }
+  };
+
+  const handleProductPointerDown = (
+    event: ReactPointerEvent<HTMLSpanElement>,
+    producto: Product,
+    card: HTMLDivElement,
+  ) => {
+    const categoryId = orderingCategoryId;
+    if (
+      categoryId === null ||
+      isSavingOrder ||
+      draggedProductIdRef.current !== null ||
+      event.button !== 0 ||
+      !event.isPrimary
+    ) return;
+    const scrollContainer = productDragScrollContainerRef.current;
+    if (!scrollContainer || producto.categoria_id !== categoryId) return;
+
+    const categoryProducts = productos
+      .filter((item) => item.categoria_id === categoryId)
+      .sort((a, b) => a.orden - b.orden || a.id - b.id);
+    const sourceIndex = categoryProducts.findIndex((item) => item.id === producto.id);
+    const sourceRect = card.getBoundingClientRect();
+    const containerBounds = scrollContainer.getBoundingClientRect();
+    const wrappers = Array.from(
+      scrollContainer.querySelectorAll<HTMLElement>(".product-card-drag-wrapper"),
+    );
+    const insertionPoints = new Map<number, number>();
+    const slots: Array<{ left: number; top: number }> = [];
+    for (const wrapper of wrappers) {
+      const productId = Number(wrapper.dataset.productId);
+      const bounds = wrapper.getBoundingClientRect();
+      if (!Number.isFinite(productId)) continue;
+      slots.push({
+        left: bounds.left - containerBounds.left + scrollContainer.scrollLeft,
+        top: bounds.top - containerBounds.top,
+      });
+      if (productId !== producto.id) {
+        insertionPoints.set(
+          productId,
+          bounds.left + bounds.width / 2 - containerBounds.left + scrollContainer.scrollLeft,
+        );
+      }
+    }
+    if (sourceIndex < 0 || slots.length !== categoryProducts.length) return;
+
+    event.preventDefault();
+    const clone = card.cloneNode(true) as HTMLDivElement;
+    clone.classList.add("product-card-drag-overlay-card");
+    const scrollBehavior = scrollContainer.style.scrollBehavior;
+    productDragScrollBehaviorRef.current = scrollBehavior;
+    scrollContainer.style.scrollBehavior = "auto";
+    productDragScrollContainerRef.current = scrollContainer;
+    productOrderBeforeDrag.current = [...productos];
+    productOrderPreview.current = categoryProducts;
+    productDragInsertionPointsRef.current = insertionPoints;
+    productDragSlotPositionsRef.current = slots;
+    productDragGrabOffsetXRef.current = sourceRect.left + sourceRect.width / 2 - event.clientX;
+    productDragPointerRef.current = { x: event.clientX, y: event.clientY };
+    productDragStartPointerRef.current = { x: event.clientX, y: event.clientY };
+    productDragPointerIdRef.current = event.pointerId;
+    draggedProductIdRef.current = producto.id;
+    productDragListenersRef.current = {
+      onMove: handleProductPointerMove,
+      onUp: (upEvent) => void handleProductPointerUp(upEvent),
+      onCancel: handleProductPointerCancel,
+    };
+    window.addEventListener("pointermove", productDragListenersRef.current.onMove);
+    window.addEventListener("pointerup", productDragListenersRef.current.onUp);
+    window.addEventListener("pointercancel", productDragListenersRef.current.onCancel);
+    setDraggedProductId(producto.id);
+    setProductDragOverlay({
+      left: sourceRect.left,
+      top: sourceRect.top,
+      width: sourceRect.width,
+      height: sourceRect.height,
+      clone,
+    });
   };
 
   if (!isAdmin) {
@@ -215,6 +490,7 @@ const ProductosPage = () => {
   }
 
   return (
+    <>
     <div className="productos-container">
       <div className="page-header">
         <h1 className="page-title">Productos</h1>
@@ -317,10 +593,9 @@ const ProductosPage = () => {
                           return expanded;
                         });
                       }
-                      setDraggedProductId(null);
                       setOrderError(null);
                     }}
-                    disabled={isSavingOrder || productosDeCategoria.length < 2}
+                    disabled={isSavingOrder || draggedProductId !== null || productosDeCategoria.length < 2}
                     title={
                       productosDeCategoria.length < 2
                         ? "Se necesitan al menos dos productos para ordenar"
@@ -349,7 +624,10 @@ const ProductosPage = () => {
               </div>
 
               {!isCollapsed && (
-                <div className="product-scroll-horizontal">
+                <div
+                  className="product-scroll-horizontal"
+                  ref={isOrdering ? productDragScrollContainerRef : undefined}
+                >
                   {isOrdering && isSavingOrder && (
                     <p className="product-order-hint">
                       Guardando orden...
@@ -363,11 +641,8 @@ const ProductosPage = () => {
                       onProductDelete={handleProductDelete}
                       categorias={categorias}
                       isReordering={isOrdering && !isSavingOrder}
-                      isDragging={draggedProductId === p.id}
-                      onProductDragStart={handleProductDragStart}
-                      onProductDragOver={handleProductDragOver}
-                      onProductDrop={handleProductDrop}
-                      onProductDragEnd={() => setDraggedProductId(null)}
+                      isDragSource={draggedProductId === p.id}
+                      onProductPointerDown={handleProductPointerDown}
                     />
                   ))}
                 </div>
@@ -377,6 +652,21 @@ const ProductosPage = () => {
         })
       )}
     </div>
+    {productDragOverlay && createPortal(
+      <div
+        ref={productDragOverlayRef}
+        className="product-drag-overlay"
+        style={{
+          left: productDragOverlay.left,
+          top: productDragOverlay.top,
+          width: productDragOverlay.width,
+          height: productDragOverlay.height,
+          transform: "translate3d(0, 0, 0)",
+        }}
+      />,
+      document.body,
+    )}
+    </>
   );
 };
 

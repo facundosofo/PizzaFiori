@@ -93,16 +93,30 @@
   height: 100%;
 }
 
-.offer-sortable-item[draggable="true"] {
-  cursor: grab;
+.offer-sortable-item.is-reordering {
+  will-change: transform;
 }
 
-.offer-sortable-item[draggable="true"]:active {
+.offer-drag-overlay {
+  position: fixed;
+  z-index: 2002;
+  pointer-events: none;
+  will-change: transform, left, top;
+  user-select: none;
+}
+
+.offer-card.offer-card-drag-overlay {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  box-shadow: none;
   cursor: grabbing;
+  transform: none !important;
+  transition: none;
 }
 
-.offer-sortable-item.is-dragging {
-  opacity: 0.45;
+.offer-card.offer-card-drag-overlay:hover {
+  box-shadow: none;
 }
 
 /* Estado vacío */

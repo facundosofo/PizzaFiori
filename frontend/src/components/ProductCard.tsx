@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import type { DragEvent as ReactDragEvent } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { GripVertical } from "lucide-react";
 import type { Product } from "../types/product";
 import type { ProductoCategoria } from "../types/product_category";
@@ -23,11 +23,12 @@ interface ProductCardProps {
   onProductDelete?: (productoId: number) => void;
   categorias?: ProductoCategoria[];
   isReordering?: boolean;
-  isDragging?: boolean;
-  onProductDragStart?: (event: ReactDragEvent<HTMLDivElement>, productoId: number) => void;
-  onProductDragOver?: (event: ReactDragEvent<HTMLDivElement>, productoId: number) => void;
-  onProductDrop?: (event: ReactDragEvent<HTMLDivElement>, productoId: number) => void;
-  onProductDragEnd?: () => void;
+  isDragSource?: boolean;
+  onProductPointerDown?: (
+    event: ReactPointerEvent<HTMLSpanElement>,
+    producto: Product,
+    card: HTMLDivElement,
+  ) => void;
 }
 
 const ProductCard = ({
@@ -36,11 +37,8 @@ const ProductCard = ({
   onProductDelete,
   categorias = [],
   isReordering = false,
-  isDragging = false,
-  onProductDragStart,
-  onProductDragOver,
-  onProductDrop,
-  onProductDragEnd,
+  isDragSource = false,
+  onProductPointerDown,
 }: ProductCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -90,7 +88,7 @@ const ProductCard = ({
       );
       
       setAffectedOffers(affected);
-    } catch (error) {
+    } catch {
       setAffectedOffers([]);
     } finally {
       setLoadingOffers(false);
@@ -117,26 +115,33 @@ const ProductCard = ({
   return (
     <>
       <div
-        className="product-card-drag-wrapper"
-        draggable={isReordering}
-        onDragStart={(event) => onProductDragStart?.(event, producto.id)}
-        onDragOver={(event) => onProductDragOver?.(event, producto.id)}
-        onDrop={(event) => onProductDrop?.(event, producto.id)}
-        onDragEnd={onProductDragEnd}
+        className={`product-card-drag-wrapper${isReordering ? " is-reordering" : ""}`}
+        data-product-id={producto.id}
       >
         <motion.div
-          className={`product-card${isReordering ? " is-reordering" : ""}${isDragging ? " is-dragging" : ""}`}
+          className={`product-card${isReordering ? " is-reordering" : ""}${isDragSource ? " is-drag-source" : ""}`}
+          layout={isReordering ? "position" : true}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ layout: { type: "spring", stiffness: 420, damping: 34 }, opacity: { duration: 0.4 }, y: { duration: 0.4 } }}
           whileHover={isReordering ? undefined : { scale: 1.05, y: -5 }}
           whileTap={isReordering ? undefined : { scale: 0.97 }}
           onClick={isReordering ? undefined : handleOpenModal}
         >
           {isReordering && (
-            <div className="product-order-grip" aria-hidden="true">
+            <span
+              className="product-order-grip"
+              title={`Mover ${producto.nombre}`}
+              aria-label={`Mover ${producto.nombre}`}
+              onPointerDown={(event) => {
+                const card = event.currentTarget.closest(".product-card");
+                if (card instanceof HTMLDivElement) {
+                  onProductPointerDown?.(event, producto, card);
+                }
+              }}
+            >
               <GripVertical size={20} />
-            </div>
+            </span>
           )}
         <button
           className="product-card-deactivate"
@@ -151,7 +156,13 @@ const ProductCard = ({
         </button>
 
         <div className="product-card-image">
-          <img src={imageUrl} alt={producto.nombre} loading="lazy" decoding="async" />
+          <img
+            src={imageUrl}
+            alt={producto.nombre}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+          />
         </div>
 
         <div className="product-card-body">

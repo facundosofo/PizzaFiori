@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ArrowDownWideNarrow, GripVertical } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -17,6 +19,14 @@ import type { ProductoCategoria } from "../types/product_category";
 import "../styles/offers-page.css";
 
 const OffersPage = () => {
+  type OfferDragOverlay = {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    clone: HTMLDivElement;
+  };
+
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [ofertas, setOfertas] = useState<Offer[]>([]);
@@ -30,6 +40,51 @@ const OffersPage = () => {
   const [draggedOfferId, setDraggedOfferId] = useState<number | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const offerOrderBeforeDrag = useRef<Offer[] | null>(null);
+  const offerOrderPreview = useRef<Offer[]>([]);
+  const draggedOfferIdRef = useRef<number | null>(null);
+  const [offerDragOverlay, setOfferDragOverlay] = useState<OfferDragOverlay | null>(null);
+  const offerDragOverlayRef = useRef<HTMLDivElement | null>(null);
+  const offersGridRef = useRef<HTMLDivElement | null>(null);
+  const offerDragPointerRef = useRef({ x: 0, y: 0 });
+  const offerDragStartPointerRef = useRef({ x: 0, y: 0 });
+  const offerDragGrabOffsetRef = useRef({ x: 0, y: 0 });
+  const offerDragInsertionPointsRef = useRef<Map<number, {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>>(new Map());
+  const offerDragSlotPositionsRef = useRef<Array<{ left: number; top: number }>>([]);
+  const offerDragPointerIdRef = useRef<number | null>(null);
+  const offerDragFrameRef = useRef<number | null>(null);
+  const offerDragListenersRef = useRef<{
+    onMove: (event: PointerEvent) => void;
+    onUp: (event: PointerEvent) => void;
+    onCancel: (event: PointerEvent) => void;
+  } | null>(null);
+  const pageScrollBehaviorRef = useRef("");
+
+  useLayoutEffect(() => {
+    if (!offerDragOverlay || !offerDragOverlayRef.current) return;
+    offerDragOverlayRef.current.replaceChildren(offerDragOverlay.clone);
+    return () => offerDragOverlay.clone.remove();
+  }, [offerDragOverlay]);
+
+  useEffect(() => () => {
+    const listeners = offerDragListenersRef.current;
+    if (listeners) {
+      window.removeEventListener("pointermove", listeners.onMove);
+      window.removeEventListener("pointerup", listeners.onUp);
+      window.removeEventListener("pointercancel", listeners.onCancel);
+    }
+    if (offerDragFrameRef.current !== null) {
+      cancelAnimationFrame(offerDragFrameRef.current);
+    }
+    if (offerDragPointerIdRef.current !== null) {
+      document.documentElement.style.scrollBehavior = pageScrollBehaviorRef.current;
+    }
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -59,6 +114,7 @@ const OffersPage = () => {
 
     // Recargar ofertas cuando la ventana recupera el foco
     const handleFocus = () => {
+      if (draggedOfferIdRef.current !== null) return;
       fetchData();
     };
 
@@ -91,31 +147,202 @@ const OffersPage = () => {
     setOfertas((prevOfertas) => prevOfertas.filter((o) => o.id !== ofertaId));
   };
 
-  const handleOfferDrop = async (targetOfferId: number) => {
+  const previewOfferPosition = (pointerX: number, pointerY: number) => {
+    const sourceOfferId = draggedOfferIdRef.current;
+    const initialOrder = offerOrderBeforeDrag.current;
+    if (sourceOfferId === null || !initialOrder || initialOrder.length === 0) return;
+
+    const draggedOffer = initialOrder.find((offer) => offer.id === sourceOfferId);
+    if (!draggedOffer) return;
+    const remainingOffers = initialOrder.filter((offer) => offer.id !== sourceOfferId);
+    const projectedX = pointerX + offerDragGrabOffsetRef.current.x;
+    const projectedY =
+      pointerY + offerDragGrabOffsetRef.current.y + window.scrollY;
+    let nearestOfferIndex = -1;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < remainingOffers.length; index += 1) {
+      const position = offerDragInsertionPointsRef.current.get(remainingOffers[index].id);
+      if (!position) continue;
+      const centerX = position.x + position.width / 2;
+      const centerY = position.y + position.height / 2;
+      const distance =
+        ((projectedX - centerX) / Math.max(position.width, 1)) ** 2 +
+        ((projectedY - centerY) / Math.max(position.height, 1)) ** 2;
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestOfferIndex = index;
+      }
+    }
+
+    let targetIndex = remainingOffers.length;
+    if (nearestOfferIndex >= 0) {
+      const target = offerDragInsertionPointsRef.current.get(
+        remainingOffers[nearestOfferIndex].id,
+      );
+      if (target) {
+        const targetCenterY = target.y + target.height / 2;
+        const isWithinTargetRow =
+          projectedY >= target.y && projectedY <= target.y + target.height;
+        const insertAfter = isWithinTargetRow
+          ? projectedX >= target.x + target.width / 2
+          : projectedY >= targetCenterY;
+        targetIndex = nearestOfferIndex + (insertAfter ? 1 : 0);
+      }
+    }
+
+    const nextOrder = [...remainingOffers];
+    nextOrder.splice(targetIndex, 0, draggedOffer);
+    if (nextOrder.some((offer, index) => offer.id !== offerOrderPreview.current[index]?.id)) {
+      offerOrderPreview.current = nextOrder;
+      setOfertas(nextOrder.map((offer, orden) => ({ ...offer, orden })));
+    }
+  };
+
+  const updateOfferDragPreview = (x: number, y: number) => {
+    const overlay = offerDragOverlayRef.current;
+    if (overlay) {
+      const { x: startX, y: startY } = offerDragStartPointerRef.current;
+      overlay.style.transform = `translate3d(${x - startX}px, ${y - startY}px, 0)`;
+    }
+    previewOfferPosition(x, y);
+  };
+
+  const scheduleOfferDragFrame = () => {
+    if (offerDragFrameRef.current !== null) return;
+    offerDragFrameRef.current = requestAnimationFrame(() => {
+      offerDragFrameRef.current = null;
+      const { x, y } = offerDragPointerRef.current;
+      updateOfferDragPreview(x, y);
+
+      const edgeSize = 56;
+      const maxScrollY =
+        document.documentElement.scrollHeight - window.innerHeight;
+      let scrollDelta = 0;
+      if (
+        y >= -edgeSize &&
+        y < edgeSize &&
+        window.scrollY > 0
+      ) {
+        const strength = Math.min(1, (edgeSize - y) / edgeSize);
+        scrollDelta = -Math.max(1, Math.ceil(strength * 10));
+      } else if (
+        y > window.innerHeight - edgeSize &&
+        y <= window.innerHeight + edgeSize &&
+        window.scrollY < maxScrollY
+      ) {
+        const strength = Math.min(
+          1,
+          (y - (window.innerHeight - edgeSize)) / edgeSize,
+        );
+        scrollDelta = Math.max(1, Math.ceil(strength * 10));
+      }
+
+      if (scrollDelta !== 0) {
+        window.scrollTo(0, Math.max(0, Math.min(maxScrollY, window.scrollY + scrollDelta)));
+        updateOfferDragPreview(x, y);
+        scheduleOfferDragFrame();
+      }
+    });
+  };
+
+  const handleOfferPointerMove = (event: PointerEvent) => {
     if (
-      draggedOfferId === null
-      || draggedOfferId === targetOfferId
-      || isSavingOrder
-    ) {
+      event.pointerId !== offerDragPointerIdRef.current ||
+      !offerDragOverlayRef.current ||
+      draggedOfferIdRef.current === null
+    ) return;
+    offerDragPointerRef.current = { x: event.clientX, y: event.clientY };
+    scheduleOfferDragFrame();
+  };
+
+  const removeOfferDragListeners = () => {
+    const listeners = offerDragListenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("pointermove", listeners.onMove);
+    window.removeEventListener("pointerup", listeners.onUp);
+    window.removeEventListener("pointercancel", listeners.onCancel);
+    offerDragListenersRef.current = null;
+  };
+
+  const stopOfferDragFrame = () => {
+    if (offerDragFrameRef.current === null) return;
+    cancelAnimationFrame(offerDragFrameRef.current);
+    offerDragFrameRef.current = null;
+  };
+
+  const finishOfferDrag = () => {
+    document.documentElement.style.scrollBehavior = pageScrollBehaviorRef.current;
+    draggedOfferIdRef.current = null;
+    offerDragPointerIdRef.current = null;
+    setDraggedOfferId(null);
+    setOfferDragOverlay(null);
+    offerDragInsertionPointsRef.current.clear();
+    offerDragSlotPositionsRef.current = [];
+    offerOrderBeforeDrag.current = null;
+    offerOrderPreview.current = [];
+  };
+
+  const handleOfferPointerCancel = (event: PointerEvent) => {
+    if (event.pointerId !== offerDragPointerIdRef.current) return;
+    removeOfferDragListeners();
+    stopOfferDragFrame();
+    const previousOrder = offerOrderBeforeDrag.current;
+    if (previousOrder) setOfertas(previousOrder);
+    finishOfferDrag();
+  };
+
+  const settleOfferDragOverlay = (offerId: number, nextOrder: Offer[]) =>
+    new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const overlay = offerDragOverlayRef.current;
+          const targetIndex = nextOrder.findIndex((offer) => offer.id === offerId);
+          const slot = offerDragSlotPositionsRef.current[targetIndex];
+          if (!overlay || !slot) {
+            resolve();
+            return;
+          }
+
+          const currentRect = overlay.getBoundingClientRect();
+          overlay.style.transition = "none";
+          overlay.style.left = `${currentRect.left}px`;
+          overlay.style.top = `${currentRect.top}px`;
+          overlay.style.transform = "none";
+          void overlay.offsetWidth;
+          overlay.style.transition = "left 180ms ease-out, top 180ms ease-out";
+          overlay.style.left = `${slot.left}px`;
+          overlay.style.top = `${slot.top - window.scrollY}px`;
+          window.setTimeout(resolve, 200);
+        });
+      });
+    });
+
+  const handleOfferPointerUp = async (event: PointerEvent) => {
+    if (event.pointerId !== offerDragPointerIdRef.current) return;
+    removeOfferDragListeners();
+    stopOfferDragFrame();
+    updateOfferDragPreview(event.clientX, event.clientY);
+
+    const previousOrder = offerOrderBeforeDrag.current;
+    const offerId = draggedOfferIdRef.current;
+    const nextOrder = [...offerOrderPreview.current];
+    if (!previousOrder || offerId === null) {
+      finishOfferDrag();
       return;
     }
 
-    const previousOrder = ofertas;
-    const nextOrder = [...previousOrder];
-    const sourceIndex = nextOrder.findIndex((offer) => offer.id === draggedOfferId);
-    const targetIndex = nextOrder.findIndex((offer) => offer.id === targetOfferId);
-    if (sourceIndex < 0 || targetIndex < 0) return;
+    const hasOrderChanged = nextOrder.some(
+      (offer, index) => offer.id !== previousOrder[index]?.id,
+    );
+    await settleOfferDragOverlay(offerId, nextOrder);
+    finishOfferDrag();
+    if (!hasOrderChanged) return;
 
-    const [movedOffer] = nextOrder.splice(sourceIndex, 1);
-    nextOrder.splice(targetIndex, 0, movedOffer);
-    const reorderedOffers = nextOrder.map((offer, orden) => ({ ...offer, orden }));
-    setOfertas(reorderedOffers);
-    setDraggedOfferId(null);
+    const orderedOffers = nextOrder.map((offer, orden) => ({ ...offer, orden }));
     setOrderError(null);
     setIsSavingOrder(true);
-
     try {
-      await reorderOfertas(reorderedOffers.map((offer) => offer.id));
+      await reorderOfertas(orderedOffers.map((offer) => offer.id));
     } catch (err) {
       setOfertas(previousOrder);
       setOrderError(
@@ -124,6 +351,85 @@ const OffersPage = () => {
     } finally {
       setIsSavingOrder(false);
     }
+  };
+
+  const handleOfferPointerDown = (
+    event: ReactPointerEvent<HTMLSpanElement>,
+    oferta: Offer,
+    card: HTMLDivElement,
+  ) => {
+    if (
+      !isReordering ||
+      isSavingOrder ||
+      draggedOfferIdRef.current !== null ||
+      event.button !== 0 ||
+      !event.isPrimary
+    ) return;
+    const grid = offersGridRef.current;
+    if (!grid) return;
+
+    const offerElements = Array.from(
+      grid.querySelectorAll<HTMLElement>(".offer-sortable-item"),
+    );
+    const slotPositions: Array<{ left: number; top: number }> = [];
+    const insertionPoints = new Map<number, {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>();
+    for (const element of offerElements) {
+      const offerId = Number(element.dataset.offerId);
+      const bounds = element.getBoundingClientRect();
+      if (!Number.isFinite(offerId)) continue;
+      slotPositions.push({
+        left: bounds.left,
+        top: bounds.top + window.scrollY,
+      });
+      insertionPoints.set(offerId, {
+        x: bounds.left,
+        y: bounds.top + window.scrollY,
+        width: bounds.width,
+        height: bounds.height,
+      });
+    }
+    if (slotPositions.length !== ofertas.length) return;
+
+    event.preventDefault();
+    const bounds = card.getBoundingClientRect();
+    const clone = card.cloneNode(true) as HTMLDivElement;
+    clone.classList.add("offer-card-drag-overlay");
+    const previousScrollBehavior = document.documentElement.style.scrollBehavior;
+    pageScrollBehaviorRef.current = previousScrollBehavior;
+    document.documentElement.style.scrollBehavior = "auto";
+    offerOrderBeforeDrag.current = [...ofertas];
+    offerOrderPreview.current = [...ofertas];
+    offerDragInsertionPointsRef.current = insertionPoints;
+    offerDragSlotPositionsRef.current = slotPositions;
+    offerDragGrabOffsetRef.current = {
+      x: bounds.left + bounds.width / 2 - event.clientX,
+      y: bounds.top + bounds.height / 2 - event.clientY,
+    };
+    offerDragPointerRef.current = { x: event.clientX, y: event.clientY };
+    offerDragStartPointerRef.current = { x: event.clientX, y: event.clientY };
+    offerDragPointerIdRef.current = event.pointerId;
+    draggedOfferIdRef.current = oferta.id;
+    offerDragListenersRef.current = {
+      onMove: handleOfferPointerMove,
+      onUp: (upEvent) => void handleOfferPointerUp(upEvent),
+      onCancel: handleOfferPointerCancel,
+    };
+    window.addEventListener("pointermove", offerDragListenersRef.current.onMove);
+    window.addEventListener("pointerup", offerDragListenersRef.current.onUp);
+    window.addEventListener("pointercancel", offerDragListenersRef.current.onCancel);
+    setDraggedOfferId(oferta.id);
+    setOfferDragOverlay({
+      left: bounds.left,
+      top: bounds.top,
+      width: bounds.width,
+      height: bounds.height,
+      clone,
+    });
   };
 
   const handleEdit = (oferta: Offer) => {
@@ -168,6 +474,7 @@ const OffersPage = () => {
   }
 
   return (
+    <>
     <div className="offers-container">
       <div className="page-header">
         <h1 className="page-title">Ofertas</h1>
@@ -183,10 +490,11 @@ const OffersPage = () => {
           <button
             className={`btn-order-offers${isReordering ? " is-active" : ""}`}
             onClick={() => {
+              if (draggedOfferId !== null) return;
               setIsReordering((current) => !current);
               setOrderError(null);
             }}
-            disabled={loading || ofertas.length < 2 || isSavingOrder}
+            disabled={loading || ofertas.length < 2 || isSavingOrder || draggedOfferId !== null}
             title="Ordenar"
             aria-label="Ordenar ofertas"
             aria-pressed={isReordering}
@@ -237,29 +545,12 @@ const OffersPage = () => {
           </div>
         </motion.div>
       ) : (
-        <div className="offers-grid">
+        <div className="offers-grid" ref={offersGridRef}>
           {ofertas.map((oferta) => (
             <div
               key={oferta.id}
-              className={`offer-sortable-item${draggedOfferId === oferta.id ? " is-dragging" : ""}`}
-              draggable={isReordering && !isSavingOrder}
-              onDragStart={(event) => {
-                if (!isReordering || isSavingOrder) {
-                  event.preventDefault();
-                  return;
-                }
-                setDraggedOfferId(oferta.id);
-                event.dataTransfer.effectAllowed = "move";
-                event.dataTransfer.setData("text/plain", String(oferta.id));
-              }}
-              onDragOver={(event) => {
-                if (isReordering) event.preventDefault();
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                void handleOfferDrop(oferta.id);
-              }}
-              onDragEnd={() => setDraggedOfferId(null)}
+              className={`offer-sortable-item${isReordering ? " is-reordering" : ""}${draggedOfferId === oferta.id ? " is-drag-source" : ""}`}
+              data-offer-id={oferta.id}
             >
               <OfferCard
                 oferta={oferta}
@@ -268,12 +559,29 @@ const OffersPage = () => {
                 onOfferUpdate={handleOfferUpdate}
                 onOfferDelete={handleOfferDelete}
                 isReordering={isReordering}
+                isDragSource={draggedOfferId === oferta.id}
+                onOfferPointerDown={handleOfferPointerDown}
               />
             </div>
           ))}
         </div>
       )}
     </div>
+    {offerDragOverlay && createPortal(
+      <div
+        ref={offerDragOverlayRef}
+        className="offer-drag-overlay"
+        style={{
+          left: offerDragOverlay.left,
+          top: offerDragOverlay.top,
+          width: offerDragOverlay.width,
+          height: offerDragOverlay.height,
+          transform: "translate3d(0, 0, 0)",
+        }}
+      />,
+      document.body,
+    )}
+    </>
   );
 };
 
