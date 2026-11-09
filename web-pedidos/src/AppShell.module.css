@@ -361,20 +361,15 @@
   width: 18px;
   height: 18px;
 }
-.scope :global(.footer-whatsapp-icon) {
-  position: relative;
+.scope :global(.whatsapp-icon) {
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
+  line-height: 0;
 }
-.scope :global(.footer-whatsapp-icon>svg:first-child) {
+.scope :global(.footer-socials .whatsapp-icon>svg) {
   width: 21px;
   height: 21px;
-}
-.scope :global(.footer-whatsapp-icon>svg:last-child) {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  stroke-width: 3;
 }
 .scope :global(.footer-credit) {
   color: var(--palette-bfcbb6);

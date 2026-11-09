@@ -631,6 +631,10 @@
   font-weight: 700;
   transition: background .15s ease,transform .15s ease;
 }
+.scope :global(.whatsapp-button .whatsapp-icon>svg) {
+  width: 19px;
+  height: 19px;
+}
 .scope :global(.whatsapp-button:hover) {
   background: var(--palette-198b4b);
   transform: translateY(-1px);
