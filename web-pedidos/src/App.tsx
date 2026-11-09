@@ -581,7 +581,7 @@ function PizzaHalfBuilder({
           >
             <ArrowLeft size={17} aria-hidden="true" />
           </button>
-          <div>
+          <div className="offer-dialog-title">
             <span className="eyebrow">ARMA TU PIZZA</span>
             <h2 id="half-pizza-title">Mitad/Mitad</h2>
           </div>
