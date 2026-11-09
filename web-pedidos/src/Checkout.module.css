@@ -444,40 +444,22 @@
 .scope :global(.cart-food-notes) {
   margin-top: 8px;
 }
-.scope :global(.cart-totals) {
-  padding-top: 12px;
-}
-.scope :global(.cart-totals>div) {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 11px;
-  color: var(--palette-6e7068);
-  font-size: 12px;
-}
-.scope :global(.cart-totals>div strong) {
-  color: var(--palette-41463d);
-}
-.scope :global(.cart-totals .estimated-total) {
-  margin: 6px 0 0;
-  padding-top: 13px;
-  border-top: 1px solid var(--color-border);
-  color: inherit;
-  font-size: 14px;
-  font-weight: 700;
-}
-.scope :global(.cart-totals .estimated-total strong) {
-  color: inherit;
-  font-size: 17px;
-}
 .scope :global(.cart-action-total) {
-  display: none;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  color: inherit;
 }
-.scope :global(.cart-totals>p) {
-  margin: 13px 0 0;
+.scope :global(.cart-action-total span) {
   color: var(--color-text-muted);
-  font-size: 10px;
-  line-height: 1.55;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.scope :global(.cart-action-total strong) {
+  font-size: 16px;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 .scope :global(.order-form) {
   display: grid;
@@ -939,17 +921,14 @@
 }
 :global([data-theme=dark]) .scope :global(.review-details dd),
 :global([data-theme=dark]) .scope :global(.review-products li),
-:global([data-theme=dark]) .scope :global(.cart-totals>div strong),
 :global([data-theme=dark]) .scope :global(.order-review-totals strong) {
   color: var(--palette-e5e9df);
 }
 :global([data-theme=dark]) .scope :global(.cart-card-heading),
-:global([data-theme=dark]) .scope :global(.cart-totals .estimated-total),
 :global([data-theme=dark]) .scope :global(.order-review-totals .review-total),
 :global([data-theme=dark]) .scope :global(.review-products) {
   border-color: var(--palette-3a4337);
 }
-:global([data-theme=dark]) .scope :global(.cart-totals>div),
 :global([data-theme=dark]) .scope :global(.order-review-totals),
 :global([data-theme=dark]) .scope :global(.review-products small) {
   color: var(--palette-b1b7a9);
@@ -1049,20 +1028,6 @@
 }
   .scope :global(.cart-action-total) {
     display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 2px;
-    color: inherit;
-}
-  .scope :global(.cart-action-total span) {
-    color: var(--color-text-muted);
-    font-size: 11px;
-    line-height: 1.2;
-}
-  .scope :global(.cart-action-total strong) {
-    font-size: 16px;
-    line-height: 1.25;
-    white-space: nowrap;
 }
   .scope :global(.cart-stage-actions .continue-button) {
     min-width: 128px;

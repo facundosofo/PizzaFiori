@@ -1148,20 +1148,6 @@ function CartAndCheckout({
                     placeholder="Extras, sustituciones o detalles de preparación"
                   />
                 </div>
-                <div className="cart-totals">
-                  <div>
-                    <span>Subtotal</span>
-                    <strong>{formatCents(totalCents)}</strong>
-                  </div>
-                  <div>
-                    <span>Envío</span>
-                    <span>A confirmar</span>
-                  </div>
-                  <div className="estimated-total">
-                    <span>Total estimado</span>
-                    <strong>{formatCents(totalCents)}</strong>
-                  </div>
-                </div>
               </div>
               <div className="cart-stage-actions">
                 <a
