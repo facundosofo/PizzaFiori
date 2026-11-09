@@ -112,6 +112,16 @@
   border-color: var(--color-green);
   box-shadow: 0 0 0 1px var(--color-green);
 }
+.dialogScope :global(.half-pizza-slot.active:first-child) {
+  border-color: #718b67;
+  background: #f5f8f2;
+  box-shadow: 0 0 0 1px #718b67;
+}
+.dialogScope :global(.half-pizza-slot.active:nth-child(2)) {
+  border-color: #718b67;
+  background: #f5f8f2;
+  box-shadow: 0 0 0 1px #718b67;
+}
 .dialogScope :global(.half-pizza-slot:disabled) {
   cursor: not-allowed;
   opacity: .55;
@@ -169,6 +179,14 @@
 .dialogScope :global(.half-pizza-option.selected) {
   border-color: var(--color-green);
 }
+.dialogScope :global(.half-pizza-option.selected-first) {
+  border-color: #718b67;
+  background: #f5f8f2;
+}
+.dialogScope :global(.half-pizza-option.selected-second) {
+  border-color: #718b67;
+  background: #f5f8f2;
+}
 .dialogScope :global(.half-pizza-option:focus-visible) {
   outline: 2px solid var(--color-green);
   outline-offset: 2px;
@@ -199,6 +217,28 @@
 .dialogScope :global(.half-pizza-option-info small) {
   color: var(--color-text-muted);
   font-size: 11px;
+}
+.dialogScope :global(.half-pizza-option-check) {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+}
+.dialogScope :global(.half-pizza-option-check.first) {
+  background: #718b671a;
+  color: #627b59;
+}
+.dialogScope :global(.half-pizza-option-check.second) {
+  background: #718b671a;
+  color: #627b59;
+}
+.dialogScope :global(.offer-dialog-description) {
+  color: var(--color-heading);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 .dialogScope :global(.half-pizza-dialog-footer) {
   grid-template-columns: minmax(0,1fr) minmax(0,1.25fr);
@@ -268,6 +308,24 @@
 :global([data-theme=dark]) .dialogScope :global(.half-pizza-option:focus-visible),
 :global([data-theme=dark]) .dialogScope :global(.half-pizza-option.selected) {
   border-color: var(--palette-8da981);
+}
+:global([data-theme=dark]) .dialogScope :global(.half-pizza-slot.active:first-child),
+:global([data-theme=dark]) .dialogScope :global(.half-pizza-option.selected-first) {
+  border-color: #91aa84;
+  background: #273126;
+}
+:global([data-theme=dark]) .dialogScope :global(.half-pizza-slot.active:nth-child(2)),
+:global([data-theme=dark]) .dialogScope :global(.half-pizza-option.selected-second) {
+  border-color: #91aa84;
+  background: #273126;
+}
+:global([data-theme=dark]) .dialogScope :global(.half-pizza-option-check.first) {
+  background: #91aa8426;
+  color: #a8bd9b;
+}
+:global([data-theme=dark]) .dialogScope :global(.half-pizza-option-check.second) {
+  background: #91aa8426;
+  color: #a8bd9b;
 }
 :global([data-theme=dark]) .dialogScope :global(.half-pizza-slot>span),
 :global([data-theme=dark]) .dialogScope :global(.half-pizza-option-info small) {

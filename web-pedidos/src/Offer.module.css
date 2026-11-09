@@ -172,31 +172,37 @@
   display: flex;
   width: min(100%,760px);
   align-items: center;
-  gap: 20px;
+  gap: 8px;
   margin: 0 auto;
   padding: max(16px,env(safe-area-inset-top)) 0 16px;
   border-bottom: 1px solid var(--color-border);
 }
-.scope :global(.offer-dialog-header .eyebrow) {
+.scope :global(.offer-dialog-title) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.scope :global(.offer-dialog-title .eyebrow) {
   color: var(--color-brand-green);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
 }
 .scope :global(.offer-dialog-header h2) {
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   color: var(--color-heading);
   font-family: var(--serif);
-  font-size: 24px;
-  line-height: 1.2;
+  font-size: clamp(18px,2.4vw,21px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 .scope :global(.offer-dialog-back) {
   display: inline-flex;
-  min-height: 42px;
+  width: fit-content;
+  min-height: 36px;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   flex: 0 0 auto;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: 5px;
   background: var(--color-transparent);
@@ -346,13 +352,13 @@
     padding-inline: 16px;
 }
   .scope :global(.offer-dialog-header) {
-    gap: 12px;
+    gap: 7px;
     padding-bottom: 13px;
 }
   .scope :global(.offer-dialog-back) {
-    min-height: 40px;
-    padding-inline: 7px;
-    font-size: 11px;
+    min-height: 36px;
+    padding-inline: 8px;
+    font-size: 12px;
 }
   .scope :global(.offer-dialog-header h2) {
     font-size: 22px;

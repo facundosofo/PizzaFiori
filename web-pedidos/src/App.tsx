@@ -586,18 +586,18 @@ function PizzaHalfBuilder({
           <button
             className="offer-dialog-back"
             type="button"
+            aria-label="Volver a pizzas"
             onClick={closeAndReset}
           >
             <ArrowLeft size={17} aria-hidden="true" />
-            Volver a pizzas
           </button>
           <div>
             <span className="eyebrow">ARMA TU PIZZA</span>
-            <h2 id="half-pizza-title">Mitad/mitad</h2>
+            <h2 id="half-pizza-title">Mitad/Mitad</h2>
           </div>
         </div>
         <p className="offer-dialog-description">
-          Elegí dos sabores distintos. El precio será el de la pizza más cara.
+          Elegí dos sabores distintos.
         </p>
         <div className="half-pizza-config">
           <div className="half-pizza-selected">
@@ -644,12 +644,13 @@ function PizzaHalfBuilder({
             {products.map(({ product, unitPriceCents }) => {
               const isSelected =
                 product.id === firstProductId || product.id === secondProductId;
+              const isFirstSelected = product.id === firstProductId;
               const isUnavailable =
                 (activeSelection === "first" && product.id === secondProductId) ||
                 (activeSelection === "second" && product.id === firstProductId);
               return (
                 <button
-                  className={`half-pizza-option${isSelected ? " selected" : ""}`}
+                  className={`half-pizza-option${isSelected ? ` selected ${isFirstSelected ? "selected-first" : "selected-second"}` : ""}`}
                   key={product.id}
                   type="button"
                   disabled={isUnavailable}
@@ -668,7 +669,13 @@ function PizzaHalfBuilder({
                     <strong>{product.nombre}</strong>
                     <small>{formatCents(unitPriceCents)}</small>
                   </span>
-                  {isSelected && <Check size={19} aria-hidden="true" />}
+                  {isSelected && (
+                    <span
+                      className={`half-pizza-option-check${isFirstSelected ? " first" : " second"}`}
+                    >
+                      <Check size={16} aria-hidden="true" />
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -676,7 +683,9 @@ function PizzaHalfBuilder({
         </div>
         <div className="offer-dialog-footer half-pizza-dialog-footer">
           <strong>
-            {selectedPrice === null ? "Elegí los dos sabores" : formatCents(selectedPrice)}
+            {selectedPrice === null
+              ? "El precio será el de la pizza más cara."
+              : formatCents(selectedPrice)}
           </strong>
           <button
             className="action-button half-pizza-confirm-button"
@@ -1727,12 +1736,12 @@ function OfferCard({
             <button
               className="offer-dialog-back"
               type="button"
+              aria-label="Volver a las promociones"
               onClick={() => setIsConfiguring(false)}
             >
               <ArrowLeft size={17} aria-hidden="true" />
-              Volver a promos
             </button>
-            <div>
+            <div className="offer-dialog-title">
               <span className="eyebrow">ARMA TU PROMO</span>
               <h2 id={`offer-dialog-title-${offer.id}`}>{offer.nombre}</h2>
             </div>
