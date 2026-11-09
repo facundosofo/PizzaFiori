@@ -113,7 +113,7 @@
 }
 .scope :global(.presentation-price strong) {
   color: var(--color-heading);
-  font-size: 12px;
+  font-size: 1rem;
   font-weight: 700;
 }
 .scope :global(.presentation-quantity) {
@@ -179,7 +179,7 @@
     font-size: 10px;
 }
   .scope :global(.presentation-price strong) {
-    font-size: 12px;
+    font-size: 1.05rem;
 }
   .scope :global(.product-add-button),
 .scope :global(.presentation-quantity) {
