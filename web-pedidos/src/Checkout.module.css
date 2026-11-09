@@ -536,9 +536,10 @@
   display: block;
   margin: 12px 0 0 auto;
 }
-.scope :global(.review-products-toggle) {
-  display: block;
-  margin: 12px 0 0 auto;
+.scope :global(.review-products-wrap) {
+  padding: 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
 }
 .scope :global(.review-details-toggle:hover),
 .scope :global(.review-details-toggle:focus-visible) {
@@ -562,10 +563,12 @@
   display: grid;
   gap: 10px;
   margin: 0;
-  padding: 15px;
-  border: 1px solid var(--color-border);
-  border-radius: 5px;
+  padding: 0;
   list-style: none;
+}
+.scope :global(.review-products-toggle) {
+  display: block;
+  margin: 12px 0 0 auto;
 }
 .scope :global(.review-products li) {
   display: flex;
@@ -961,7 +964,7 @@
   color: var(--palette-e5e9df);
 }
 :global([data-theme=dark]) .scope :global(.order-review-totals .review-total),
-:global([data-theme=dark]) .scope :global(.review-products) {
+:global([data-theme=dark]) .scope :global(.review-products-wrap) {
   border-color: var(--palette-3a4337);
 }
 :global([data-theme=dark]) .scope :global(.order-review-totals),

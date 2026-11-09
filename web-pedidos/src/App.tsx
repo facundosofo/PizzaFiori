@@ -1379,7 +1379,9 @@ function CartAndCheckout({
                         setShowAllReviewProducts((expanded) => !expanded)
                       }
                     >
-                      {showAllReviewProducts ? "Ver menos" : "Ver más"}
+                      {showAllReviewProducts
+                        ? "Ver menos"
+                        : `Ver ${resolvedCart.length - 3} más`}
                     </button>
                   )}
                 </div>
