@@ -1490,10 +1490,6 @@ function CartAndCheckout({
                   <code>VITE_WHATSAPP_PHONE</code> para habilitar el envío.
                 </p>
               )}
-              <p className="whatsapp-disclaimer" role="note">
-                Se abrirá WhatsApp. Tocá «Enviar» para hacer el pedido; el local
-                confirmará disponibilidad del pedido.
-              </p>
               <button
                 className="back-to-cart-button"
                 type="button"

@@ -632,7 +632,6 @@
   background: var(--palette-198b4b);
   transform: translateY(-1px);
 }
-.scope :global(.whatsapp-disclaimer),
 .scope :global(.whatsapp-config-error) {
   margin: 0;
   color: var(--color-text-muted);
