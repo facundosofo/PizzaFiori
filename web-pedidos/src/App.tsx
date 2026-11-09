@@ -553,7 +553,7 @@ function PizzaHalfBuilder({
       </article>
       <dialog
         ref={dialogRef}
-        className={`half-pizza-dialog ${pizzaStyles.dialogScope}`}
+        className={`half-pizza-dialog ${pizzaStyles.dialogScope} ${offerStyles.scope}`}
         aria-labelledby="half-pizza-title"
         onClose={() => {
           if (isConfiguring) setIsConfiguring(false);
