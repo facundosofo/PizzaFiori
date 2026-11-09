@@ -944,6 +944,16 @@ function CartAndCheckout({
                 : "Confirmación"}
           </h2>
         </div>
+        {checkoutStep === "cart" && (
+          <button
+            className="clear-cart-button"
+            type="button"
+            onClick={clearCart}
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            Vaciar carrito
+          </button>
+        )}
       </div>
 
       {resolvedCart.length === 0 ? (
@@ -998,17 +1008,6 @@ function CartAndCheckout({
           {checkoutStep === "cart" ? (
             <div className="cart-stage">
               <div className="cart-card">
-                <div className="cart-card-heading">
-                  <h3>Tu carrito</h3>
-                  <button
-                    className="clear-cart-button"
-                    type="button"
-                    onClick={clearCart}
-                  >
-                    <Trash2 size={15} aria-hidden="true" />
-                    Vaciar carrito
-                  </button>
-                </div>
                 <ul className="cart-list">
                   {resolvedCart.map((item) => {
                     const title =

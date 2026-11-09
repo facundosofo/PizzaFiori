@@ -92,6 +92,10 @@
   gap: 10px;
   margin: 0 auto 22px;
 }
+.scope :global(.checkout-steps.checkout-stepper-cart) {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
 .scope :global(.checkout-step) {
   display: flex;
   flex: 0 0 auto;
@@ -245,23 +249,11 @@
 .scope :global(.cart-card) {
   padding: 21px;
 }
-.scope :global(.cart-card-heading) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--color-border);
-}
-.scope :global(.cart-card-heading h3),
 .scope :global(.form-title h3) {
   margin: 0;
   color: var(--color-heading);
   font-family: var(--serif);
   font-size: 21px;
-}
-.scope :global(.cart-stage .cart-card-heading h3) {
-  color: inherit;
 }
 .scope :global(.clear-cart-button) {
   min-height: 36px;
@@ -825,6 +817,9 @@
     gap: 6px;
     margin-bottom: 16px;
 }
+  .scope :global(.checkout-steps.checkout-stepper-cart) {
+    padding-bottom: 12px;
+}
   .scope :global(.checkout-step) {
     min-width: 0;
     flex: 1 1 0;
@@ -919,7 +914,6 @@
 :global([data-theme=dark]) .scope :global(.order-review-totals strong) {
   color: var(--palette-e5e9df);
 }
-:global([data-theme=dark]) .scope :global(.cart-card-heading),
 :global([data-theme=dark]) .scope :global(.order-review-totals .review-total),
 :global([data-theme=dark]) .scope :global(.review-products) {
   border-color: var(--palette-3a4337);
@@ -1003,9 +997,6 @@
     border-radius: 0;
     background: var(--color-transparent);
     box-shadow: none;
-}
-  .scope :global(.cart-stage .cart-card-heading) {
-    padding-bottom: 12px;
 }
   .scope :global(.cart-stage-actions) {
     position: sticky;
