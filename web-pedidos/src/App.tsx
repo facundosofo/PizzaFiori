@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Clock3,
   CreditCard,
   Facebook,
   Flame,
@@ -288,16 +287,6 @@ function getOfferItemType(item: CatalogOffer["items"][number]): "fixed" | "categ
   if (item.categoria_id !== null) return "category";
   if (item.producto_ids.length > 1) return "options";
   return "fixed";
-}
-
-function formatPublishDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Catálogo actualizado";
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date);
 }
 
 function normalizeWhatsAppPhone(value: string): string | null {
@@ -2120,15 +2109,7 @@ function App() {
 
         <section className={`menu-section ${menuStyles.scope}`} id="menu">
           <div className="section-heading">
-            <div>
-              <h2>Menú</h2>
-            </div>
-            {catalog && (
-              <p className="catalog-date">
-                <Clock3 size={15} aria-hidden="true" />
-                Actualizado {formatPublishDate(catalog.publicado_en)}
-              </p>
-            )}
+            <h2>Menú</h2>
           </div>
 
           {isLoading && <LoadingState />}
