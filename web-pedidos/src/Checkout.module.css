@@ -85,11 +85,6 @@
   font-weight: 600;
   letter-spacing: -1px;
 }
-.scope :global(.order-item-count) {
-  margin-bottom: 7px;
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
 .scope :global(.checkout-steps) {
   display: flex;
   width: min(100%,620px);

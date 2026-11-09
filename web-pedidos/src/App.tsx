@@ -749,7 +749,6 @@ function CartAndCheckout({
     }];
   });
   const totalCents = resolvedCart.reduce((sum, item) => sum + item.subtotalCents, 0);
-  const totalItems = resolvedCart.reduce((sum, item) => sum + item.count, 0);
   const deliveryMinimumCents =
     catalog.monto_minimo_delivery === null
       ? null
@@ -945,11 +944,6 @@ function CartAndCheckout({
                 : "Confirmación"}
           </h2>
         </div>
-        {totalItems > 0 && (
-          <span className="order-item-count">
-            {totalItems} {totalItems === 1 ? "producto" : "productos"}
-          </span>
-        )}
       </div>
 
       {resolvedCart.length === 0 ? (
