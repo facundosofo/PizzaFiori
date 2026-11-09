@@ -416,12 +416,6 @@ const sortedPrices = [...product.precios].sort(
             setShowPlaceholder(true);
           }}
         />
-        {showPlaceholder && (
-          <span className="image-note">
-            <Leaf size={14} aria-hidden="true" />
-            Hecho con cariño
-          </span>
-        )}
       </div>
       <div className="product-info">
         <h3>{product.nombre}</h3>
