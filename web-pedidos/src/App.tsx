@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronRight,
   CreditCard,
   Facebook,
   Flame,
@@ -467,8 +468,8 @@ const sortedPrices = [...product.precios].sort(
                     title="Agregar al pedido"
                     aria-label={`Agregar ${product.nombre}, presentación ${formatProductPresentation(price.cantidad)}, ${formatPrice(price.precio)}`}
                   >
-                    <Plus size={15} aria-hidden="true" />
-                    Agregar
+                    <Plus size={15} strokeWidth={3} aria-hidden="true" />
+                    <span className="product-add-label">Agregar</span>
                   </button>
                 )}
               </div>
@@ -550,7 +551,7 @@ function PizzaHalfBuilder({
                 onClick={() => setIsConfiguring(true)}
               >
                 <Plus size={15} aria-hidden="true" />
-                Armar
+                <span className="half-pizza-entry-label">Armar</span>
               </button>
             </div>
           </div>
@@ -676,19 +677,28 @@ function PizzaHalfBuilder({
               ? "El precio será el de la pizza más cara."
               : formatCents(selectedPrice)}
           </strong>
-          <button
-            className="action-button half-pizza-confirm-button"
-            type="button"
-            disabled={!firstProduct || !secondProduct}
-            onClick={() => {
-              if (!firstProduct || !secondProduct) return;
-              onAdd(firstProduct.product, secondProduct.product);
-              closeAndReset();
-            }}
-          >
-            <Plus size={15} aria-hidden="true" />
-            Agregar al pedido
-          </button>
+          <div className="offer-config-actions">
+            <button
+              className="action-button offer-config-cancel-button"
+              type="button"
+              onClick={closeAndReset}
+            >
+              Cancelar
+            </button>
+            <button
+              className="action-button offer-config-confirm-button"
+              type="button"
+              disabled={!firstProduct || !secondProduct}
+              onClick={() => {
+                if (!firstProduct || !secondProduct) return;
+                onAdd(firstProduct.product, secondProduct.product);
+                closeAndReset();
+              }}
+            >
+              <Plus size={15} aria-hidden="true" />
+              Agregar al pedido
+            </button>
+          </div>
         </div>
       </dialog>
     </>
@@ -2344,8 +2354,8 @@ function App() {
             <ShoppingBag size={18} aria-hidden="true" />
             <span>{cartItemCount}</span>
           </span>
-          <span>Ver pedido</span>
-          <strong>{formatCents(cartTotalCents)}</strong>
+          <strong className="sticky-cart-price">{formatCents(cartTotalCents)}</strong>
+          <ChevronRight className="sticky-cart-chevron" size={21} aria-hidden="true" />
         </button>
       )}
     </div>

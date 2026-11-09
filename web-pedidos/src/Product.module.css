@@ -1,20 +1,53 @@
 .scope :global(.product-add-button) {
+  display: inline-flex;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
   min-height: 42px;
-  gap: 5px;
-  padding: 0 9px;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid var(--palette-d8dfd0);
-  border-radius: 4px;
+  border-radius: 50%;
   background: var(--palette-f5f7f1);
   color: var(--color-heading);
   font: inherit;
   font-size: 10px;
   font-weight: 700;
+  transition:
+    width .2s ease,
+    min-width .2s ease,
+    border-radius .2s ease,
+    background-color .2s ease,
+    color .2s ease;
 }
 .scope :global(.product-add-button:hover),
 .scope :global(.product-add-button:focus-visible) {
+  width: 104px;
+  min-width: 104px;
+  flex-basis: 104px;
+  justify-content: flex-start;
+  gap: 7px;
+  padding-inline: 12px;
+  border-radius: 999px;
   border-color: var(--color-green);
   background: var(--color-green);
   color: var(--color-white);
+}
+.scope :global(.product-add-label) {
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  white-space: nowrap;
+  transition: max-width .2s ease, opacity .12s ease;
+}
+.scope :global(.product-add-button:hover .product-add-label),
+.scope :global(.product-add-button:focus-visible .product-add-label) {
+  max-width: 52px;
+  opacity: 1;
 }
 .scope:global(.product-card) {
   display: flex;
@@ -102,35 +135,38 @@
   font-weight: 700;
 }
 .scope :global(.presentation-quantity) {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   min-height: 38px;
   align-items: center;
   min-width: 96px;
-  justify-content: space-between;
-  gap: 4px;
   padding: 2px;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: 999px;
   background: var(--color-surface);
   color: var(--color-heading);
+  transition: border-color .16s ease, background-color .16s ease;
 }
 .scope :global(.presentation-quantity button) {
   display: grid;
   width: 34px;
   height: 34px;
   flex: 0 0 auto;
+  justify-self: center;
   place-items: center;
   border: 0;
-  border-radius: 4px;
+  border-radius: 50%;
   background: var(--color-transparent);
   color: inherit;
   cursor: pointer;
 }
 .scope :global(.presentation-quantity button:active) {
   background: var(--palette-edf0e8);
+  border-radius: 50%;
 }
 .scope :global(.presentation-quantity span) {
   min-width: 13px;
+  justify-self: center;
   color: var(--palette-343a31);
   font-size: 12px;
   text-align: center;
@@ -165,19 +201,19 @@
   .scope :global(.presentation-price strong) {
     font-size: 1rem;
 }
-  .scope :global(.product-add-button),
 .scope :global(.presentation-quantity) {
     min-height: 40px;
 }
   .scope :global(.product-add-button) {
-    gap: 3px;
-    padding-inline: 7px;
-    font-size: 10px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex-basis: 40px;
 }
   .scope :global(.presentation-quantity) {
     min-height: 36px;
     min-width: 88px;
-    gap: 0;
 }
   .scope :global(.presentation-quantity button) {
     width: 28px;
@@ -200,13 +236,16 @@
     min-width: 0;
   min-height: 34px;
   flex: 0 0 60px;
-  gap: 0;
   padding-inline: 0;
 }
 .scope :global(.presentation-quantity button) {
   width: 21px;
   height: 28px;
   flex: 0 0 21px;
+  border-radius: 50%;
+}
+.scope :global(.presentation-quantity button:first-child svg) {
+  transform: translateX(-2px);
 }
 .scope :global(.presentation-quantity span) {
   min-width: 10px;
@@ -215,15 +254,28 @@
   .scope :global(.product-add-button) {
     width: 36px;
     min-width: 36px;
+    height: 36px;
     min-height: 36px;
-    gap: 0;
-    overflow: hidden;
-    padding: 0;
-    font-size: 0;
+    flex-basis: 36px;
+}
+  .scope :global(.product-add-button:hover),
+  .scope :global(.product-add-button:focus-visible) {
+    width: 92px;
+    min-width: 92px;
+    flex-basis: 92px;
+    gap: 6px;
+    border-radius: 999px;
 }
   .scope :global(.product-add-button svg) {
     width: 12px;
     height: 12px;
+}
+  .scope :global(.product-add-label) {
+    font-size: 10px;
+}
+  .scope :global(.product-add-button:hover .product-add-label),
+  .scope :global(.product-add-button:focus-visible .product-add-label) {
+    max-width: 48px;
 }
 }
 :global([data-theme=dark]) .scope:global(.product-card) {
