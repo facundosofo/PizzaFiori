@@ -471,28 +471,91 @@
   background: var(--color-surface);
   box-shadow: 0 8px 22px var(--palette-30372a09);
 }
-.scope :global(.review-details) {
-  display: grid;
-  gap: 12px;
-  margin: 0;
+.scope :global(.review-details-wrap) {
+  position: relative;
   padding: 15px;
   border-radius: 5px;
   background: var(--palette-f8f6ef);
 }
+.scope :global(.review-details) {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+}
+.scope :global(.review-details-edit) {
+  position: absolute;
+  z-index: 1;
+  top: 15px;
+  right: 15px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface);
+  color: var(--color-heading);
+  cursor: pointer;
+}
+.scope :global(.review-details-edit:hover),
+.scope :global(.review-details-edit:focus-visible) {
+  border-color: var(--color-green);
+  color: var(--color-green);
+}
 .scope :global(.review-details>div) {
   display: grid;
-  grid-template-columns: 110px minmax(0,1fr);
-  gap: 10px;
+  min-width: 0;
+  gap: 4px;
+}
+.scope :global(.review-details>div:first-child) {
+  grid-column: 1 / -1;
+  padding-right: 42px;
+}
+.scope :global(.review-details-payment) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.scope :global(.review-details-toggle) {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: var(--color-transparent);
+  color: var(--color-green);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.scope :global(.review-details-collapse) {
+  display: block;
+  margin: 12px 0 0 auto;
+}
+.scope :global(.review-products-toggle) {
+  display: block;
+  margin: 12px 0 0 auto;
+}
+.scope :global(.review-details-toggle:hover),
+.scope :global(.review-details-toggle:focus-visible) {
+  color: var(--color-heading);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .scope :global(.review-details dt) {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
 }
 .scope :global(.review-details dd) {
   overflow-wrap: anywhere;
   margin: 0;
   color: var(--palette-3b4238);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 .scope :global(.review-products) {
@@ -583,19 +646,6 @@
   border-radius: 5px;
   background: var(--palette-c9363212);
   color: var(--color-brand-red);
-}
-.scope :global(.edit-order-button) {
-  min-height: 42px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-transparent);
-  color: var(--color-heading);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-}
-.scope :global(.edit-order-button:hover) {
-  background: var(--palette-f4f5ee);
 }
 .scope :global(.form-title) {
   display: flex;
@@ -855,9 +905,6 @@
 .scope :global(.order-review) {
     padding: 15px;
 }
-  .scope :global(.review-details>div) {
-    grid-template-columns: 88px minmax(0,1fr);
-}
 }
 :global([data-theme=dark]) .scope :global(.continue-button) {
   border-color: var(--palette-536c4c);
@@ -931,13 +978,13 @@
 :global([data-theme=dark]) .scope :global(.cart-qty-button:hover) {
   background: var(--palette-ffffff14);
 }
-:global([data-theme=dark]) .scope :global(.edit-order-button) {
+:global([data-theme=dark]) .scope :global(.review-details-edit) {
   border-color: var(--palette-4a5745);
   background: var(--palette-293228);
   color: var(--palette-e1eadb);
 }
-:global([data-theme=dark]) .scope :global(.edit-order-button:hover),
-:global([data-theme=dark]) .scope :global(.edit-order-button:focus-visible) {
+:global([data-theme=dark]) .scope :global(.review-details-edit:hover),
+:global([data-theme=dark]) .scope :global(.review-details-edit:focus-visible) {
   border-color: var(--palette-82997a);
   background: var(--palette-374634);
   color: var(--color-white);
@@ -947,7 +994,13 @@
   background: var(--palette-222820);
 }
 :global([data-theme=dark]) .scope :global(.review-details) {
+  background: var(--color-transparent);
+}
+:global([data-theme=dark]) .scope :global(.review-details-wrap) {
   background: var(--palette-292f27);
+}
+:global([data-theme=dark]) .scope :global(.review-details-toggle) {
+  color: var(--color-heading);
 }
 :global([data-theme=dark]) .scope :global(.review-total),
 :global([data-theme=dark]) .scope :global(.order-review-totals .review-total),

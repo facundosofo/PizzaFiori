@@ -19,6 +19,7 @@ import {
   Phone,
   RefreshCw,
   ShoppingBag,
+  SquarePen,
   Sparkles,
   Store,
   Trash2,
@@ -701,6 +702,8 @@ function CartAndCheckout({
   const [errors, setErrors] = useState<OrderFormErrors>({});
   const [validated, setValidated] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "details" | "confirm">("cart");
+  const [showAllReviewDetails, setShowAllReviewDetails] = useState(false);
+  const [showAllReviewProducts, setShowAllReviewProducts] = useState(false);
   const [expandedOfferSelections, setExpandedOfferSelections] = useState<Set<string>>(
     () => new Set(),
   );
@@ -1171,15 +1174,6 @@ function CartAndCheckout({
           ) : checkoutStep === "details" ? (
             <div className="details-stage">
               <form className="order-form" onSubmit={validateOrder} noValidate>
-            <div className="form-title">
-              <span className="state-icon">
-                <Truck size={22} aria-hidden="true" />
-              </span>
-              <div>
-                <h3>Datos para tu pedido</h3>
-              </div>
-            </div>
-
             <div className="form-field">
               <label htmlFor="customer-name">Tu nombre <span>*</span></label>
               <input
@@ -1331,66 +1325,116 @@ function CartAndCheckout({
             </div>
           ) : (
             <div className="details-stage">
-              <section className="order-review" aria-labelledby="order-review-title">
-              <div className="form-title">
-                <span className="state-icon">
-                  <Check size={22} aria-hidden="true" />
-                </span>
-                <div>
-                  <h3 id="order-review-title">Revisá y confirmá tu pedido</h3>
+              <section className="order-review" aria-label="Confirmación del pedido">
+                <div className="review-products-wrap">
+                  <ul className="review-products" id="order-review-products">
+                    {(showAllReviewProducts
+                      ? resolvedCart
+                      : resolvedCart.slice(0, 3)
+                    ).map((item) => (
+                      <li key={item.key}>
+                        <span>
+                          {item.type === "product"
+                            ? `${item.count} x ${item.product.nombre}`
+                            : item.type === "halfPizza"
+                              ? `${item.count} x Pizza mitad/mitad`
+                              : `${item.count} x Promo: ${item.offer.nombre}`}
+                          {item.type === "product" ? (
+                            <small>{formatProductPresentation(item.presentation)}</small>
+                          ) : item.type === "halfPizza" ? (
+                            <small>
+                              {item.leftProduct.nombre} / {item.rightProduct.nombre}
+                            </small>
+                          ) : (
+                            <small>
+                              {item.selections.map(formatOfferSelection).join(", ")}
+                            </small>
+                          )}
+                        </span>
+                        <strong>{formatCents(item.subtotalCents)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                  {resolvedCart.length > 3 && (
+                    <button
+                      className="review-details-toggle review-products-toggle"
+                      type="button"
+                      aria-expanded={showAllReviewProducts}
+                      aria-controls="order-review-products"
+                      onClick={() =>
+                        setShowAllReviewProducts((expanded) => !expanded)
+                      }
+                    >
+                      {showAllReviewProducts ? "Ver menos" : "Ver más"}
+                    </button>
+                  )}
                 </div>
-              </div>
-              <ul className="review-products">
-                {resolvedCart.map((item) => (
-                  <li key={item.key}>
-                    <span>
-                      {item.type === "product"
-                        ? `${item.count} x ${item.product.nombre}`
-                        : item.type === "halfPizza"
-                          ? `${item.count} x Pizza mitad/mitad`
-                          : `${item.count} x Promo: ${item.offer.nombre}`}
-                      {item.type === "product" ? (
-                        <small>{formatProductPresentation(item.presentation)}</small>
-                      ) : item.type === "halfPizza" ? (
-                        <small>
-                          {item.leftProduct.nombre} / {item.rightProduct.nombre}
-                        </small>
-                      ) : (
-                        <small>
-                          {item.selections.map(formatOfferSelection).join(", ")}
-                        </small>
-                      )}
-                    </span>
-                    <strong>{formatCents(item.subtotalCents)}</strong>
-                  </li>
-                ))}
-              </ul>
-              <dl className="review-details">
-                <div>
-                  <dt>Nombre</dt>
-                  <dd>{order.name.trim()}</dd>
+                <div className="review-details-wrap">
+                  <button
+                    className="review-details-edit"
+                    type="button"
+                    aria-label="Editar datos del pedido"
+                    title="Editar datos del pedido"
+                    onClick={() => {
+                      setValidated(false);
+                      changeCheckoutStep("details");
+                    }}
+                  >
+                    <SquarePen size={17} aria-hidden="true" />
+                  </button>
+                  <dl className="review-details">
+                    <div>
+                      <dt>Nombre</dt>
+                      <dd>{order.name.trim()}</dd>
+                    </div>
+                    <div>
+                      <dt>Medio de pago</dt>
+                      <dd className="review-details-payment">
+                        <span>{order.paymentMethod}</span>
+                        {!showAllReviewDetails && (
+                          <button
+                            className="review-details-toggle"
+                            type="button"
+                            aria-expanded={false}
+                            onClick={() => setShowAllReviewDetails(true)}
+                          >
+                            Ver más
+                          </button>
+                        )}
+                      </dd>
+                    </div>
+                    {showAllReviewDetails && (
+                      <>
+                        <div>
+                          <dt>Entrega</dt>
+                          <dd>
+                            {order.fulfillment === "delivery"
+                              ? `Delivery · ${order.address.trim()}`
+                              : "Retiro por el local"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Observaciones de la comida</dt>
+                          <dd>{order.foodNotes.trim() || "Sin indicaciones"}</dd>
+                        </div>
+                        <div>
+                          <dt>Observaciones de entrega o pago</dt>
+                          <dd>{order.notes.trim() || "Sin indicaciones"}</dd>
+                        </div>
+                      </>
+                    )}
+                  </dl>
+                  {showAllReviewDetails && (
+                    <button
+                      className="review-details-toggle review-details-collapse"
+                      type="button"
+                      aria-expanded={true}
+                      onClick={() => setShowAllReviewDetails(false)}
+                    >
+                      Ver menos
+                    </button>
+                  )}
                 </div>
-                <div>
-                  <dt>Entrega</dt>
-                  <dd>
-                    {order.fulfillment === "delivery"
-                      ? `Delivery · ${order.address.trim()}`
-                      : "Retiro por el local"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Medio de pago</dt>
-                  <dd>{order.paymentMethod}</dd>
-                </div>
-                <div>
-                  <dt>Comida</dt>
-                  <dd>{order.foodNotes.trim() || "Sin indicaciones"}</dd>
-                </div>
-                <div>
-                  <dt>Entrega o pago</dt>
-                  <dd>{order.notes.trim() || "Sin indicaciones"}</dd>
-                </div>
-              </dl>
               <div className="order-review-totals">
                 <div><span>Subtotal</span><strong>{formatCents(totalCents)}</strong></div>
                 {isTransferPayment && surchargePercentage !== null && (
@@ -1436,16 +1480,6 @@ function CartAndCheckout({
                 Se abrirá WhatsApp. Tocá «Enviar» para hacer el pedido; el local
                 confirmará disponibilidad del pedido.
               </p>
-              <button
-                className="edit-order-button"
-                type="button"
-                onClick={() => {
-                  setValidated(false);
-                  changeCheckoutStep("details");
-                }}
-              >
-                Editar datos
-              </button>
               <button
                 className="back-to-cart-button"
                 type="button"
