@@ -103,9 +103,9 @@
 }
 .scope :global(.presentation-quantity) {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 38px;
   align-items: center;
-  min-width: 102px;
+  min-width: 96px;
   justify-content: space-between;
   gap: 4px;
   padding: 2px;
@@ -116,8 +116,8 @@
 }
 .scope :global(.presentation-quantity button) {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
   place-items: center;
   border: 0;
@@ -126,8 +126,7 @@
   color: inherit;
   cursor: pointer;
 }
-.scope :global(.presentation-quantity button:hover),
-.scope :global(.presentation-quantity button:focus-visible) {
+.scope :global(.presentation-quantity button:active) {
   background: var(--palette-edf0e8);
 }
 .scope :global(.presentation-quantity span) {
@@ -164,7 +163,7 @@
     font-size: 10px;
 }
   .scope :global(.presentation-price strong) {
-    font-size: 1.05rem;
+    font-size: 1rem;
 }
   .scope :global(.product-add-button),
 .scope :global(.presentation-quantity) {
@@ -176,12 +175,13 @@
     font-size: 10px;
 }
   .scope :global(.presentation-quantity) {
+    min-height: 36px;
     min-width: 88px;
     gap: 0;
 }
   .scope :global(.presentation-quantity button) {
-    width: 30px;
-    height: 36px;
+    width: 28px;
+    height: 32px;
 }
 }
 @container product-info (max-width: 220px) {
@@ -196,19 +196,21 @@
     gap: 2px;
 }
   .scope :global(.presentation-quantity) {
-    width: 68px;
+  width: 60px;
     min-width: 0;
-    flex: 0 0 68px;
-    gap: 0;
-    padding-inline: 0;
+  min-height: 34px;
+  flex: 0 0 60px;
+  gap: 0;
+  padding-inline: 0;
 }
-  .scope :global(.presentation-quantity button) {
-    width: 24px;
-    height: 32px;
-    flex: 0 0 24px;
+.scope :global(.presentation-quantity button) {
+  width: 21px;
+  height: 28px;
+  flex: 0 0 21px;
 }
-  .scope :global(.presentation-quantity span) {
-    min-width: 12px;
+.scope :global(.presentation-quantity span) {
+  min-width: 10px;
+  font-size: 11px;
 }
   .scope :global(.product-add-button) {
     width: 36px;
@@ -252,8 +254,7 @@
 :global([data-theme=dark]) .scope :global(.presentation-quantity span) {
   color: var(--palette-e5e9df);
 }
-:global([data-theme=dark]) .scope :global(.presentation-quantity button:hover),
-:global([data-theme=dark]) .scope :global(.presentation-quantity button:focus-visible) {
+:global([data-theme=dark]) .scope :global(.presentation-quantity button:active) {
   background: var(--palette-374634);
   color: var(--color-white);
 }
