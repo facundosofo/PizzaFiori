@@ -23,7 +23,6 @@ import {
   Sparkles,
   Store,
   Trash2,
-  Truck,
 } from "lucide-react";
 import {
   fetchPublicCatalog,
@@ -1202,7 +1201,23 @@ function CartAndCheckout({
                     disabled={!isDeliveryEligible}
                     onChange={() => updateField("fulfillment", "delivery")}
                   />
-                  <Truck size={18} aria-hidden="true" />
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m18.16 14.12-2.927-8.447A1 1 0 0 0 14.288 5H13" />
+                    <path d="M19 10a7 7 0 0 0-6.928 6" />
+                    <path d="M2 10h5.5a3 3 0 0 1 2.747 1.795l1.669 3.803A1 1 0 0 1 11.01 17H8" />
+                    <circle cx="19" cy="17" r="3" />
+                    <circle cx="5" cy="17" r="3" />
+                  </svg>
                   Delivery
                 </label>
                 <label className={order.fulfillment === "pickup" ? "selected" : ""}>
@@ -1280,8 +1295,7 @@ function CartAndCheckout({
               {order.paymentMethod === "Transferencia" &&
                 surchargePercentage !== null && (
                   <p className="payment-surcharge-note">
-                    Se sumará un recargo del {formatPercentage(surchargePercentage)}%
-                    al subtotal del pedido.
+                    Se sumará un recargo del {formatPercentage(surchargePercentage)}%.
                   </p>
                 )}
               {errors.paymentMethod && (
