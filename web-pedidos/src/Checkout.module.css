@@ -794,52 +794,6 @@
   font-size: 11px;
   text-align: center;
 }
-.scope :global(.sticky-cart) {
-  position: fixed;
-  z-index: 8;
-  right: 24px;
-  bottom: max(22px,env(safe-area-inset-bottom));
-  display: flex;
-  min-height: 56px;
-  align-items: center;
-  gap: 12px;
-  padding: 0 17px;
-  border: 1px solid var(--palette-718467);
-  border-radius: 7px;
-  background: var(--color-heading);
-  box-shadow: 0 8px 24px var(--palette-202d1d42);
-  color: var(--color-white);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-}
-.scope :global(.sticky-cart:hover) {
-  background: var(--color-green);
-}
-.scope :global(.sticky-cart-icon) {
-  position: relative;
-  display: grid;
-  place-items: center;
-}
-.scope :global(.sticky-cart-icon>span) {
-  position: absolute;
-  top: -9px;
-  right: -10px;
-  display: grid;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 3px;
-  border-radius: 10px;
-  background: var(--palette-e1b36a);
-  color: var(--color-text);
-  font-size: 9px;
-  place-items: center;
-}
-.scope :global(.sticky-cart strong) {
-  padding-left: 11px;
-  border-left: 1px solid var(--palette-rgb-255-255-255-ap3);
-  font-size: 13px;
-}
 @media (max-width:780px) {
   .scope:global(.order-section) {
     width: min(100% - 40px,700px);
@@ -916,14 +870,6 @@
 }
   .scope :global(.review-details>div) {
     grid-template-columns: 88px minmax(0,1fr);
-}
-  .scope :global(.sticky-cart) {
-    right: 12px;
-    bottom: max(10px,env(safe-area-inset-bottom));
-    left: 12px;
-    min-height: 56px;
-    justify-content: space-between;
-    padding-inline: 14px;
 }
 }
 :global([data-theme=dark]) .scope :global(.continue-button) {
@@ -1057,14 +1003,6 @@
 }
 :global([data-theme=dark]) .scope :global(.fulfillment-options label.disabled) {
   opacity: .45;
-}
-:global([data-theme=dark]) .scope :global(.sticky-cart) {
-  border-color: var(--palette-68815f);
-  background: var(--palette-34472f);
-  color: var(--color-white);
-}
-:global([data-theme=dark]) .scope :global(.sticky-cart:hover) {
-  background: var(--palette-465f3f);
 }
 @media (max-width:560px) {
   .scope:global(.order-section.checkout-fullscreen.checkout-cart-step) {
