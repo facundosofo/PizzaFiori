@@ -1745,20 +1745,39 @@ function OfferCard({
                 const selectedTotal = selections
                   ? Array.from(selections.values()).reduce((sum, quantity) => sum + quantity, 0)
                   : 0;
+                const requiredQuantity = Number(item.cantidad);
+                const progress = requiredQuantity > 0
+                  ? Math.min(100, (selectedTotal / requiredQuantity) * 100)
+                  : 0;
+                const categoryName =
+                  categoryNames.get(item.categoria_id ?? -1) ?? "la categoría";
                 return (
                   <fieldset className="offer-config-group" key={index}>
                     <legend>
-                      Elegí {formatOfferQuantity(Number(item.cantidad))} {" "}
-                      {categoryNames.get(item.categoria_id ?? -1) ?? "la categoría"}
+                      <span>{categoryName}</span>
                       <small className="offer-selection-count">
-                        {selectedTotal} de {formatOfferQuantity(Number(item.cantidad))}
+                        <strong>{selectedTotal}</strong> de{" "}
+                        {formatOfferQuantity(requiredQuantity)}
                       </small>
                     </legend>
+                    <div
+                      className="offer-selection-progress"
+                      role="progressbar"
+                      aria-label={`Cantidad seleccionada de ${categoryName}`}
+                      aria-valuemin={0}
+                      aria-valuemax={requiredQuantity}
+                      aria-valuenow={selectedTotal}
+                    >
+                      <span style={{ width: `${progress}%` }} />
+                    </div>
                     {categoryProducts.map((product) => {
                       const quantity = selections?.get(product.id) ?? 0;
                       return (
-                        <div className="offer-choice-row" key={product.id}>
-                          <span>{product.nombre}</span>
+                        <div
+                          className={`offer-choice-row${quantity > 0 ? " has-quantity" : ""}`}
+                          key={product.id}
+                        >
+                          <span className="offer-choice-product">{product.nombre}</span>
                           <div className="offer-choice-quantity">
                             <button
                               type="button"
@@ -1791,7 +1810,7 @@ function OfferCard({
               return (
                 <fieldset className="offer-config-group" key={index}>
                   <legend>
-                    Elegí una opción · {formatOfferQuantity(Number(item.cantidad))}
+                    Elegí una opción
                   </legend>
                   {optionProducts.map((product) => (
                     <label className="offer-option-choice" key={product.id}>
