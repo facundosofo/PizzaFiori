@@ -571,6 +571,16 @@ def test_category_offer_presentations_include_only_single_category_offers():
     assert rounded_table is not None
     assert rounded_table._cellvalues[1][0].text == "$ 167 c/u"
 
+    total_price_table = _category_offer_presentations(
+        [test_price_offer],
+        category_id=3,
+        width=300,
+        styles=_paragraph_styles("Helvetica-Bold", "Helvetica", "Helvetica-Bold"),
+        show_total_price=True,
+    )
+    assert total_price_table is not None
+    assert total_price_table._cellvalues[1][0].text == "$ 1.000"
+
 
 def test_title_cases_only_all_uppercase_names_and_preserves_acronyms():
     assert _title_case_if_uppercase(

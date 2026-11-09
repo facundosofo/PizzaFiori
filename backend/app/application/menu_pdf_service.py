@@ -1271,6 +1271,7 @@ def _category_offer_presentations(
     width: float,
     styles: dict[str, ParagraphStyle],
     center_columns: bool = False,
+    show_total_price: bool = False,
 ) -> Table | None:
     category_offers = [
         offer
@@ -1293,9 +1294,11 @@ def _category_offer_presentations(
     prices = []
     for offer in category_offers:
         quantity = Decimal(str(offer.items[0].cantidad))
-        unit_price = (
-            Decimal(str(offer.precio)) / quantity
-        ).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        amount = Decimal(str(offer.precio))
+        if not show_total_price:
+            amount = (amount / quantity).quantize(
+                Decimal("1"), rounding=ROUND_HALF_UP
+            )
         if quantity == Decimal("6"):
             label = "Media docena"
         elif quantity >= Decimal("12") and quantity % Decimal("12") == 0:
@@ -1321,9 +1324,12 @@ def _category_offer_presentations(
                 alignment=TA_CENTER,
             )
         labels.append(Paragraph(escape(label), label_style))
+        price_text = _format_money(amount)
+        if not show_total_price:
+            price_text += " c/u"
         prices.append(
             Paragraph(
-                escape(f"{_format_money(unit_price)} c/u"),
+                escape(price_text),
                 price_style,
             )
         )
@@ -1630,14 +1636,16 @@ def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
         )
         h_align = "LEFT"
         category_offer_width = content_width
+        is_empanada_category = (
+            _normalize_category_name(category.nombre) == "empanadas"
+        )
         category_offer_table = _category_offer_presentations(
             catalog.ofertas,
             category.id,
             category_offer_width,
             styles,
-            center_columns=(
-                _normalize_category_name(category.nombre) == "empanadas"
-            ),
+            center_columns=is_empanada_category,
+            show_total_price=is_empanada_category,
         )
         pizza_note = (
             Paragraph(
