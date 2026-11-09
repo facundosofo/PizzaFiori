@@ -1384,9 +1384,49 @@ function CartAndCheckout({
                               {item.leftProduct.nombre} / {item.rightProduct.nombre}
                             </small>
                           ) : (
-                            <small>
-                              {item.selections.map(formatOfferSelection).join(", ")}
-                            </small>
+                            <ul
+                              className="cart-offer-selections review-offer-selections"
+                              id={`review-offer-selections-${item.key}`}
+                            >
+                              {item.selections
+                                .slice(
+                                  0,
+                                  item.selections.length > 4 &&
+                                    !expandedOfferSelections.has(item.key)
+                                    ? 3
+                                    : undefined,
+                                )
+                                .map((selection, index) => (
+                                  <li key={`${selection.productId}-${index}`}>
+                                    {formatOfferSelection(selection)}
+                                  </li>
+                                ))}
+                              {item.selections.length > 4 && (
+                                <li>
+                                  <button
+                                    className="cart-selections-toggle"
+                                    type="button"
+                                    aria-expanded={expandedOfferSelections.has(item.key)}
+                                    aria-controls={`review-offer-selections-${item.key}`}
+                                    onClick={() => {
+                                      setExpandedOfferSelections((current) => {
+                                        const next = new Set(current);
+                                        if (next.has(item.key)) {
+                                          next.delete(item.key);
+                                        } else {
+                                          next.add(item.key);
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                  >
+                                    {expandedOfferSelections.has(item.key)
+                                      ? "Mostrar menos"
+                                      : `+ ${item.selections.length - 3} más`}
+                                  </button>
+                                </li>
+                              )}
+                            </ul>
                           )}
                         </span>
                         <strong>{formatCents(item.subtotalCents)}</strong>

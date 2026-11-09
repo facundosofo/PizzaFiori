@@ -586,6 +586,10 @@
   color: var(--color-text-muted);
   font-size: 11px;
 }
+.scope :global(.review-offer-selections) {
+  font-size: 11px;
+  line-height: 1.45;
+}
 .scope :global(.review-products strong) {
   white-space: nowrap;
 }
