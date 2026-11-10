@@ -21,6 +21,7 @@ from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
+from reportlab.lib.utils import ImageReader
 from reportlab.platypus import (
     BaseDocTemplate,
     Flowable,
@@ -76,6 +77,8 @@ FONT_SERIF_BOLD = "Helvetica-Bold"
 FONT_SERIF_ITALIC_BOLD = "Helvetica-BoldOblique"
 FONT_SANS = "Helvetica"
 FONT_SANS_BOLD = "Helvetica-Bold"
+MENU_LOGO_FILENAME = "pizza-fiori-sin-leyenda-sin-humo.png"
+MENU_FOOTER_LOGO_FILENAME = "pizza-fiori-solo-pizza.png"
 
 
 class MenuCatalogEmptyError(Exception):
@@ -86,6 +89,14 @@ def _font_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys._MEIPASS) / "app" / "assets" / "menu-fonts"
     return Path(__file__).resolve().parents[1] / "assets" / "menu-fonts"
+
+
+def _menu_logo_path(filename: str = MENU_LOGO_FILENAME) -> Path:
+    if getattr(sys, "frozen", False):
+        logo_dir = Path(sys._MEIPASS) / "app" / "assets" / "menu" / "logos"
+    else:
+        logo_dir = Path(__file__).resolve().parents[1] / "assets" / "menu" / "logos"
+    return logo_dir / filename
 
 
 def _register_menu_fonts() -> tuple[str, str, str, str]:
@@ -487,36 +498,52 @@ def _page_chrome(canvas: Canvas, document: BaseDocTemplate) -> None:
     canvas.rect(-1, -1, page_width + 2, page_height + 2, fill=1, stroke=0)
 
     if document.page == 1:
-        serif_italic_bold, sans = _register_menu_fonts()[1:3]
         center_x = page_width / 2
-        _tracked_text(
-            canvas,
-            "MENÚ",
-            sans,
-            15,
-            center_x,
-            page_height - 1.15 * cm,
-            MENU_THEME["text"],
-            2.2,
-        )
-        brand_size = 32
-        brand_y = page_height - 2.25 * cm
-        pizza_width = pdfmetrics.stringWidth("PIZZA", serif_italic_bold, brand_size)
-        space_width = pdfmetrics.stringWidth(" ", serif_italic_bold, brand_size) + 4
-        fiori_width = pdfmetrics.stringWidth("FIORI", serif_italic_bold, brand_size)
-        brand_x = center_x - (pizza_width + space_width + fiori_width) / 2
-        canvas.setFont(serif_italic_bold, brand_size)
-        canvas.setFillColor(MENU_THEME["green"])
-        canvas.drawString(brand_x, brand_y, "PIZZA")
-        canvas.setFillColor(MENU_THEME["red"])
-        canvas.drawString(brand_x + pizza_width + space_width, brand_y, "FIORI")
-
         divider_y = page_height - 3.05 * cm
-        canvas.setStrokeColor(MENU_THEME["divider"])
-        canvas.setLineWidth(0.5)
-        canvas.line(PAGE_MARGIN, divider_y, center_x - 14, divider_y)
-        canvas.line(center_x + 14, divider_y, page_width - PAGE_MARGIN, divider_y)
-        _draw_heart(canvas, center_x, divider_y - 3)
+        logo_path = _menu_logo_path()
+        if logo_path.is_file():
+            logo = ImageReader(str(logo_path))
+            logo_width, logo_height = logo.getSize()
+            max_logo_width = page_width - 2 * PAGE_MARGIN
+            max_logo_height = 76
+            scale = min(max_logo_width / logo_width, max_logo_height / logo_height)
+            rendered_width = logo_width * scale
+            rendered_height = logo_height * scale
+            canvas.drawImage(
+                logo,
+                center_x - rendered_width / 2,
+                divider_y + 3,
+                width=rendered_width,
+                height=rendered_height,
+                mask="auto",
+            )
+        else:
+            logger.warning(
+                "menu_pdf.logo_missing",
+                logo_path=str(logo_path),
+            )
+            serif_italic_bold, sans = _register_menu_fonts()[1:3]
+            _tracked_text(
+                canvas,
+                "MENÚ",
+                sans,
+                15,
+                center_x,
+                page_height - 1.15 * cm,
+                MENU_THEME["text"],
+                2.2,
+            )
+            brand_size = 32
+            brand_y = page_height - 2.25 * cm
+            pizza_width = pdfmetrics.stringWidth("PIZZA", serif_italic_bold, brand_size)
+            space_width = pdfmetrics.stringWidth(" ", serif_italic_bold, brand_size) + 4
+            fiori_width = pdfmetrics.stringWidth("FIORI", serif_italic_bold, brand_size)
+            brand_x = center_x - (pizza_width + space_width + fiori_width) / 2
+            canvas.setFont(serif_italic_bold, brand_size)
+            canvas.setFillColor(MENU_THEME["green"])
+            canvas.drawString(brand_x, brand_y, "PIZZA")
+            canvas.setFillColor(MENU_THEME["red"])
+            canvas.drawString(brand_x + pizza_width + space_width, brand_y, "FIORI")
 
     canvas.restoreState()
 
@@ -536,15 +563,26 @@ class _PageCountCanvas(Canvas):
     def _draw_footer(self, page_number: int, total_pages: int) -> None:
         page_width, _ = self._pagesize
         center_x = page_width / 2
-        flag_width = 36
-        flag_y = 20
         self.saveState()
-        self.setFillColor(MENU_THEME["green"])
-        self.rect(center_x - flag_width / 2, flag_y, flag_width / 3, 2, fill=1, stroke=0)
-        self.setFillColor(MENU_THEME["text"])
-        self.rect(center_x - flag_width / 6, flag_y, flag_width / 3, 2, fill=1, stroke=0)
-        self.setFillColor(MENU_THEME["red"])
-        self.rect(center_x + flag_width / 6, flag_y, flag_width / 3, 2, fill=1, stroke=0)
+        logo_path = _menu_logo_path(MENU_FOOTER_LOGO_FILENAME)
+        if logo_path.is_file():
+            logo = ImageReader(str(logo_path))
+            logo_width, logo_height = logo.getSize()
+            rendered_width = 18
+            rendered_height = rendered_width * logo_height / logo_width
+            self.drawImage(
+                logo,
+                center_x - rendered_width / 2,
+                21 - rendered_height / 2,
+                width=rendered_width,
+                height=rendered_height,
+                mask="auto",
+            )
+        else:
+            logger.warning(
+                "menu_pdf.footer_logo_missing",
+                logo_path=str(logo_path),
+            )
 
         self.setFillColor(MENU_THEME["tertiary"])
         self.setFont(self._footer_font, 8.5)
@@ -919,12 +957,7 @@ class _SectionHeading(Flowable):
 
         self.canv.setStrokeColor(MENU_THEME["green"])
         self.canv.setLineWidth(1)
-        self.canv.line(
-            0,
-            2,
-            self.width,
-            2,
-        )
+        self.canv.line(0, 2, self.width, 2)
 
     def as_continuation(self) -> _SectionHeading:
         heading = _SectionHeading(
