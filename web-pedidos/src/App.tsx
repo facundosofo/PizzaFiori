@@ -5,7 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Clock3,
+  ChevronRight,
   CreditCard,
   Facebook,
   Flame,
@@ -13,16 +13,15 @@ import {
   Leaf,
   LoaderCircle,
   MapPin,
-  MessageCircle,
   Minus,
   Plus,
   Phone,
   RefreshCw,
   ShoppingBag,
+  SquarePen,
   Sparkles,
   Store,
   Trash2,
-  Truck,
 } from "lucide-react";
 import {
   fetchPublicCatalog,
@@ -30,6 +29,13 @@ import {
   type CatalogProduct,
   type PublicCatalog,
 } from "./catalog";
+import appStyles from "./AppShell.module.css";
+import checkoutStyles from "./Checkout.module.css";
+import menuStyles from "./Menu.module.css";
+import offerStyles from "./Offer.module.css";
+import pizzaStyles from "./PizzaHalf.module.css";
+import productStyles from "./Product.module.css";
+import stateStyles from "./States.module.css";
 
 const POINTER_URL = import.meta.env.VITE_CATALOG_POINTER_URL ?? "";
 const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE ?? "";
@@ -66,6 +72,23 @@ const EMOJI = {
   pray: String.fromCodePoint(0x1f64f),
   pin: String.fromCodePoint(0x1f4cd),
 } as const;
+
+function WhatsAppIcon() {
+  return (
+    <span className="whatsapp-icon" aria-hidden="true">
+      <svg viewBox="0 0 512 512">
+        <path
+          fill="var(--color-white)"
+          d="M500.4,241.8c-0.6,63.4-16.9,113-50.8,156.1c-36.4,46.3-83.8,75.7-141.8,87.6c-44.8,9.1-88.4,5.1-131.2-10.4c-9.5-3.5-18.8-7.6-27.7-12.5c-2.7-1.5-5-1.7-8-0.7c-40.5,13.1-81.1,26.1-121.7,39c-1.8,0.6-4.2,2.3-5.6,1c-1.6-1.6,0.4-4,1-5.9c8.1-24.1,16.2-48.3,24.4-72.4c5-14.7,9.8-29.3,15-43.9c1.4-3.8,0.9-6.7-1.2-10.2c-10.3-17.6-17.9-36.4-23.3-56.1c-10.1-37-11.2-74.4-3.3-111.8c8.6-40.8,26.6-77.2,54.3-108.6c33.5-38,74.8-63.1,123.9-75.2c31.3-7.7,62.9-8.9,94.7-3.7c41.6,6.8,79.1,23.3,111.8,49.9c34,27.7,58.8,62.1,74.4,103.4C493.9,189.7,500.7,226.2,500.4,241.8z M74.6,441.5c24.8-8,48.5-15.6,72-23.3c3.1-1,5.6-0.8,8.3,1c9,6,18.7,10.8,28.7,15c32.5,13.8,66.3,18.8,101.2,14.3c42.8-5.5,80.4-22.7,112-52.6c39.8-37.7,61.1-83.9,63-138.5c1.8-53.5-15.4-100.5-51.3-140.4c-34.1-37.9-76.9-59.5-127.4-64.9c-43.9-4.7-85,4.8-123,27.6c-32.5,19.6-57.4,46.3-74.7,80c-19.1,37.1-25.6,76.5-20.1,117.8c4.1,31.2,15.3,59.9,33.3,85.7c2,2.9,2.6,5.3,1.4,8.7c-3.7,10.2-7,20.5-10.5,30.7C83.3,415.2,79.2,427.8,74.6,441.5z"
+        />
+        <path
+          fill="var(--color-white)"
+          d="M141,194.7c0.5-23.8,8.9-41.5,24.8-55.6c5.1-4.6,11.4-6.6,18.5-5.6c3,0.4,6,0.7,9,0.5c5.6-0.3,9.4,2.4,11.3,7.3c6.7,17.4,13.2,34.8,19.7,52.3c2.2,6-1.6,10.7-4.8,15c-3.7,5.1-8.2,9.6-12.6,14.1c-4.5,4.6-5.1,7.2-2,12.8c18.1,32.9,43.5,58.2,78,73.8c1.2,0.5,2.4,1.2,3.6,1.8c4.6,2.1,8.7,1.6,12.2-2.4c6.4-7.5,13.4-14.4,19.3-22.3c3.9-5.2,6.6-6.1,12.5-3.5c17.6,7.6,34.1,17.2,50.9,26.5c3.1,1.7,4.2,4.3,4.1,7.9c-0.9,29.5-17.8,44.9-47.5,51.7c-14.4,3.3-27.7-0.3-40.9-5.1c-27.7-10-54.4-21.8-76.8-41.6c-17.8-15.8-33.5-33.4-46.8-53.1c-10.2-15.2-20.8-30.1-26.7-47.8C143.4,212,140.9,202.4,141,194.7z"
+        />
+      </svg>
+    </span>
+  );
+}
 
 const PAYMENT_METHODS = ["Efectivo", "Transferencia"] as const;
 
@@ -267,16 +290,6 @@ function getOfferItemType(item: CatalogOffer["items"][number]): "fixed" | "categ
   return "fixed";
 }
 
-function formatPublishDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Catálogo actualizado";
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date);
-}
-
 function normalizeWhatsAppPhone(value: string): string | null {
   const digits = value.replace(/\D/g, "");
   return /^\d{8,15}$/.test(digits) ? digits : null;
@@ -397,7 +410,7 @@ const sortedPrices = [...product.precios].sort(
   );
 
   return (
-    <article className="product-card">
+    <article className={`product-card ${productStyles.scope}`}>
       <div className="product-image-wrap">
         <img
           className="product-image"
@@ -409,12 +422,6 @@ const sortedPrices = [...product.precios].sort(
             setShowPlaceholder(true);
           }}
         />
-        {showPlaceholder && (
-          <span className="image-note">
-            <Leaf size={14} aria-hidden="true" />
-            Hecho con cariño
-          </span>
-        )}
       </div>
       <div className="product-info">
         <h3>{product.nombre}</h3>
@@ -455,14 +462,14 @@ const sortedPrices = [...product.precios].sort(
                   </div>
                 ) : (
                   <button
-                    className="add-to-cart-button"
+                    className="action-button product-add-button"
                     type="button"
                     onClick={() => onAdjust(product, price.cantidad, 1)}
                     title="Agregar al pedido"
                     aria-label={`Agregar ${product.nombre}, presentación ${formatProductPresentation(price.cantidad)}, ${formatPrice(price.precio)}`}
                   >
-                    <Plus size={15} aria-hidden="true" />
-                    Agregar
+                    <Plus size={15} strokeWidth={3} aria-hidden="true" />
+                    <span className="product-add-label">Agregar</span>
                   </button>
                 )}
               </div>
@@ -519,7 +526,9 @@ function PizzaHalfBuilder({
 
   return (
     <>
-      <article className="product-card half-pizza-product-card">
+      <article
+        className={`product-card half-pizza-product-card ${productStyles.scope} ${pizzaStyles.productScope}`}
+      >
         <div className="product-image-wrap">
           <img
             className="product-image"
@@ -537,12 +546,12 @@ function PizzaHalfBuilder({
             <div className="presentation-row">
               <p className="half-pizza-description">Combiná dos sabores</p>
               <button
-                className="add-to-cart-button half-pizza-entry-button"
+                className="action-button half-pizza-entry-button"
                 type="button"
                 onClick={() => setIsConfiguring(true)}
               >
                 <Plus size={15} aria-hidden="true" />
-                Armar
+                <span className="half-pizza-entry-label">Armar</span>
               </button>
             </div>
           </div>
@@ -550,7 +559,7 @@ function PizzaHalfBuilder({
       </article>
       <dialog
         ref={dialogRef}
-        className="half-pizza-dialog"
+        className={`half-pizza-dialog ${pizzaStyles.dialogScope} ${offerStyles.scope}`}
         aria-labelledby="half-pizza-title"
         onClose={() => {
           if (isConfiguring) setIsConfiguring(false);
@@ -567,18 +576,18 @@ function PizzaHalfBuilder({
           <button
             className="offer-dialog-back"
             type="button"
+            aria-label="Volver a pizzas"
             onClick={closeAndReset}
           >
             <ArrowLeft size={17} aria-hidden="true" />
-            Volver a pizzas
           </button>
-          <div>
+          <div className="offer-dialog-title">
             <span className="eyebrow">ARMA TU PIZZA</span>
-            <h2 id="half-pizza-title">Mitad/mitad</h2>
+            <h2 id="half-pizza-title">Mitad/Mitad</h2>
           </div>
         </div>
         <p className="offer-dialog-description">
-          Elegí dos sabores distintos. El precio será el de la pizza más cara.
+          Elegí dos sabores distintos.
         </p>
         <div className="half-pizza-config">
           <div className="half-pizza-selected">
@@ -625,12 +634,13 @@ function PizzaHalfBuilder({
             {products.map(({ product, unitPriceCents }) => {
               const isSelected =
                 product.id === firstProductId || product.id === secondProductId;
+              const isFirstSelected = product.id === firstProductId;
               const isUnavailable =
                 (activeSelection === "first" && product.id === secondProductId) ||
                 (activeSelection === "second" && product.id === firstProductId);
               return (
                 <button
-                  className={`half-pizza-option${isSelected ? " selected" : ""}`}
+                  className={`half-pizza-option${isSelected ? ` selected ${isFirstSelected ? "selected-first" : "selected-second"}` : ""}`}
                   key={product.id}
                   type="button"
                   disabled={isUnavailable}
@@ -649,7 +659,13 @@ function PizzaHalfBuilder({
                     <strong>{product.nombre}</strong>
                     <small>{formatCents(unitPriceCents)}</small>
                   </span>
-                  {isSelected && <Check size={19} aria-hidden="true" />}
+                  {isSelected && (
+                    <span
+                      className={`half-pizza-option-check${isFirstSelected ? " first" : " second"}`}
+                    >
+                      <Check size={16} aria-hidden="true" />
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -657,21 +673,32 @@ function PizzaHalfBuilder({
         </div>
         <div className="offer-dialog-footer half-pizza-dialog-footer">
           <strong>
-            {selectedPrice === null ? "Elegí los dos sabores" : formatCents(selectedPrice)}
+            {selectedPrice === null
+              ? "El precio será el de la pizza más cara."
+              : formatCents(selectedPrice)}
           </strong>
-          <button
-            className="offer-add-button"
-            type="button"
-            disabled={!firstProduct || !secondProduct}
-            onClick={() => {
-              if (!firstProduct || !secondProduct) return;
-              onAdd(firstProduct.product, secondProduct.product);
-              closeAndReset();
-            }}
-          >
-            <Plus size={15} aria-hidden="true" />
-            Agregar al pedido
-          </button>
+          <div className="offer-config-actions">
+            <button
+              className="action-button offer-config-cancel-button"
+              type="button"
+              onClick={closeAndReset}
+            >
+              Cancelar
+            </button>
+            <button
+              className="action-button offer-config-confirm-button"
+              type="button"
+              disabled={!firstProduct || !secondProduct}
+              onClick={() => {
+                if (!firstProduct || !secondProduct) return;
+                onAdd(firstProduct.product, secondProduct.product);
+                closeAndReset();
+              }}
+            >
+              <Plus size={15} aria-hidden="true" />
+              Agregar al pedido
+            </button>
+          </div>
         </div>
       </dialog>
     </>
@@ -698,6 +725,8 @@ function CartAndCheckout({
   const [errors, setErrors] = useState<OrderFormErrors>({});
   const [validated, setValidated] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "details" | "confirm">("cart");
+  const [showAllReviewDetails, setShowAllReviewDetails] = useState(false);
+  const [showAllReviewProducts, setShowAllReviewProducts] = useState(false);
   const [expandedOfferSelections, setExpandedOfferSelections] = useState<Set<string>>(
     () => new Set(),
   );
@@ -746,7 +775,6 @@ function CartAndCheckout({
     }];
   });
   const totalCents = resolvedCart.reduce((sum, item) => sum + item.subtotalCents, 0);
-  const totalItems = resolvedCart.reduce((sum, item) => sum + item.count, 0);
   const deliveryMinimumCents =
     catalog.monto_minimo_delivery === null
       ? null
@@ -898,7 +926,7 @@ function CartAndCheckout({
 
   return (
     <section
-      className={`order-section checkout-fullscreen${checkoutStep === "cart" ? " checkout-cart-step" : ""}`}
+      className={`order-section checkout-fullscreen ${checkoutStyles.scope}${checkoutStep === "cart" ? " checkout-cart-step" : ""}`}
       id="pedido"
       aria-labelledby="order-title"
     >
@@ -942,10 +970,15 @@ function CartAndCheckout({
                 : "Confirmación"}
           </h2>
         </div>
-        {totalItems > 0 && (
-          <span className="order-item-count">
-            {totalItems} {totalItems === 1 ? "producto" : "productos"}
-          </span>
+        {checkoutStep === "cart" && (
+          <button
+            className="clear-cart-button"
+            type="button"
+            onClick={clearCart}
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            Vaciar carrito
+          </button>
         )}
       </div>
 
@@ -1001,17 +1034,6 @@ function CartAndCheckout({
           {checkoutStep === "cart" ? (
             <div className="cart-stage">
               <div className="cart-card">
-                <div className="cart-card-heading">
-                  <h3>Tu carrito</h3>
-                  <button
-                    className="clear-cart-button"
-                    type="button"
-                    onClick={clearCart}
-                  >
-                    <Trash2 size={15} aria-hidden="true" />
-                    Vaciar carrito
-                  </button>
-                </div>
                 <ul className="cart-list">
                   {resolvedCart.map((item) => {
                     const title =
@@ -1145,20 +1167,6 @@ function CartAndCheckout({
                     placeholder="Extras, sustituciones o detalles de preparación"
                   />
                 </div>
-                <div className="cart-totals">
-                  <div>
-                    <span>Subtotal</span>
-                    <strong>{formatCents(totalCents)}</strong>
-                  </div>
-                  <div>
-                    <span>Envío</span>
-                    <span>A confirmar</span>
-                  </div>
-                  <div className="estimated-total">
-                    <span>Total estimado</span>
-                    <strong>{formatCents(totalCents)}</strong>
-                  </div>
-                </div>
               </div>
               <div className="cart-stage-actions">
                 <a
@@ -1189,15 +1197,6 @@ function CartAndCheckout({
           ) : checkoutStep === "details" ? (
             <div className="details-stage">
               <form className="order-form" onSubmit={validateOrder} noValidate>
-            <div className="form-title">
-              <span className="state-icon">
-                <Truck size={22} aria-hidden="true" />
-              </span>
-              <div>
-                <h3>Datos para tu pedido</h3>
-              </div>
-            </div>
-
             <div className="form-field">
               <label htmlFor="customer-name">Tu nombre <span>*</span></label>
               <input
@@ -1226,7 +1225,23 @@ function CartAndCheckout({
                     disabled={!isDeliveryEligible}
                     onChange={() => updateField("fulfillment", "delivery")}
                   />
-                  <Truck size={18} aria-hidden="true" />
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m18.16 14.12-2.927-8.447A1 1 0 0 0 14.288 5H13" />
+                    <path d="M19 10a7 7 0 0 0-6.928 6" />
+                    <path d="M2 10h5.5a3 3 0 0 1 2.747 1.795l1.669 3.803A1 1 0 0 1 11.01 17H8" />
+                    <circle cx="19" cy="17" r="3" />
+                    <circle cx="5" cy="17" r="3" />
+                  </svg>
                   Delivery
                 </label>
                 <label className={order.fulfillment === "pickup" ? "selected" : ""}>
@@ -1304,8 +1319,7 @@ function CartAndCheckout({
               {order.paymentMethod === "Transferencia" &&
                 surchargePercentage !== null && (
                   <p className="payment-surcharge-note">
-                    Se sumará un recargo del {formatPercentage(surchargePercentage)}%
-                    al subtotal del pedido.
+                    Se sumará un recargo del {formatPercentage(surchargePercentage)}%.
                   </p>
                 )}
               {errors.paymentMethod && (
@@ -1349,66 +1363,158 @@ function CartAndCheckout({
             </div>
           ) : (
             <div className="details-stage">
-              <section className="order-review" aria-labelledby="order-review-title">
-              <div className="form-title">
-                <span className="state-icon">
-                  <Check size={22} aria-hidden="true" />
-                </span>
-                <div>
-                  <h3 id="order-review-title">Revisá y confirmá tu pedido</h3>
+              <section className="order-review" aria-label="Confirmación del pedido">
+                <div className="review-products-wrap">
+                  <ul className="review-products" id="order-review-products">
+                    {(showAllReviewProducts
+                      ? resolvedCart
+                      : resolvedCart.slice(0, 3)
+                    ).map((item) => (
+                      <li key={item.key}>
+                        <span>
+                          {item.type === "product"
+                            ? `${item.count} x ${item.product.nombre}`
+                            : item.type === "halfPizza"
+                              ? `${item.count} x Pizza mitad/mitad`
+                              : `${item.count} x Promo: ${item.offer.nombre}`}
+                          {item.type === "product" ? (
+                            <small>{formatProductPresentation(item.presentation)}</small>
+                          ) : item.type === "halfPizza" ? (
+                            <small>
+                              {item.leftProduct.nombre} / {item.rightProduct.nombre}
+                            </small>
+                          ) : (
+                            <ul
+                              className="cart-offer-selections review-offer-selections"
+                              id={`review-offer-selections-${item.key}`}
+                            >
+                              {item.selections
+                                .slice(
+                                  0,
+                                  item.selections.length > 4 &&
+                                    !expandedOfferSelections.has(item.key)
+                                    ? 3
+                                    : undefined,
+                                )
+                                .map((selection, index) => (
+                                  <li key={`${selection.productId}-${index}`}>
+                                    {formatOfferSelection(selection)}
+                                  </li>
+                                ))}
+                              {item.selections.length > 4 && (
+                                <li>
+                                  <button
+                                    className="cart-selections-toggle"
+                                    type="button"
+                                    aria-expanded={expandedOfferSelections.has(item.key)}
+                                    aria-controls={`review-offer-selections-${item.key}`}
+                                    onClick={() => {
+                                      setExpandedOfferSelections((current) => {
+                                        const next = new Set(current);
+                                        if (next.has(item.key)) {
+                                          next.delete(item.key);
+                                        } else {
+                                          next.add(item.key);
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                  >
+                                    {expandedOfferSelections.has(item.key)
+                                      ? "Mostrar menos"
+                                      : `+ ${item.selections.length - 3} más`}
+                                  </button>
+                                </li>
+                              )}
+                            </ul>
+                          )}
+                        </span>
+                        <strong>{formatCents(item.subtotalCents)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                  {resolvedCart.length > 3 && (
+                    <button
+                      className="review-details-toggle review-products-toggle"
+                      type="button"
+                      aria-expanded={showAllReviewProducts}
+                      aria-controls="order-review-products"
+                      onClick={() =>
+                        setShowAllReviewProducts((expanded) => !expanded)
+                      }
+                    >
+                      {showAllReviewProducts
+                        ? "Ver menos"
+                        : `Ver ${resolvedCart.length - 3} más`}
+                    </button>
+                  )}
                 </div>
-              </div>
-              <ul className="review-products">
-                {resolvedCart.map((item) => (
-                  <li key={item.key}>
-                    <span>
-                      {item.type === "product"
-                        ? `${item.count} x ${item.product.nombre}`
-                        : item.type === "halfPizza"
-                          ? `${item.count} x Pizza mitad/mitad`
-                          : `${item.count} x Promo: ${item.offer.nombre}`}
-                      {item.type === "product" ? (
-                        <small>{formatProductPresentation(item.presentation)}</small>
-                      ) : item.type === "halfPizza" ? (
-                        <small>
-                          {item.leftProduct.nombre} / {item.rightProduct.nombre}
-                        </small>
-                      ) : (
-                        <small>
-                          {item.selections.map(formatOfferSelection).join(", ")}
-                        </small>
-                      )}
-                    </span>
-                    <strong>{formatCents(item.subtotalCents)}</strong>
-                  </li>
-                ))}
-              </ul>
-              <dl className="review-details">
-                <div>
-                  <dt>Nombre</dt>
-                  <dd>{order.name.trim()}</dd>
+                <div className="review-details-wrap">
+                  <button
+                    className="review-details-edit"
+                    type="button"
+                    aria-label="Editar datos del pedido"
+                    title="Editar datos del pedido"
+                    onClick={() => {
+                      setValidated(false);
+                      changeCheckoutStep("details");
+                    }}
+                  >
+                    <SquarePen size={17} aria-hidden="true" />
+                  </button>
+                  <dl className="review-details">
+                    <div>
+                      <dt>Nombre</dt>
+                      <dd>{order.name.trim()}</dd>
+                    </div>
+                    <div>
+                      <dt>Medio de pago</dt>
+                      <dd className="review-details-payment">
+                        <span>{order.paymentMethod}</span>
+                        {!showAllReviewDetails && (
+                          <button
+                            className="review-details-toggle"
+                            type="button"
+                            aria-expanded={false}
+                            onClick={() => setShowAllReviewDetails(true)}
+                          >
+                            Ver más
+                          </button>
+                        )}
+                      </dd>
+                    </div>
+                    {showAllReviewDetails && (
+                      <>
+                        <div>
+                          <dt>Entrega</dt>
+                          <dd>
+                            {order.fulfillment === "delivery"
+                              ? `Delivery · ${order.address.trim()}`
+                              : "Retiro por el local"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Observaciones de la comida</dt>
+                          <dd>{order.foodNotes.trim() || "Sin indicaciones"}</dd>
+                        </div>
+                        <div>
+                          <dt>Observaciones de entrega o pago</dt>
+                          <dd>{order.notes.trim() || "Sin indicaciones"}</dd>
+                        </div>
+                      </>
+                    )}
+                  </dl>
+                  {showAllReviewDetails && (
+                    <button
+                      className="review-details-toggle review-details-collapse"
+                      type="button"
+                      aria-expanded={true}
+                      onClick={() => setShowAllReviewDetails(false)}
+                    >
+                      Ver menos
+                    </button>
+                  )}
                 </div>
-                <div>
-                  <dt>Entrega</dt>
-                  <dd>
-                    {order.fulfillment === "delivery"
-                      ? `Delivery · ${order.address.trim()}`
-                      : "Retiro por el local"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Medio de pago</dt>
-                  <dd>{order.paymentMethod}</dd>
-                </div>
-                <div>
-                  <dt>Comida</dt>
-                  <dd>{order.foodNotes.trim() || "Sin indicaciones"}</dd>
-                </div>
-                <div>
-                  <dt>Entrega o pago</dt>
-                  <dd>{order.notes.trim() || "Sin indicaciones"}</dd>
-                </div>
-              </dl>
               <div className="order-review-totals">
                 <div><span>Subtotal</span><strong>{formatCents(totalCents)}</strong></div>
                 {isTransferPayment && surchargePercentage !== null && (
@@ -1441,7 +1547,7 @@ function CartAndCheckout({
                     navigateFromCheckout("inicio");
                   }}
                 >
-                  <MessageCircle size={19} aria-hidden="true" />
+                  <WhatsAppIcon />
                   Enviar pedido por WhatsApp
                 </a>
               ) : (
@@ -1450,20 +1556,6 @@ function CartAndCheckout({
                   <code>VITE_WHATSAPP_PHONE</code> para habilitar el envío.
                 </p>
               )}
-              <p className="whatsapp-disclaimer" role="note">
-                Se abrirá WhatsApp. Tocá «Enviar» para hacer el pedido; el local
-                confirmará disponibilidad del pedido.
-              </p>
-              <button
-                className="edit-order-button"
-                type="button"
-                onClick={() => {
-                  setValidated(false);
-                  changeCheckoutStep("details");
-                }}
-              >
-                Editar datos
-              </button>
               <button
                 className="back-to-cart-button"
                 type="button"
@@ -1597,14 +1689,17 @@ function OfferCard({
   };
 
   return (
-    <article className="offer-card">
-      <div className="offer-label">
-        <Flame className="promo-flame" size={14} aria-hidden="true" />
-        PROMO PARA COMPARTIR
-      </div>
+    <article className={`offer-card ${offerStyles.scope}`}>
+      <Flame
+        className="offer-corner-flame"
+        size={32}
+        aria-hidden="true"
+      />
       <h3>{offer.nombre}</h3>
       {offer.items.length > 0 && (
-        <ul className="offer-items">
+        <ul
+          className={`offer-items${offer.items.length > 3 ? " offer-items--many" : ""}`}
+        >
           {offer.items.map((item, index) => {
             const type = getOfferItemType(item);
             const categoryDescription = type === "category"
@@ -1647,7 +1742,7 @@ function OfferCard({
       <div className="offer-footer">
         <strong className="offer-price">{formatPrice(offer.precio)}</strong>
         <button
-          className="offer-add-button"
+          className="action-button offer-card-add-button"
           type="button"
           onClick={() => {
             if (configurableItems.length > 0) {
@@ -1680,12 +1775,12 @@ function OfferCard({
             <button
               className="offer-dialog-back"
               type="button"
+              aria-label="Volver a las promociones"
               onClick={() => setIsConfiguring(false)}
             >
               <ArrowLeft size={17} aria-hidden="true" />
-              Volver a promos
             </button>
-            <div>
+            <div className="offer-dialog-title">
               <span className="eyebrow">ARMA TU PROMO</span>
               <h2 id={`offer-dialog-title-${offer.id}`}>{offer.nombre}</h2>
             </div>
@@ -1700,20 +1795,39 @@ function OfferCard({
                 const selectedTotal = selections
                   ? Array.from(selections.values()).reduce((sum, quantity) => sum + quantity, 0)
                   : 0;
+                const requiredQuantity = Number(item.cantidad);
+                const progress = requiredQuantity > 0
+                  ? Math.min(100, (selectedTotal / requiredQuantity) * 100)
+                  : 0;
+                const categoryName =
+                  categoryNames.get(item.categoria_id ?? -1) ?? "la categoría";
                 return (
                   <fieldset className="offer-config-group" key={index}>
                     <legend>
-                      Elegí {formatOfferQuantity(Number(item.cantidad))} {" "}
-                      {categoryNames.get(item.categoria_id ?? -1) ?? "la categoría"}
+                      <span>{categoryName}</span>
                       <small className="offer-selection-count">
-                        {selectedTotal} de {formatOfferQuantity(Number(item.cantidad))}
+                        <strong>{selectedTotal}</strong> de{" "}
+                        {formatOfferQuantity(requiredQuantity)}
                       </small>
                     </legend>
+                    <div
+                      className="offer-selection-progress"
+                      role="progressbar"
+                      aria-label={`Cantidad seleccionada de ${categoryName}`}
+                      aria-valuemin={0}
+                      aria-valuemax={requiredQuantity}
+                      aria-valuenow={selectedTotal}
+                    >
+                      <span style={{ width: `${progress}%` }} />
+                    </div>
                     {categoryProducts.map((product) => {
                       const quantity = selections?.get(product.id) ?? 0;
                       return (
-                        <div className="offer-choice-row" key={product.id}>
-                          <span>{product.nombre}</span>
+                        <div
+                          className={`offer-choice-row${quantity > 0 ? " has-quantity" : ""}`}
+                          key={product.id}
+                        >
+                          <span className="offer-choice-product">{product.nombre}</span>
                           <div className="offer-choice-quantity">
                             <button
                               type="button"
@@ -1746,7 +1860,7 @@ function OfferCard({
               return (
                 <fieldset className="offer-config-group" key={index}>
                   <legend>
-                    Elegí una opción · {formatOfferQuantity(Number(item.cantidad))}
+                    Elegí una opción
                   </legend>
                   {optionProducts.map((product) => (
                     <label className="offer-option-choice" key={product.id}>
@@ -1772,14 +1886,14 @@ function OfferCard({
             <strong>{formatPrice(offer.precio)}</strong>
             <div className="offer-config-actions">
               <button
-                className="offer-cancel-button"
+                className="action-button offer-config-cancel-button"
                 type="button"
                 onClick={() => setIsConfiguring(false)}
               >
                 Cancelar
               </button>
               <button
-                className="offer-add-button"
+                className="action-button offer-config-confirm-button"
                 type="button"
                 disabled={!hasRequiredSelections}
                 onClick={confirmOffer}
@@ -1797,7 +1911,11 @@ function OfferCard({
 
 function LoadingState() {
   return (
-    <section className="menu-section" aria-label="Cargando menú" aria-busy="true">
+    <section
+      className={`menu-section ${menuStyles.scope} ${stateStyles.loadingScope}`}
+      aria-label="Cargando menú"
+      aria-busy="true"
+    >
       <div className="section-heading">
         <div className="skeleton skeleton-title" />
         <div className="skeleton skeleton-caption" />
@@ -2002,7 +2120,9 @@ function App() {
   };
 
   return (
-    <div className={cartItemCount > 0 ? "site-shell has-cart" : "site-shell"}>
+    <div
+      className={`site-shell ${appStyles.scope}${cartItemCount > 0 ? " has-cart" : ""}`}
+    >
       <header className="site-header">
         <a className="brand" href="#inicio" aria-label="PIZZA FIORI, inicio">
           <img className="brand-logo" src="/logo.png" alt="" />
@@ -2056,23 +2176,18 @@ function App() {
           </div>
         </section>
 
-        <section className="menu-section" id="menu">
+        <section className={`menu-section ${menuStyles.scope}`} id="menu">
           <div className="section-heading">
-            <div>
-              <h2>Menú</h2>
-            </div>
-            {catalog && (
-              <p className="catalog-date">
-                <Clock3 size={15} aria-hidden="true" />
-                Actualizado {formatPublishDate(catalog.publicado_en)}
-              </p>
-            )}
+            <h2>Menú</h2>
           </div>
 
           {isLoading && <LoadingState />}
 
           {!isLoading && error && (
-            <div className="state-panel error-panel" role="alert">
+            <div
+              className={`state-panel error-panel ${stateStyles.panelScope}`}
+              role="alert"
+            >
               <span className="state-icon">
                 <AlertCircle size={24} aria-hidden="true" />
               </span>
@@ -2090,7 +2205,7 @@ function App() {
           )}
 
           {!isLoading && !error && !hasProducts && (
-            <div className="state-panel">
+            <div className={`state-panel ${stateStyles.panelScope}`}>
               <span className="state-icon">
                 <Leaf size={24} aria-hidden="true" />
               </span>
@@ -2104,7 +2219,7 @@ function App() {
               <nav className="category-nav" aria-label="Categorías del menú">
                 {catalog.ofertas.length > 0 && (
                   <a className="promos-nav-link" href="#promos">
-                    <Flame className="promo-flame" size={16} aria-hidden="true" />
+                    <Flame className="promos-nav-flame" size={16} aria-hidden="true" />
                     Promos
                   </a>
                 )}
@@ -2252,10 +2367,7 @@ function App() {
               aria-label="WhatsApp de Pizza Fiori"
               title="WhatsApp"
             >
-              <span className="footer-whatsapp-icon" aria-hidden="true">
-                <MessageCircle />
-                <Phone />
-              </span>
+              <WhatsAppIcon />
             </a>
           )}
           {PHONE_NUMBER && (
@@ -2282,8 +2394,8 @@ function App() {
             <ShoppingBag size={18} aria-hidden="true" />
             <span>{cartItemCount}</span>
           </span>
-          <span>Ver pedido</span>
-          <strong>{formatCents(cartTotalCents)}</strong>
+          <strong className="sticky-cart-price">{formatCents(cartTotalCents)}</strong>
+          <ChevronRight className="sticky-cart-chevron" size={21} aria-hidden="true" />
         </button>
       )}
     </div>

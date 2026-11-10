@@ -12,8 +12,8 @@ import * as Icons from './shared/Icons';
 import { deactivateProducto } from "../services/productsService";
 import { getOfertas } from "../services/ofertasService";
 import { formatCurrency } from "../utils/formatters";
+import { getProductImageUrl } from "../utils/productImage";
 import "../styles/product-card.css";
-import env from "../config/env";
 
 
 
@@ -47,7 +47,7 @@ const ProductCard = ({
   const [affectedOffers, setAffectedOffers] = useState<Offer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(false);
 
-  const imageUrl = producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png";
+  const imageUrl = getProductImageUrl(producto);
 
   const isSameCantidad = (a: number, b: number) => Math.abs(a - b) < 1e-9;
   const formatCantidad = (cantidad: number): string => {

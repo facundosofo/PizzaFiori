@@ -104,6 +104,7 @@ class ProductoResponse(BaseModel):
     imagen: Optional[str] = None
     activo: bool
     fecha_creacion: datetime
+    fecha_actualizacion: datetime
     ofertas_desactivadas: Optional[List[int]] = None  # IDs de ofertas desactivadas al desactivar producto
 
 

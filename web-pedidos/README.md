@@ -4,6 +4,8 @@ Aplicación React + TypeScript + Vite independiente del frontend administrativo.
 
 ## Desarrollo local
 
+Para ajustar los estilos aislados de las pantallas y componentes, y consultar los criterios de ambos temas, usá la [Guía UX de componentes y modos de color](./UX-THEME-GUIDE.md).
+
 1. Copiar `.env.example` a `.env.local` (o configurar esas variables en `.env`).
 2. Cambiar `VITE_CATALOG_POINTER_URL` por la URL HTTPS pública del objeto `catalogo-actual.json` en R2.
 3. Configurar `VITE_HIDDEN_CATEGORIES` con los nombres exactos de las categorías que no se deben mostrar, separados por comas (por ejemplo, `Extra`).

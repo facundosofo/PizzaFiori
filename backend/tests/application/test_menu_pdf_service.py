@@ -414,8 +414,9 @@ def test_menu_pdf_formats_prices_and_presentations_for_argentine_spanish():
     assert _format_presentation(Decimal("12")) == "Docena"
 
 
-def test_page_brand_uses_compact_word_spacing(monkeypatch):
-    draw_strings = []
+def test_page_brand_uses_selected_png_logo(monkeypatch):
+    draw_images = []
+    decorative_lines = []
 
     class RecordingCanvas:
         def saveState(self):
@@ -430,11 +431,8 @@ def test_page_brand_uses_compact_word_spacing(monkeypatch):
         def rect(self, *_args, **_kwargs):
             pass
 
-        def setFont(self, *_args):
-            pass
-
-        def drawString(self, x, y, text):
-            draw_strings.append((x, y, text))
+        def drawImage(self, *args, **kwargs):
+            draw_images.append((args, kwargs))
 
         def setStrokeColor(self, _color):
             pass
@@ -443,29 +441,102 @@ def test_page_brand_uses_compact_word_spacing(monkeypatch):
             pass
 
         def line(self, *_args):
-            pass
+            decorative_lines.append(_args)
 
     monkeypatch.setattr(
         menu_pdf_service,
-        "_register_menu_fonts",
-        lambda: ("serif", "serif-italic", "sans", "sans-bold"),
+        "ImageReader",
+        lambda path: SimpleNamespace(getSize=lambda: (1600, 600), path=path),
     )
-    monkeypatch.setattr(menu_pdf_service, "_tracked_text", Mock())
-    monkeypatch.setattr(menu_pdf_service, "_draw_heart", Mock())
-    monkeypatch.setattr(
-        menu_pdf_service.pdfmetrics,
-        "stringWidth",
-        lambda text, _font, _size: {"PIZZA": 50, " ": 10, "FIORI": 60}[text],
-    )
+    draw_heart = Mock()
+    monkeypatch.setattr(menu_pdf_service, "_draw_heart", draw_heart)
 
     menu_pdf_service._page_chrome(
         RecordingCanvas(),
         SimpleNamespace(page=1, pagesize=(600, 800)),
     )
 
-    pizza_x = draw_strings[0][0]
-    fiori_x = draw_strings[1][0]
-    assert fiori_x - pizza_x == 64
+    assert len(draw_images) == 1
+    image, options = draw_images[0]
+    assert image[0].path == str(menu_pdf_service._menu_logo_path())
+    rendered_width = 1600 * (76 / 600)
+    assert image[1] == pytest.approx((600 - rendered_width) / 2)
+    assert image[2] == pytest.approx(800 - 3.05 * menu_pdf_service.cm + 3)
+    assert options["width"] == pytest.approx(rendered_width)
+    assert options["height"] == pytest.approx(76)
+    assert options["mask"] == "auto"
+    assert decorative_lines == []
+    draw_heart.assert_not_called()
+
+
+def test_only_selected_menu_logos_are_available():
+    logo_dir = menu_pdf_service._menu_logo_path().parent
+    filenames = {
+        menu_pdf_service.MENU_LOGO_FILENAME,
+        menu_pdf_service.MENU_FOOTER_LOGO_FILENAME,
+    }
+    assert {path.name for path in logo_dir.iterdir()} == filenames
+
+    for filename in filenames:
+        logo_path = logo_dir / filename
+        assert logo_path.is_file()
+        width, height = menu_pdf_service.ImageReader(str(logo_path)).getSize()
+        assert width > 0
+        assert height > 0
+
+
+def test_footer_uses_small_pizza_logo_instead_of_italian_flag(monkeypatch):
+    draw_images = []
+    draw_rectangles = []
+    draw_strings = []
+
+    class RecordingCanvas:
+        _pagesize = (600, 800)
+        _footer_font = "footer"
+
+        def saveState(self):
+            pass
+
+        def restoreState(self):
+            pass
+
+        def drawImage(self, *args, **kwargs):
+            draw_images.append((args, kwargs))
+
+        def rect(self, *args, **kwargs):
+            draw_rectangles.append((args, kwargs))
+
+        def setFillColor(self, _color):
+            pass
+
+        def setFont(self, *_args):
+            pass
+
+        def drawCentredString(self, *args):
+            draw_strings.append(args)
+
+    monkeypatch.setattr(
+        menu_pdf_service,
+        "ImageReader",
+        lambda path: SimpleNamespace(getSize=lambda: (1600, 688), path=path),
+    )
+
+    menu_pdf_service._PageCountCanvas._draw_footer(RecordingCanvas(), 2, 4)
+
+    assert len(draw_images) == 1
+    image, options = draw_images[0]
+    assert image[0].path == str(
+        menu_pdf_service._menu_logo_path(
+            menu_pdf_service.MENU_FOOTER_LOGO_FILENAME
+        )
+    )
+    assert image[1] == pytest.approx(291)
+    assert image[2] == pytest.approx(21 - (18 * 688 / 1600) / 2)
+    assert options["width"] == 18
+    assert options["height"] == pytest.approx(18 * 688 / 1600)
+    assert options["mask"] == "auto"
+    assert draw_rectangles == []
+    assert draw_strings[0][2] == "Precios sujetos a confirmación por el local ·  Pág. 2 de 4"
 
 
 def test_category_offer_presentations_include_only_single_category_offers():
@@ -570,6 +641,16 @@ def test_category_offer_presentations_include_only_single_category_offers():
     )
     assert rounded_table is not None
     assert rounded_table._cellvalues[1][0].text == "$ 167 c/u"
+
+    total_price_table = _category_offer_presentations(
+        [test_price_offer],
+        category_id=3,
+        width=300,
+        styles=_paragraph_styles("Helvetica-Bold", "Helvetica", "Helvetica-Bold"),
+        show_total_price=True,
+    )
+    assert total_price_table is not None
+    assert total_price_table._cellvalues[1][0].text == "$ 1.000"
 
 
 def test_title_cases_only_all_uppercase_names_and_preserves_acronyms():
