@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import { formatLocalISO } from "../utils/formatters";
+import { getProductImageUrl } from "../utils/productImage";
 import "../styles/shared/forms.css";
 import "../styles/product-form.css";
-import env from "../config/env";
 
 interface ProductFormProps {
   producto?: Product | null;
@@ -27,7 +27,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     return "";
   });
   const [preview, setPreview] = useState<string>(
-    producto?.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : ""
+    producto ? getProductImageUrl(producto, "") : ""
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -40,7 +40,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         setPrecioVenta(producto.precios[0].precio.toString());
       }
       if (producto.imagen) {
-        setPreview(`${env.API_BASE_URL}/${producto.imagen}`);
+        setPreview(getProductImageUrl(producto, ""));
       }
     }
   }, [producto]);

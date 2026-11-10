@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import type { Product } from '../types/product';
 import type { Category } from '../types/category';
 import { formatCurrency } from '../utils/formatters';
+import { getProductImageUrl } from '../utils/productImage';
 import * as Icons from './shared/Icons';
-import env from '../config/env';
 import pizzaMitadImage from '../assets/PizzaMitad.png';
 import '../styles/product-card.css';
 import '../styles/product-quick-selector.css';
@@ -145,7 +145,7 @@ const ProductQuickSelectorBase: React.FC<ProductQuickSelectorProps> = ({
             
             {products.map((product) => {
               const qtyInCart = cartQuantities.get(product.id) || 0;
-              const imageUrl = product.imagen ? `${env.API_BASE_URL}/${product.imagen}` : "/placeholder.png";
+              const imageUrl = getProductImageUrl(product);
 
               return (
                 <motion.div

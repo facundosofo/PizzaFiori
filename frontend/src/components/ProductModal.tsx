@@ -6,11 +6,11 @@ import * as Icons from './shared/Icons';
 import ConfirmDialog from "./shared/ConfirmDialog";
 import { updateProducto, createProducto } from "../services/productsService";
 import { formatCurrency, parseCurrencyInput } from "../utils/formatters";
+import { getProductImageUrl } from "../utils/productImage";
 import "../styles/shared/forms.css";
 import "../styles/shared/quantity-controls.css";
 import "../styles/shared/add-button.css";
 import "../styles/product-modal.css";
-import env from "../config/env";
 
 interface ProductModalProps {
   producto: Product | null;
@@ -146,11 +146,7 @@ const ProductModal = ({
         setCantidadInputs(producto.precios?.map(p => formatCantidadDisplay(Number(p.cantidad))) || []);
       }
 
-      setPreviewImagen(
-        producto.imagen
-          ? `${env.API_BASE_URL}/${producto.imagen}`
-          : "/placeholder.png"
-      );
+      setPreviewImagen(getProductImageUrl(producto));
       setImagen(null);
       setError("");
     }
@@ -566,7 +562,7 @@ const ProductModal = ({
                         const input = document.getElementById("file-input") as HTMLInputElement;
                         if (input) input.value = "";
                         setPreviewImagen(
-                          producto.imagen ? `${env.API_BASE_URL}/${producto.imagen}` : "/placeholder.png"
+                          getProductImageUrl(producto)
                         );
                       }}
                       disabled={loading}

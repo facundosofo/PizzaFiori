@@ -3,8 +3,11 @@ Tests for product schemas validation.
 Tests Pydantic models for products including tiered pricing validation.
 """
 
-import pytest
+from datetime import datetime
 from decimal import Decimal
+from types import SimpleNamespace
+
+import pytest
 from pydantic import ValidationError
 
 from app.presentation.schemas.product_schemas import (
@@ -14,6 +17,27 @@ from app.presentation.schemas.product_schemas import (
     ProductoResponse,
     ActualizarPreciosMasivosRequest,
 )
+
+
+def test_producto_response_includes_image_version_timestamp():
+    updated_at = datetime(2026, 11, 9, 23, 0)
+    producto = SimpleNamespace(
+        id=1,
+        sku="PIZZA-MUZZARELLA",
+        nombre="Pizza Muzzarella",
+        categoria_id=1,
+        orden=0,
+        precios=[],
+        imagen="uploads/productos/PIZZA-MUZZARELLA.jpg",
+        activo=True,
+        fecha_creacion=updated_at,
+        fecha_actualizacion=updated_at,
+    )
+
+    response = ProductoResponse.model_validate(producto)
+
+    assert response.fecha_actualizacion == updated_at
+    assert response.model_dump(mode="json")["fecha_actualizacion"] == updated_at.isoformat()
 
 
 # ==================== ProductoPrecioRequest Tests ====================
