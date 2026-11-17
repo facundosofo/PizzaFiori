@@ -97,7 +97,13 @@ Requiere sesión de administrador. El backend genera y devuelve un PDF con las c
 El backend omite por defecto la categoría `Extras` del PDF. Se puede configurar
 `MENU_PDF_HIDDEN_CATEGORIES` con una lista separada por comas, por ejemplo
 `MENU_PDF_HIDDEN_CATEGORIES="Extras,Cafetería"`. La comparación ignora espacios
-alrededor, mayúsculas y tildes.
+alrededor, mayúsculas y tildes. También se pueden ocultar productos completos
+con `MENU_PDF_HIDDEN_PRODUCTS` (nombres separados por comas) y presentaciones
+específicas con `MENU_PDF_HIDDEN_PRICES`, usando `Nombre del producto|cantidad`
+separados por comas. Por defecto se oculta la presentación `0.5` de Papas Fritas
+Completas y Papas Fritas Simples; una variable vacía desactiva esos valores por
+defecto. La misma configuración de productos y precios debe establecerse en las
+variables `VITE_HIDDEN_PRODUCTS` y `VITE_HIDDEN_PRICES` de la web de pedidos.
 
 ### Productos
 
