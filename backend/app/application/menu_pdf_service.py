@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from io import BytesIO
 import os
 from pathlib import Path
@@ -40,6 +40,7 @@ from app.domain.models.offer import Offer
 from app.domain.models.product import Product
 from app.domain.models.product_category import ProductCategory
 from app.domain.unit_of_work import AbstractUnitOfWork
+from app.infrastructure.config.settings import settings
 from app.presentation.schemas.public_catalog_schemas import (
     PublicCatalogCategory,
     PublicCatalogOffer,
@@ -248,8 +249,15 @@ def _normalize_category_name(name: str) -> str:
     return "".join(char for char in decomposed if not unicodedata.combining(char))
 
 
+def _menu_pdf_environment(name: str, default: str) -> str:
+    configured = os.getenv(name)
+    if configured is not None:
+        return configured
+    return getattr(settings, name.lower(), default)
+
+
 def _hidden_category_names() -> set[str]:
-    configured = os.getenv("MENU_PDF_HIDDEN_CATEGORIES", "Extras")
+    configured = _menu_pdf_environment("MENU_PDF_HIDDEN_CATEGORIES", "Extras")
     return {
         normalized
         for name in configured.split(",")
@@ -257,29 +265,84 @@ def _hidden_category_names() -> set[str]:
     }
 
 
-def _without_hidden_categories(
+def _hidden_product_names() -> set[str]:
+    configured = _menu_pdf_environment("MENU_PDF_HIDDEN_PRODUCTS", "")
+    return {
+        normalized
+        for name in configured.split(",")
+        if (normalized := _normalize_category_name(name))
+    }
+
+
+def _hidden_product_prices() -> set[tuple[str, Decimal]]:
+    configured = _menu_pdf_environment(
+        "MENU_PDF_HIDDEN_PRICES",
+        "Papas Fritas Completas|0.5,Papas Fritas Simples|0.5",
+    )
+    hidden_prices = set()
+    for selector in configured.split(","):
+        if not selector.strip():
+            continue
+        product_name, separator, quantity_text = selector.rpartition("|")
+        if not separator or not product_name.strip():
+            raise ValueError(
+                "MENU_PDF_HIDDEN_PRICES debe usar el formato "
+                "'Nombre del producto|cantidad'."
+            )
+        try:
+            quantity = Decimal(quantity_text.strip())
+        except InvalidOperation as exc:
+            raise ValueError(
+                "La cantidad en MENU_PDF_HIDDEN_PRICES debe ser numérica."
+            ) from exc
+        if not quantity.is_finite() or quantity <= 0:
+            raise ValueError(
+                "La cantidad en MENU_PDF_HIDDEN_PRICES debe ser mayor que cero."
+            )
+        hidden_prices.add((_normalize_category_name(product_name), quantity))
+    return hidden_prices
+
+
+def _without_hidden_menu_items(
     catalog: PublicCatalogResponse,
 ) -> PublicCatalogResponse:
     hidden_names = _hidden_category_names()
+    hidden_product_names = _hidden_product_names()
+    hidden_prices = _hidden_product_prices()
     hidden_ids = {
         category.id
         for category in catalog.categorias
         if _normalize_category_name(category.nombre) in hidden_names
     }
-    if not hidden_ids:
-        return catalog
-
-    products = [
-        product
-        for product in catalog.productos
-        if product.categoria_id not in hidden_ids
-    ]
+    products = []
+    for product in catalog.productos:
+        normalized_name = _normalize_category_name(product.nombre)
+        if (
+            product.categoria_id in hidden_ids
+            or normalized_name in hidden_product_names
+        ):
+            continue
+        prices = [
+            price
+            for price in product.precios
+            if (normalized_name, Decimal(str(price.cantidad))) not in hidden_prices
+        ]
+        if prices:
+            products.append(
+                product
+                if len(prices) == len(product.precios)
+                else product.model_copy(update={"precios": prices})
+            )
     visible_product_ids = {product.id for product in products}
+    visible_category_ids = {product.categoria_id for product in products}
     offers = []
     for offer in catalog.ofertas:
         items = []
         for item in offer.items:
-            if item.categoria_id in hidden_ids:
+            if item.categoria_id in hidden_ids or (
+                item.categoria_id is not None
+                and item.categoria_id not in visible_category_ids
+            ):
                 continue
             product_ids = [
                 product_id
@@ -299,6 +362,7 @@ def _without_hidden_categories(
                 category
                 for category in catalog.categorias
                 if category.id not in hidden_ids
+                and category.id in visible_category_ids
             ],
             "productos": products,
             "ofertas": offers,
@@ -1582,7 +1646,7 @@ def _categories_for_menu(
 
 
 def _render_menu_pdf(catalog: PublicCatalogResponse) -> bytes:
-    catalog = _without_hidden_categories(catalog)
+    catalog = _without_hidden_menu_items(catalog)
     serif_bold, _, sans, sans_bold = _register_menu_fonts()
     styles = _paragraph_styles(serif_bold, sans, sans_bold)
     stream = BytesIO()

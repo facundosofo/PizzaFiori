@@ -33,7 +33,7 @@ from app.application.menu_pdf_service import (
     _paragraph_styles,
     _register_menu_fonts,
     _promo_rows,
-    _without_hidden_categories,
+    _without_hidden_menu_items,
 )
 from app.application.public_catalog_service import build_public_catalog
 
@@ -1516,7 +1516,7 @@ async def test_editorial_layout_handles_mixed_presentations_and_stays_within_thr
         image_urls={},
         published_at=datetime.now(timezone.utc),
     )
-    visible_catalog = _without_hidden_categories(catalog)
+    visible_catalog = _without_hidden_menu_items(catalog)
     page_count = len(re.findall(rb"/Type\s*/Page\b", pdf))
 
     assert pdf.startswith(b"%PDF-")
@@ -1553,3 +1553,58 @@ async def test_editorial_layout_handles_mixed_presentations_and_stays_within_thr
             in extracted
         )
         assert extracted.count("Pizzas mitad y mitad:") == 1
+
+
+def test_menu_hides_products_and_selected_presentations(monkeypatch):
+    monkeypatch.setenv("MENU_PDF_HIDDEN_CATEGORIES", "")
+    monkeypatch.setenv("MENU_PDF_HIDDEN_PRODUCTS", "Producto oculto")
+    monkeypatch.setenv(
+        "MENU_PDF_HIDDEN_PRICES",
+        "Papas Fritas Simples|0.5",
+    )
+    categories = [_category(1, "Papas Fritas")]
+    products = [
+        _product(
+            1,
+            "Papas Fritas Simples",
+            1,
+            prices=[
+                SimpleNamespace(cantidad=Decimal("0.5"), precio=Decimal("4000")),
+                SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("7500")),
+            ],
+        ),
+        _product(
+            2,
+            "Producto oculto",
+            1,
+            prices=[SimpleNamespace(cantidad=Decimal("1"), precio=Decimal("1000"))],
+        ),
+    ]
+    catalog = build_public_catalog(
+        categories,
+        products,
+        [],
+        image_urls={},
+        published_at=datetime.now(timezone.utc),
+    )
+
+    visible_catalog = _without_hidden_menu_items(catalog)
+
+    assert [product.nombre for product in visible_catalog.productos] == [
+        "Papas Fritas Simples"
+    ]
+    assert [
+        Decimal(str(price.cantidad))
+        for price in visible_catalog.productos[0].precios
+    ] == [Decimal("1")]
+
+
+def test_menu_hidden_categories_use_settings_dotenv_value(monkeypatch):
+    monkeypatch.delenv("MENU_PDF_HIDDEN_CATEGORIES", raising=False)
+    monkeypatch.setattr(
+        menu_pdf_service,
+        "settings",
+        SimpleNamespace(menu_pdf_hidden_categories="Cafetería,Extras"),
+    )
+
+    assert menu_pdf_service._hidden_category_names() == {"cafeteria", "extras"}

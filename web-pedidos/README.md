@@ -8,10 +8,11 @@ Para ajustar los estilos aislados de las pantallas y componentes, y consultar lo
 
 1. Copiar `.env.example` a `.env.local` (o configurar esas variables en `.env`).
 2. Cambiar `VITE_CATALOG_POINTER_URL` por la URL HTTPS pública del objeto `catalogo-actual.json` en R2.
-3. Configurar `VITE_HIDDEN_CATEGORIES` con los nombres exactos de las categorías que no se deben mostrar, separados por comas (por ejemplo, `Extra`).
-4. Configurar `VITE_WHATSAPP_PHONE` con el teléfono comercial en formato internacional, solo dígitos (código de país + número, sin `+`, espacios ni guiones).
-5. Opcionalmente, configurar `VITE_INSTAGRAM_URL`, `VITE_FACEBOOK_URL`, `VITE_GOOGLE_MAPS_URL` y `VITE_WHATSAPP_URL` para mostrar esos accesos en el footer. Para Maps, pegar el enlace compartido de la ubicación de Google Maps. `VITE_WHATSAPP_URL` puede omitirse para generar el enlace desde `VITE_WHATSAPP_PHONE`. Configurar `VITE_PHONE_NUMBER` para un teléfono de llamadas; si se omite, el botón de teléfono reutiliza `VITE_WHATSAPP_PHONE`. Los accesos sin URL válida no se muestran.
-6. Desde esta carpeta, ejecutar:
+3. Configurar `VITE_HIDDEN_CATEGORIES` y `VITE_HIDDEN_PRODUCTS` con los nombres que no se deben mostrar, separados por comas.
+4. Configurar `VITE_HIDDEN_PRICES` con pares `Nombre del producto|cantidad`, separados por comas. Por defecto, se oculta la presentación `0.5` de Papas Fritas Completas y Papas Fritas Simples. Para mostrar todos los precios, dejar la variable vacía.
+5. Configurar `VITE_WHATSAPP_PHONE` con el teléfono comercial en formato internacional, solo dígitos (código de país + número, sin `+`, espacios ni guiones).
+6. Opcionalmente, configurar `VITE_INSTAGRAM_URL`, `VITE_FACEBOOK_URL`, `VITE_GOOGLE_MAPS_URL` y `VITE_WHATSAPP_URL` para mostrar esos accesos en el footer. Para Maps, pegar el enlace compartido de la ubicación de Google Maps. `VITE_WHATSAPP_URL` puede omitirse para generar el enlace desde `VITE_WHATSAPP_PHONE`. Configurar `VITE_PHONE_NUMBER` para un teléfono de llamadas; si se omite, el botón de teléfono reutiliza `VITE_WHATSAPP_PHONE`. Los accesos sin URL válida no se muestran.
+7. Desde esta carpeta, ejecutar:
 
    ```powershell
    npm install
@@ -31,13 +32,15 @@ Si la URL de prueba no está configurada o R2 no permite CORS para el origen `ht
   - `VITE_CATALOG_POINTER_URL=https://<dominio-publico>/catalogo-actual.json`
   - `VITE_WHATSAPP_PHONE=<código-de-país-y-número-solo-dígitos>`
   - `VITE_HIDDEN_CATEGORIES=Extra`
+  - `VITE_HIDDEN_PRODUCTS=` (opcional; nombres separados por comas)
+  - `VITE_HIDDEN_PRICES=Papas Fritas Completas|0.5,Papas Fritas Simples|0.5`
   - `VITE_INSTAGRAM_URL=https://instagram.com/<cuenta>` (opcional)
   - `VITE_FACEBOOK_URL=https://facebook.com/<cuenta>` (opcional)
   - `VITE_GOOGLE_MAPS_URL=<enlace-compartido-de-Google-Maps>` (opcional)
   - `VITE_WHATSAPP_URL=https://wa.me/<código-de-país-y-número>` (opcional; si falta, se deriva de `VITE_WHATSAPP_PHONE`)
   - `VITE_PHONE_NUMBER=<código-de-país-y-número-solo-dígitos>` (opcional; si falta, reutiliza `VITE_WHATSAPP_PHONE`)
 
-Las variables de build identifican el catálogo público, teléfonos, enlaces de redes y categorías que se ocultan; no deben contener credenciales. Los accesos sociales, ubicación y contacto se muestran únicamente cuando tienen una URL o número válido. Los medios de pago son Efectivo y Transferencia. El porcentaje de recargo por transferencia y el monto mínimo para delivery gratis se administran desde Configuración en el portal interno y se publican en el catálogo de R2. El mínimo inicial para delivery es $13.000, calculado sobre el subtotal de productos y promociones antes del recargo por transferencia. Cuando el pedido no alcanza ese monto, la opción de delivery se deshabilita y se indica cuánto falta; Retiro sigue disponible. Después de cambiar cualquiera de esos valores en Configuración, volvé a publicar el catálogo para actualizar la web pública. Los nombres de categoría se comparan sin distinguir mayúsculas y minúsculas. El número se valida (8 a 15 dígitos) y se normaliza antes de generar el enlace oficial de WhatsApp. Configurá las variables en Cloudflare Pages y volvé a desplegar tras modificarlas. Configurar en R2 CORS para el dominio de Pages y permitir GET/HEAD desde ese origen. El puntero se solicita con revalidación y el catálogo versionado con caché larga.
+Las variables de build identifican el catálogo público, teléfonos, enlaces de redes y los elementos que se ocultan; no deben contener credenciales. Los nombres de productos y categorías se comparan sin distinguir mayúsculas, espacios exteriores ni tildes. Cada precio oculto se identifica por el nombre exacto del producto y su cantidad. Los accesos sociales, ubicación y contacto se muestran únicamente cuando tienen una URL o número válido. Los medios de pago son Efectivo y Transferencia. El porcentaje de recargo por transferencia y el monto mínimo para delivery gratis se administran desde Configuración en el portal interno y se publican en el catálogo de R2. El mínimo inicial para delivery es $13.000, calculado sobre el subtotal de productos y promociones antes del recargo por transferencia. Cuando el pedido no alcanza ese monto, la opción de delivery se deshabilita y se indica cuánto falta; Retiro sigue disponible. Después de cambiar cualquiera de esos valores en Configuración, volvé a publicar el catálogo para actualizar la web pública. El número se valida (8 a 15 dígitos) y se normaliza antes de generar el enlace oficial de WhatsApp. Configurá las variables en Cloudflare Pages y volvé a desplegar tras modificarlas. Configurar en R2 CORS para el dominio de Pages y permitir GET/HEAD desde ese origen. El puntero se solicita con revalidación y el catálogo versionado con caché larga.
 
 ## Publicar o actualizar el catálogo y su PDF
 

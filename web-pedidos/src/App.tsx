@@ -51,12 +51,85 @@ const WHATSAPP_URL =
 const PHONE_NUMBER = normalizeWhatsAppPhone(
   import.meta.env.VITE_PHONE_NUMBER ?? WHATSAPP_PHONE,
 );
-const HIDDEN_CATEGORY_NAMES = new Set(
-  (import.meta.env.VITE_HIDDEN_CATEGORIES ?? "")
-    .split(",")
-    .map((name) => name.trim().toLocaleLowerCase("es-AR"))
-    .filter(Boolean),
+function normalizeMenuName(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("es-AR");
+}
+
+function parseHiddenNames(configured: string): Set<string> {
+  return new Set(
+    configured
+      .split(",")
+      .map(normalizeMenuName)
+      .filter(Boolean),
+  );
+}
+
+function parseHiddenPrices(configured: string): Set<string> {
+  const selectors = configured.split(",").filter((selector) => selector.trim());
+  return new Set(
+    selectors.map((selector) => {
+      const separator = selector.lastIndexOf("|");
+      const name = normalizeMenuName(selector.slice(0, separator));
+      const quantity = Number(selector.slice(separator + 1).trim());
+      if (
+        separator <= 0 ||
+        !name ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0
+      ) {
+        throw new Error(
+          "VITE_HIDDEN_PRICES debe usar el formato Nombre del producto|cantidad.",
+        );
+      }
+      return `${name}|${quantity}`;
+    }),
+  );
+}
+
+const HIDDEN_CATEGORY_NAMES = parseHiddenNames(
+  import.meta.env.VITE_HIDDEN_CATEGORIES ?? "",
 );
+const HIDDEN_PRODUCT_NAMES = parseHiddenNames(
+  import.meta.env.VITE_HIDDEN_PRODUCTS ?? "",
+);
+const HIDDEN_PRODUCT_PRICES = parseHiddenPrices(
+  import.meta.env.VITE_HIDDEN_PRICES ??
+    "Papas Fritas Completas|0.5,Papas Fritas Simples|0.5",
+);
+
+function applyMenuVisibility(catalog: PublicCatalog): PublicCatalog {
+  const productos = catalog.productos.flatMap((product) => {
+    if (HIDDEN_PRODUCT_NAMES.has(normalizeMenuName(product.nombre))) return [];
+    const precios = product.precios.filter((price) => {
+      const selector = `${normalizeMenuName(product.nombre)}|${Number(price.cantidad)}`;
+      return !HIDDEN_PRODUCT_PRICES.has(selector);
+    });
+    return precios.length > 0 ? [{ ...product, precios }] : [];
+  });
+  const productsByCategory = new Set(
+    productos.map((product) => product.categoria_id),
+  );
+  const visibleProductIds = new Set(productos.map((product) => product.id));
+  const ofertas = catalog.ofertas.flatMap((offer) => {
+    const items = offer.items.flatMap((item) => {
+      if (item.categoria_id !== null) {
+        return productsByCategory.has(item.categoria_id) ? [item] : [];
+      }
+      const producto_ids = item.producto_ids.filter((id) =>
+        visibleProductIds.has(id),
+      );
+      return producto_ids.length > 0 ? [{ ...item, producto_ids }] : [];
+    });
+    return items.length > 0 || offer.items.length === 0
+      ? [{ ...offer, items }]
+      : [];
+  });
+  return { ...catalog, productos, ofertas };
+}
 const PLACEHOLDER_IMAGE = "/logo.png";
 const EMOJI = {
   pizza: String.fromCodePoint(0x1f355),
@@ -1966,7 +2039,7 @@ function App() {
   const visibleCategories = catalog?.categorias.filter(
     (category) =>
       productsByCategory.has(category.id) &&
-      !HIDDEN_CATEGORY_NAMES.has(category.nombre.trim().toLocaleLowerCase("es-AR")),
+      !HIDDEN_CATEGORY_NAMES.has(normalizeMenuName(category.nombre)),
   ) ?? [];
   const visibleCategoryIds = new Set(visibleCategories.map((category) => category.id));
   const halfPizzaProducts = catalog?.productos.flatMap((product) => {
@@ -2004,7 +2077,7 @@ function App() {
       setError(null);
       try {
         const loadedCatalog = await fetchPublicCatalog(POINTER_URL);
-        if (!cancelled) setCatalog(loadedCatalog);
+        if (!cancelled) setCatalog(applyMenuVisibility(loadedCatalog));
       } catch (loadError) {
         if (!cancelled) {
           setError(

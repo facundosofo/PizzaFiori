@@ -12,6 +12,7 @@ env/
 # Environment variables
 .env
 .env.*
+!web-pedidos/.env.example
 
 # Logs
 *.log

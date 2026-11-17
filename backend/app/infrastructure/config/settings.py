@@ -102,6 +102,20 @@ class Settings(BaseSettings):
     r2_bucket_name: Optional[str] = Field(default=None, alias="R2_BUCKET_NAME")
     r2_public_base_url: Optional[str] = Field(default=None, alias="R2_PUBLIC_BASE_URL")
 
+    # Visibilidad de elementos del menú PDF.
+    menu_pdf_hidden_categories: str = Field(
+        default="Extras",
+        alias="MENU_PDF_HIDDEN_CATEGORIES",
+    )
+    menu_pdf_hidden_products: str = Field(
+        default="",
+        alias="MENU_PDF_HIDDEN_PRODUCTS",
+    )
+    menu_pdf_hidden_prices: str = Field(
+        default="Papas Fritas Completas|0.5,Papas Fritas Simples|0.5",
+        alias="MENU_PDF_HIDDEN_PRICES",
+    )
+
     # SSL/TLS Configuration
     ssl_key_file: Optional[str] = Field(default=None, alias="SSL_KEY_FILE")
     ssl_cert_file: Optional[str] = Field(default=None, alias="SSL_CERT_FILE")
