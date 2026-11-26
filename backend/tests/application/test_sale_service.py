@@ -20,6 +20,8 @@ from tests.helpers import (
     build_offer_item_model,
     build_category_model,
     build_sale_model,
+    build_sale_item_model,
+    build_sale_item_offer_product_model,
     build_stock_model
 )
 
@@ -823,6 +825,109 @@ async def test_update_sale_with_offers_no_validation(mock_uow, mock_logger, samp
     assert updated_sale.items[0].item_categoria == "Ofertas"
     assert updated_sale.items[0].item_descripcion == "12 empanadas"
     assert len(updated_sale.items[0].oferta_productos_snapshot) == 1
+
+
+@pytest.mark.asyncio
+async def test_update_offer_preserves_snapshot_when_product_reference_is_null(
+    mock_uow,
+    mock_logger,
+    sample_sale,
+):
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+
+    snapshot = build_sale_item_offer_product_model(
+        id=42,
+        venta_item_id=15,
+        producto_id=None,
+        producto_nombre="Producto histórico eliminado",
+        categoria_nombre="Empanadas",
+        cantidad=6,
+    )
+    existing_item = build_sale_item_model(
+        id=15,
+        producto_id=None,
+        oferta_id=1,
+        cantidad=1,
+        oferta_productos_snapshot=[snapshot],
+    )
+    sample_sale.items = [existing_item]
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    mock_uow.offer_repo.get_by_id.return_value = build_offer_model(
+        id=1,
+        nombre="Oferta histórica",
+        descripcion="Oferta",
+        precio=8000.0,
+    )
+    mock_uow.sale_repo.refresh = AsyncMock()
+    request = SaleUpdateRequest(
+        items=[
+            SaleItemRequest(
+                venta_item_id=15,
+                oferta_id=1,
+                cantidad=1,
+                precio_unitario=Decimal("8000.00"),
+                # Simula el ID de snapshot que el cliente podría confundir con producto_id.
+                productos_seleccionados=[{"producto_id": 42, "cantidad": 6}],
+            )
+        ]
+    )
+
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
+
+    assert result.status_code == 200
+    mock_uow.product_repo.get_by_id.assert_not_awaited()
+    updated_snapshot = sample_sale.items[0].oferta_productos_snapshot[0]
+    assert updated_snapshot.producto_id is None
+    assert updated_snapshot.producto_nombre == "Producto histórico eliminado"
+    assert updated_snapshot.categoria_nombre == "Empanadas"
+
+
+@pytest.mark.asyncio
+async def test_update_offer_with_empty_historical_snapshot_needs_no_selected_products(
+    mock_uow,
+    mock_logger,
+    sample_sale,
+):
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+
+    sample_sale.items = [
+        build_sale_item_model(
+            id=16,
+            producto_id=None,
+            oferta_id=1,
+            cantidad=1,
+            oferta_productos_snapshot=[],
+        )
+    ]
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    mock_uow.offer_repo.get_by_id.return_value = build_offer_model(
+        id=1,
+        nombre="Oferta histórica",
+        descripcion="Oferta",
+        precio=8000.0,
+    )
+    mock_uow.sale_repo.refresh = AsyncMock()
+    request = SaleUpdateRequest(
+        items=[
+            SaleItemRequest(
+                venta_item_id=16,
+                oferta_id=1,
+                cantidad=1,
+                precio_unitario=Decimal("8000.00"),
+                productos_seleccionados=[],
+            )
+        ]
+    )
+
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
+
+    assert result.status_code == 200
+    mock_uow.product_repo.get_by_id.assert_not_awaited()
+    assert sample_sale.items[0].oferta_productos_snapshot == []
 
 
 @pytest.mark.asyncio

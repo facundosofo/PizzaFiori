@@ -794,6 +794,10 @@ class SaleService:
                 # Calcular nuevos items y total
                 sale_items = []
                 total = Decimal("0.00")
+                existing_items_by_id = {
+                    existing_item.id: existing_item
+                    for existing_item in existing_sale.items or []
+                }
 
                 for item in sale_update.items:
                     # Usar precio_unitario recibido, validar que exista
@@ -842,11 +846,20 @@ class SaleService:
                         item_descripcion = oferta.descripcion
                         item_categoria = 'Ofertas'
                         
-                        # Crear snapshot de los productos que el cliente seleccionó
-                        # (preservar el snapshot histórico sin validar)
-                        if item.productos_seleccionados:
+                        original_item = existing_items_by_id.get(item.venta_item_id)
+                        if original_item and original_item.oferta_id == item.oferta_id:
+                            oferta_productos_snapshot = [
+                                SaleItemOfferProduct(
+                                    producto_id=snapshot.producto_id,
+                                    producto_nombre=snapshot.producto_nombre,
+                                    categoria_nombre=snapshot.categoria_nombre,
+                                    cantidad=snapshot.cantidad,
+                                )
+                                for snapshot in original_item.oferta_productos_snapshot or []
+                            ]
+                        elif item.productos_seleccionados:
+                            # New offer items still need live products to create their snapshots.
                             for prod_sel in item.productos_seleccionados:
-                                # Obtener el producto para hacer el snapshot
                                 producto = await uow.product_repo.get_by_id(prod_sel.producto_id)
                                 if not producto:
                                     return ServiceResult(
@@ -861,6 +874,11 @@ class SaleService:
                                     cantidad=prod_sel.cantidad
                                 )
                                 oferta_productos_snapshot.append(snapshot)
+                        else:
+                            return ServiceResult(
+                                error="No se pudieron preservar los productos históricos de la oferta",
+                                status_code=400,
+                            )
                     
                     elif item.pizza_mitad_mitad or item.es_pizza_mitad_mitad:
                         # Para pizzas mitad-mitad en actualizaciones, preservar el snapshot histórico

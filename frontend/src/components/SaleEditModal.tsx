@@ -667,16 +667,18 @@ const SaleEditModal = ({
       // Call update service with precio_unitario and productos_seleccionados for offers
       const updatedSale = await updateSale(saleId!, {
         items: editedItems.map((item) => ({
+          venta_item_id: item.id,
           producto_id: item.producto_id || undefined,
           oferta_id: item.oferta_id || undefined,
           cantidad: item.cantidad,
           precio_cantidad: item.precio_cantidad ?? undefined,
           precio_unitario: item.precio_unitario, // Incluir precio_unitario
           es_pizza_mitad_mitad: item.es_pizza_mitad_mitad || undefined,
-          productos_seleccionados: item.oferta_productos_snapshot?.map((p) => ({
-            producto_id: p.producto_id || p.id,
-            cantidad: p.cantidad,
-          })) || undefined,
+          productos_seleccionados: item.oferta_productos_snapshot?.flatMap((p) =>
+            p.producto_id !== null && p.producto_id !== undefined
+              ? [{ producto_id: p.producto_id, cantidad: p.cantidad }]
+              : []
+          ),
         })),
         aplicar_recargo: applyRecargo,
       });

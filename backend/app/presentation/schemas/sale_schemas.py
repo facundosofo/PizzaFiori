@@ -44,6 +44,7 @@ class PizzaMitadMitadRequest(BaseModel):
 
 
 class SaleItemRequest(BaseModel):
+    venta_item_id: Optional[int] = Field(None, gt=0, description="ID del item original, solo para actualizaciones")
     producto_id: Optional[int] = Field(None, gt=0)
     oferta_id: Optional[int] = Field(None, gt=0)
     cantidad: Decimal = Field(
@@ -90,10 +91,6 @@ class SaleItemRequest(BaseModel):
             raise ValueError("La cantidad de pizzas mitad-mitad debe ser un número entero")
         
         # Validaciones específicas para cada tipo
-        if self.oferta_id is not None:
-            if not self.productos_seleccionados or len(self.productos_seleccionados) == 0:
-                raise ValueError("Debe especificar productos_seleccionados al comprar una oferta")
-        
         if self.producto_id is not None and self.productos_seleccionados:
             raise ValueError("No se puede especificar productos_seleccionados para un producto individual")
         
@@ -157,6 +154,9 @@ class SaleUpdateRequest(BaseModel):
     def validar_items(self):
         if not self.items or len(self.items) == 0:
             raise ValueError("La venta debe tener al menos un item")
+        for item in self.items:
+            if item.oferta_id is not None and not item.productos_seleccionados and item.venta_item_id is None:
+                raise ValueError("Debe especificar productos_seleccionados para una oferta nueva")
         return self
 
 
@@ -172,6 +172,11 @@ class SaleCreateRequest(BaseModel):
     def validar_items(self):
         if not self.items or len(self.items) == 0:
             raise ValueError("La venta debe tener al menos un item")
+        for item in self.items:
+            if item.venta_item_id is None and item.oferta_id is not None and not item.productos_seleccionados:
+                raise ValueError("Debe especificar productos_seleccionados al comprar una oferta")
+            if item.venta_item_id is not None:
+                raise ValueError("venta_item_id solo se puede usar al actualizar una venta")
         if any(item.es_pizza_mitad_mitad for item in self.items):
             raise ValueError("es_pizza_mitad_mitad solo se puede usar al actualizar una venta")
         return self

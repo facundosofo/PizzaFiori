@@ -39,6 +39,7 @@ export interface SaleItemRequest {
 }
 
 export interface SaleItemUpdateRequest extends SaleItemRequest {
+  venta_item_id: number;
   precio_unitario: number;
   es_pizza_mitad_mitad?: boolean;
 }
