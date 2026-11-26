@@ -252,7 +252,165 @@ class SaleService:
         for categoria in categorias:
             if categoria.nombre == nombre:
                 return categoria.id
+        if nombre.strip().casefold() in {"pizza", "pizzas"}:
+            for categoria in categorias:
+                if categoria.nombre.strip().casefold() == "pizzas":
+                    return categoria.id
         return None
+
+    async def _collect_sale_stock_deductions(self, items, uow):
+        category_deductions: dict[int, Decimal] = {}
+        product_deductions: dict[int, Decimal] = {}
+        product_category_ids: dict[int, int] = {}
+        category_only_deductions: dict[int, Decimal] = {}
+        category_ids_by_name: dict[str, Optional[int]] = {}
+
+        async def category_id_for_name(name: str | None) -> Optional[int]:
+            if not name:
+                return None
+            if name not in category_ids_by_name:
+                category_ids_by_name[name] = await self._get_category_id_by_name(name, uow)
+            return category_ids_by_name[name]
+
+        async def add_product_deduction(product_id: int, quantity: Decimal, category_name: str | None):
+            product = await uow.product_repo.get_by_id(product_id)
+            category_id = product.categoria_id if product else await category_id_for_name(category_name)
+            if category_id:
+                category_deductions[category_id] = (
+                    category_deductions.get(category_id, Decimal("0")) + quantity
+                )
+                product_deductions[product_id] = (
+                    product_deductions.get(product_id, Decimal("0")) + quantity
+                )
+                product_category_ids[product_id] = category_id
+
+            if product:
+                category_name_for_rules = (
+                    product.categoria.nombre if product.categoria else category_name
+                )
+                extra_deductions = self._get_configured_extra_stock_deductions(
+                    category_name_for_rules,
+                    product.sku,
+                    quantity,
+                )
+                for target_name, extra_quantity in extra_deductions:
+                    target_id = await category_id_for_name(target_name)
+                    if target_id:
+                        category_deductions[target_id] = (
+                            category_deductions.get(target_id, Decimal("0")) + extra_quantity
+                        )
+
+        for item in items or []:
+            quantity = self._normalize_qty(item.cantidad)
+            if getattr(item, "es_pizza_mitad_mitad", False):
+                category_id = await category_id_for_name(item.item_categoria)
+                if category_id:
+                    category_only_deductions[category_id] = (
+                        category_only_deductions.get(category_id, Decimal("0")) + quantity
+                    )
+                continue
+
+            if item.producto_id:
+                await add_product_deduction(
+                    item.producto_id, quantity, getattr(item, "item_categoria", None)
+                )
+                continue
+
+            for snapshot in getattr(item, "oferta_productos_snapshot", []) or []:
+                snapshot_quantity = quantity * self._normalize_qty(snapshot.cantidad)
+                if snapshot.producto_id:
+                    await add_product_deduction(
+                        snapshot.producto_id,
+                        snapshot_quantity,
+                        snapshot.categoria_nombre,
+                    )
+                else:
+                    category_id = await category_id_for_name(snapshot.categoria_nombre)
+                    if category_id:
+                        category_deductions[category_id] = (
+                            category_deductions.get(category_id, Decimal("0")) + snapshot_quantity
+                        )
+
+        return (
+            category_deductions,
+            product_deductions,
+            product_category_ids,
+            category_only_deductions,
+        )
+
+    async def _apply_sale_stock_deductions(
+        self,
+        deductions,
+        uow,
+        direction: int,
+        sale_id: int,
+        username: Optional[str],
+    ) -> None:
+        category_deductions, product_deductions, product_category_ids, category_only_deductions = deductions
+        category_ids = set(category_deductions) | set(category_only_deductions)
+        per_product_categories = set()
+        for category_id in category_ids:
+            category = await uow.product_category_repo.get_by_id(category_id)
+            if category and category.stock_por_producto:
+                per_product_categories.add(category_id)
+
+        for category_id in category_ids:
+            delta = category_only_deductions.get(category_id, Decimal("0"))
+            if category_id not in per_product_categories:
+                delta += category_deductions.get(category_id, Decimal("0"))
+            if not delta:
+                continue
+
+            stock = await uow.stock_repo.get_by_categoria_id(category_id)
+            if stock is None:
+                self.logger.warning(
+                    "Sin registro de stock para categoria, movimiento omitido",
+                    categoria_id=category_id,
+                )
+                continue
+            previous = stock.cantidad
+            stock.cantidad = max(0, previous + direction * delta)
+            stock.fecha_actualizacion = datetime.now()
+            await uow.audit_repo.log_action(
+                username=username or "sistema",
+                entity_type="Stock",
+                entity_id=category_id,
+                action="UPDATE",
+                changes={
+                    "tipo": "VENTA_REVERSION" if direction > 0 else "VENTA_DESCUENTO",
+                    "cantidad_reintegrada" if direction > 0 else "cantidad_descontada": delta,
+                    "stock_anterior": previous,
+                    "stock_nuevo": stock.cantidad,
+                    "venta_id": sale_id,
+                },
+            )
+
+        for product_id, delta in product_deductions.items():
+            if product_category_ids.get(product_id) not in per_product_categories:
+                continue
+            stock = await uow.product_stock_repo.get_by_producto_id(product_id)
+            if stock is None:
+                self.logger.warning(
+                    "Sin registro de stock para producto, movimiento omitido",
+                    producto_id=product_id,
+                )
+                continue
+            previous = stock.cantidad
+            stock.cantidad = max(0, previous + direction * delta)
+            stock.fecha_actualizacion = datetime.now()
+            await uow.audit_repo.log_action(
+                username=username or "sistema",
+                entity_type="StockProducto",
+                entity_id=product_id,
+                action="UPDATE",
+                changes={
+                    "tipo": "VENTA_REVERSION" if direction > 0 else "VENTA_DESCUENTO",
+                    "cantidad_reintegrada" if direction > 0 else "cantidad_descontada": delta,
+                    "stock_anterior": previous,
+                    "stock_nuevo": stock.cantidad,
+                    "venta_id": sale_id,
+                },
+            )
 
     def _compute_total_items(self, sale) -> float:
         total_items = Decimal("0")
@@ -309,6 +467,8 @@ class SaleService:
                 stock_deductions: dict[int, Decimal] = {}
                 # dict para acumular descuentos de stock por producto: {producto_id: delta}
                 product_stock_deductions: dict[int, Decimal] = {}
+                # Las pizzas mitad-mitad siempre descuentan por categoría, no por producto.
+                category_only_stock_deductions: dict[int, Decimal] = {}
                 # map producto_id -> categoria_id para evitar re-fetch en el loop de descuento
                 producto_categoria_ids: dict[int, int] = {}
                 # Cache target_category_name -> category_id para reglas dinámicas.
@@ -487,7 +647,11 @@ class SaleService:
                         )
                         if pizza_cat_id:
                             stock_deductions[pizza_cat_id] = (
-                                stock_deductions.get(pizza_cat_id, 0) + item.cantidad
+                                stock_deductions.get(pizza_cat_id, Decimal("0")) + item.cantidad
+                            )
+                            category_only_stock_deductions[pizza_cat_id] = (
+                                category_only_stock_deductions.get(pizza_cat_id, Decimal("0"))
+                                + item.cantidad
                             )
                     
                     # Calcular subtotal
@@ -553,7 +717,9 @@ class SaleService:
 
                 for cat_id, delta in stock_deductions.items():
                     if cat_id in cats_por_producto:
-                        continue  # handled at product level below
+                        delta = category_only_stock_deductions.get(cat_id, Decimal("0"))
+                        if not delta:
+                            continue  # handled at product level below
                     stock = await uow.stock_repo.get_by_categoria_id(cat_id)
                     if stock is None:
                         self.logger.warning(
@@ -790,6 +956,9 @@ class SaleService:
                 # Capturar estado anterior para auditoría (usando helpers especializados)
                 from app.application.utils.audit_helpers import sale_to_snapshot
                 old_sale_dict = sale_to_snapshot(existing_sale)
+                previous_stock_deductions = await self._collect_sale_stock_deductions(
+                    existing_sale.items, uow
+                )
 
                 # Calcular nuevos items y total
                 sale_items = []
@@ -883,8 +1052,28 @@ class SaleService:
                     elif item.pizza_mitad_mitad or item.es_pizza_mitad_mitad:
                         # Para pizzas mitad-mitad en actualizaciones, preservar el snapshot histórico
                         # sin validar contra los requisitos actuales (como con las ofertas)
+                        original_item = existing_items_by_id.get(item.venta_item_id)
                         item_nombre = f"Pizza Mitad Mitad"  # Nombre genérico para actualizaciones
-                        item_categoria = "Pizza"
+                        item_categoria = (
+                            getattr(original_item, "item_categoria", None)
+                            if original_item
+                            else None
+                        )
+                        if item.pizza_mitad_mitad:
+                            producto_izq = await uow.product_repo.get_by_id(
+                                item.pizza_mitad_mitad.producto_id_izquierda
+                            )
+                            producto_der = await uow.product_repo.get_by_id(
+                                item.pizza_mitad_mitad.producto_id_derecha
+                            )
+                            producto_categoria = (
+                                producto_izq.categoria if producto_izq else None
+                            ) or (producto_der.categoria if producto_der else None)
+                            item_categoria = (
+                                producto_categoria.nombre if producto_categoria else "Pizzas"
+                            )
+                        elif not item_categoria:
+                            item_categoria = "Pizzas"
                         item_descripcion = None
                     
                     subtotal = Decimal(str(precio_unitario)) * Decimal(str(item.cantidad))
@@ -924,6 +1113,16 @@ class SaleService:
 
                     monto_recargo = (total * porcentaje_recargo / Decimal("100")).quantize(Decimal("0.01"))
                     total += monto_recargo
+
+                new_stock_deductions = await self._collect_sale_stock_deductions(
+                    sale_items, uow
+                )
+                await self._apply_sale_stock_deductions(
+                    previous_stock_deductions, uow, 1, sale_id, username
+                )
+                await self._apply_sale_stock_deductions(
+                    new_stock_deductions, uow, -1, sale_id, username
+                )
 
                 # Actualizar venta
                 existing_sale.total = total
@@ -1004,6 +1203,13 @@ class SaleService:
                         error=f"Venta {sale_id} no encontrada",
                         status_code=404,
                     )
+
+                stock_deductions = await self._collect_sale_stock_deductions(
+                    sale.items, uow
+                )
+                await self._apply_sale_stock_deductions(
+                    stock_deductions, uow, 1, sale_id, username
+                )
 
                 # Auditar eliminación ANTES de borrar (AuditService usa su propia transacción)
                 if self.audit_service and username:

@@ -427,6 +427,52 @@ async def test_create_sale_sku_rule_adds_half_papas_stock_deduction_from_env_rul
 
 
 @pytest.mark.asyncio
+async def test_create_pizza_mitad_mitad_deducts_one_category_unit_even_with_product_tracking(
+    mock_uow, mock_logger
+):
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    pizza_category = build_category_model(id=3, nombre="Pizzas")
+    pizza_category.stock_por_producto = True
+    left = build_product_model(
+        id=1,
+        nombre="Pizza Muzzarella",
+        categoria_id=3,
+        precios=[build_product_price_model(1, 1, 1, 8000)],
+    )
+    right = build_product_model(
+        id=2,
+        nombre="Pizza Napolitana",
+        categoria_id=3,
+        precios=[build_product_price_model(2, 2, 1, 9000)],
+    )
+    left.categoria = right.categoria = pizza_category
+    mock_uow.product_repo.get_by_id.side_effect = [left, right, left, right]
+    mock_uow.product_category_repo.get_by_id.return_value = pizza_category
+    category_stock = build_stock_model(categoria_id=3, cantidad=10)
+    mock_uow.stock_repo.get_by_categoria_id.return_value = category_stock
+    mock_uow.sale_repo.refresh = AsyncMock()
+
+    request = SaleCreateRequest(
+        items=[
+            SaleItemRequest(
+                cantidad=1,
+                pizza_mitad_mitad={
+                    "producto_id_izquierda": 1,
+                    "producto_id_derecha": 2,
+                    "cantidad": 1,
+                },
+            )
+        ]
+    )
+
+    result = await service.create(request)
+
+    assert result.status_code == 201
+    assert category_stock.cantidad == 9
+    mock_uow.product_stock_repo.get_by_producto_id.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_create_sale_with_offers(mock_uow, mock_logger):
     """Test creating sale with offer items."""
     # Arrange
@@ -734,6 +780,43 @@ async def test_update_sale_with_products(mock_uow, mock_logger, sample_sale):
     assert updated_sale.items[0].item_nombre == "Empanada Actualizada"
     assert updated_sale.items[0].producto_sku == "EMPA-ACT-001"
     assert updated_sale.items[0].item_categoria == "Empanadas"
+
+
+@pytest.mark.asyncio
+async def test_update_sale_restores_old_stock_and_deducts_updated_quantity(
+    mock_uow, mock_logger, sample_sale
+):
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+
+    request = SaleUpdateRequest(
+        items=[
+            SaleItemRequest(
+                producto_id=1,
+                cantidad=2,
+                precio_unitario=Decimal("900.00"),
+            )
+        ]
+    )
+    category = build_category_model(id=1, nombre="Empanadas")
+    product = build_product_model(id=1, categoria_id=1)
+    product.categoria = category
+    stock = build_stock_model(categoria_id=1, cantidad=4)
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    mock_uow.product_repo.get_by_id.return_value = product
+    mock_uow.product_category_repo.get_by_id.return_value = category
+    mock_uow.stock_repo.get_by_categoria_id.return_value = stock
+    mock_uow.sale_repo.refresh = AsyncMock()
+
+    with patch(
+        "app.application.utils.audit_helpers.sale_to_snapshot",
+        return_value={"id": 1, "items": []},
+    ):
+        result = await service.update(1, request)
+
+    assert result.status_code == 200
+    assert stock.cantidad == 8
+    mock_uow.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -1153,13 +1236,50 @@ async def test_get_available_years_error(mock_uow, mock_logger):
 async def test_delete_sale_success(mock_uow, mock_logger, sample_sale):
     """Eliminar venta exitosamente."""
     service = SaleService(uow=mock_uow, logger=mock_logger)
+    category = build_category_model(id=1, nombre="Empanadas")
+    product = build_product_model(id=1, categoria_id=1)
+    product.categoria = category
+    stock = build_stock_model(categoria_id=1, cantidad=4)
     mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    mock_uow.product_repo.get_by_id.return_value = product
+    mock_uow.product_category_repo.get_by_id.return_value = category
+    mock_uow.stock_repo.get_by_categoria_id.return_value = stock
 
     result = await service.delete(1)
 
     assert result.status_code == 204
+    assert stock.cantidad == 10
     mock_uow.sale_repo.delete.assert_called_once_with(1)
     mock_uow.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_delete_pizza_mitad_mitad_restores_category_stock_only(mock_uow, mock_logger):
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    pizza_category = build_category_model(id=3, nombre="Pizzas")
+    pizza_category.stock_por_producto = True
+    sale = build_sale_model(
+        items=[
+            build_sale_item_model(
+                producto_id=None,
+                cantidad=1,
+                item_categoria="Pizzas",
+                es_pizza_mitad_mitad=True,
+            )
+        ]
+    )
+    stock = build_stock_model(categoria_id=3, cantidad=8)
+    mock_uow.sale_repo.get_by_id.return_value = sale
+    mock_uow.product_category_repo.list.return_value = [pizza_category]
+    mock_uow.product_category_repo.get_by_id.return_value = pizza_category
+    mock_uow.stock_repo.get_by_categoria_id.return_value = stock
+
+    result = await service.delete(1)
+
+    assert result.status_code == 204
+    assert stock.cantidad == 9
+    mock_uow.product_repo.get_by_id.assert_not_awaited()
+    mock_uow.product_stock_repo.get_by_producto_id.assert_not_awaited()
 
 
 @pytest.mark.asyncio

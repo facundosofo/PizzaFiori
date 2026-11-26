@@ -223,7 +223,7 @@ Una vez confirmada, el sistema registra la venta, actualiza el stock automática
 
 ![Mensaje de éxito en verde después de confirmar la venta](manual/images/IMG-VENTA-09.png)
 
-⚠️ **Atención:** Una vez que confirmás la venta, el stock se descuenta automaticamente. Si cometiste un error, podés ir a la sección **Ventas** para editar o eliminar esa venta.
+⚠️ **Atención:** Una vez que confirmás la venta, el stock se descuenta automáticamente. Si editás la venta, el stock se ajusta según los ítems anteriores y nuevos; si la eliminás, se reintegra el stock descontado. Las pizzas mitad y mitad descuentan una unidad de la categoría de pizzas por cada pizza, incluso si esa categoría tiene seguimiento por producto.
 
 ---
 

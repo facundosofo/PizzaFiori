@@ -310,7 +310,8 @@ def build_sale_item_model(
     item_nombre: str = "Empanada de Carne",
     item_categoria: str = "Empanadas",
     item_descripcion: Optional[str] = None,
-    oferta_productos_snapshot: Optional[List] = None
+    oferta_productos_snapshot: Optional[List] = None,
+    es_pizza_mitad_mitad: bool = False,
 ) -> MagicMock:
     """Build mock SaleItem model instance."""
     item = MagicMock()
@@ -325,6 +326,7 @@ def build_sale_item_model(
     item.item_nombre = item_nombre
     item.item_categoria = item_categoria
     item.item_descripcion = item_descripcion
+    item.es_pizza_mitad_mitad = es_pizza_mitad_mitad
     item.oferta_productos_snapshot = oferta_productos_snapshot or []
     return item
 
