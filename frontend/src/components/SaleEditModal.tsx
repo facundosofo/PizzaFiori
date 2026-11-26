@@ -672,6 +672,7 @@ const SaleEditModal = ({
           cantidad: item.cantidad,
           precio_cantidad: item.precio_cantidad ?? undefined,
           precio_unitario: item.precio_unitario, // Incluir precio_unitario
+          es_pizza_mitad_mitad: item.es_pizza_mitad_mitad || undefined,
           productos_seleccionados: item.oferta_productos_snapshot?.map((p) => ({
             producto_id: p.producto_id || p.id,
             cantidad: p.cantidad,

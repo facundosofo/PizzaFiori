@@ -21,6 +21,7 @@ export interface SaleItem {
   item_categoria: string;
   item_descripcion?: string | null;
   oferta_productos_snapshot?: SaleItemOfferProductSnapshot[];
+  es_pizza_mitad_mitad?: boolean | null;
 }
 
 export interface SaleItemRequest {
@@ -35,6 +36,11 @@ export interface SaleItemRequest {
     producto_id_derecha: number;
     cantidad: number;
   };
+}
+
+export interface SaleItemUpdateRequest extends SaleItemRequest {
+  precio_unitario: number;
+  es_pizza_mitad_mitad?: boolean;
 }
 
 // Extended interface with product/offer names (populated by backend via snapshots)

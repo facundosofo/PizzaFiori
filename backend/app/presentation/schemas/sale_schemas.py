@@ -63,6 +63,10 @@ class SaleItemRequest(BaseModel):
         None,
         description="Configuración para pizza mitad-mitad (exclusivo con producto_id y oferta_id)"
     )
+    es_pizza_mitad_mitad: bool = Field(
+        False,
+        description="Identifica una pizza mitad-mitad ya existente al actualizar una venta"
+    )
 
     @model_validator(mode="after")
     def validar_tipos_mutuamente_exclusivos(self):
@@ -70,7 +74,8 @@ class SaleItemRequest(BaseModel):
         tipos_especificados = sum([
             self.producto_id is not None,
             self.oferta_id is not None,
-            self.pizza_mitad_mitad is not None
+            self.pizza_mitad_mitad is not None,
+            self.es_pizza_mitad_mitad,
         ])
         
         if tipos_especificados == 0:
@@ -81,7 +86,7 @@ class SaleItemRequest(BaseModel):
         if self.oferta_id is not None and self.cantidad != int(self.cantidad):
             raise ValueError("La cantidad de la oferta debe ser un número entero")
         
-        if self.pizza_mitad_mitad is not None and self.cantidad != int(self.cantidad):
+        if (self.pizza_mitad_mitad is not None or self.es_pizza_mitad_mitad) and self.cantidad != int(self.cantidad):
             raise ValueError("La cantidad de pizzas mitad-mitad debe ser un número entero")
         
         # Validaciones específicas para cada tipo
@@ -92,7 +97,7 @@ class SaleItemRequest(BaseModel):
         if self.producto_id is not None and self.productos_seleccionados:
             raise ValueError("No se puede especificar productos_seleccionados para un producto individual")
         
-        if self.pizza_mitad_mitad is not None and self.productos_seleccionados:
+        if (self.pizza_mitad_mitad is not None or self.es_pizza_mitad_mitad) and self.productos_seleccionados:
             raise ValueError("No se puede especificar productos_seleccionados para pizza mitad-mitad")
         
         return self
@@ -113,6 +118,7 @@ class SaleItemResponse(BaseModel):
     item_categoria: str  # Categoría al momento de la venta
     item_descripcion: Optional[str] = None  # Descripción de la oferta
     oferta_productos_snapshot: Optional[List["SaleItemOfferProductResponse"]] = None  # Productos de la oferta
+    es_pizza_mitad_mitad: Optional[bool] = None
 
     @field_validator("precio_cantidad", mode="before")
     @classmethod
@@ -166,6 +172,8 @@ class SaleCreateRequest(BaseModel):
     def validar_items(self):
         if not self.items or len(self.items) == 0:
             raise ValueError("La venta debe tener al menos un item")
+        if any(item.es_pizza_mitad_mitad for item in self.items):
+            raise ValueError("es_pizza_mitad_mitad solo se puede usar al actualizar una venta")
         return self
 
 

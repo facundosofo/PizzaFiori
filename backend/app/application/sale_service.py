@@ -862,7 +862,7 @@ class SaleService:
                                 )
                                 oferta_productos_snapshot.append(snapshot)
                     
-                    elif item.pizza_mitad_mitad:
+                    elif item.pizza_mitad_mitad or item.es_pizza_mitad_mitad:
                         # Para pizzas mitad-mitad en actualizaciones, preservar el snapshot histórico
                         # sin validar contra los requisitos actuales (como con las ofertas)
                         item_nombre = f"Pizza Mitad Mitad"  # Nombre genérico para actualizaciones
@@ -886,7 +886,7 @@ class SaleService:
                         item_descripcion=item_descripcion,
                         precio_cantidad=precio_cantidad,
                         # Identificador de pizza mitad-mitad
-                        es_pizza_mitad_mitad=True if item.pizza_mitad_mitad else None,
+                        es_pizza_mitad_mitad=bool(item.pizza_mitad_mitad or item.es_pizza_mitad_mitad),
                         oferta_productos_snapshot=oferta_productos_snapshot
                     )
                     sale_items.append(sale_item)

@@ -102,6 +102,28 @@ def test_sale_item_both_null():
                for error in errors)
 
 
+def test_sale_item_existing_pizza_mitad_mitad_is_valid_for_update():
+    item = SaleItemRequest(
+        cantidad=2,
+        precio_unitario=Decimal("12000.00"),
+        es_pizza_mitad_mitad=True,
+    )
+
+    assert item.es_pizza_mitad_mitad is True
+
+
+def test_sale_create_rejects_existing_pizza_marker():
+    with pytest.raises(ValidationError, match="solo se puede usar al actualizar"):
+        SaleCreateRequest(
+            items=[
+                SaleItemRequest(
+                    cantidad=1,
+                    es_pizza_mitad_mitad=True,
+                )
+            ]
+        )
+
+
 def test_sale_item_both_present():
     """Test that both producto_id and oferta_id present is rejected (XOR validation)."""
     data = {

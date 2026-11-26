@@ -1,4 +1,4 @@
-import type { SaleItem, SaleItemRequest } from './sale_item';
+import type { SaleItem, SaleItemRequest, SaleItemUpdateRequest } from './sale_item';
 
 export interface Sale {
   id: number;
@@ -15,5 +15,10 @@ export interface Sale {
 export interface SaleCreateRequest {
   numero_orden?: string | null;
   items: SaleItemRequest[];
+  aplicar_recargo?: boolean;
+}
+
+export interface SaleUpdateRequest {
+  items: SaleItemUpdateRequest[];
   aplicar_recargo?: boolean;
 }

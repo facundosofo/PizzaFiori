@@ -735,6 +735,31 @@ async def test_update_sale_with_products(mock_uow, mock_logger, sample_sale):
 
 
 @pytest.mark.asyncio
+async def test_update_sale_preserves_existing_pizza_mitad_mitad(mock_uow, mock_logger, sample_sale):
+    service = SaleService(uow=mock_uow, logger=mock_logger)
+    from app.presentation.schemas.sale_schemas import SaleUpdateRequest
+
+    request = SaleUpdateRequest(
+        items=[
+            SaleItemRequest(
+                cantidad=1,
+                precio_unitario=Decimal("12000.00"),
+                es_pizza_mitad_mitad=True,
+            )
+        ]
+    )
+    mock_uow.sale_repo.get_by_id.return_value = sample_sale
+    mock_uow.sale_repo.refresh = AsyncMock()
+
+    with patch('app.application.utils.audit_helpers.sale_to_snapshot', return_value={"id": 1, "items": []}):
+        result = await service.update(1, request)
+
+    assert result.status_code == 200
+    assert sample_sale.items[0].es_pizza_mitad_mitad is True
+    assert sample_sale.items[0].item_nombre == "Pizza Mitad Mitad"
+
+
+@pytest.mark.asyncio
 async def test_update_sale_with_offers_no_validation(mock_uow, mock_logger, sample_sale):
     """Test updating sale with offers does NOT validate products against current offer requirements.
     
