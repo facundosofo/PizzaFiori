@@ -365,6 +365,49 @@ async def test_update_sale_ok_retorna_200(async_client: AsyncClient, mock_sale_s
 
 
 @pytest.mark.asyncio
+async def test_update_sale_pizza_mitad_mitad_acepta_item_existente(
+    async_client: AsyncClient,
+    mock_sale_service,
+):
+    """Un item mitad-mitad sin IDs de producto/oferta debe poder actualizarse."""
+    from tests.helpers import build_sale_item_model, build_sale_model
+
+    pizza = build_sale_item_model(
+        producto_id=None,
+        oferta_id=None,
+        cantidad=1,
+        precio_unitario=12000.0,
+        subtotal=12000.0,
+        item_nombre="Pizza Mitad Muzzarella/Jamon",
+        item_categoria="Pizzas",
+    )
+    pizza.es_pizza_mitad_mitad = True
+    mock_sale_service.update.return_value.error = None
+    mock_sale_service.update.return_value.value = build_sale_model(
+        id=1,
+        total=12000.0,
+        items=[pizza],
+    )
+
+    response = await async_client.put(
+        "/ventas/1",
+        json={
+            "items": [
+                {
+                    "cantidad": 1,
+                    "precio_unitario": 12000.0,
+                    "es_pizza_mitad_mitad": True,
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    update_request = mock_sale_service.update.await_args.args[1]
+    assert update_request.items[0].es_pizza_mitad_mitad is True
+
+
+@pytest.mark.asyncio
 async def test_update_sale_no_existente_retorna_404(async_client: AsyncClient, mock_sale_service):
     """Actualizar venta inexistente retorna 404"""
     mock_sale_service.update.return_value.error = "Venta 999 no encontrada"

@@ -1,5 +1,5 @@
 import api from "./http";
-import type { Sale, SaleCreateRequest } from "../types/sale";
+import type { Sale, SaleCreateRequest, SaleUpdateRequest } from "../types/sale";
 import type { SaleItemWithDetails } from "../types/sale_item";
 import { formatDateYMD } from "../utils/formatters";
 
@@ -76,7 +76,7 @@ export const createSale = async (data: SaleCreateRequest): Promise<Sale> => {
  */
 export const updateSale = async (
   id: number,
-  data: SaleCreateRequest
+  data: SaleUpdateRequest
 ): Promise<Sale> => {
   try {
     const response = await api.put<Sale>(`/ventas/${id}`, data);

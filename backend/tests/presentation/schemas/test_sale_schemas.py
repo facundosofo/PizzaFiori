@@ -102,6 +102,28 @@ def test_sale_item_both_null():
                for error in errors)
 
 
+def test_sale_item_existing_pizza_mitad_mitad_is_valid_for_update():
+    item = SaleItemRequest(
+        cantidad=2,
+        precio_unitario=Decimal("12000.00"),
+        es_pizza_mitad_mitad=True,
+    )
+
+    assert item.es_pizza_mitad_mitad is True
+
+
+def test_sale_create_rejects_existing_pizza_marker():
+    with pytest.raises(ValidationError, match="solo se puede usar al actualizar"):
+        SaleCreateRequest(
+            items=[
+                SaleItemRequest(
+                    cantidad=1,
+                    es_pizza_mitad_mitad=True,
+                )
+            ]
+        )
+
+
 def test_sale_item_both_present():
     """Test that both producto_id and oferta_id present is rejected (XOR validation)."""
     data = {
@@ -149,35 +171,37 @@ def test_sale_item_missing_cantidad():
     assert any(error["loc"] == ("cantidad",) for error in errors)
 
 
-def test_sale_item_offer_without_productos_seleccionados():
-    """Test that oferta_id requires productos_seleccionados."""
-    data = {
-        "oferta_id": 1,
-        "cantidad": 1
-    }
-    
-    with pytest.raises(ValidationError) as exc_info:
-        SaleItemRequest(**data)
-    
-    errors = exc_info.value.errors()
-    assert len(errors) > 0
-    assert any("productos_seleccionados" in str(error.get("ctx", {}).get("error", "")).lower()
-               for error in errors)
+def test_sale_create_offer_requires_productos_seleccionados():
+    with pytest.raises(ValidationError, match="productos_seleccionados"):
+        SaleCreateRequest(items=[{"oferta_id": 1, "cantidad": 1}])
 
 
-def test_sale_item_offer_with_empty_productos_seleccionados():
-    """Test that oferta_id with empty productos_seleccionados is rejected."""
-    data = {
-        "oferta_id": 1,
-        "cantidad": 1,
-        "productos_seleccionados": []
-    }
-    
-    with pytest.raises(ValidationError) as exc_info:
-        SaleItemRequest(**data)
-    
-    errors = exc_info.value.errors()
-    assert len(errors) > 0
+def test_sale_create_offer_rejects_empty_productos_seleccionados():
+    with pytest.raises(ValidationError, match="productos_seleccionados"):
+        SaleCreateRequest(
+            items=[{"oferta_id": 1, "cantidad": 1, "productos_seleccionados": []}]
+        )
+
+
+def test_sale_update_accepts_existing_offer_without_productos_seleccionados():
+    sale = SaleUpdateRequest(
+        items=[
+            {
+                "venta_item_id": 15,
+                "oferta_id": 1,
+                "cantidad": 1,
+                "precio_unitario": "8000.00",
+            }
+        ]
+    )
+
+    assert sale.items[0].venta_item_id == 15
+    assert sale.items[0].productos_seleccionados is None
+
+
+def test_sale_update_requires_productos_for_new_offer():
+    with pytest.raises(ValidationError, match="oferta nueva"):
+        SaleUpdateRequest(items=[{"oferta_id": 1, "cantidad": 1, "precio_unitario": "8000.00"}])
 
 
 def test_sale_item_product_with_productos_seleccionados():
